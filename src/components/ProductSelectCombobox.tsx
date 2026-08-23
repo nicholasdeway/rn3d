@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Product } from '../types';
-import { Search, Plus, X, ChevronDown, Check } from 'lucide-react';
+import { Search, Plus, X, ChevronDown, Check, Sparkles } from 'lucide-react';
 
 interface ProductSelectComboboxProps {
   products: Product[];
@@ -15,9 +15,11 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
 
-  // Close dropdown when clicking outside
+  // Close dropdown when clicking outside (on desktop)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -27,6 +29,15 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Auto-focus input when mobile full-screen view opens
+  useEffect(() => {
+    if (isOpen && mobileInputRef.current) {
+      setTimeout(() => {
+        mobileInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isOpen]);
 
   const filteredProducts = products.filter((p) => {
     if (!searchQuery.trim()) return true;
@@ -47,14 +58,20 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
     return p.standardPrice;
   };
 
-  const handleSelect = (product: Product) => {
+  const handleSelect = (product: Product, closeImmediately = false) => {
     onSelectProduct(product);
-    setSearchQuery('');
-    setIsOpen(false);
+    setLastAddedId(product.id);
+    setTimeout(() => setLastAddedId(null), 1500);
+
+    if (closeImmediately) {
+      setSearchQuery('');
+      setIsOpen(false);
+    }
   };
 
   return (
     <div ref={containerRef} className="relative w-full">
+      {/* Desktop & Inline Input Trigger */}
       <div className="relative">
         <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         <input
@@ -66,7 +83,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
             setIsOpen(true);
           }}
           placeholder={`🔍 Digite o nome, SKU ou modelo para pesquisar (${products.length} produtos)...`}
-          className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-300 hover:border-indigo-400 focus:border-indigo-500 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-xs transition-all"
+          className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-300 hover:border-indigo-400 focus:border-indigo-500 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-xs transition-all cursor-pointer"
         />
         {searchQuery ? (
           <button
@@ -81,9 +98,137 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
         )}
       </div>
 
-      {/* Floating Dropdown Results Menu */}
+      {/* 📱 MOBILE FULL-SCREEN VIEW (Visible on screens < 640px when open) */}
       {isOpen && (
-        <div className="absolute z-50 left-0 right-0 mt-1 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="fixed inset-0 z-[99999] bg-white flex flex-col sm:hidden animate-in fade-in duration-150">
+          {/* Mobile Top Header */}
+          <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between shadow-md shrink-0">
+            <div className="flex items-center gap-2">
+              <Search className="w-4 h-4 text-indigo-400" />
+              <span className="font-bold text-xs uppercase tracking-wider">Catálogo de Produtos</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-sm cursor-pointer"
+            >
+              <Check className="w-4 h-4" /> Concluir
+            </button>
+          </div>
+
+          {/* Mobile Sticky Search Field */}
+          <div className="p-3 bg-slate-50 border-b border-slate-200 shrink-0 space-y-2">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-600 pointer-events-none" />
+              <input
+                ref={mobileInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Digite nome, SKU ou modelo..."
+                className="w-full pl-10 pr-10 py-3 bg-white border border-indigo-200 focus:border-indigo-500 rounded-xl text-xs font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-xs"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 px-1">
+              <span>{filteredProducts.length} produtos encontrados</span>
+              <span className="text-indigo-600">Toque em + para adicionar</span>
+            </div>
+          </div>
+
+          {/* Mobile Scrollable Product List */}
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 p-2">
+            {filteredProducts.length === 0 ? (
+              <div className="p-10 text-center text-slate-400 space-y-2">
+                <p className="text-sm font-bold text-slate-700">Nenhum produto localizado</p>
+                <p className="text-xs">Tente buscar por outro termo.</p>
+              </div>
+            ) : (
+              filteredProducts.map((p) => {
+                const price = getEffectivePrice(p);
+                const isJustAdded = lastAddedId === p.id;
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => handleSelect(p)}
+                    className={`p-3 rounded-xl transition-all flex items-center justify-between gap-3 active:bg-indigo-50 ${
+                      isJustAdded ? 'bg-emerald-50 border border-emerald-300' : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200">
+                        {p.imageUrl ? (
+                          <img
+                            src={p.imageUrl}
+                            alt={p.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>3D</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h5 className="font-bold text-slate-900 text-xs truncate">{p.name}</h5>
+                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                          <span className="font-mono text-indigo-600 font-bold">SKU: {p.sku}</span>
+                          {p.storageCapacity && ` • ${p.storageCapacity}`}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <div className="text-right">
+                        <span className="text-xs font-black text-emerald-600 block">
+                          R$ {price.toFixed(2).replace('.', ',')}
+                        </span>
+                        {isCashPayment && (
+                          <span className="text-[9px] font-bold text-amber-600 uppercase bg-amber-50 px-1 py-0.5 rounded-md border border-amber-200">
+                            À Vista
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelect(p);
+                        }}
+                        className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1 shadow-xs transition-all ${
+                          isJustAdded
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        }`}
+                      >
+                        {isJustAdded ? (
+                          <>
+                            <Check className="w-4 h-4" /> Adicionado
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-4 h-4" /> Adicionar
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 💻 DESKTOP FLOATING DROPDOWN MENU (Visible on screens >= 640px when open) */}
+      {isOpen && (
+        <div className="hidden sm:block absolute z-50 left-0 right-0 mt-1 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500">
             <span>
               {searchQuery
@@ -106,11 +251,10 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => handleSelect(p)}
+                    onClick={() => handleSelect(p, true)}
                     className="w-full p-2.5 text-left hover:bg-indigo-50/80 transition-colors flex items-center justify-between gap-3 group cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      {/* Product Thumbnail */}
                       <div className="w-10 h-10 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 group-hover:border-indigo-300">
                         {p.imageUrl ? (
                           <img
@@ -123,7 +267,6 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                         )}
                       </div>
 
-                      {/* Product Details */}
                       <div className="min-w-0">
                         <h5 className="font-bold text-slate-900 text-xs truncate group-hover:text-indigo-900">
                           {p.name}
@@ -136,7 +279,6 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                       </div>
                     </div>
 
-                    {/* Price and Add Button */}
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right">
                         <span className="text-xs font-extrabold text-emerald-600 block">
