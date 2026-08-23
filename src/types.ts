@@ -70,6 +70,7 @@ export interface Client {
   id: string;
   name: string; // Nome / Razão Social
   fantasyName?: string;
+  avatarUrl?: string;
   document: string; // CPF or CNPJ
   stateRegistration?: string;
   responsible: string;

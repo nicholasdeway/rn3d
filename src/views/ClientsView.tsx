@@ -11,7 +11,12 @@ import {
   X,
   Building2,
   Truck,
+  Image as ImageIcon,
+  Crop,
+  Trash2,
 } from 'lucide-react';
+import { ImageCropperModal } from '../components/ImageCropperModal';
+import { ImageLightboxModal } from '../components/ImageLightboxModal';
 
 interface ClientsViewProps {
   clients: Client[];
@@ -26,10 +31,13 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [croppingImageSrc, setCroppingImageSrc] = useState<string | null>(null);
+  const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
   const [formData, setFormData] = useState<Partial<Client>>({
     name: '',
     fantasyName: '',
+    avatarUrl: '',
     document: '',
     responsible: '',
     phone: '',
@@ -67,6 +75,22 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
     );
   });
 
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCroppingImageSrc(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleCropComplete = (croppedBase64: string) => {
+    setFormData((prev) => ({ ...prev, avatarUrl: croppedBase64 }));
+    setCroppingImageSrc(null);
+  };
+
   const handleSubmitNewClient = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.responsible) return;
@@ -75,6 +99,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
       id: `cli-${Date.now()}`,
       name: formData.name || 'Novo Cliente',
       fantasyName: formData.fantasyName || formData.name || '',
+      avatarUrl: formData.avatarUrl || '',
       document: formData.document || '',
       responsible: formData.responsible || 'Responsável',
       phone: formData.phone || '',
@@ -214,8 +239,23 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                 {/* Card Header: Avatar, Client Name & Visit Status */}
                 <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 font-extrabold text-sm flex items-center justify-center shrink-0 border border-indigo-100">
-                      {c.name.charAt(0).toUpperCase()}
+                    <div
+                      onClick={(e) => {
+                        if (c.avatarUrl) {
+                          e.stopPropagation();
+                          setZoomImage({ url: c.avatarUrl, title: c.name });
+                        }
+                      }}
+                      className={`w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 font-extrabold text-sm flex items-center justify-center shrink-0 border border-indigo-100 overflow-hidden ${
+                        c.avatarUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                      }`}
+                      title={c.avatarUrl ? 'Clique para ver foto em tela cheia' : undefined}
+                    >
+                      {c.avatarUrl ? (
+                        <img src={c.avatarUrl} alt={c.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span>{c.name.charAt(0).toUpperCase()}</span>
+                      )}
                     </div>
                     <div>
                       <h4 className="font-bold text-slate-900 text-sm leading-snug">{c.name}</h4>
@@ -306,8 +346,23 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                     >
                       <td className="p-4 font-bold text-slate-900">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">
-                            {c.name.charAt(0)}
+                          <div
+                            onClick={(e) => {
+                              if (c.avatarUrl) {
+                                e.stopPropagation();
+                                setZoomImage({ url: c.avatarUrl, title: c.name });
+                              }
+                            }}
+                            className={`w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0 border border-indigo-100 overflow-hidden ${
+                              c.avatarUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                            }`}
+                            title={c.avatarUrl ? 'Clique para ver foto em tela cheia' : undefined}
+                          >
+                            {c.avatarUrl ? (
+                              <img src={c.avatarUrl} alt={c.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span>{c.name.charAt(0).toUpperCase()}</span>
+                            )}
                           </div>
                           <div>
                             <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
@@ -387,11 +442,67 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
 
             {/* Scrollable Form Content */}
             <form onSubmit={handleSubmitNewClient} className="p-6 overflow-y-auto space-y-5 text-xs">
-              {/* Section 1: Main Identification */}
+              {/* Section 1: Main Identification & Avatar */}
               <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
                 <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5 border-b border-slate-200/80 pb-2">
                   <Building2 className="w-4 h-4 text-indigo-600" /> Dados do Estabelecimento / Parceiro
                 </h4>
+
+                {/* Avatar / Foto do Cliente */}
+                <div className="space-y-2 p-3.5 bg-white rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <label className="block font-bold text-slate-900">Logo / Foto do Cliente (Avatar)</label>
+                    {formData.avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, avatarUrl: '' })}
+                        className="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer hover:underline"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Remover Foto
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-slate-100 border border-slate-200 rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-xs relative">
+                      {formData.avatarUrl ? (
+                        <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="w-7 h-7 text-slate-400" />
+                      )}
+                    </div>
+                    <div className="space-y-2 flex-1">
+                      <div className="flex flex-wrap gap-2">
+                        <label className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold flex items-center gap-1.5 w-fit cursor-pointer shadow-xs">
+                          <Crop className="w-4 h-4" />
+                          {formData.avatarUrl ? 'Substituir / Recortar Foto' : 'Selecionar e Recortar Foto'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageFileChange}
+                            className="hidden"
+                          />
+                        </label>
+                        {formData.avatarUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, avatarUrl: '' })}
+                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl font-semibold flex items-center gap-1 cursor-pointer border border-rose-200"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Excluir
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="url"
+                        value={formData.avatarUrl || ''}
+                        onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
+                        placeholder="Ou cole a URL da imagem (https://...)"
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-xl bg-slate-50 text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">Razão Social / Nome Oficial *</label>
@@ -630,6 +741,24 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Image Cropper Modal for Client Avatar */}
+      {croppingImageSrc && (
+        <ImageCropperModal
+          imageSrc={croppingImageSrc}
+          onCropComplete={handleCropComplete}
+          onCancel={() => setCroppingImageSrc(null)}
+        />
+      )}
+
+      {/* Lightbox Zoom Modal for Client Avatar */}
+      {zoomImage && (
+        <ImageLightboxModal
+          imageUrl={zoomImage.url}
+          title={zoomImage.title}
+          onClose={() => setZoomImage(null)}
+        />
       )}
     </div>
   );
