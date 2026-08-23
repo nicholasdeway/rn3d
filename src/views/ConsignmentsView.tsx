@@ -239,15 +239,16 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
       {/* Nova Consignação Modal Wizard */}
       {isWizardOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white w-full max-w-6xl rounded-2xl border border-slate-300 overflow-hidden max-h-[94vh] flex flex-col animate-in fade-in zoom-in-95 duration-150 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-4xl rounded-2xl border border-slate-300 overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150 shadow-2xl">
             {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
-              <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-                <Boxes className="w-5 h-5 text-indigo-600 shrink-0" />
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                <Boxes className="w-5 h-5 text-indigo-600" />
                 Registrar Nova Consignação em Cliente
               </h3>
               <button
+                type="button"
                 onClick={() => setIsWizardOpen(false)}
                 className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer"
               >
@@ -255,154 +256,212 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSubmitConsignment} className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs flex-1">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column (2/3): Form & Dynamic Item Table */}
-                <div className="lg:col-span-2 space-y-5">
-                  {/* Client Select & Product Search in Responsive Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-30">
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Selecionar Cliente / Loja *</label>
-                      <select
-                        value={selectedClientId}
-                        onChange={(e) => setSelectedClientId(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 text-xs"
-                      >
-                        {clients.map((cli) => (
-                          <option key={cli.id} value={cli.id}>
-                            {cli.name} ({cli.city} - {cli.state})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="relative z-30">
-                      <label className="block font-semibold text-slate-700 mb-1">Buscar Produto para Adicionar</label>
-                      <ProductSelectCombobox
-                        products={products}
-                        onSelectProduct={handleAddProductToConsignment}
-                        isCashPayment={false}
-                      />
-                    </div>
-                  </div>
-
-                  {selectedClient && (
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60 text-xs space-y-1 text-slate-600">
-                      <p>
-                        <strong>Endereço:</strong> {selectedClient.street}, {selectedClient.number} -{' '}
-                        {selectedClient.neighborhood}, {selectedClient.city}
-                      </p>
-                      <p>
-                        <strong>Responsável:</strong> {selectedClient.responsible} ({selectedClient.phone})
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Dynamic Items Table */}
-                  <div className="space-y-2">
-                    <label className="block font-semibold text-slate-700">Produtos da Remessa</label>
-                    {items.length === 0 ? (
-                      <div className="p-8 border-2 border-dashed border-slate-200 rounded-xl text-center text-slate-400">
-                        <Package className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                        Nenhum produto adicionado ainda. Utilize a busca acima para incluir produtos.
-                      </div>
-                    ) : (
-                      <div className="border border-slate-200 rounded-xl overflow-hidden overflow-x-auto bg-white">
-                        <table className="w-full text-left text-xs min-w-[500px]">
-                          <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
-                            <tr>
-                              <th className="p-3">Produto</th>
-                              <th className="p-3 text-center">Quantidade</th>
-                              <th className="p-3 text-right">Preço Unit.</th>
-                              <th className="p-3 text-right">Subtotal</th>
-                              <th className="p-3 text-center">Ação</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {items.map((item, idx) => (
-                              <tr key={item.productId} className="hover:bg-slate-50">
-                                <td className="p-3 font-bold text-slate-900">{item.productName}</td>
-                                <td className="p-3 text-center">
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={item.quantity}
-                                    onChange={(e) => handleUpdateItemQuantity(idx, Number(e.target.value))}
-                                    className="w-16 text-center px-2 py-1 border border-slate-200 rounded-lg font-bold"
-                                  />
-                                </td>
-                                <td className="p-3 text-right text-slate-700">
-                                  R$ {item.unitPrice.toFixed(2).replace('.', ',')}
-                                </td>
-                                <td className="p-3 text-right font-bold text-emerald-600">
-                                  R$ {item.subtotal.toFixed(2).replace('.', ',')}
-                                </td>
-                                <td className="p-3 text-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveItem(idx)}
-                                    className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right Column (1/3): Summary Card */}
-                <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-5 flex flex-col justify-between">
-                  <div className="space-y-4">
-                    <h4 className="font-bold text-slate-900 text-sm border-b border-slate-200 pb-2">
-                      Resumo da Remessa
-                    </h4>
-
-                    <div className="space-y-3 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Quantidade Total:</span>
-                        <span className="font-bold text-slate-900">{totalQuantity} unidades</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Valor em Mercadorias:</span>
-                        <span className="font-extrabold text-emerald-600 text-sm">
-                          R$ {totalValuation.toFixed(2).replace('.', ',')}
-                        </span>
-                      </div>
-                      <div>
-                        <label className="block font-semibold text-slate-700 mb-1">Data de Entrega</label>
-                        <input
-                          type="date"
-                          value={deliveryDate}
-                          onChange={(e) => setDeliveryDate(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white font-medium"
-                        />
-                      </div>
-                      <div>
-                        <label className="block font-semibold text-slate-700 mb-1">Observações</label>
-                        <textarea
-                          rows={3}
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value)}
-                          placeholder="Observações de entrega..."
-                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={items.length === 0}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-sm transition-colors cursor-pointer"
+            <form onSubmit={handleSubmitConsignment} className="p-6 overflow-y-auto space-y-6 text-xs flex-1">
+              {/* 1. Client & Delivery Date Header Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block font-semibold text-slate-700 mb-1">Selecionar Cliente / Loja *</label>
+                  <select
+                    value={selectedClientId}
+                    onChange={(e) => setSelectedClientId(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-900 bg-white"
                   >
-                    Registrar Consignação
-                  </button>
+                    {clients.map((cli) => (
+                      <option key={cli.id} value={cli.id}>
+                        {cli.name} ({cli.city} - {cli.state})
+                      </option>
+                    ))}
+                  </select>
                 </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Data de Entrega / Envio</label>
+                  <input
+                    type="date"
+                    value={deliveryDate}
+                    onChange={(e) => setDeliveryDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-900 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Selected Client Info Card */}
+              {selectedClient && (
+                <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs space-y-1 text-slate-600">
+                  <p>
+                    <strong>Endereço:</strong> {selectedClient.street}, {selectedClient.number} -{' '}
+                    {selectedClient.neighborhood}, {selectedClient.city} / {selectedClient.state}
+                  </p>
+                  <p>
+                    <strong>Responsável:</strong> {selectedClient.responsible} ({selectedClient.phone || selectedClient.whatsapp})
+                  </p>
+                </div>
+              )}
+
+              {/* 2. Full Product Catalog Search Combobox */}
+              {products.length > 0 && (
+                <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-2 relative z-30">
+                  <label className="block font-bold text-slate-900 text-xs flex items-center justify-between">
+                    <span>Adicionar Produtos do Catálogo ({products.length} itens disponíveis):</span>
+                    <span className="text-[10px] text-indigo-600 font-bold">Pesquisa Instantânea</span>
+                  </label>
+                  <ProductSelectCombobox
+                    products={products}
+                    onSelectProduct={handleAddProductToConsignment}
+                    isCashPayment={false}
+                  />
+                </div>
+              )}
+
+              {/* 3. Items Table - Full 100% Width */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                    <span>Produtos da Remessa de Consignação ({items.length})</span>
+                  </h4>
+                </div>
+
+                {items.length === 0 ? (
+                  <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center text-slate-400 space-y-1">
+                    <Package className="w-8 h-8 mx-auto mb-2 text-slate-300" />
+                    <p className="text-xs font-bold text-slate-700">Nenhum produto adicionado à remessa</p>
+                    <p className="text-[11px]">Use a caixa de pesquisa acima para selecionar e incluir produtos no consignado.</p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Mobile Items Cards (< 768px) */}
+                    <div className="block md:hidden space-y-3">
+                      {items.map((item, idx) => (
+                        <div key={item.productId} className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-xs space-y-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h5 className="font-bold text-slate-900 text-xs">{item.productName}</h5>
+                              <p className="text-[11px] text-slate-500 font-mono">SKU: {item.sku}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(idx)}
+                              className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-500">Qtd:</span>
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => handleUpdateItemQuantity(idx, Number(e.target.value))}
+                                className="w-16 text-center px-2 py-1 border border-slate-200 rounded-lg font-bold"
+                              />
+                            </div>
+                            <div className="text-right">
+                              <span className="text-slate-400 text-[10px] block">Subtotal</span>
+                              <span className="font-bold text-emerald-600">R$ {item.subtotal.toFixed(2).replace('.', ',')}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Desktop Table (>= 768px) */}
+                    <div className="hidden md:block border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs bg-white">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
+                          <tr>
+                            <th className="p-3.5">Produto</th>
+                            <th className="p-3.5 text-center">Quantidade Enviada</th>
+                            <th className="p-3.5 text-right">Preço Unit.</th>
+                            <th className="p-3.5 text-right">Subtotal</th>
+                            <th className="p-3.5 text-center">Remover</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium">
+                          {items.map((item, idx) => (
+                            <tr key={item.productId} className="hover:bg-slate-50 transition-colors">
+                              <td className="p-3.5 font-bold text-slate-900">
+                                {item.productName}
+                                <span className="block text-[11px] text-slate-400 font-normal font-mono">SKU: {item.sku}</span>
+                              </td>
+                              <td className="p-3.5 text-center">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity}
+                                  onChange={(e) => handleUpdateItemQuantity(idx, Number(e.target.value))}
+                                  className="w-20 text-center px-2.5 py-1.5 border border-slate-200 rounded-xl font-bold bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                />
+                              </td>
+                              <td className="p-3.5 text-right text-slate-700 font-semibold">
+                                R$ {item.unitPrice.toFixed(2).replace('.', ',')}
+                              </td>
+                              <td className="p-3.5 text-right font-extrabold text-emerald-600 text-sm">
+                                R$ {item.subtotal.toFixed(2).replace('.', ',')}
+                              </td>
+                              <td className="p-3.5 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveItem(idx)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Remover produto da remessa"
+                                >
+                                  <Trash2 className="w-4 h-4 text-rose-500" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* 4. Bottom Observações & Summary Totals Card */}
+              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                <div className="md:col-span-2 space-y-1">
+                  <label className="block font-semibold text-slate-700">Observações de Entrega / Notas da Remessa</label>
+                  <textarea
+                    rows={2}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Instruções sobre colocação do expositor, itens em promoção, observações..."
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-xs text-slate-900"
+                  />
+                </div>
+
+                <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2 text-right">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-slate-500 font-medium">Quantidade Total:</span>
+                    <span className="font-bold text-slate-900">{totalQuantity} un</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                    <span className="font-bold text-slate-900 text-xs">Valor Mercadorias:</span>
+                    <span className="text-xl font-black text-emerald-600">
+                      R$ {totalValuation.toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. Modal Footer Action Buttons */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsWizardOpen(false)}
+                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={items.length === 0}
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <Boxes className="w-4 h-4" />
+                  <span>Registrar Consignação</span>
+                </button>
               </div>
             </form>
           </div>
