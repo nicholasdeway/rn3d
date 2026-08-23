@@ -568,20 +568,6 @@ export function App() {
 
   const handleAddClient = async (newClient: Client) => {
     setClients((prev) => [newClient, ...prev]);
-    // Save logistics memory if specified
-    if (newClient.defaultLogisticsCost !== undefined) {
-      try {
-        const saved = localStorage.getItem('rn3d_client_logistics');
-        const parsed = saved ? JSON.parse(saved) : {};
-        parsed[newClient.id] = {
-          type: newClient.defaultLogisticsType || 'combustivel',
-          cost: newClient.defaultLogisticsCost,
-        };
-        localStorage.setItem('rn3d_client_logistics', JSON.stringify(parsed));
-      } catch (e) {
-        console.error('Error saving client logistics memory:', e);
-      }
-    }
     showToast(`Cliente "${newClient.name}" cadastrado com sucesso!`, 'success');
     try {
       const savedInDb = await createClient(newClient);
@@ -597,17 +583,6 @@ export function App() {
 
   const handleUpdateClient = async (updatedClient: Client) => {
     setClients((prev) => prev.map((c) => (c.id === updatedClient.id ? updatedClient : c)));
-    try {
-      const saved = localStorage.getItem('rn3d_client_logistics');
-      const parsed = saved ? JSON.parse(saved) : {};
-      parsed[updatedClient.id] = {
-        type: updatedClient.defaultLogisticsType || 'combustivel',
-        cost: updatedClient.defaultLogisticsCost ?? 50.0,
-      };
-      localStorage.setItem('rn3d_client_logistics', JSON.stringify(parsed));
-    } catch (e) {
-      console.error('Error saving client logistics memory:', e);
-    }
     showToast(`Cadastro do cliente "${updatedClient.name}" atualizado com sucesso!`, 'success');
     try {
       await updateClient(updatedClient.id, updatedClient);

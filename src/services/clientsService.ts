@@ -29,66 +29,41 @@ export async function fetchClients(): Promise<Client[]> {
     return localClients;
   }
 
-  let parsedLogistics: Record<string, { type?: string; cost?: number }> = {};
   try {
-    const savedLogistics = localStorage.getItem('rn3d_client_logistics');
-    if (savedLogistics) parsedLogistics = JSON.parse(savedLogistics);
-  } catch (e) {
-    console.error('Error reading logistics memory:', e);
-  }
+    localStorage.removeItem('rn3d_client_logistics');
+  } catch (e) {}
 
-  const dbClients: Client[] = data.map((row) => {
-    const localLogistics = parsedLogistics[row.id];
-    const dbCost = row.default_logistics_cost !== null && row.default_logistics_cost !== undefined ? Number(row.default_logistics_cost) : null;
-    const dbType = row.default_logistics_type;
-
-    let finalCost = 50.0;
-    if (localLogistics?.cost !== undefined) {
-      finalCost = localLogistics.cost;
-      if (dbCost === null || (dbCost === 50.0 && localLogistics.cost !== 50.0)) {
-        updateClient(row.id, {
-          defaultLogisticsCost: localLogistics.cost,
-          defaultLogisticsType: (localLogistics.type || 'combustivel') as any,
-        }).catch((err) => console.error('Error background syncing client logistics to DB:', err));
-      }
-    } else if (dbCost !== null) {
-      finalCost = dbCost;
-    }
-
-    const finalType = localLogistics?.type || dbType || 'combustivel';
-
-    return {
-      id: row.id,
-      name: row.name,
-      fantasyName: row.fantasy_name,
-      avatarUrl: row.avatar_url || '',
-      document: row.document,
-      responsible: row.responsible,
-      phone: row.phone,
-      whatsapp: row.whatsapp || row.phone,
-      email: row.email || '',
-      cep: row.cep || '',
-      street: row.street || '',
-      number: row.number || '',
-      complement: row.complement,
-      neighborhood: row.neighborhood || '',
-      city: row.city || '',
-      state: row.state || '',
-      type: row.type || 'Cliente direto',
-      agreedPriceLevel: row.agreed_price_level || 'Padrão',
-      visitFrequency: row.visit_frequency || '15 dias',
-      defaultLogisticsType: finalType as any,
-      defaultLogisticsCost: finalCost,
-      notes: row.notes,
-      status: row.status || 'Ativo',
-      productsOnSiteCount: 0,
-      productsValuation: 0,
-      receivableBalance: 0,
-      lastVisitDate: row.last_visit_date || 'N/A',
-      nextVisitDate: row.next_visit_date || 'A agendar',
-      visitStatus: 'Em breve',
-    };
-  });
+  const dbClients: Client[] = data.map((row) => ({
+    id: row.id,
+    name: row.name,
+    fantasyName: row.fantasy_name,
+    avatarUrl: row.avatar_url || '',
+    document: row.document,
+    responsible: row.responsible,
+    phone: row.phone,
+    whatsapp: row.whatsapp || row.phone,
+    email: row.email || '',
+    cep: row.cep || '',
+    street: row.street || '',
+    number: row.number || '',
+    complement: row.complement,
+    neighborhood: row.neighborhood || '',
+    city: row.city || '',
+    state: row.state || '',
+    type: row.type || 'Cliente direto',
+    agreedPriceLevel: row.agreed_price_level || 'Padrão',
+    visitFrequency: row.visit_frequency || '15 dias',
+    defaultLogisticsType: (row.default_logistics_type || 'combustivel') as any,
+    defaultLogisticsCost: row.default_logistics_cost !== null && row.default_logistics_cost !== undefined ? Number(row.default_logistics_cost) : 50.0,
+    notes: row.notes,
+    status: row.status || 'Ativo',
+    productsOnSiteCount: 0,
+    productsValuation: 0,
+    receivableBalance: 0,
+    lastVisitDate: row.last_visit_date || 'N/A',
+    nextVisitDate: row.next_visit_date || 'A agendar',
+    visitStatus: 'Em breve',
+  }));
 
   try {
     localStorage.setItem('rn3d_clients', JSON.stringify(dbClients));
