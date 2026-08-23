@@ -210,13 +210,32 @@ export async function syncMissingClientsToSupabase(missingClients: Client[]): Pr
   if (!isSupabaseConfigured() || missingClients.length === 0) return 0;
 
   let syncedCount = 0;
-  for (const c of missingClients) {
-    try {
-      await createClient(c);
-      syncedCount++;
-    } catch (err) {
-      console.error(`Erro ao sincronizar cliente ${c.name}:`, err);
+
+  try {
+    const { data: dbData } = await supabase.from('clients').select('id, name, avatar_url');
+    const dbNamesMap = new Map((dbData || []).map((c) => [(c.name || '').toLowerCase().trim(), c]));
+
+    for (const c of missingClients) {
+      try {
+        const normName = (c.name || '').toLowerCase().trim();
+        const existingInDb = dbNamesMap.get(normName);
+
+        if (existingInDb) {
+          if (c.avatarUrl && !existingInDb.avatar_url) {
+            await updateClient(existingInDb.id, { avatarUrl: c.avatarUrl });
+            syncedCount++;
+          }
+        } else {
+          await createClient(c);
+          syncedCount++;
+        }
+      } catch (err) {
+        console.error(`Erro ao sincronizar cliente ${c.name}:`, err);
+      }
     }
+  } catch (err) {
+    console.error('Erro na sincronização de clientes com Supabase:', err);
   }
+
   return syncedCount;
 }

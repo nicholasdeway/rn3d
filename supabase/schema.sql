@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS clients (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   name TEXT NOT NULL,
   fantasy_name TEXT,
+  avatar_url TEXT,
   document TEXT NOT NULL,
   responsible TEXT NOT NULL,
   phone TEXT NOT NULL,
