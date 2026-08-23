@@ -117,6 +117,7 @@ export function App() {
       id === 'ORC-920984' ||
       id === 'PED-000081' ||
       id === 'PED-000080' ||
+      id === 'PED-817946' ||
       id === 'sal-1' ||
       id === 'sal-2' ||
       id === 'sal-3' ||
