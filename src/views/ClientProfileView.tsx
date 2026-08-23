@@ -69,7 +69,7 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
   const [currentClientData, setCurrentClientData] = useState<Client>(client);
   const [logisticsMemory, setLogisticsMemory] = useState<{ type: string; cost: number }>({
     type: client.defaultLogisticsType || 'combustivel',
-    cost: client.defaultLogisticsCost ?? 50.0,
+    cost: client.defaultLogisticsCost ?? 0,
   });
 
   // Sync client & logistics memory when prop changes
@@ -77,7 +77,7 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
     setCurrentClientData(client);
     setLogisticsMemory({
       type: client.defaultLogisticsType || 'combustivel',
-      cost: client.defaultLogisticsCost ?? 50.0,
+      cost: client.defaultLogisticsCost ?? 0,
     });
   }, [client]);
 
@@ -154,13 +154,13 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
       name: editFormData.name || currentClientData.name,
       document: editFormData.document || currentClientData.document,
       defaultLogisticsType: editFormData.defaultLogisticsType || 'combustivel',
-      defaultLogisticsCost: editFormData.defaultLogisticsCost ?? 50.0,
+      defaultLogisticsCost: editFormData.defaultLogisticsCost ?? 0,
     } as Client;
 
     setCurrentClientData(updated);
     setLogisticsMemory({
       type: updated.defaultLogisticsType || 'combustivel',
-      cost: updated.defaultLogisticsCost ?? 50.0,
+      cost: updated.defaultLogisticsCost ?? 0,
     });
 
     if (onUpdateClient) {

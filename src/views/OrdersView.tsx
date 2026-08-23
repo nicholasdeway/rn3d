@@ -589,14 +589,14 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                   <div className="p-3 bg-white rounded-xl border border-slate-200">
                     <span className="text-[10px] text-slate-400 block font-medium">Custo de Logística</span>
                     <span className="font-extrabold text-rose-600">
-                      R$ {(selectedOrder.internalLogisticsCost ?? 50.0).toFixed(2).replace('.', ',')}
+                      R$ {(selectedOrder.internalLogisticsCost ?? 0).toFixed(2).replace('.', ',')}
                     </span>
                   </div>
 
                   <div className="p-3 bg-white rounded-xl border border-slate-200">
                     <span className="text-[10px] text-slate-400 block font-medium">Lucro Líquido Real</span>
                     <span className="font-black text-emerald-600">
-                      R$ {Math.max(0, selectedOrder.totalValue - (selectedOrder.internalLogisticsCost ?? 50.0)).toFixed(2).replace('.', ',')}
+                      R$ {Math.max(0, selectedOrder.totalValue - (selectedOrder.internalLogisticsCost ?? 0)).toFixed(2).replace('.', ',')}
                     </span>
                   </div>
                 </div>

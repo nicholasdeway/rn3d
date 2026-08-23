@@ -58,7 +58,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
     agreedPriceLevel: 'Padrão',
     visitFrequency: '15 dias',
     defaultLogisticsType: 'combustivel',
-    defaultLogisticsCost: 50.0,
+    defaultLogisticsCost: 0,
     notes: '',
   });
 

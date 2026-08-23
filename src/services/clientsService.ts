@@ -54,7 +54,7 @@ export async function fetchClients(): Promise<Client[]> {
     agreedPriceLevel: row.agreed_price_level || 'Padrão',
     visitFrequency: row.visit_frequency || '15 dias',
     defaultLogisticsType: (row.default_logistics_type || 'combustivel') as any,
-    defaultLogisticsCost: row.default_logistics_cost !== null && row.default_logistics_cost !== undefined ? Number(row.default_logistics_cost) : 50.0,
+    defaultLogisticsCost: row.default_logistics_cost !== null && row.default_logistics_cost !== undefined ? Number(row.default_logistics_cost) : 0,
     notes: row.notes,
     status: row.status || 'Ativo',
     productsOnSiteCount: 0,
@@ -95,7 +95,7 @@ export async function createClient(client: Partial<Client>): Promise<Client | nu
     state: client.state,
     type: client.type,
     default_logistics_type: client.defaultLogisticsType || 'combustivel',
-    default_logistics_cost: client.defaultLogisticsCost ?? 50.0,
+    default_logistics_cost: client.defaultLogisticsCost ?? 0,
     status: client.status || 'Ativo',
   };
 

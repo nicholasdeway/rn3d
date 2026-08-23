@@ -305,7 +305,7 @@ export function App() {
               productionSlaDate: q.date || new Date().toISOString().split('T')[0],
               estimatedDeliveryDate: q.date || new Date().toISOString().split('T')[0],
               internalLogisticsType: q.internalLogisticsType || 'combustivel',
-              internalLogisticsCost: q.internalLogisticsCost ?? 50.0,
+              internalLogisticsCost: q.internalLogisticsCost ?? 0,
               notes: q.notes,
               paymentTerms: q.paymentTerms,
               items: (q.items || []).map((i) => ({
@@ -634,7 +634,7 @@ export function App() {
       estimatedDeliveryDate: quote.date || new Date().toISOString().split('T')[0],
       attendanceMode: quote.attendanceMode || 'presencial',
       internalLogisticsType: quote.internalLogisticsType || 'combustivel',
-      internalLogisticsCost: quote.internalLogisticsCost ?? 50.0,
+      internalLogisticsCost: quote.internalLogisticsCost ?? 0,
       notes: quote.notes,
       paymentTerms: quote.paymentTerms,
       items: quote.items.map((i) => ({
