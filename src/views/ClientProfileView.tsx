@@ -173,41 +173,41 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 shrink-0 w-full lg:w-auto">
             <button
               onClick={handleOpenEditModal}
-              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <Edit3 className="w-4 h-4 text-emerald-400" />
-              Editar Dados
+              <span>Editar Dados</span>
             </button>
             <button
               onClick={() => onStartVisit(client.id)}
-              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <MapPin className="w-4 h-4" />
-              Registrar visita
+              <span>Registrar visita</span>
             </button>
             <button
               onClick={() => onNewConsignment(client.id)}
-              className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <Boxes className="w-4 h-4" />
-              Nova consignação
+              <span>Nova consignação</span>
             </button>
             <button
               onClick={() => onNewOrder(client.id)}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <ShoppingCart className="w-4 h-4 text-slate-600" />
-              Novo pedido
+              <span>Novo pedido</span>
             </button>
             <button
               onClick={() => onNewQuote(client.id)}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="col-span-2 sm:col-span-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <FileText className="w-4 h-4 text-slate-600" />
-              Novo orçamento
+              <span>Novo orçamento</span>
             </button>
           </div>
         </div>
@@ -412,11 +412,11 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
       {/* Tab Content: Orders History */}
       {activeTab === 'orders' && (
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50">
             <h3 className="font-bold text-slate-900 text-sm">Histórico de Pedidos de Venda do Cliente</h3>
             <button
               onClick={() => onNewOrder(client.id)}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
             >
               <ShoppingCart className="w-4 h-4" /> Criar Novo Pedido
             </button>
@@ -427,38 +427,73 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
               Nenhum pedido de venda registrado para este cliente até o momento.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
-                  <tr>
-                    <th className="p-4">Pedido</th>
-                    <th className="p-4">Data</th>
-                    <th className="p-4 text-center">Itens</th>
-                    <th className="p-4 text-right">Valor Total</th>
-                    <th className="p-4">Pagamento</th>
-                    <th className="p-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {clientOrders.map((o) => (
-                    <tr key={o.id} className="hover:bg-slate-50">
-                      <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
-                      <td className="p-4 text-slate-600">{o.date}</td>
-                      <td className="p-4 text-center font-bold">{o.itemsCount} itens</td>
-                      <td className="p-4 text-right font-extrabold text-emerald-600">
-                        R$ {o.totalValue.toFixed(2).replace('.', ',')}
-                      </td>
-                      <td className="p-4 font-semibold text-slate-700">{o.paymentStatusText}</td>
-                      <td className="p-4">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700">
-                          {o.status}
+            <>
+              {/* Mobile Cards View (< 768px) - No Horizontal Scroll */}
+              <div className="block md:hidden p-4 space-y-3">
+                {clientOrders.map((o) => (
+                  <div key={o.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono font-bold text-indigo-600 text-xs">{o.id}</span>
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                        {o.status}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <div>
+                        <p className="text-slate-500 text-[11px]">Data: {o.date}</p>
+                        <p className="font-bold text-slate-800 mt-0.5">{o.itemsCount} itens</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-400 font-medium block">Valor Total</span>
+                        <span className="font-black text-emerald-600 text-sm">
+                          R$ {o.totalValue.toFixed(2).replace('.', ',')}
                         </span>
-                      </td>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-500 font-medium">Pagamento:</span>
+                      <span className="font-bold text-slate-800">{o.paymentStatusText}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (>= 768px) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
+                    <tr>
+                      <th className="p-4">Pedido</th>
+                      <th className="p-4">Data</th>
+                      <th className="p-4 text-center">Itens</th>
+                      <th className="p-4 text-right">Valor Total</th>
+                      <th className="p-4">Pagamento</th>
+                      <th className="p-4">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {clientOrders.map((o) => (
+                      <tr key={o.id} className="hover:bg-slate-50">
+                        <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
+                        <td className="p-4 text-slate-600">{o.date}</td>
+                        <td className="p-4 text-center font-bold">{o.itemsCount} itens</td>
+                        <td className="p-4 text-right font-extrabold text-emerald-600">
+                          R$ {o.totalValue.toFixed(2).replace('.', ',')}
+                        </td>
+                        <td className="p-4 font-semibold text-slate-700">{o.paymentStatusText}</td>
+                        <td className="p-4">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700">
+                            {o.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -466,11 +501,11 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
       {/* Tab Content: Quotes History */}
       {activeTab === 'quotes' && (
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50">
             <h3 className="font-bold text-slate-900 text-sm">Histórico de Orçamentos do Cliente</h3>
             <button
               onClick={() => onNewQuote(client.id)}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
             >
               <FileText className="w-4 h-4" /> Criar Novo Orçamento
             </button>
@@ -481,34 +516,61 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
               Nenhum orçamento emitido para este cliente até o momento.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
-                  <tr>
-                    <th className="p-4">Número</th>
-                    <th className="p-4">Data</th>
-                    <th className="p-4 text-right">Valor Total</th>
-                    <th className="p-4">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {clientQuotes.map((q) => (
-                    <tr key={q.id} className="hover:bg-slate-50">
-                      <td className="p-4 font-mono font-bold text-indigo-600">{q.id}</td>
-                      <td className="p-4 text-slate-600">{q.date}</td>
-                      <td className="p-4 text-right font-extrabold text-emerald-600">
-                        R$ {q.total.toFixed(2).replace('.', ',')}
-                      </td>
-                      <td className="p-4">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
-                          {q.status}
+            <>
+              {/* Mobile Cards View (< 768px) - No Horizontal Scroll */}
+              <div className="block md:hidden p-4 space-y-3">
+                {clientQuotes.map((q) => (
+                  <div key={q.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono font-bold text-indigo-600 text-xs">{q.id}</span>
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-200 text-slate-800">
+                        {q.status}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <p className="text-slate-500 text-[11px]">Data: {q.date}</p>
+                      <div className="text-right">
+                        <span className="text-[10px] text-slate-400 font-medium block">Valor Total</span>
+                        <span className="font-black text-emerald-600 text-sm">
+                          R$ {q.total.toFixed(2).replace('.', ',')}
                         </span>
-                      </td>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (>= 768px) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
+                    <tr>
+                      <th className="p-4">Número</th>
+                      <th className="p-4">Data</th>
+                      <th className="p-4 text-right">Valor Total</th>
+                      <th className="p-4">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {clientQuotes.map((q) => (
+                      <tr key={q.id} className="hover:bg-slate-50">
+                        <td className="p-4 font-mono font-bold text-indigo-600">{q.id}</td>
+                        <td className="p-4 text-slate-600">{q.date}</td>
+                        <td className="p-4 text-right font-extrabold text-emerald-600">
+                          R$ {q.total.toFixed(2).replace('.', ',')}
+                        </td>
+                        <td className="p-4">
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
+                            {q.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -516,17 +578,62 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
       {/* Tab Content: Estoque no Local */}
       {activeTab === 'inventory' && (
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50">
             <div>
               <h3 className="font-bold text-slate-900 text-sm">Itens Atualmente em Consignação</h3>
               <p className="text-xs text-slate-500">Auditoria do expositor na loja do cliente</p>
             </div>
-            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full">
+            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full self-start sm:self-auto">
               Total: {clientInventory.reduce((acc, i) => acc + i.currentQuantity, 0)} itens
             </span>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* Mobile Cards View (< 768px) - No Horizontal Scroll */}
+          <div className="block md:hidden p-4 space-y-3">
+            {clientInventory.map((item) => {
+              const isLowTurnover = item.currentQuantity >= 10 && item.soldQuantity <= 2;
+              const totalVal = item.currentQuantity * item.unitPrice;
+
+              return (
+                <div key={item.productId} className={`p-4 border rounded-2xl space-y-2.5 ${isLowTurnover ? 'bg-amber-50/40 border-amber-200' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h5 className="font-bold text-slate-900 text-xs">{item.productName}</h5>
+                      <p className="text-[11px] text-slate-500 font-mono">SKU: {item.sku}</p>
+                    </div>
+                    {isLowTurnover && (
+                      <span className="px-2 py-0.5 text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-200 rounded-md shrink-0">
+                        Baixo giro!
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1 border-t border-slate-200/60">
+                    <div className="bg-white p-2 rounded-xl border border-slate-200/80">
+                      <span className="text-[10px] text-slate-400 font-medium block">Enviados</span>
+                      <span className="font-bold text-slate-800">{item.sentQuantity}</span>
+                    </div>
+                    <div className="bg-white p-2 rounded-xl border border-slate-200/80">
+                      <span className="text-[10px] text-slate-400 font-medium block">Vendidos</span>
+                      <span className="font-bold text-emerald-600">{item.soldQuantity}</span>
+                    </div>
+                    <div className="bg-white p-2 rounded-xl border border-slate-200/80">
+                      <span className="text-[10px] text-slate-400 font-medium block">No Local</span>
+                      <span className="font-black text-slate-900">{item.currentQuantity} un</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 text-[11px]">Un: R$ {item.unitPrice.toFixed(2).replace('.', ',')}</span>
+                    <span className="font-black text-emerald-600">Total: R$ {totalVal.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View (>= 768px) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
                 <tr>

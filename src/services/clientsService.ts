@@ -33,6 +33,7 @@ export async function fetchClients(): Promise<Client[]> {
     id: row.id,
     name: row.name,
     fantasyName: row.fantasy_name,
+    avatarUrl: row.avatar_url || '',
     document: row.document,
     responsible: row.responsible,
     phone: row.phone,
@@ -58,10 +59,34 @@ export async function fetchClients(): Promise<Client[]> {
     visitStatus: 'Em breve',
   }));
 
+  // Deduplicate between Supabase DB and local clients by ID and by Normalized Name
   const dbIds = new Set(dbClients.map((c) => c.id));
-  const extraLocal = localClients.filter((c) => !dbIds.has(c.id));
+  const dbNamesMap = new Map(dbClients.map((c) => [(c.name || '').toLowerCase().trim(), c]));
 
-  return [...dbClients, ...extraLocal];
+  // Merge extra local clients if not present in DB
+  const merged: Client[] = [...dbClients];
+
+  for (const localC of localClients) {
+    const normName = (localC.name || '').toLowerCase().trim();
+    if (!normName) continue;
+
+    if (dbIds.has(localC.id)) {
+      continue;
+    }
+
+    if (dbNamesMap.has(normName)) {
+      // If local client has avatarUrl and DB client does not, enrich DB client with avatarUrl
+      const existingDbClient = dbNamesMap.get(normName)!;
+      if (localC.avatarUrl && !existingDbClient.avatarUrl) {
+        existingDbClient.avatarUrl = localC.avatarUrl;
+      }
+    } else {
+      merged.push(localC);
+      dbNamesMap.set(normName, localC);
+    }
+  }
+
+  return merged;
 }
 
 export async function createClient(client: Partial<Client>): Promise<Client | null> {
@@ -69,30 +94,42 @@ export async function createClient(client: Partial<Client>): Promise<Client | nu
     return null;
   }
 
-  const { data, error } = await supabase
+  const payload: any = {
+    name: client.name,
+    fantasy_name: client.fantasyName,
+    avatar_url: client.avatarUrl || '',
+    document: client.document,
+    responsible: client.responsible,
+    phone: client.phone,
+    whatsapp: client.whatsapp,
+    email: client.email,
+    cep: client.cep,
+    street: client.street,
+    number: client.number,
+    complement: client.complement,
+    neighborhood: client.neighborhood,
+    city: client.city,
+    state: client.state,
+    type: client.type,
+    status: client.status || 'Ativo',
+  };
+
+  let { data, error } = await supabase
     .from('clients')
-    .insert([
-      {
-        name: client.name,
-        fantasy_name: client.fantasyName,
-        document: client.document,
-        responsible: client.responsible,
-        phone: client.phone,
-        whatsapp: client.whatsapp,
-        email: client.email,
-        cep: client.cep,
-        street: client.street,
-        number: client.number,
-        complement: client.complement,
-        neighborhood: client.neighborhood,
-        city: client.city,
-        state: client.state,
-        type: client.type,
-        status: client.status || 'Ativo',
-      },
-    ])
+    .insert([payload])
     .select()
     .single();
+
+  if (error && (error.message.includes('column') || error.code === 'PGRST204')) {
+    delete payload.avatar_url;
+    const retry = await supabase
+      .from('clients')
+      .insert([payload])
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     console.error('Erro ao cadastrar cliente:', error.message);

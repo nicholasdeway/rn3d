@@ -54,8 +54,46 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
     );
   });
 
-  // New quote state initialized clean
-  const [selectedClientId, setSelectedClientId] = useState(preselectedClientId || clients[0]?.id || '');
+  // Default fallback Cliente Padrão
+  const defaultPadraoClientInList = clients.find(
+    (c) => c.name.toLowerCase().trim() === 'cliente padrão' || c.name.toLowerCase().trim() === 'cliente padrao'
+  );
+
+  const fallbackDefaultClient: Client = defaultPadraoClientInList || {
+    id: 'cli-padrao-default',
+    name: 'Cliente Padrão',
+    responsible: 'Balcão / Geral',
+    phone: '(00) 00000-0000',
+    whatsapp: '',
+    email: '',
+    document: '000.000.000-00',
+    cep: '00000-000',
+    street: 'Atendimento Local',
+    number: 'S/N',
+    neighborhood: 'Centro',
+    city: 'Local',
+    state: 'RJ',
+    type: 'Cliente direto',
+    agreedPriceLevel: 'Padrão',
+    visitFrequency: '15 dias',
+    status: 'Ativo',
+    productsOnSiteCount: 0,
+    productsValuation: 0,
+    receivableBalance: 0,
+    lastVisitDate: 'N/A',
+    nextVisitDate: 'N/A',
+    visitStatus: 'Em breve',
+  };
+
+  // Available clients list ensuring Cliente Padrão is present & first
+  const availableClientsList: Client[] = defaultPadraoClientInList
+    ? [defaultPadraoClientInList, ...clients.filter((c) => c.id !== defaultPadraoClientInList.id)]
+    : [fallbackDefaultClient, ...clients];
+
+  // New quote state initialized with Cliente Padrão as fixed default
+  const [selectedClientId, setSelectedClientId] = useState(
+    preselectedClientId || fallbackDefaultClient.id
+  );
   const [validityDays, setValidityDays] = useState(7);
   const [productionSlaDays, setProductionSlaDays] = useState(5);
   const [discount, setDiscount] = useState(0);
@@ -85,7 +123,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
 
-  const selectedClient = clients.find((c) => c.id === selectedClientId) || clients[0];
+  const selectedClient = availableClientsList.find((c) => c.id === selectedClientId) || fallbackDefaultClient;
 
   const handleAddItem = () => {
     setQuoteItems([
@@ -415,7 +453,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     onChange={(e) => setSelectedClientId(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-900"
                   >
-                    {clients.map((c) => (
+                    {availableClientsList.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
