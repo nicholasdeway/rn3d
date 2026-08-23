@@ -153,6 +153,8 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
       type: formData.type || 'Consignação',
       agreedPriceLevel: formData.agreedPriceLevel || 'Padrão',
       visitFrequency: formData.visitFrequency || '15 dias',
+      defaultLogisticsType: formData.defaultLogisticsType || 'combustivel',
+      defaultLogisticsCost: typeof formData.defaultLogisticsCost === 'number' ? formData.defaultLogisticsCost : (Number(formData.defaultLogisticsCost) || 0),
       status: 'Ativo',
       productsOnSiteCount: 0,
       productsValuation: 0,

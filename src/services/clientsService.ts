@@ -29,6 +29,14 @@ export async function fetchClients(): Promise<Client[]> {
     return localClients;
   }
 
+  let parsedLogistics: Record<string, { type?: string; cost?: number }> = {};
+  try {
+    const savedLogistics = localStorage.getItem('rn3d_client_logistics');
+    if (savedLogistics) parsedLogistics = JSON.parse(savedLogistics);
+  } catch (e) {
+    console.error('Error reading logistics memory:', e);
+  }
+
   const dbClients: Client[] = data.map((row) => ({
     id: row.id,
     name: row.name,
@@ -49,6 +57,8 @@ export async function fetchClients(): Promise<Client[]> {
     type: row.type || 'Cliente direto',
     agreedPriceLevel: row.agreed_price_level || 'Padrão',
     visitFrequency: row.visit_frequency || '15 dias',
+    defaultLogisticsType: (parsedLogistics[row.id]?.type || 'combustivel') as any,
+    defaultLogisticsCost: parsedLogistics[row.id]?.cost ?? 50.0,
     notes: row.notes,
     status: row.status || 'Ativo',
     productsOnSiteCount: 0,
