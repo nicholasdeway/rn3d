@@ -434,23 +434,59 @@ export function App() {
     let isMounted = true;
     setDataLoading(true);
 
-    Promise.all([fetchProducts(), fetchClients(), fetchOrders(), fetchQuotes()])
-      .then(([dbProducts, dbClients, dbOrders, dbQuotes]) => {
+    const loadAllData = async () => {
+      try {
+        const [dbProducts, dbClients, dbOrders, dbQuotes] = await Promise.all([
+          fetchProducts(),
+          fetchClients(),
+          fetchOrders(),
+          fetchQuotes(),
+        ]);
         if (!isMounted) return;
         setProducts(dbProducts);
         setClients(dbClients);
         setOrders(dbOrders);
         setQuotes(dbQuotes);
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('Erro ao carregar dados do Supabase:', err);
-      })
-      .finally(() => {
+      } finally {
         if (isMounted) setDataLoading(false);
-      });
+      }
+    };
+
+    loadAllData();
+
+    // 100% Automatic Background Sync Loop every 12 seconds
+    const intervalId = setInterval(async () => {
+      if (!isMounted) return;
+      try {
+        const [dbProducts, dbClients, dbOrders, dbQuotes] = await Promise.all([
+          fetchProducts(),
+          fetchClients(),
+          fetchOrders(),
+          fetchQuotes(),
+        ]);
+        if (!isMounted) return;
+        setProducts(dbProducts);
+        setClients(dbClients);
+        setOrders(dbOrders);
+        setQuotes(dbQuotes);
+      } catch (e) {
+        // Silent background sync error
+      }
+    }, 12000);
+
+    // Immediate sync when user refocuses app tab
+    const handleFocus = () => {
+      if (!isMounted) return;
+      loadAllData();
+    };
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       isMounted = false;
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [user]);
 
