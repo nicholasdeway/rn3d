@@ -16,6 +16,8 @@ import {
   Sparkles,
   ShoppingCart,
   Truck,
+  MessageCircle,
+  Share2,
 } from 'lucide-react';
 
 interface QuotesViewProps {
@@ -242,6 +244,80 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
     setDiscount(0);
   };
 
+  const handleShareQuoteViaWhatsApp = (quote: Quote) => {
+    const matchingClient = clients.find(
+      (c) => c.id === quote.clientId || c.name.toLowerCase().trim() === quote.clientName.toLowerCase().trim()
+    );
+    const rawPhone = quote.clientPhone || matchingClient?.whatsapp || matchingClient?.phone || '';
+    const cleanPhone = rawPhone.replace(/\D/g, '');
+
+    const itemsText = (quote.items || [])
+      .map(
+        (item, idx) =>
+          `  ${idx + 1}. *${item.quantity}x* ${item.description} - R$ ${item.unitPrice.toFixed(2).replace('.', ',')} (Subtotal: R$ ${item.subtotal.toFixed(2).replace('.', ',')})`
+      )
+      .join('\n');
+
+    const lines = [
+      `📋 *ORÇAMENTO COMERCIAL - RN 3D SOLUÇÕES*`,
+      `──────────────────────────`,
+      `📄 *Orçamento:* #${quote.id}`,
+      `📅 *Data:* ${quote.date}`,
+      `⏳ *Validade:* ${quote.validityDays || 7} dias`,
+      `👤 *Cliente:* ${quote.clientName}`,
+      `──────────────────────────`,
+      `📦 *ITENS DO ORÇAMENTO:*`,
+      itemsText,
+      `──────────────────────────`,
+      `💰 *Subtotal:* R$ ${quote.subtotal.toFixed(2).replace('.', ',')}`,
+    ];
+
+    if (quote.discount > 0) {
+      lines.push(`🏷️ *Desconto:* -R$ ${quote.discount.toFixed(2).replace('.', ',')}`);
+    }
+
+    lines.push(`💵 *VALOR TOTAL:* R$ ${quote.total.toFixed(2).replace('.', ',')}`);
+    lines.push(`──────────────────────────`);
+
+    if (quote.paymentTerms) {
+      lines.push(`💳 *Forma de Pagamento:* ${quote.paymentTerms}`);
+    }
+    if (quote.productionSlaDays) {
+      lines.push(`⏱️ *Prazo de Produção:* ${quote.productionSlaDays} dias úteis`);
+    }
+    if (quote.notes) {
+      lines.push(`📝 *Observações:* ${quote.notes}`);
+    }
+
+    lines.push(``);
+    lines.push(`✨ *RN 3D Soluções* | CNPJ: 67.570.155/0001-34`);
+    lines.push(`WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes`);
+    lines.push(`Aguardamos sua aprovação para iniciar a produção! 🚀`);
+
+    const fullMessage = lines.join('\n');
+
+    let url = '';
+    if (cleanPhone && cleanPhone.length >= 10) {
+      const fullPhone = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
+      url = `https://wa.me/${fullPhone}?text=${encodeURIComponent(fullMessage)}`;
+    } else {
+      url = `https://api.whatsapp.com/send?text=${encodeURIComponent(fullMessage)}`;
+    }
+
+    if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      navigator
+        .share({
+          title: `Orçamento RN3D #${quote.id}`,
+          text: fullMessage,
+        })
+        .catch(() => {
+          window.open(url, '_blank');
+        });
+    } else {
+      window.open(url, '_blank');
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Header */}
@@ -331,21 +407,28 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   {/* Card Actions */}
                   <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
                     <button
+                      onClick={() => handleShareQuoteViaWhatsApp(q)}
+                      className="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                      title="Enviar orçamento formatado via WhatsApp"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                    </button>
+                    <button
                       onClick={() => setPreviewPdfQuote(q)}
-                      className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                      className="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
                     >
                       <Printer className="w-3.5 h-3.5" /> PDF
                     </button>
                     {isConverted ? (
-                      <span className="flex-1 py-2 bg-emerald-100 text-emerald-800 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 border border-emerald-300 text-xs text-center">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Pedido Gerado
+                      <span className="py-2 px-3 bg-emerald-100 text-emerald-800 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 border border-emerald-300 text-xs text-center">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Gerado
                       </span>
                     ) : (
                       <button
                         onClick={() => onConvertQuoteToOrder(q)}
-                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs text-xs transition-colors"
+                        className="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs text-xs transition-colors"
                       >
-                        <ShoppingCart className="w-3.5 h-3.5" /> Converter Pedido
+                        <ShoppingCart className="w-3.5 h-3.5" /> Converter
                       </button>
                     )}
                   </div>
@@ -368,7 +451,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 font-medium">
                   {filteredQuotes.map((q) => {
                     const isConverted =
                       q.status === 'Convertido em Pedido' ||
@@ -397,6 +480,13 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                         </td>
                         <td className="p-4 text-right space-x-2">
                           <button
+                            onClick={() => handleShareQuoteViaWhatsApp(q)}
+                            className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer text-xs transition-colors"
+                            title="Enviar orçamento formatado via WhatsApp"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                          </button>
+                          <button
                             onClick={() => setPreviewPdfQuote(q)}
                             className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer text-xs"
                           >
@@ -404,7 +494,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                           </button>
                           {isConverted ? (
                             <span className="px-3.5 py-1.5 bg-emerald-100 text-emerald-800 rounded-lg font-bold inline-flex items-center gap-1.5 border border-emerald-300 text-xs shadow-2xs">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Convertido em Pedido
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Convertido
                             </span>
                           ) : (
                             <button
@@ -1085,7 +1175,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
             </div>
 
             {/* Modal Bottom Actions (Hidden on Print) */}
-            <div className="no-print p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+            <div className="no-print p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-2.5">
               <button
                 onClick={() => setPreviewPdfQuote(null)}
                 className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold cursor-pointer text-xs"
@@ -1093,8 +1183,14 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 Fechar
               </button>
               <button
+                onClick={() => handleShareQuoteViaWhatsApp(previewPdfQuote)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs cursor-pointer shadow-xs"
+              >
+                <MessageCircle className="w-4 h-4" /> Enviar pelo WhatsApp
+              </button>
+              <button
                 onClick={() => window.print()}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs cursor-pointer shadow-xs"
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs cursor-pointer shadow-xs"
               >
                 <Printer className="w-4 h-4" /> Baixar / Imprimir PDF
               </button>
