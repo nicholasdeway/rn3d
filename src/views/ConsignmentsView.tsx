@@ -239,62 +239,64 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
       {/* Nova Consignação Modal Wizard */}
       {isWizardOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-4xl rounded-2xl border border-slate-300 overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-2 sm:p-4">
+          <div className="bg-white w-full max-w-6xl rounded-2xl border border-slate-300 overflow-hidden max-h-[94vh] flex flex-col animate-in fade-in zoom-in-95 duration-150 shadow-2xl">
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <Boxes className="w-5 h-5 text-indigo-600" />
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
+              <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                <Boxes className="w-5 h-5 text-indigo-600 shrink-0" />
                 Registrar Nova Consignação em Cliente
               </h3>
               <button
                 onClick={() => setIsWizardOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600"
+                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitConsignment} className="p-6 overflow-y-auto space-y-6 text-xs flex-1">
+            <form onSubmit={handleSubmitConsignment} className="p-4 sm:p-6 overflow-y-auto space-y-6 text-xs flex-1">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column (2/3): Form & Dynamic Item Table */}
                 <div className="lg:col-span-2 space-y-5">
-                  {/* Select Client */}
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Selecionar Cliente / Loja *</label>
-                    <select
-                      value={selectedClientId}
-                      onChange={(e) => setSelectedClientId(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 text-xs"
-                    >
-                      {clients.map((cli) => (
-                        <option key={cli.id} value={cli.id}>
-                          {cli.name} ({cli.city} - {cli.state})
-                        </option>
-                      ))}
-                    </select>
+                  {/* Client Select & Product Search in Responsive Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Selecionar Cliente / Loja *</label>
+                      <select
+                        value={selectedClientId}
+                        onChange={(e) => setSelectedClientId(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl font-bold text-slate-800 text-xs"
+                      >
+                        {clients.map((cli) => (
+                          <option key={cli.id} value={cli.id}>
+                            {cli.name} ({cli.city} - {cli.state})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                    {selectedClient && (
-                      <div className="mt-2 p-3 bg-slate-50 rounded-xl border border-slate-200/60 text-xs space-y-1 text-slate-600">
-                        <p>
-                          <strong>Endereço:</strong> {selectedClient.street}, {selectedClient.number} -{' '}
-                          {selectedClient.neighborhood}, {selectedClient.city}
-                        </p>
-                        <p>
-                          <strong>Responsável:</strong> {selectedClient.responsible} ({selectedClient.phone})
-                        </p>
-                      </div>
-                    )}
-                  {/* Add Product Search Combobox with Thumbnails */}
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Buscar Produto para Adicionar</label>
-                    <ProductSelectCombobox
-                      products={products}
-                      onSelectProduct={handleAddProductToConsignment}
-                      isCashPayment={false}
-                    />
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Buscar Produto para Adicionar</label>
+                      <ProductSelectCombobox
+                        products={products}
+                        onSelectProduct={handleAddProductToConsignment}
+                        isCashPayment={false}
+                      />
+                    </div>
                   </div>
-                  </div>
+
+                  {selectedClient && (
+                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/60 text-xs space-y-1 text-slate-600">
+                      <p>
+                        <strong>Endereço:</strong> {selectedClient.street}, {selectedClient.number} -{' '}
+                        {selectedClient.neighborhood}, {selectedClient.city}
+                      </p>
+                      <p>
+                        <strong>Responsável:</strong> {selectedClient.responsible} ({selectedClient.phone})
+                      </p>
+                    </div>
+                  )}
 
                   {/* Dynamic Items Table */}
                   <div className="space-y-2">
@@ -305,8 +307,8 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                         Nenhum produto adicionado ainda. Utilize a busca acima para incluir produtos.
                       </div>
                     ) : (
-                      <div className="border border-slate-200 rounded-xl overflow-hidden">
-                        <table className="w-full text-left text-xs">
+                      <div className="border border-slate-200 rounded-xl overflow-hidden overflow-x-auto bg-white">
+                        <table className="w-full text-left text-xs min-w-[500px]">
                           <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
                             <tr>
                               <th className="p-3">Produto</th>
@@ -330,16 +332,16 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                                   />
                                 </td>
                                 <td className="p-3 text-right text-slate-700">
-                                  R$ {item.unitPrice.toFixed(2)}
+                                  R$ {item.unitPrice.toFixed(2).replace('.', ',')}
                                 </td>
                                 <td className="p-3 text-right font-bold text-emerald-600">
-                                  R$ {item.subtotal.toFixed(2)}
+                                  R$ {item.subtotal.toFixed(2).replace('.', ',')}
                                 </td>
                                 <td className="p-3 text-center">
                                   <button
                                     type="button"
                                     onClick={() => handleRemoveItem(idx)}
-                                    className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                                    className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </button>
@@ -368,7 +370,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                       <div className="flex justify-between">
                         <span className="text-slate-500">Valor em Mercadorias:</span>
                         <span className="font-extrabold text-emerald-600 text-sm">
-                          R$ {totalValuation.toFixed(2)}
+                          R$ {totalValuation.toFixed(2).replace('.', ',')}
                         </span>
                       </div>
                       <div>
@@ -377,7 +379,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                           type="date"
                           value={deliveryDate}
                           onChange={(e) => setDeliveryDate(e.target.value)}
-                          className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-white"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white font-medium"
                         />
                       </div>
                       <div>
@@ -387,7 +389,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
                           placeholder="Observações de entrega..."
-                          className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-white"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white"
                         />
                       </div>
                     </div>
@@ -396,7 +398,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                   <button
                     type="submit"
                     disabled={items.length === 0}
-                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-sm transition-colors"
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-sm transition-colors cursor-pointer"
                   >
                     Registrar Consignação
                   </button>
