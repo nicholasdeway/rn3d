@@ -239,24 +239,24 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
       {/* Nova Consignação Modal Wizard */}
       {isWizardOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-4xl rounded-2xl border border-slate-300 overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150 shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-2 sm:p-4 md:p-6">
+          <div className="bg-white w-full max-w-[96vw] xl:max-w-7xl rounded-2xl border border-slate-300 overflow-hidden max-h-[95vh] flex flex-col animate-in fade-in zoom-in-95 duration-150 shadow-2xl">
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <Boxes className="w-5 h-5 text-indigo-600" />
+            <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h3 className="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
+                <Boxes className="w-6 h-6 text-indigo-600" />
                 Registrar Nova Consignação em Cliente
               </h3>
               <button
                 type="button"
                 onClick={() => setIsWizardOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                className="p-2 rounded-xl text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitConsignment} className="p-6 overflow-y-auto space-y-6 text-xs flex-1">
+            <form onSubmit={handleSubmitConsignment} className="p-6 sm:p-8 overflow-y-auto space-y-6 text-xs flex-1">
               {/* 1. Client & Delivery Date Header Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2">

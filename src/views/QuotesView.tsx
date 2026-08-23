@@ -431,18 +431,18 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
       {/* Cadastrar Orçamento Modal */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-4xl rounded-2xl border border-slate-300 overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <FileText className="w-5 h-5 text-indigo-600" />
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-2 sm:p-4 md:p-6">
+          <div className="bg-white w-full max-w-[96vw] xl:max-w-7xl rounded-2xl border border-slate-300 overflow-hidden max-h-[95vh] flex flex-col animate-in fade-in zoom-in-95 duration-150 shadow-2xl">
+            <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <h3 className="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
+                <FileText className="w-6 h-6 text-indigo-600" />
                 Criar Novo Orçamento Comercial
               </h3>
               <button
                 onClick={() => setIsFormOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                className="p-2 rounded-xl text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
