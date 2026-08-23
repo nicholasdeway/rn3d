@@ -166,6 +166,9 @@ export interface ExchangeNote {
   visitId?: string;
   clientId: string;
   clientName: string;
+  destinationClientId?: string;
+  destinationClientName?: string;
+  type?: 'troca_local' | 'migracao_lojas' | 'recolhimento_oficina';
   date: string;
   responsible: string;
   itemsRemoved: {

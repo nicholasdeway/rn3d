@@ -781,6 +781,129 @@ export function App() {
     }
   };
 
+  const handleExecuteExchange = (newExchange: ExchangeNote) => {
+    // 1. Add exchange note to list
+    setExchanges((prev) => [newExchange, ...prev]);
+
+    const sourceId = newExchange.clientId;
+    const destId = newExchange.destinationClientId;
+    const isOffice = newExchange.type === 'recolhimento_oficina' || destId === 'OFFICE' || !destId;
+
+    const itemsRemoved = newExchange.itemsRemoved; // items taken out of source client
+
+    // 2. Decrement items from Source Client inventory & optional increment at destination
+    setClientInventories((prev) => {
+      const sourceList = prev[sourceId] || [];
+      const updatedSource = sourceList
+        .map((item) => {
+          const removed = itemsRemoved.find(
+            (r) => r.productId === item.productId || r.productName.toLowerCase() === item.productName.toLowerCase()
+          );
+          if (removed) {
+            const newQty = Math.max(0, item.quantityOnSite - removed.quantity);
+            return {
+              ...item,
+              quantityOnSite: newQty,
+              valuation: newQty * item.unitPrice,
+            };
+          }
+          return item;
+        })
+        .filter((item) => item.quantityOnSite > 0);
+
+      // If destination is another client
+      if (!isOffice && destId) {
+        const destList = prev[destId] || [];
+        let updatedDest = [...destList];
+
+        itemsRemoved.forEach((remItem) => {
+          const matchingProduct = products.find(
+            (p) => p.id === remItem.productId || p.name.toLowerCase() === remItem.productName.toLowerCase()
+          );
+          const unitPrice = matchingProduct ? matchingProduct.standardPrice : 8.0;
+
+          const existingIdx = updatedDest.findIndex(
+            (i) => i.productId === remItem.productId || i.productName.toLowerCase() === remItem.productName.toLowerCase()
+          );
+
+          if (existingIdx >= 0) {
+            const existing = updatedDest[existingIdx];
+            const newQty = existing.quantityOnSite + remItem.quantity;
+            updatedDest[existingIdx] = {
+              ...existing,
+              quantityOnSite: newQty,
+              valuation: newQty * existing.unitPrice,
+            };
+          } else {
+            updatedDest.push({
+              productId: remItem.productId,
+              productName: remItem.productName,
+              quantityOnSite: remItem.quantity,
+              unitPrice: unitPrice,
+              valuation: remItem.quantity * unitPrice,
+              daysOnSite: 0,
+              status: 'Normal',
+            });
+          }
+        });
+
+        return {
+          ...prev,
+          [sourceId]: updatedSource,
+          [destId]: updatedDest,
+        };
+      }
+
+      return {
+        ...prev,
+        [sourceId]: updatedSource,
+      };
+    });
+
+    // 3. Update Client Metrics (productsOnSiteCount)
+    setClients((prev) =>
+      prev.map((cli) => {
+        if (cli.id === sourceId) {
+          const totalQtyRemoved = itemsRemoved.reduce((acc, i) => acc + i.quantity, 0);
+          const newCount = Math.max(0, cli.productsOnSiteCount - totalQtyRemoved);
+          return {
+            ...cli,
+            productsOnSiteCount: newCount,
+          };
+        }
+        if (!isOffice && destId && cli.id === destId) {
+          const totalQtyAdded = itemsRemoved.reduce((acc, i) => acc + i.quantity, 0);
+          return {
+            ...cli,
+            productsOnSiteCount: cli.productsOnSiteCount + totalQtyAdded,
+          };
+        }
+        return cli;
+      })
+    );
+
+    // 4. If returning to Workshop, increment central stock
+    if (isOffice) {
+      setProducts((prev) =>
+        prev.map((p) => {
+          const removed = itemsRemoved.find(
+            (r) => r.productId === p.id || r.productName.toLowerCase() === p.name.toLowerCase()
+          );
+          if (removed) {
+            return {
+              ...p,
+              currentStock: p.currentStock + removed.quantity,
+            };
+          }
+          return p;
+        })
+      );
+      showToast(`Troca / Recolhimento ${newExchange.id} concluído! Peças retornadas ao Estoque Geral.`, 'success');
+    } else {
+      showToast(`Troca / Migração ${newExchange.id} concluída! Peças transferidas para a nova loja.`, 'success');
+    }
+  };
+
   const handleStartVisit = (clientId: string) => {
     setActiveVisitClientId(clientId);
   };
@@ -1040,7 +1163,16 @@ export function App() {
                 <VisitsView visits={visits} onStartVisit={handleStartVisit} />
               )}
 
-              {currentView === 'exchanges' && <ExchangesView exchanges={exchanges} />}
+              {currentView === 'exchanges' && (
+                <ExchangesView
+                  exchanges={exchanges}
+                  clients={clients}
+                  clientInventories={clientInventories}
+                  products={products}
+                  onExecuteExchange={handleExecuteExchange}
+                  preselectedClientId={preselectedClientIdForAction}
+                />
+              )}
 
               {currentView === 'quotes' && (
                 <QuotesView
@@ -1072,7 +1204,14 @@ export function App() {
               {currentView === 'inventory-movements' && <MovementsView movements={movements} />}
 
               {currentView === 'inventory-clients' && (
-                <ClientInventoryView clients={clients} clientInventories={clientInventories} />
+                <ClientInventoryView
+                  clients={clients}
+                  clientInventories={clientInventories}
+                  onNavigateToExchanges={(cliId) => {
+                    setPreselectedClientIdForAction(cliId);
+                    setCurrentView('exchanges');
+                  }}
+                />
               )}
 
               {currentView === 'financial' && (

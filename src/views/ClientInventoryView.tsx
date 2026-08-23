@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Client, ClientInventoryItem } from '../types';
-import { Store, ChevronDown, ChevronUp, Boxes, DollarSign, MapPin } from 'lucide-react';
+import { Store, ChevronDown, ChevronUp, Boxes, DollarSign, MapPin, Repeat } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 
 interface ClientInventoryViewProps {
   clients: Client[];
   clientInventories: Record<string, ClientInventoryItem[]>;
+  onNavigateToExchanges?: (clientId: string) => void;
 }
 
 export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
   clients,
   clientInventories,
+  onNavigateToExchanges,
 }) => {
   const [expandedClientId, setExpandedClientId] = useState<string | null>('cli-1');
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
@@ -119,7 +121,21 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
+                  {onNavigateToExchanges && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigateToExchanges(cli.id);
+                      }}
+                      className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                      title="Migrar/Remanejar estoque desta loja para outra"
+                    >
+                      <Repeat className="w-3.5 h-3.5" />
+                      <span>Remanejar Estoque</span>
+                    </button>
+                  )}
+
                   <div className="text-right text-xs">
                     <span className="font-bold text-slate-900 block">
                       {cli.productsOnSiteCount} produtos
@@ -138,9 +154,19 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
               {/* Accordion Content */}
               {isExpanded && (
                 <div className="p-5 bg-slate-50 border-t border-slate-100">
-                  <h4 className="font-bold text-slate-800 text-xs mb-3">
-                    Itens Presentes no Estabelecimento ({cli.name}):
-                  </h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-bold text-slate-800 text-xs">
+                      Itens Presentes no Estabelecimento ({cli.name}):
+                    </h4>
+                    {onNavigateToExchanges && itemsAtStore.length > 0 && (
+                      <button
+                        onClick={() => onNavigateToExchanges(cli.id)}
+                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1"
+                      >
+                        <Repeat className="w-3.5 h-3.5" /> Migrar peças encalhadas desta loja ➔
+                      </button>
+                    )}
+                  </div>
 
                   {itemsAtStore.length === 0 ? (
                     <p className="text-xs text-slate-400 italic">Nenhum produto cadastrado nesta loja.</p>
