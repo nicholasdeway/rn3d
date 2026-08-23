@@ -184,7 +184,7 @@ export async function updateClient(id: string, updates: Partial<Client>): Promis
   if (!isLocalId) {
     query = query.eq('id', id);
   } else if (updates.name) {
-    query = query.eq('name', updates.name);
+    query = query.ilike('name', updates.name.trim());
   }
 
   let { data, error } = await query.select();
@@ -197,7 +197,7 @@ export async function updateClient(id: string, updates: Partial<Client>): Promis
     if (!isLocalId) {
       retryQuery = retryQuery.eq('id', id);
     } else if (updates.name) {
-      retryQuery = retryQuery.eq('name', updates.name);
+      retryQuery = retryQuery.ilike('name', updates.name.trim());
     }
     const retry = await retryQuery.select();
     data = retry.data;
