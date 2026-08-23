@@ -28,6 +28,8 @@ import {
   ImageIcon,
   Users,
   Loader2,
+  Plus,
+  Minus,
 } from 'lucide-react';
 
 interface ClientProfileViewProps {
@@ -41,6 +43,8 @@ interface ClientProfileViewProps {
   orders?: Order[];
   quotes?: Quote[];
   onUpdateClient?: (updatedClient: Client) => void;
+  onUpdateOrderProgress?: (orderId: string, newProgressPct: number) => void;
+  onUpdateOrderStatus?: (orderId: string, newStatus: Order['status']) => void;
 }
 
 export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
@@ -54,6 +58,8 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
   orders = [],
   quotes = [],
   onUpdateClient,
+  onUpdateOrderProgress,
+  onUpdateOrderStatus,
 }) => {
   const [activeTab, setActiveTab] = useState<
     'overview' | 'inventory' | 'visits' | 'movements' | 'quotes' | 'orders'
@@ -495,9 +501,41 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                   <div key={o.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono font-bold text-indigo-600 text-xs">{o.id}</span>
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">
-                        {o.status}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newPct = Math.max(0, o.productionProgressPct - 5);
+                            if (onUpdateOrderProgress) onUpdateOrderProgress(o.id, newPct);
+                          }}
+                          disabled={o.productionProgressPct <= 0}
+                          className="p-1 bg-white hover:bg-slate-200 text-slate-700 disabled:opacity-30 rounded-md cursor-pointer transition-colors active:scale-95 border border-slate-200"
+                          title="Diminuir 5%"
+                        >
+                          <Minus className="w-3 h-3 text-rose-500" />
+                        </button>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
+                          o.status === 'Entregue'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold'
+                            : o.productionProgressPct === 100
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                        }`}>
+                          {o.status} ({o.productionProgressPct}%)
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newPct = Math.min(100, o.productionProgressPct + 5);
+                            if (onUpdateOrderProgress) onUpdateOrderProgress(o.id, newPct);
+                          }}
+                          disabled={o.productionProgressPct >= 100}
+                          className="p-1 bg-white hover:bg-slate-200 text-slate-700 disabled:opacity-30 rounded-md cursor-pointer transition-colors active:scale-95 border border-slate-200"
+                          title="Aumentar 5%"
+                        >
+                          <Plus className="w-3 h-3 text-emerald-600" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between gap-2 text-xs">
@@ -514,8 +552,26 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                     </div>
 
                     <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px]">
-                      <span className="text-slate-500 font-medium">Pagamento:</span>
-                      <span className="font-bold text-slate-800">{o.paymentStatusText}</span>
+                      <span className="text-slate-500 font-medium">Pagamento: <strong className="text-slate-800">{o.paymentStatusText}</strong></span>
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer bg-white px-2.5 py-1 rounded-lg border border-slate-200 font-semibold select-none">
+                        <input
+                          type="checkbox"
+                          checked={o.status === 'Entregue'}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            if (isChecked) {
+                              if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, 'Entregue');
+                            } else {
+                              const fallbackStatus = o.productionProgressPct === 100 ? 'Pronto' : o.productionProgressPct > 0 ? 'Em produção' : 'Novo';
+                              if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, fallbackStatus);
+                            }
+                          }}
+                          className="w-3.5 h-3.5 accent-emerald-600 rounded cursor-pointer"
+                        />
+                        <span className={o.status === 'Entregue' ? 'text-emerald-700 font-bold' : 'text-slate-600'}>
+                          {o.status === 'Entregue' ? '✅ Entregue' : '📦 Não entregue'}
+                        </span>
+                      </label>
                     </div>
                   </div>
                 ))}
@@ -531,7 +587,8 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                       <th className="p-4 text-center">Itens</th>
                       <th className="p-4 text-right">Valor Total</th>
                       <th className="p-4">Pagamento</th>
-                      <th className="p-4">Status</th>
+                      <th className="p-4">Progresso Impressão 3D</th>
+                      <th className="p-4">Entrega</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -545,9 +602,62 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                         </td>
                         <td className="p-4 font-semibold text-slate-700">{o.paymentStatusText}</td>
                         <td className="p-4">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700">
-                            {o.status}
-                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newPct = Math.max(0, o.productionProgressPct - 5);
+                                if (onUpdateOrderProgress) onUpdateOrderProgress(o.id, newPct);
+                              }}
+                              disabled={o.productionProgressPct <= 0}
+                              className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 rounded-md cursor-pointer transition-colors active:scale-95"
+                              title="Diminuir 5%"
+                            >
+                              <Minus className="w-3 h-3 text-rose-500" />
+                            </button>
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
+                              o.status === 'Entregue'
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold'
+                                : o.productionProgressPct === 100
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            }`}>
+                              {o.status} ({o.productionProgressPct}%)
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newPct = Math.min(100, o.productionProgressPct + 5);
+                                if (onUpdateOrderProgress) onUpdateOrderProgress(o.id, newPct);
+                              }}
+                              disabled={o.productionProgressPct >= 100}
+                              className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 rounded-md cursor-pointer transition-colors active:scale-95"
+                              title="Aumentar 5%"
+                            >
+                              <Plus className="w-3 h-3 text-emerald-600" />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <label className="inline-flex items-center gap-1.5 cursor-pointer bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-semibold select-none">
+                            <input
+                              type="checkbox"
+                              checked={o.status === 'Entregue'}
+                              onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                if (isChecked) {
+                                  if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, 'Entregue');
+                                } else {
+                                  const fallbackStatus = o.productionProgressPct === 100 ? 'Pronto' : o.productionProgressPct > 0 ? 'Em produção' : 'Novo';
+                                  if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, fallbackStatus);
+                                }
+                              }}
+                              className="w-3.5 h-3.5 accent-emerald-600 rounded cursor-pointer"
+                            />
+                            <span className={o.status === 'Entregue' ? 'text-emerald-700 font-bold' : 'text-slate-600'}>
+                              {o.status === 'Entregue' ? '✅ Entregue' : '📦 Não entregue'}
+                            </span>
+                          </label>
                         </td>
                       </tr>
                     ))}

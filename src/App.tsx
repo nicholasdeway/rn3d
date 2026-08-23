@@ -704,6 +704,35 @@ export function App() {
     }
   };
 
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id === orderId) {
+          return {
+            ...o,
+            status: newStatus,
+            timeline: [
+              {
+                date: `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
+                title: `Status do Pedido Atualizado: ${newStatus}`,
+              },
+              ...(o.timeline || []),
+            ],
+          };
+        }
+        return o;
+      })
+    );
+
+    showToast(`Status do Pedido ${orderId} alterado para "${newStatus}"!`, 'info');
+
+    try {
+      await updateOrderStatus(orderId, newStatus);
+    } catch (err) {
+      console.error('Erro ao atualizar status no Supabase:', err);
+    }
+  };
+
   const handleUpdateOrderPayment = (orderId: string, additionalAmount: number) => {
     setOrders((prev) =>
       prev.map((o) => {
@@ -973,6 +1002,8 @@ export function App() {
                     setCurrentView('quotes');
                   }}
                   onUpdateClient={handleUpdateClient}
+                  onUpdateOrderProgress={handleUpdateOrderProgress}
+                  onUpdateOrderStatus={handleUpdateOrderStatus}
                 />
               )}
 
@@ -1011,6 +1042,7 @@ export function App() {
                   products={products}
                   searchQuery={globalSearchQuery}
                   onUpdateOrderProgress={handleUpdateOrderProgress}
+                  onUpdateOrderStatus={handleUpdateOrderStatus}
                 />
               )}
 

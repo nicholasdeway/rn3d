@@ -8,6 +8,7 @@ interface OrdersViewProps {
   products?: Product[];
   searchQuery?: string;
   onUpdateOrderProgress?: (orderId: string, newProgressPct: number) => void;
+  onUpdateOrderStatus?: (orderId: string, newStatus: Order['status']) => void;
 }
 
 export const OrdersView: React.FC<OrdersViewProps> = ({
@@ -15,11 +16,11 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   products = [],
   searchQuery = '',
   onUpdateOrderProgress,
+  onUpdateOrderStatus,
 }) => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [previewPdfOrder, setPreviewPdfOrder] = useState<Order | null>(null);
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
-
 
   const filteredOrders = orders.filter((o) => {
     if (!searchQuery || searchQuery.trim() === '') return true;
@@ -44,7 +45,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             Pedidos de Venda e Produção
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Acompanhe a fila de impressão 3D, status de faturamento, descrições e emissão de PDFs.
+            Acompanhe a fila de impressão 3D, regulagem de 5 em 5%, controle de entrega, faturamento e PDFs.
           </p>
         </div>
       </div>
@@ -86,10 +87,12 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     >
                       <Minus className="w-3 h-3 text-rose-500" />
                     </button>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
-                      o.productionProgressPct === 100
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                        : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
+                      o.status === 'Entregue'
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold'
+                        : o.productionProgressPct === 100
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : 'bg-indigo-50 text-indigo-700 border-indigo-200'
                     }`}>
                       {o.status} ({o.productionProgressPct}%)
                     </span>
@@ -108,7 +111,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                   </div>
                 </div>
 
-                {/* Card Body: Client Name, Items & Total */}
+                {/* Card Body: Client Name, Items, Delivery Checkbox & Total */}
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h4 className="font-bold text-slate-900 text-sm">{o.clientName}</h4>
@@ -125,6 +128,32 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                       R$ {o.totalValue.toFixed(2).replace('.', ',')}
                     </span>
                   </div>
+                </div>
+
+                {/* Delivery Toggle Checkbox for Mobile */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+                  <label
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-2 cursor-pointer bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 font-semibold select-none transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={o.status === 'Entregue'}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        if (isChecked) {
+                          if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, 'Entregue');
+                        } else {
+                          const fallbackStatus = o.productionProgressPct === 100 ? 'Pronto' : o.productionProgressPct > 0 ? 'Em produção' : 'Novo';
+                          if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, fallbackStatus);
+                        }
+                      }}
+                      className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                    />
+                    <span className={o.status === 'Entregue' ? 'text-emerald-700 font-bold' : 'text-slate-600'}>
+                      {o.status === 'Entregue' ? '✅ Entregue ao cliente' : '📦 Não entregue (Pendente)'}
+                    </span>
+                  </label>
                 </div>
 
                 {/* Card Actions */}
@@ -165,6 +194,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     <th className="p-4 text-right">Valor</th>
                     <th className="p-4">Pagamento</th>
                     <th className="p-4">Progresso Impressão 3D</th>
+                    <th className="p-4">Status Entrega</th>
                     <th className="p-4 text-right">Ação</th>
                   </tr>
                 </thead>
@@ -198,9 +228,11 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                             <Minus className="w-3 h-3 text-rose-500" />
                           </button>
                           <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
-                            o.productionProgressPct === 100
-                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                              : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            o.status === 'Entregue'
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold'
+                              : o.productionProgressPct === 100
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
                           }`}>
                             {o.status} ({o.productionProgressPct}%)
                           </span>
@@ -217,6 +249,30 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                             <Plus className="w-3 h-3 text-emerald-600" />
                           </button>
                         </div>
+                      </td>
+                      <td className="p-4">
+                        <label
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1.5 cursor-pointer bg-slate-50 hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 text-xs font-semibold select-none transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={o.status === 'Entregue'}
+                            onChange={(e) => {
+                              const isChecked = e.target.checked;
+                              if (isChecked) {
+                                if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, 'Entregue');
+                              } else {
+                                const fallbackStatus = o.productionProgressPct === 100 ? 'Pronto' : o.productionProgressPct > 0 ? 'Em produção' : 'Novo';
+                                if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, fallbackStatus);
+                              }
+                            }}
+                            className="w-3.5 h-3.5 accent-emerald-600 rounded cursor-pointer"
+                          />
+                          <span className={o.status === 'Entregue' ? 'text-emerald-700 font-bold' : 'text-slate-600'}>
+                            {o.status === 'Entregue' ? '✅ Entregue' : '📦 Não entregue'}
+                          </span>
+                        </label>
                       </td>
                       <td className="p-4 text-right space-x-2">
                         <button
@@ -395,6 +451,34 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                       {pct === 0 ? '0% (Fila)' : pct === 100 ? '100% (Pronto)' : `${pct}%`}
                     </button>
                   ))}
+                </div>
+
+                {/* Delivery Toggle Checkbox inside Modal */}
+                <div className="pt-3 border-t border-indigo-100/80 flex items-center justify-between text-xs">
+                  <span className="text-slate-700 font-bold flex items-center gap-1.5">
+                    <Truck className="w-4 h-4 text-indigo-600" /> Situação da Entrega:
+                  </span>
+                  <label className="inline-flex items-center gap-2 cursor-pointer bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs font-bold select-none hover:bg-slate-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={selectedOrder.status === 'Entregue'}
+                      onChange={(e) => {
+                        const isChecked = e.target.checked;
+                        if (isChecked) {
+                          if (onUpdateOrderStatus) onUpdateOrderStatus(selectedOrder.id, 'Entregue');
+                          setSelectedOrder((prev) => (prev ? { ...prev, status: 'Entregue' } : null));
+                        } else {
+                          const fallbackStatus = selectedOrder.productionProgressPct === 100 ? 'Pronto' : selectedOrder.productionProgressPct > 0 ? 'Em produção' : 'Novo';
+                          if (onUpdateOrderStatus) onUpdateOrderStatus(selectedOrder.id, fallbackStatus);
+                          setSelectedOrder((prev) => (prev ? { ...prev, status: fallbackStatus } : null));
+                        }
+                      }}
+                      className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                    />
+                    <span className={selectedOrder.status === 'Entregue' ? 'text-emerald-700' : 'text-slate-700'}>
+                      {selectedOrder.status === 'Entregue' ? '✅ Entregue ao Cliente' : '📦 Marcar como Entregue'}
+                    </span>
+                  </label>
                 </div>
               </div>
 
