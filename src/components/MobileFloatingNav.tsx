@@ -38,13 +38,13 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
 
   const primaryNavItems = [
     { id: 'dashboard' as ViewMode, label: 'INÍCIO', icon: LayoutDashboard },
-    { id: 'calculator' as ViewMode, label: 'CALC 3D', icon: Calculator },
+    { id: 'quotes' as ViewMode, label: 'ORÇAMENTO', icon: FileText },
     { id: 'orders' as ViewMode, label: 'PEDIDOS', icon: ShoppingCart },
     { id: 'products' as ViewMode, label: 'PRODUTOS', icon: Package },
   ];
 
   const dropdownMenuItems = [
-    { id: 'quotes' as ViewMode, label: 'Orçamentos', icon: FileText, color: 'text-indigo-400' },
+    { id: 'calculator' as ViewMode, label: 'Calculadora de Custos 3D', icon: Calculator, color: 'text-amber-400' },
     { id: 'consignments' as ViewMode, label: 'Consignações', icon: Boxes, color: 'text-purple-400' },
     { id: 'visits' as ViewMode, label: 'Visitas e Rotas', icon: MapPin, color: 'text-emerald-400' },
     { id: 'exchanges' as ViewMode, label: 'Trocas de Produtos', icon: Repeat, color: 'text-amber-400' },

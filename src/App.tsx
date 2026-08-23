@@ -956,7 +956,7 @@ export function App() {
           setCurrentView(mode);
           setActiveClientIdForProfile(null);
         }}
-        onQuickAction={() => setCurrentView('orders')}
+        onQuickAction={() => setCurrentView('quotes')}
       />
     </div>
   );
