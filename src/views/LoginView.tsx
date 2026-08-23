@@ -27,8 +27,8 @@ export const LoginView: React.FC = () => {
     try {
       const { error: authError } = await signInWithPassword(email, password);
       if (authError) {
-        setError(authError.message === 'Invalid login credentials' 
-          ? 'Credenciais inválidas. Verifique seu e-mail e senha.' 
+        setError(authError.message === 'Invalid login credentials'
+          ? 'Credenciais inválidas. Verifique seu e-mail e senha.'
           : authError.message);
       }
     } catch (err: any) {
@@ -46,7 +46,7 @@ export const LoginView: React.FC = () => {
 
       {/* Main Glassmorphic Card */}
       <div className="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 rounded-3xl p-8 shadow-2xl shadow-slate-950/50 relative z-10">
-        
+
         {/* Header Logo */}
         <div className="flex flex-col items-center text-center mb-8">
           <img
@@ -105,7 +105,7 @@ export const LoginView: React.FC = () => {
 
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
-              Senha Criptografada (JWT)
+              Senha Criptografada
             </label>
             <div className="relative">
               <Lock className="w-5 h-5 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -150,7 +150,7 @@ export const LoginView: React.FC = () => {
         {/* Security Footer Note */}
         <div className="mt-6 text-center text-[10px] text-slate-500 flex items-center justify-center gap-1.5">
           <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
-          <span>Autenticação protegida por JWT de 256-bits com SSL/TLS</span>
+          <span>Autenticação protegida</span>
         </div>
 
       </div>
