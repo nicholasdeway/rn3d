@@ -296,8 +296,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="px-4 py-2 bg-indigo-50/80 border border-indigo-100 rounded-xl flex items-center gap-2.5 shadow-xs">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <div className="hidden sm:flex px-4 py-2 bg-indigo-50/80 border border-indigo-100 rounded-xl items-center gap-2.5 shadow-xs">
             <div className="p-1.5 bg-indigo-600 text-white rounded-lg">
               <Package className="w-4 h-4" />
             </div>
@@ -307,24 +307,26 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             </div>
           </div>
 
-          {onSyncSupabase && (
-            <button
-              onClick={onSyncSupabase}
-              className="flex items-center justify-center gap-2 px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold shadow-sm transition-all shrink-0 cursor-pointer"
-              title="Enviar todos os produtos do sistema diretamente para o Supabase PostgreSQL"
-            >
-              <CloudUpload className="w-4 h-4 text-emerald-400 animate-pulse" />
-              Sincronizar Supabase
-            </button>
-          )}
+          <div className="flex flex-row items-center gap-2 w-full sm:w-auto">
+            {onSyncSupabase && (
+              <button
+                onClick={onSyncSupabase}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-2.5 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                title="Enviar todos os produtos do sistema diretamente para o Supabase PostgreSQL"
+              >
+                <CloudUpload className="w-4 h-4 text-emerald-400 animate-pulse shrink-0" />
+                <span className="text-[11px] sm:text-xs">Sincronizar Supabase</span>
+              </button>
+            )}
 
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            Novo Produto
-          </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4 shrink-0" />
+              <span className="text-[11px] sm:text-xs">Novo Produto</span>
+            </button>
+          </div>
         </div>
       </div>
 
