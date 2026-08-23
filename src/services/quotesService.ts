@@ -133,6 +133,21 @@ export async function updateQuoteStatus(quoteCode: string, newStatus: string): P
   return true;
 }
 
+export async function deleteQuote(quoteCode: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return true;
+
+  const { error } = await supabase
+    .from('quotes')
+    .delete()
+    .or(`quote_code.eq.${quoteCode},id.eq.${quoteCode}`);
+
+  if (error) {
+    console.error('Erro ao excluir orçamento no Supabase:', error.message);
+    return false;
+  }
+  return true;
+}
+
 export async function syncMissingQuotesToSupabase(missingQuotes: Quote[]): Promise<number> {
   if (!isSupabaseConfigured() || missingQuotes.length === 0) return 0;
 

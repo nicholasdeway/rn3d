@@ -160,6 +160,21 @@ export async function updateOrderProgress(
   return true;
 }
 
+export async function deleteOrder(orderCode: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return true;
+
+  const { error } = await supabase
+    .from('orders')
+    .delete()
+    .or(`order_code.eq.${orderCode},id.eq.${orderCode}`);
+
+  if (error) {
+    console.error('Erro ao excluir pedido no Supabase:', error.message);
+    return false;
+  }
+  return true;
+}
+
 
 export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promise<number> {
   if (!isSupabaseConfigured() || missingOrders.length === 0) return 0;

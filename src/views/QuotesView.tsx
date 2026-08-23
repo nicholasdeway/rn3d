@@ -105,11 +105,11 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
   // Internal Logistics Cost State (Memory per Client)
   const [internalLogisticsType, setInternalLogisticsType] = useState<'combustivel' | 'frete' | 'retirada'>('combustivel');
-  const [internalLogisticsCost, setInternalLogisticsCost] = useState<number>(50.0);
+  const [internalLogisticsCost, setInternalLogisticsCost] = useState<number>(0);
 
   const selectedClient = availableClientsList.find((c) => c.id === selectedClientId) || fallbackDefaultClient;
 
-  // Sync client logistics memory: Prioritize Client Profile setting, then localStorage, then default 50.0
+  // Sync client logistics memory: Prioritize Client Profile setting, then localStorage, then default 0.0
   React.useEffect(() => {
     if (!selectedClient) return;
 
@@ -127,7 +127,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
         const parsed = JSON.parse(saved);
         if (parsed && parsed[selectedClient.id]) {
           setInternalLogisticsType(parsed[selectedClient.id].type || 'combustivel');
-          setInternalLogisticsCost(Number(parsed[selectedClient.id].cost ?? 50.0));
+          setInternalLogisticsCost(Number(parsed[selectedClient.id].cost ?? 0));
           return;
         }
       }
@@ -135,10 +135,10 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
       console.error('Error loading client logistics memory:', e);
     }
 
-    // 3. Fallback default
+    // 3. Fallback default to 0
     setInternalLogisticsType('combustivel');
-    setInternalLogisticsCost(50.0);
-  }, [selectedClient, selectedClientId]);
+    setInternalLogisticsCost(0);
+  }, [selectedClient, selectedClientId, isFormOpen]);
 
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
 
@@ -468,7 +468,19 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   <label className="block font-semibold text-slate-700 mb-1">Cliente *</label>
                   <select
                     value={selectedClientId}
-                    onChange={(e) => setSelectedClientId(e.target.value)}
+                    onChange={(e) => {
+                      const newId = e.target.value;
+                      setSelectedClientId(newId);
+                      const targetCli = availableClientsList.find((c) => c.id === newId);
+                      if (targetCli && targetCli.defaultLogisticsCost !== undefined && targetCli.defaultLogisticsCost !== null) {
+                        setInternalLogisticsCost(Number(targetCli.defaultLogisticsCost));
+                        if (targetCli.defaultLogisticsType) {
+                          setInternalLogisticsType(targetCli.defaultLogisticsType);
+                        }
+                      } else {
+                        setInternalLogisticsCost(0);
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-900"
                   >
                     {availableClientsList.map((c) => (
@@ -505,11 +517,10 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setAttendanceMode('presencial')}
-                    className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                      attendanceMode === 'presencial'
+                    className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${attendanceMode === 'presencial'
                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
+                      }`}
                   >
                     <MapPin className="w-4 h-4 text-emerald-400" />
                     <span>📍 Visita Presencial (No Cliente)</span>
@@ -518,11 +529,10 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setAttendanceMode('online')}
-                    className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                      attendanceMode === 'online'
+                    className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${attendanceMode === 'online'
                         ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
+                      }`}
                   >
                     <MessageSquare className="w-4 h-4 text-cyan-400" />
                     <span>💬 Atendimento Online / WhatsApp</span>
@@ -595,9 +605,8 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                                     setZoomImage({ url: matchingProduct.imageUrl, title: item.description });
                                   }
                                 }}
-                                className={`w-11 h-11 rounded-xl bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 ${
-                                  matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
-                                }`}
+                                className={`w-11 h-11 rounded-xl bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 ${matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                                  }`}
                                 title={matchingProduct?.imageUrl ? 'Clique para ver foto em tela cheia' : undefined}
                               >
                                 {matchingProduct?.imageUrl ? (
@@ -710,9 +719,8 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                                         setZoomImage({ url: matchingProduct.imageUrl, title: item.description });
                                       }
                                     }}
-                                    className={`w-9 h-9 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 ${
-                                      matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
-                                    }`}
+                                    className={`w-9 h-9 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 ${matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                                      }`}
                                     title={matchingProduct?.imageUrl ? 'Clique para ver foto em tela cheia' : undefined}
                                   >
                                     {matchingProduct?.imageUrl ? (
@@ -848,11 +856,10 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                           key={preset}
                           type="button"
                           onClick={() => handleSelectPaymentTerms(preset)}
-                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer border ${
-                            isSelected
+                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer border ${isSelected
                               ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/30'
                               : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-indigo-400'
-                          }`}
+                            }`}
                         >
                           {preset}
                         </button>
