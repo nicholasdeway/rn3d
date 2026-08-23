@@ -243,9 +243,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], s
                                   setZoomImage({ url: matchingProduct.imageUrl, title: i.productName });
                                 }
                               }}
-                              className={`w-11 h-11 rounded-xl bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 ${
-                                matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
-                              }`}
+                              className={`w-11 h-11 rounded-xl bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 ${matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                                }`}
                               title={matchingProduct?.imageUrl ? 'Clique para ampliar foto' : undefined}
                             >
                               {matchingProduct?.imageUrl ? (
@@ -312,8 +311,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], s
                       {selectedOrder.internalLogisticsType === 'frete'
                         ? '🚚 Frete / Motoboy'
                         : selectedOrder.internalLogisticsType === 'retirada'
-                        ? '🚗 Retirada na Oficina'
-                        : '⛽ Combustível (Deslocamento)'}
+                          ? '🚗 Retirada na Oficina'
+                          : '⛽ Combustível (Deslocamento)'}
                     </span>
                   </div>
 
@@ -522,15 +521,6 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], s
             </div>
           </div>
         </div>
-      )}
-
-      {/* Lightbox Modal for Orders */}
-      {zoomImage && (
-        <ImageLightboxModal
-          imageUrl={zoomImage.url}
-          title={zoomImage.title}
-          onClose={() => setZoomImage(null)}
-        />
       )}
     </div>
   );
