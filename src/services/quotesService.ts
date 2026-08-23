@@ -50,18 +50,11 @@ export async function fetchQuotes(): Promise<Quote[]> {
     status: row.status as Quote['status'],
   }));
 
-  const dbCodes = new Set(dbQuotes.map((q) => q.id));
-  const extraLocal = localQuotes.filter((q) => !dbCodes.has(q.id));
+  try {
+    localStorage.setItem('rn3d_quotes', JSON.stringify(dbQuotes));
+  } catch (e) {}
 
-  const fullList = [...dbQuotes, ...extraLocal];
-
-  if (extraLocal.length > 0) {
-    syncMissingQuotesToSupabase(extraLocal).catch((err) =>
-      console.error('Auto sync quotes error:', err)
-    );
-  }
-
-  return fullList;
+  return dbQuotes;
 }
 
 export async function createQuote(quoteData: Partial<Quote>): Promise<Quote | null> {

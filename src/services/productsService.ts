@@ -64,18 +64,11 @@ export async function fetchProducts(): Promise<Product[]> {
     status: row.status as 'Ativo' | 'Inativo',
   }));
 
-  const dbSkus = new Set(dbProducts.map((p) => (p.sku || '').toLowerCase()));
-  const extraLocal = localProducts.filter((p) => p.sku && !dbSkus.has(p.sku.toLowerCase()));
+  try {
+    localStorage.setItem('rn3d_products', JSON.stringify(dbProducts));
+  } catch (e) {}
 
-  const fullList = [...dbProducts, ...extraLocal];
-
-  if (extraLocal.length > 0) {
-    syncMissingProductsToSupabase(extraLocal).catch((e) =>
-      console.error('Background product sync error:', e)
-    );
-  }
-
-  return fullList;
+  return dbProducts;
 }
 
 export async function syncMissingProductsToSupabase(missingProducts: Product[]): Promise<number> {

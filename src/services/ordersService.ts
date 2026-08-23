@@ -56,18 +56,11 @@ export async function fetchOrders(): Promise<Order[]> {
     ],
   }));
 
-  const dbCodes = new Set(dbOrders.map((o) => o.id));
-  const extraLocal = localOrders.filter((o) => !dbCodes.has(o.id));
+  try {
+    localStorage.setItem('rn3d_orders', JSON.stringify(dbOrders));
+  } catch (e) {}
 
-  const fullList = [...dbOrders, ...extraLocal];
-
-  if (extraLocal.length > 0) {
-    syncMissingOrdersToSupabase(extraLocal).catch((err) =>
-      console.error('Auto sync orders error:', err)
-    );
-  }
-
-  return fullList;
+  return dbOrders;
 }
 
 export async function createOrder(orderData: Partial<Order>): Promise<Order | null> {
