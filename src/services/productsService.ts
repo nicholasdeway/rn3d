@@ -213,32 +213,40 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
     payload.storage_capacity = updates.storageCapacity;
   }
 
-  let { data, error } = await supabase
-    .from('products')
-    .update(payload)
-    .eq('id', id)
-    .select()
-    .single();
+  const isLocalId = !id || id.startsWith('prod-') || id.length < 30;
+
+  let query = supabase.from('products').update(payload);
+  if (!isLocalId) {
+    query = query.eq('id', id);
+  } else if (updates.sku) {
+    query = query.eq('sku', updates.sku);
+  }
+
+  let { data, error } = await query.select();
 
   if (error && (error.message.includes('column') || error.code === 'PGRST204')) {
     delete payload.storage_capacity;
     delete payload.cash_price;
 
-    const retry = await supabase
-      .from('products')
-      .update(payload)
-      .eq('id', id)
-      .select()
-      .single();
+    let retryQuery = supabase.from('products').update(payload);
+    if (!isLocalId) {
+      retryQuery = retryQuery.eq('id', id);
+    } else if (updates.sku) {
+      retryQuery = retryQuery.eq('sku', updates.sku);
+    }
 
+    const retry = await retryQuery.select();
     data = retry.data;
     error = retry.error;
   }
 
   if (error) {
     console.error('Erro ao atualizar produto no Supabase:', error.message);
+    if (error.message.includes('row-level security')) {
+      throw new Error('Política RLS no Supabase bloqueou a edição. Execute o SQL de permissão pública no SQL Editor do Supabase.');
+    }
     throw error;
   }
 
-  return data as any;
+  return (data && data[0]) ? (data[0] as any) : null;
 }

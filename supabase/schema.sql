@@ -163,7 +163,7 @@ CREATE TABLE IF NOT EXISTS sales_transactions (
 
 -- ==============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
--- Ensures only authenticated users with valid JWT tokens can query/modify data
+-- Allows full read and write access for both anonymous and authenticated sessions
 -- ==============================================================================
 
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
@@ -176,13 +176,24 @@ ALTER TABLE consignments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inventory_movements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sales_transactions ENABLE ROW LEVEL SECURITY;
 
--- Create Policies granting full access to authenticated JWT sessions
-CREATE POLICY "Authenticated users full access on products" ON products FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users full access on clients" ON clients FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users full access on orders" ON orders FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users full access on order_items" ON order_items FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users full access on quotes" ON quotes FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users full access on quote_items" ON quote_items FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users full access on consignments" ON consignments FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users full access on inventory_movements" ON inventory_movements FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Authenticated users full access on sales_transactions" ON sales_transactions FOR ALL USING (auth.role() = 'authenticated');
+-- Drop existing policies if needed to prevent duplicates
+DROP POLICY IF EXISTS "Public access on products" ON products;
+DROP POLICY IF EXISTS "Public access on clients" ON clients;
+DROP POLICY IF EXISTS "Public access on orders" ON orders;
+DROP POLICY IF EXISTS "Public access on order_items" ON order_items;
+DROP POLICY IF EXISTS "Public access on quotes" ON quotes;
+DROP POLICY IF EXISTS "Public access on quote_items" ON quote_items;
+DROP POLICY IF EXISTS "Public access on consignments" ON consignments;
+DROP POLICY IF EXISTS "Public access on inventory_movements" ON inventory_movements;
+DROP POLICY IF EXISTS "Public access on sales_transactions" ON sales_transactions;
+
+-- Create Policies granting public read/write access to anon + authenticated roles
+CREATE POLICY "Public access on products" ON products FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public access on clients" ON clients FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public access on orders" ON orders FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public access on order_items" ON order_items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public access on quotes" ON quotes FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public access on quote_items" ON quote_items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public access on consignments" ON consignments FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public access on inventory_movements" ON inventory_movements FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public access on sales_transactions" ON sales_transactions FOR ALL USING (true) WITH CHECK (true);
