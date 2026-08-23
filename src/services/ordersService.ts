@@ -163,10 +163,15 @@ export async function updateOrderProgress(
 export async function deleteOrder(orderCode: string): Promise<boolean> {
   if (!isSupabaseConfigured()) return true;
 
-  const { error } = await supabase
+  let { error } = await supabase
     .from('orders')
     .delete()
-    .or(`order_code.eq.${orderCode},id.eq.${orderCode}`);
+    .eq('order_code', orderCode);
+
+  if (error) {
+    const retry = await supabase.from('orders').delete().eq('id', orderCode);
+    error = retry.error;
+  }
 
   if (error) {
     console.error('Erro ao excluir pedido no Supabase:', error.message);
@@ -182,13 +187,24 @@ export async function updateOrderPayment(
 ): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
 
-  const { error } = await supabase
+  let { error } = await supabase
     .from('orders')
     .update({
       paid_amount: paidAmount,
       payment_status_text: paymentStatusText,
     })
-    .or(`order_code.eq.${orderCode},id.eq.${orderCode}`);
+    .eq('order_code', orderCode);
+
+  if (error) {
+    const retry = await supabase
+      .from('orders')
+      .update({
+        paid_amount: paidAmount,
+        payment_status_text: paymentStatusText,
+      })
+      .eq('id', orderCode);
+    error = retry.error;
+  }
 
   if (error) {
     console.error('Erro ao atualizar pagamento do pedido no Supabase:', error.message);

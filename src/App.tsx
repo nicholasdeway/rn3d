@@ -32,6 +32,22 @@ import { SettingsView } from './views/SettingsView';
 import { Client, Consignment, Order, Product, Quote, ViewMode, Visit } from './types';
 import { MobileFloatingNav } from './components/MobileFloatingNav';
 
+function safeSetLocalStorage(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e: any) {
+    console.warn(`[LocalStorage Quota Warning] Exceeded storage quota for ${key}. Clearing cache...`);
+    try {
+      localStorage.removeItem('rn3d_client_logistics');
+      localStorage.removeItem('rn3d_exchanges');
+      localStorage.removeItem('rn3d_movements');
+      localStorage.setItem(key, value);
+    } catch (err) {
+      console.error(`[LocalStorage Error] Unable to persist ${key} to localStorage:`, err);
+    }
+  }
+}
+
 export function App() {
   const { user, loading } = useAuth();
 
@@ -42,7 +58,7 @@ export function App() {
 
   useEffect(() => {
     if (currentView) {
-      localStorage.setItem('rn3d_current_view', currentView);
+      safeSetLocalStorage('rn3d_current_view', currentView);
     }
   }, [currentView]);
   const [activeClientIdForProfile, setActiveClientIdForProfile] = useState<string | null>(null);
@@ -118,11 +134,7 @@ export function App() {
 
   useEffect(() => {
     if (products) {
-      try {
-        localStorage.setItem('rn3d_products', JSON.stringify(products));
-      } catch (e) {
-        console.error('Error saving products to localStorage:', e);
-      }
+      safeSetLocalStorage('rn3d_products', JSON.stringify(products));
     }
   }, [products]);
 
@@ -142,11 +154,13 @@ export function App() {
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('rn3d_clients', JSON.stringify(clients));
-    } catch (e) {
-      console.error('Error saving clients to localStorage:', e);
-    }
+    const sanitizedClients = clients.map((c) => {
+      if (c.avatarUrl && c.avatarUrl.length > 500 && c.avatarUrl.startsWith('data:image/')) {
+        return { ...c, avatarUrl: '' };
+      }
+      return c;
+    });
+    safeSetLocalStorage('rn3d_clients', JSON.stringify(sanitizedClients));
   }, [clients]);
 
   const [consignments, setConsignments] = useState<Consignment[]>(() => {
@@ -165,11 +179,7 @@ export function App() {
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('rn3d_consignments', JSON.stringify(consignments));
-    } catch (e) {
-      console.error('Error saving consignments to localStorage:', e);
-    }
+    safeSetLocalStorage('rn3d_consignments', JSON.stringify(consignments));
   }, [consignments]);
 
   const [visits, setVisits] = useState<Visit[]>(() => {
@@ -188,11 +198,7 @@ export function App() {
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('rn3d_visits', JSON.stringify(visits));
-    } catch (e) {
-      console.error('Error saving visits to localStorage:', e);
-    }
+    safeSetLocalStorage('rn3d_visits', JSON.stringify(visits));
   }, [visits]);
 
   const [exchanges, setExchanges] = useState<any[]>(() => {
@@ -211,11 +217,7 @@ export function App() {
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('rn3d_exchanges', JSON.stringify(exchanges));
-    } catch (e) {
-      console.error('Error saving exchanges to localStorage:', e);
-    }
+    safeSetLocalStorage('rn3d_exchanges', JSON.stringify(exchanges));
   }, [exchanges]);
 
   const [quotes, setQuotes] = useState<Quote[]>(() => {
@@ -234,11 +236,7 @@ export function App() {
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('rn3d_quotes', JSON.stringify(quotes));
-    } catch (e) {
-      console.error('Error saving quotes to localStorage:', e);
-    }
+    safeSetLocalStorage('rn3d_quotes', JSON.stringify(quotes));
   }, [quotes]);
 
   const [orders, setOrders] = useState<Order[]>(() => {
@@ -258,11 +256,7 @@ export function App() {
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('rn3d_orders', JSON.stringify(orders));
-    } catch (e) {
-      console.error('Error saving orders to localStorage:', e);
-    }
+    safeSetLocalStorage('rn3d_orders', JSON.stringify(orders));
   }, [orders]);
 
   // Auto-sync: Ensure every converted or approved quote has a corresponding Order in orders list
@@ -343,11 +337,7 @@ export function App() {
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('rn3d_transactions', JSON.stringify(transactions));
-    } catch (e) {
-      console.error('Error saving transactions to localStorage:', e);
-    }
+    safeSetLocalStorage('rn3d_transactions', JSON.stringify(transactions));
   }, [transactions]);
 
   const [movements, setMovements] = useState<any[]>(() => {
@@ -366,11 +356,7 @@ export function App() {
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('rn3d_movements', JSON.stringify(movements));
-    } catch (e) {
-      console.error('Error saving movements to localStorage:', e);
-    }
+    safeSetLocalStorage('rn3d_movements', JSON.stringify(movements));
   }, [movements]);
 
   const [clientInventories, setClientInventories] = useState<Record<string, any>>(() => {
@@ -395,20 +381,9 @@ export function App() {
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem('rn3d_client_inventories', JSON.stringify(clientInventories));
-    } catch (e) {
-      console.error('Error saving clientInventories to localStorage:', e);
-    }
+    safeSetLocalStorage('rn3d_client_inventories', JSON.stringify(clientInventories));
   }, [clientInventories]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('rn3d_client_inventories', JSON.stringify(clientInventories));
-    } catch (e) {
-      console.error('Error saving clientInventories to localStorage:', e);
-    }
-  }, [clientInventories]);
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
   const [dataLoading, setDataLoading] = useState<boolean>(false);
 

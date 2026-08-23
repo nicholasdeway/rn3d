@@ -136,10 +136,15 @@ export async function updateQuoteStatus(quoteCode: string, newStatus: string): P
 export async function deleteQuote(quoteCode: string): Promise<boolean> {
   if (!isSupabaseConfigured()) return true;
 
-  const { error } = await supabase
+  let { error } = await supabase
     .from('quotes')
     .delete()
-    .or(`quote_code.eq.${quoteCode},id.eq.${quoteCode}`);
+    .eq('quote_code', quoteCode);
+
+  if (error) {
+    const retry = await supabase.from('quotes').delete().eq('id', quoteCode);
+    error = retry.error;
+  }
 
   if (error) {
     console.error('Erro ao excluir orçamento no Supabase:', error.message);
