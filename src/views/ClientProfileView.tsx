@@ -61,6 +61,10 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentClientData, setCurrentClientData] = useState<Client>(client);
+  const [logisticsMemory, setLogisticsMemory] = useState<{ type: string; cost: number }>({
+    type: client.defaultLogisticsType || 'combustivel',
+    cost: client.defaultLogisticsCost ?? 50.0,
+  });
 
   // Sync client & logistics memory when prop changes
   useEffect(() => {
