@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Client, ClientInventoryItem, Order, Quote } from '../types';
 import { ImageCropperModal } from '../components/ImageCropperModal';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
+import { fetchAddressByCep } from '../services/viaCepService';
 import {
   Building2,
   Phone,
@@ -25,6 +26,7 @@ import {
   Trash2,
   ImageIcon,
   Users,
+  Loader2,
 } from 'lucide-react';
 
 interface ClientProfileViewProps {
@@ -91,6 +93,40 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
   const [editFormData, setEditFormData] = useState<Partial<Client>>({});
   const [croppingImageSrc, setCroppingImageSrc] = useState<string | null>(null);
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
+  const [isSearchingEditCep, setIsSearchingEditCep] = useState(false);
+  const [editCepStatusMessage, setEditCepStatusMessage] = useState('');
+
+  const handleEditCepChange = async (inputCep: string) => {
+    const numeric = inputCep.replace(/\D/g, '').slice(0, 8);
+    let formatted = numeric;
+    if (numeric.length > 5) {
+      formatted = `${numeric.slice(0, 5)}-${numeric.slice(5, 8)}`;
+    }
+
+    setEditFormData((prev) => ({ ...prev, cep: formatted }));
+
+    if (numeric.length === 8) {
+      setIsSearchingEditCep(true);
+      setEditCepStatusMessage('Buscando CEP no ViaCEP...');
+      const address = await fetchAddressByCep(numeric);
+      setIsSearchingEditCep(false);
+      if (address) {
+        setEditFormData((prev) => ({
+          ...prev,
+          street: address.logradouro || prev.street,
+          neighborhood: address.bairro || prev.neighborhood,
+          city: address.localidade || prev.city,
+          state: address.uf || prev.state,
+          complement: address.complemento || prev.complement,
+        }));
+        setEditCepStatusMessage('✅ Endereço localizado!');
+      } else {
+        setEditCepStatusMessage('⚠️ CEP não encontrado');
+      }
+    } else {
+      setEditCepStatusMessage('');
+    }
+  };
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -885,12 +921,42 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                 </div>
               </div>
 
-              {/* Address */}
+              {/* Address (Optional / ViaCEP) */}
               <div className="space-y-4">
-                <h4 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider border-b border-slate-200 pb-1">
-                  Endereço Comercial
-                </h4>
+                <div className="flex items-center justify-between border-b border-slate-200 pb-1">
+                  <h4 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider">
+                    Endereço Comercial (Opcional)
+                  </h4>
+                  {editCepStatusMessage && (
+                    <span className={`text-[11px] font-bold flex items-center gap-1 ${
+                      isSearchingEditCep ? 'text-indigo-600 animate-pulse' : editCepStatusMessage.includes('✅') ? 'text-emerald-600' : 'text-amber-600'
+                    }`}>
+                      {isSearchingEditCep && <Loader2 className="w-3 h-3 animate-spin" />}
+                      {editCepStatusMessage}
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>CEP (Busca ViaCEP)</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Opcional</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={editFormData.cep || ''}
+                        onChange={(e) => handleEditCepChange(e.target.value)}
+                        placeholder="26200-000"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono text-xs font-bold"
+                      />
+                      {isSearchingEditCep && (
+                        <div className="absolute right-2.5 top-2.5">
+                          <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <div className="sm:col-span-2">
                     <label className="block font-semibold text-slate-700 mb-1">Rua / Logradouro</label>
                     <input
@@ -924,15 +990,24 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                       type="text"
                       value={editFormData.city || ''}
                       onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl font-semibold text-slate-900"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Estado</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Estado (UF)</label>
                     <input
                       type="text"
                       value={editFormData.state || ''}
                       onChange={(e) => setEditFormData({ ...editFormData, state: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl uppercase font-bold text-slate-900"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-slate-700 mb-1">Complemento / Referência</label>
+                    <input
+                      type="text"
+                      value={editFormData.complement || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, complement: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl"
                     />
                   </div>

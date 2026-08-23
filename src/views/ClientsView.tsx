@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Client } from '../types';
+import { fetchAddressByCep } from '../services/viaCepService';
 import {
   Users,
   Plus,
@@ -14,6 +15,8 @@ import {
   Image as ImageIcon,
   Crop,
   Trash2,
+  Loader2,
+  CheckCircle2,
 } from 'lucide-react';
 import { ImageCropperModal } from '../components/ImageCropperModal';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
@@ -57,6 +60,41 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
     defaultLogisticsCost: 50.0,
     notes: '',
   });
+
+  const [isSearchingCep, setIsSearchingCep] = useState(false);
+  const [cepStatusMessage, setCepStatusMessage] = useState('');
+
+  const handleCepChange = async (inputCep: string) => {
+    const numeric = inputCep.replace(/\D/g, '').slice(0, 8);
+    let formatted = numeric;
+    if (numeric.length > 5) {
+      formatted = `${numeric.slice(0, 5)}-${numeric.slice(5, 8)}`;
+    }
+
+    setFormData((prev) => ({ ...prev, cep: formatted }));
+
+    if (numeric.length === 8) {
+      setIsSearchingCep(true);
+      setCepStatusMessage('Buscando CEP no ViaCEP...');
+      const address = await fetchAddressByCep(numeric);
+      setIsSearchingCep(false);
+      if (address) {
+        setFormData((prev) => ({
+          ...prev,
+          street: address.logradouro || prev.street,
+          neighborhood: address.bairro || prev.neighborhood,
+          city: address.localidade || prev.city,
+          state: address.uf || prev.state,
+          complement: address.complemento || prev.complement,
+        }));
+        setCepStatusMessage('✅ Endereço localizado pelo ViaCEP!');
+      } else {
+        setCepStatusMessage('⚠️ CEP não encontrado no ViaCEP');
+      }
+    } else {
+      setCepStatusMessage('');
+    }
+  };
 
   const activeClientsCount = clients.filter((c) => c.status === 'Ativo').length;
   const totalProductsOnSite = clients.reduce((acc, c) => acc + c.productsOnSiteCount, 0);
@@ -569,21 +607,41 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                 </div>
               </div>
 
-              {/* Section 2: Address & Location */}
+              {/* Section 2: Address & Location (Optional / Non-Mandatory) */}
               <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
-                <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5 border-b border-slate-200/80 pb-2">
-                  <MapPin className="w-4 h-4 text-indigo-600" /> Endereço & Localização
-                </h4>
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                  <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-indigo-600" /> Endereço & Localização (Opcional)
+                  </h4>
+                  {cepStatusMessage && (
+                    <span className={`text-[11px] font-bold flex items-center gap-1 ${
+                      isSearchingCep ? 'text-indigo-600 animate-pulse' : cepStatusMessage.includes('✅') ? 'text-emerald-600' : 'text-amber-600'
+                    }`}>
+                      {isSearchingCep && <Loader2 className="w-3 h-3 animate-spin" />}
+                      {cepStatusMessage}
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">CEP</label>
-                    <input
-                      type="text"
-                      value={formData.cep}
-                      onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
-                      placeholder="28800-000"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-mono placeholder-slate-400"
-                    />
+                    <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                      <span>CEP (Busca ViaCEP)</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Opcional</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={formData.cep}
+                        onChange={(e) => handleCepChange(e.target.value)}
+                        placeholder="26200-000"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-mono placeholder-slate-400 text-xs font-bold"
+                      />
+                      {isSearchingCep && (
+                        <div className="absolute right-2.5 top-2.5">
+                          <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">Cidade</label>
