@@ -61,39 +61,7 @@ export function App() {
     type: 'success' | 'error' | 'info';
   } | null>(null);
 
-  // Initial quotes fallback seed data
-  const INITIAL_QUOTES: Quote[] = [
-    {
-      id: 'ORC-920984',
-      clientId: 'cli-1',
-      clientName: 'Cliente Padrão',
-      clientDocument: '00.000.000/0001-00',
-      clientAddress: 'Av. Amaral Peixoto, 131 - Casimiro de Abreu / RJ',
-      date: '2026-08-23',
-      validityDays: 7,
-      productionSlaDays: 5,
-      items: [
-        {
-          description: 'Base de Mesa Glock (SKU: F-6821)',
-          quantity: 1,
-          unitPrice: 15.0,
-          subtotal: 15.0,
-        },
-        {
-          description: 'Case American Rosqueável .22 LR (SKU: 9750)',
-          quantity: 1,
-          unitPrice: 40.0,
-          subtotal: 40.0,
-        },
-      ],
-      subtotal: 55.0,
-      discount: 0,
-      total: 55.0,
-      paymentTerms: 'Pagamento à Vista (PIX / Dinheiro)',
-      status: 'Enviado',
-      notes: 'Orçamento comercial gerado para aprovação.',
-    },
-  ];
+
 
   const isSampleMockItem = (item: any) => {
     if (!item) return false;
