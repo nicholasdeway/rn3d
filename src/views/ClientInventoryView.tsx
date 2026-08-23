@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Client, ClientInventoryItem } from '../types';
 import { Store, ChevronDown, ChevronUp, Boxes, DollarSign, MapPin } from 'lucide-react';
+import { ImageLightboxModal } from '../components/ImageLightboxModal';
 
 interface ClientInventoryViewProps {
   clients: Client[];
@@ -12,12 +13,22 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
   clientInventories,
 }) => {
   const [expandedClientId, setExpandedClientId] = useState<string | null>('cli-1');
+  const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
   const totalProductsConsigned = clients.reduce((acc, c) => acc + c.productsOnSiteCount, 0);
   const totalValuation = clients.reduce((acc, c) => acc + c.productsValuation, 0);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
+      {/* Modal Zoom da Foto / Logo do Cliente */}
+      {zoomImage && (
+        <ImageLightboxModal
+          imageUrl={zoomImage.url}
+          title={zoomImage.title}
+          onClose={() => setZoomImage(null)}
+        />
+      )}
+
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
@@ -82,8 +93,23 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                 className="p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-sm shrink-0">
-                    {cli.name.charAt(0)}
+                  <div
+                    onClick={(e) => {
+                      if (cli.avatarUrl) {
+                        e.stopPropagation();
+                        setZoomImage({ url: cli.avatarUrl, title: cli.name });
+                      }
+                    }}
+                    className={`w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-sm shrink-0 border border-indigo-100 overflow-hidden ${
+                      cli.avatarUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                    }`}
+                    title={cli.avatarUrl ? 'Clique para ampliar a foto' : undefined}
+                  >
+                    {cli.avatarUrl ? (
+                      <img src={cli.avatarUrl} alt={cli.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{cli.name.charAt(0).toUpperCase()}</span>
+                    )}
                   </div>
                   <div>
                     <h3 className="font-bold text-slate-900 text-sm">{cli.name}</h3>
