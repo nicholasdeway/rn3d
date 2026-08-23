@@ -49,11 +49,13 @@ export const LoginView: React.FC = () => {
         
         {/* Header Logo */}
         <div className="flex flex-col items-center text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-tr from-indigo-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-4 transform hover:scale-105 transition-transform duration-300">
-            <Box className="w-9 h-9 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            RN3D System
+          <img
+            src="/logo.png"
+            alt="RN3D Soluções"
+            className="w-20 h-20 rounded-2xl object-cover shadow-xl shadow-indigo-500/20 mb-4 border border-slate-700/80 transform hover:scale-105 transition-transform duration-300"
+          />
+          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            RN3D Soluções
             <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-medium border border-indigo-500/30">
               Gestão 3D
             </span>
