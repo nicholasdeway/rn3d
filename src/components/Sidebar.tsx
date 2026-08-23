@@ -106,18 +106,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Mobile Backdrop */}
-      {isMobileOpen && (
-        <div
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 lg:hidden"
-          onClick={onCloseMobile}
-        />
-      )}
-
       <aside
-        className={`fixed top-0 left-0 bottom-0 z-40 bg-white border-r border-slate-200/80 transition-all duration-300 ease-in-out flex flex-col justify-between
+        className={`hidden lg:flex fixed top-0 left-0 bottom-0 z-40 bg-white border-r border-slate-200/80 transition-all duration-300 ease-in-out flex-col justify-between
           ${isCollapsed ? 'w-20' : 'w-64'}
-          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         {/* Top Branding Header */}
