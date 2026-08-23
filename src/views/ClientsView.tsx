@@ -186,89 +186,185 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
         </div>
       </div>
 
-      {/* Clients Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
-              <tr>
-                <th className="p-4">Cliente</th>
-                <th className="p-4">Responsável</th>
-                <th className="p-4">Cidade</th>
-                <th className="p-4 text-center">Produtos no Local</th>
-                <th className="p-4 text-right">A Receber</th>
-                <th className="p-4">Última Visita</th>
-                <th className="p-4">Próxima Visita</th>
-                <th className="p-4">Status Visita</th>
-                <th className="p-4 text-right">Ação</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredClients.map((c) => (
-                <tr
-                  key={c.id}
-                  onClick={() => onSelectClient(c)}
-                  className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
-                >
-                  <td className="p-4 font-bold text-slate-900">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">
-                        {c.name.charAt(0)}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
-                          {c.name}
-                        </p>
-                        <p className="text-[11px] text-slate-400 font-normal">{c.type}</p>
-                      </div>
+      {/* Clients Table / Mobile Cards */}
+      {filteredClients.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-xs space-y-3">
+          <Users className="w-12 h-12 text-slate-300 mx-auto" />
+          <h3 className="font-bold text-slate-800 text-base">Nenhum cliente cadastrado</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            Cadastre seus pontos de venda parceiros e clientes comerciais.
+          </p>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
+          >
+            Cadastrar Primeiro Cliente
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* Mobile Cards Layout (< 768px) - Eliminates Horizontal Scroll */}
+          <div className="block md:hidden space-y-3">
+            {filteredClients.map((c) => (
+              <div
+                key={c.id}
+                onClick={() => onSelectClient(c)}
+                className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3 cursor-pointer hover:border-indigo-300 transition-colors"
+              >
+                {/* Card Header: Avatar, Client Name & Visit Status */}
+                <div className="flex items-start justify-between gap-2 pb-2 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-600 font-extrabold text-sm flex items-center justify-center shrink-0 border border-indigo-100">
+                      {c.name.charAt(0).toUpperCase()}
                     </div>
-                  </td>
-                  <td className="p-4 font-medium text-slate-700">{c.responsible}</td>
-                  <td className="p-4 text-slate-600">
-                    {c.city} - {c.state}
-                  </td>
-                  <td className="p-4 text-center font-bold text-slate-800">
-                    {c.productsOnSiteCount} un
-                  </td>
-                  <td className="p-4 text-right font-bold text-emerald-600">
-                    R$ {c.receivableBalance.toFixed(2)}
-                  </td>
-                  <td className="p-4 text-slate-500">{c.lastVisitDate}</td>
-                  <td className="p-4 text-slate-700 font-medium">{c.nextVisitDate}</td>
-                  <td className="p-4">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm leading-snug">{c.name}</h4>
+                      <p className="text-[11px] text-slate-400 font-medium">{c.type}</p>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
                     {c.visitStatus === 'Hoje' && (
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
                         Visitar hoje
                       </span>
                     )}
                     {c.visitStatus === 'Atrasada' && (
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
                         Atrasada
                       </span>
                     )}
                     {c.visitStatus === 'Em breve' && (
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
                         Em breve
                       </span>
                     )}
-                  </td>
-                  <td className="p-4 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectClient(c);
-                      }}
-                      className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-semibold transition-colors flex items-center gap-1 ml-auto"
+                  </div>
+                </div>
+
+                {/* Card Body: Details & Receivable Balance */}
+                <div className="flex items-start justify-between gap-2 text-xs">
+                  <div className="space-y-0.5">
+                    <p className="text-slate-600">
+                      <span className="font-semibold text-slate-700">Resp:</span> {c.responsible}
+                    </p>
+                    <p className="text-slate-500 text-[11px]">
+                      {c.city ? `${c.city} - ${c.state}` : 'Sem localização'} • {c.productsOnSiteCount} un no local
+                    </p>
+                    <p className="text-slate-500 text-[11px]">
+                      Próxima visita: <span className="font-semibold text-slate-700">{c.nextVisitDate}</span>
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-slate-400 font-medium block">A Receber</span>
+                    <span className="font-black text-emerald-600 text-base">
+                      R$ {c.receivableBalance.toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card Actions */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectClient(c);
+                    }}
+                    className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                  >
+                    <span>Ver Perfil Completo</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table Layout (>= 768px) */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+                  <tr>
+                    <th className="p-4">Cliente</th>
+                    <th className="p-4">Responsável</th>
+                    <th className="p-4">Cidade</th>
+                    <th className="p-4 text-center">Produtos no Local</th>
+                    <th className="p-4 text-right">A Receber</th>
+                    <th className="p-4">Última Visita</th>
+                    <th className="p-4">Próxima Visita</th>
+                    <th className="p-4">Status Visita</th>
+                    <th className="p-4 text-right">Ação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredClients.map((c) => (
+                    <tr
+                      key={c.id}
+                      onClick={() => onSelectClient(c)}
+                      className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
                     >
-                      Perfil <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                      <td className="p-4 font-bold text-slate-900">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">
+                            {c.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="text-sm font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                              {c.name}
+                            </p>
+                            <p className="text-[11px] text-slate-400 font-normal">{c.type}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 font-medium text-slate-700">{c.responsible}</td>
+                      <td className="p-4 text-slate-600">
+                        {c.city} - {c.state}
+                      </td>
+                      <td className="p-4 text-center font-bold text-slate-800">
+                        {c.productsOnSiteCount} un
+                      </td>
+                      <td className="p-4 text-right font-bold text-emerald-600">
+                        R$ {c.receivableBalance.toFixed(2).replace('.', ',')}
+                      </td>
+                      <td className="p-4 text-slate-500">{c.lastVisitDate}</td>
+                      <td className="p-4 text-slate-700 font-medium">{c.nextVisitDate}</td>
+                      <td className="p-4">
+                        {c.visitStatus === 'Hoje' && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            Visitar hoje
+                          </span>
+                        )}
+                        {c.visitStatus === 'Atrasada' && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                            Atrasada
+                          </span>
+                        )}
+                        {c.visitStatus === 'Em breve' && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                            Em breve
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4 text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectClient(c);
+                          }}
+                          className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-semibold transition-colors flex items-center gap-1 ml-auto"
+                        >
+                          Perfil <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Modal Cadastrar Cliente */}
       {isModalOpen && (
