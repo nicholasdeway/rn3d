@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Order, Product } from '../types';
 import { ShoppingCart, Printer, X, Truck, FileText } from 'lucide-react';
+import { ImageLightboxModal } from '../components/ImageLightboxModal';
 
 interface OrdersViewProps {
   orders: Order[];
@@ -11,6 +12,7 @@ interface OrdersViewProps {
 export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], searchQuery = '' }) => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [previewPdfOrder, setPreviewPdfOrder] = useState<Order | null>(null);
+  const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
   const filteredOrders = orders.filter((o) => {
     if (!searchQuery || searchQuery.trim() === '') return true;
@@ -219,30 +221,64 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], s
                 </div>
               </div>
 
-              {/* Items */}
+              {/* Items do Pedido com Thumbnails Ampliáveis */}
               <div className="space-y-2">
-                <h4 className="font-bold text-slate-900">Itens do Pedido:</h4>
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold">
-                      <tr>
-                        <th className="p-3">Produto</th>
-                        <th className="p-3 text-center">Qtde</th>
-                        <th className="p-3 text-right">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {selectedOrder.items.map((i, idx) => (
-                        <tr key={idx}>
-                          <td className="p-3 font-bold text-slate-900">{i.productName}</td>
-                          <td className="p-3 text-center font-bold">{i.quantity}</td>
-                          <td className="p-3 text-right font-bold text-emerald-600">
-                            R$ {i.subtotal.toFixed(2).replace('.', ',')}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <h4 className="font-bold text-slate-900 text-xs">Itens do Pedido ({selectedOrder.items.length}):</h4>
+                <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white">
+                  <div className="divide-y divide-slate-100">
+                    {selectedOrder.items.map((i, idx) => {
+                      const matchingProduct = products.find(
+                        (p) =>
+                          p.name.toLowerCase() === i.productName.toLowerCase() ||
+                          i.productName.toLowerCase().includes(p.name.toLowerCase())
+                      );
+
+                      return (
+                        <div key={idx} className="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Product Thumbnail */}
+                            <div
+                              onClick={() => {
+                                if (matchingProduct?.imageUrl) {
+                                  setZoomImage({ url: matchingProduct.imageUrl, title: i.productName });
+                                }
+                              }}
+                              className={`w-11 h-11 rounded-xl bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 ${
+                                matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                              }`}
+                              title={matchingProduct?.imageUrl ? 'Clique para ampliar foto' : undefined}
+                            >
+                              {matchingProduct?.imageUrl ? (
+                                <img
+                                  src={matchingProduct.imageUrl}
+                                  alt={i.productName}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span>3D</span>
+                              )}
+                            </div>
+
+                            <div className="min-w-0">
+                              <h5 className="font-bold text-slate-900 text-xs">{i.productName}</h5>
+                              <p className="text-[11px] text-slate-500 mt-0.5">
+                                R$ {i.unitPrice ? i.unitPrice.toFixed(2).replace('.', ',') : (i.subtotal / i.quantity).toFixed(2).replace('.', ',')} un
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 shrink-0">
+                            <span className="px-2.5 py-1 bg-slate-100 border border-slate-200 rounded-lg text-xs font-black text-slate-800">
+                              {i.quantity} {i.quantity === 1 ? 'un' : 'uns'}
+                            </span>
+                            <span className="font-black text-emerald-600 text-xs">
+                              R$ {i.subtotal.toFixed(2).replace('.', ',')}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
@@ -486,6 +522,15 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], s
             </div>
           </div>
         </div>
+      )}
+
+      {/* Lightbox Modal for Orders */}
+      {zoomImage && (
+        <ImageLightboxModal
+          imageUrl={zoomImage.url}
+          title={zoomImage.title}
+          onClose={() => setZoomImage(null)}
+        />
       )}
     </div>
   );

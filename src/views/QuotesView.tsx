@@ -543,28 +543,24 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                               </button>
                             </div>
 
-                            {/* Bottom Row: Quantity Stepper, Unit Price & Subtotal */}
+                            {/* Bottom Row: Quantity Stepper (- and + as sole control), Unit Price & Subtotal */}
                             <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
                               {/* Quantity Stepper */}
                               <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateItem(idx, 'quantity', Math.max(1, item.quantity - 1))}
-                                  className="w-6 h-6 bg-white hover:bg-slate-200 rounded-lg text-slate-700 font-black flex items-center justify-center cursor-pointer shadow-2xs"
+                                  className="w-7 h-7 bg-white hover:bg-slate-200 active:scale-95 text-slate-800 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
                                 >
                                   -
                                 </button>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  value={item.quantity}
-                                  onChange={(e) => handleUpdateItem(idx, 'quantity', Math.max(1, Number(e.target.value)))}
-                                  className="w-8 text-center font-extrabold text-slate-900 bg-transparent focus:outline-none text-xs"
-                                />
+                                <span className="w-8 text-center font-black text-slate-900 text-xs select-none">
+                                  {item.quantity}
+                                </span>
                                 <button
                                   type="button"
                                   onClick={() => handleUpdateItem(idx, 'quantity', item.quantity + 1)}
-                                  className="w-6 h-6 bg-white hover:bg-slate-200 rounded-lg text-slate-700 font-black flex items-center justify-center cursor-pointer shadow-2xs"
+                                  className="w-7 h-7 bg-white hover:bg-slate-200 active:scale-95 text-slate-800 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
                                 >
                                   +
                                 </button>
@@ -578,7 +574,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                                   step="0.10"
                                   value={item.unitPrice}
                                   onChange={(e) => handleUpdateItem(idx, 'unitPrice', Number(e.target.value))}
-                                  className="w-16 px-1.5 py-1 border border-slate-200 rounded-lg font-bold text-slate-800 text-xs text-right bg-white"
+                                  className="w-16 px-1.5 py-1 border border-slate-200 rounded-lg font-bold text-slate-800 text-xs text-right bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                               </div>
 
@@ -652,13 +648,25 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                                   />
                                 </td>
                                 <td className="p-3 text-center">
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={item.quantity}
-                                    onChange={(e) => handleUpdateItem(idx, 'quantity', Number(e.target.value))}
-                                    className="w-16 text-center py-1 border border-slate-200 rounded-lg font-bold"
-                                  />
+                                  <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateItem(idx, 'quantity', Math.max(1, item.quantity - 1))}
+                                      className="w-6 h-6 bg-white hover:bg-slate-200 active:scale-95 text-slate-800 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
+                                    >
+                                      -
+                                    </button>
+                                    <span className="w-7 text-center font-black text-slate-900 text-xs select-none">
+                                      {item.quantity}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleUpdateItem(idx, 'quantity', item.quantity + 1)}
+                                      className="w-6 h-6 bg-white hover:bg-slate-200 active:scale-95 text-slate-800 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
+                                    >
+                                      +
+                                    </button>
+                                  </div>
                                 </td>
                                 <td className="p-3 text-right">
                                   <input
