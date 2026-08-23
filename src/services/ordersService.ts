@@ -175,6 +175,28 @@ export async function deleteOrder(orderCode: string): Promise<boolean> {
   return true;
 }
 
+export async function updateOrderPayment(
+  orderCode: string,
+  paidAmount: number,
+  paymentStatusText: string
+): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  const { error } = await supabase
+    .from('orders')
+    .update({
+      paid_amount: paidAmount,
+      payment_status_text: paymentStatusText,
+    })
+    .or(`order_code.eq.${orderCode},id.eq.${orderCode}`);
+
+  if (error) {
+    console.error('Erro ao atualizar pagamento do pedido no Supabase:', error.message);
+    return false;
+  }
+  return true;
+}
+
 
 export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promise<number> {
   if (!isSupabaseConfigured() || missingOrders.length === 0) return 0;

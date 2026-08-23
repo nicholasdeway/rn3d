@@ -7,7 +7,7 @@ import { LoginView } from './views/LoginView';
 import { Box } from 'lucide-react';
 import { fetchProducts, createProduct, updateProduct, syncMissingProductsToSupabase } from './services/productsService';
 import { fetchClients, createClient, updateClient, syncMissingClientsToSupabase } from './services/clientsService';
-import { fetchOrders, createOrder, updateOrderStatus, updateOrderProgress, syncMissingOrdersToSupabase } from './services/ordersService';
+import { fetchOrders, createOrder, updateOrderStatus, updateOrderProgress, syncMissingOrdersToSupabase, deleteOrder, updateOrderPayment } from './services/ordersService';
 import { fetchQuotes, createQuote, updateQuoteStatus, syncMissingQuotesToSupabase } from './services/quotesService';
 
 // Views
@@ -247,14 +247,7 @@ export function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          const filtered = parsed
-            .filter((o: any) => !isSampleMockItem(o))
-            .map((o: any) => {
-              if (o.paymentStatusText === '50% Recebido') {
-                return { ...o, paidAmount: 0.0, paymentStatusText: 'Aguardando Pagamento' };
-              }
-              return o;
-            });
+          const filtered = parsed.filter((o: any) => !isSampleMockItem(o));
           return filtered;
         }
       }
@@ -770,7 +763,10 @@ export function App() {
     }
   };
 
-  const handleUpdateOrderPayment = (orderId: string, additionalAmount: number) => {
+  const handleUpdateOrderPayment = async (orderId: string, additionalAmount: number) => {
+    let finalPaidAmount = 0;
+    let finalPaymentStatus = 'Aguardando Pagamento';
+
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id === orderId) {
@@ -779,6 +775,9 @@ export function App() {
           const isFullyPaid = newPaidAmount >= o.totalValue;
           const pct = Math.round((newPaidAmount / o.totalValue) * 100);
           const newPaymentStatus = isFullyPaid ? 'Totalmente Pago' : `${pct}% Recebido`;
+
+          finalPaidAmount = newPaidAmount;
+          finalPaymentStatus = newPaymentStatus;
 
           return {
             ...o,
@@ -797,7 +796,14 @@ export function App() {
         return o;
       })
     );
-    showToast(`Recebimento de R$ ${additionalAmount.toFixed(2).replace('.', ',')} registrado no caixa!`, 'success');
+
+    showToast(`Recebimento de R$ ${additionalAmount.toFixed(2).replace('.', ',')} registrado com sucesso! Dashboard e Caixa atualizados.`, 'success');
+
+    try {
+      await updateOrderPayment(orderId, finalPaidAmount, finalPaymentStatus);
+    } catch (err) {
+      console.error('Erro ao atualizar pagamento no Supabase:', err);
+    }
   };
 
   const handleStartVisit = (clientId: string) => {
