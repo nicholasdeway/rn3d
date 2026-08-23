@@ -14,6 +14,7 @@ import {
   User as UserIcon,
   LogOut,
   X,
+  RefreshCw,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -320,6 +321,16 @@ export const Header: React.FC<HeaderProps> = ({
             </>
           )}
         </div>
+
+        {/* Sync System Button */}
+        <button
+          onClick={() => onQuickAction('sync-all')}
+          className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
+          title="Sincronizar todo o sistema com o Supabase (Produtos, Clientes, Pedidos e Orçamentos)"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          <span className="hidden md:inline">Sincronizar Sistema</span>
+        </button>
 
         {/* Quick Action Dropdown Button */}
         <div className="relative">

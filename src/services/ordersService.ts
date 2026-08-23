@@ -2,8 +2,21 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Order } from '../types';
 
 export async function fetchOrders(): Promise<Order[]> {
+  let localOrders: Order[] = [];
+  try {
+    const saved = localStorage.getItem('rn3d_orders');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        localOrders = parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Error reading local orders:', e);
+  }
+
   if (!isSupabaseConfigured()) {
-    return [];
+    return localOrders;
   }
 
   const { data, error } = await supabase
@@ -11,12 +24,12 @@ export async function fetchOrders(): Promise<Order[]> {
     .select('*, order_items(*)')
     .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Erro ao buscar pedidos no Supabase:', error.message);
-    return [];
+  if (error || !data) {
+    console.error('Erro ao buscar pedidos no Supabase:', error?.message);
+    return localOrders;
   }
 
-  return (data || []).map((row) => ({
+  const dbOrders: Order[] = data.map((row) => ({
     id: row.order_code || row.id,
     clientId: row.client_id || '',
     clientName: row.client_name,
@@ -42,6 +55,19 @@ export async function fetchOrders(): Promise<Order[]> {
       },
     ],
   }));
+
+  const dbCodes = new Set(dbOrders.map((o) => o.id));
+  const extraLocal = localOrders.filter((o) => !dbCodes.has(o.id));
+
+  const fullList = [...dbOrders, ...extraLocal];
+
+  if (extraLocal.length > 0) {
+    syncMissingOrdersToSupabase(extraLocal).catch((err) =>
+      console.error('Auto sync orders error:', err)
+    );
+  }
+
+  return fullList;
 }
 
 export async function createOrder(orderData: Partial<Order>): Promise<Order | null> {
@@ -51,24 +77,34 @@ export async function createOrder(orderData: Partial<Order>): Promise<Order | nu
 
   const orderCode = orderData.id || `PED-${Math.floor(100000 + Math.random() * 900000)}`;
 
-  const { data: newOrder, error: orderError } = await supabase
+  const payload: any = {
+    order_code: orderCode,
+    client_name: orderData.clientName || 'Cliente Padrão',
+    total_value: orderData.totalValue || 0,
+    paid_amount: orderData.paidAmount || 0,
+    payment_status_text: orderData.paymentStatusText || 'Pendente',
+    status: orderData.status || 'Novo',
+  };
+
+  if (orderData.clientId && !orderData.clientId.startsWith('cli-')) {
+    payload.client_id = orderData.clientId;
+  }
+
+  let { data: newOrder, error: orderError } = await supabase
     .from('orders')
-    .insert([
-      {
-        order_code: orderCode,
-        client_id: orderData.clientId || null,
-        client_name: orderData.clientName,
-        total_value: orderData.totalValue,
-        paid_amount: orderData.paidAmount || 0,
-        payment_status_text: orderData.paymentStatusText || 'Pendente',
-        status: orderData.status || 'Novo',
-      },
-    ])
+    .insert([payload])
     .select()
     .single();
 
-  if (orderError) {
-    console.error('Erro ao salvar pedido:', orderError.message);
+  if (orderError && orderError.message.includes('client_id')) {
+    delete payload.client_id;
+    const retry = await supabase.from('orders').insert([payload]).select().single();
+    newOrder = retry.data;
+    orderError = retry.error;
+  }
+
+  if (orderError || !newOrder) {
+    console.error('Erro ao salvar pedido no Supabase:', orderError?.message);
     throw orderError;
   }
 
@@ -88,4 +124,34 @@ export async function createOrder(orderData: Partial<Order>): Promise<Order | nu
   }
 
   return newOrder as any;
+}
+
+export async function updateOrderStatus(orderCode: string, newStatus: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: newStatus })
+    .eq('order_code', orderCode);
+
+  if (error) {
+    console.error('Erro ao atualizar status do pedido:', error.message);
+    return false;
+  }
+  return true;
+}
+
+export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promise<number> {
+  if (!isSupabaseConfigured() || missingOrders.length === 0) return 0;
+
+  let syncedCount = 0;
+  for (const o of missingOrders) {
+    try {
+      await createOrder(o);
+      syncedCount++;
+    } catch (err) {
+      console.error(`Erro ao sincronizar pedido ${o.id}:`, err);
+    }
+  }
+  return syncedCount;
 }

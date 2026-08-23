@@ -6,8 +6,9 @@ import { useAuth } from './context/AuthContext';
 import { LoginView } from './views/LoginView';
 import { Box } from 'lucide-react';
 import { fetchProducts, createProduct, updateProduct, syncMissingProductsToSupabase } from './services/productsService';
-import { fetchClients, createClient } from './services/clientsService';
-import { fetchOrders, createOrder } from './services/ordersService';
+import { fetchClients, createClient, updateClient, syncMissingClientsToSupabase } from './services/clientsService';
+import { fetchOrders, createOrder, updateOrderStatus, syncMissingOrdersToSupabase } from './services/ordersService';
+import { fetchQuotes, createQuote, updateQuoteStatus, syncMissingQuotesToSupabase } from './services/quotesService';
 
 // Views
 import { DashboardView } from './views/DashboardView';
@@ -433,18 +434,13 @@ export function App() {
     let isMounted = true;
     setDataLoading(true);
 
-    Promise.all([fetchProducts(), fetchClients(), fetchOrders()])
-      .then(([dbProducts, dbClients, dbOrders]) => {
+    Promise.all([fetchProducts(), fetchClients(), fetchOrders(), fetchQuotes()])
+      .then(([dbProducts, dbClients, dbOrders, dbQuotes]) => {
         if (!isMounted) return;
         setProducts(dbProducts);
         setClients(dbClients);
-        if (dbOrders && dbOrders.length > 0) {
-          setOrders((prev) => {
-            const dbIds = new Set(dbOrders.map((o) => o.id));
-            const localOnly = prev.filter((o) => !dbIds.has(o.id));
-            return [...localOnly, ...dbOrders];
-          });
-        }
+        setOrders(dbOrders);
+        setQuotes(dbQuotes);
       })
       .catch((err) => {
         console.error('Erro ao carregar dados do Supabase:', err);
@@ -503,14 +499,31 @@ export function App() {
 
   const handleSyncProductsToSupabase = async () => {
     try {
-      showToast('Iniciando sincronização com o Supabase...', 'info');
-      const count = await syncMissingProductsToSupabase(products);
-      if (count > 0) {
-        showToast(`✅ ${count} produtos foram sincronizados com sucesso no Supabase!`, 'success');
-        const dbProds = await fetchProducts();
-        setProducts(dbProds);
+      showToast('Sincronizando todo o sistema com o Supabase (Produtos, Clientes, Pedidos e Orçamentos)...', 'info');
+      const [pCount, cCount, oCount, qCount] = await Promise.all([
+        syncMissingProductsToSupabase(products),
+        syncMissingClientsToSupabase(clients),
+        syncMissingOrdersToSupabase(orders),
+        syncMissingQuotesToSupabase(quotes),
+      ]);
+
+      const [dbProds, dbClients, dbOrders, dbQuotes] = await Promise.all([
+        fetchProducts(),
+        fetchClients(),
+        fetchOrders(),
+        fetchQuotes(),
+      ]);
+
+      setProducts(dbProds);
+      setClients(dbClients);
+      setOrders(dbOrders);
+      setQuotes(dbQuotes);
+
+      const totalNew = pCount + cCount + oCount + qCount;
+      if (totalNew > 0) {
+        showToast(`✅ Sincronização concluída! (${pCount} prods, ${cCount} clientes, ${oCount} pedidos, ${qCount} orçamentos)`, 'success');
       } else {
-        showToast('Tudo sincronizado! Todos os produtos do sistema já estão gravados no Supabase.', 'info');
+        showToast('✅ Sistema 100% sincronizado com o Supabase!', 'success');
       }
     } catch (err: any) {
       showToast(`Erro na sincronização: ${err?.message || 'Falha ao conectar com Supabase'}`, 'error');
@@ -535,7 +548,12 @@ export function App() {
     }
     showToast(`Cliente "${newClient.name}" cadastrado com sucesso!`, 'success');
     try {
-      await createClient(newClient);
+      const savedInDb = await createClient(newClient);
+      if (savedInDb && savedInDb.id) {
+        setClients((prev) =>
+          prev.map((c) => (c.id === newClient.id ? { ...c, id: savedInDb.id } : c))
+        );
+      }
     } catch (err) {
       console.error('Erro ao salvar cliente no Supabase:', err);
     }
@@ -555,6 +573,11 @@ export function App() {
       console.error('Error saving client logistics memory:', e);
     }
     showToast(`Cadastro do cliente "${updatedClient.name}" atualizado com sucesso!`, 'success');
+    try {
+      await updateClient(updatedClient.id, updatedClient);
+    } catch (err) {
+      console.error('Erro ao atualizar cliente no Supabase:', err);
+    }
   };
 
   const handleAddConsignment = (newConsignment: Consignment) => {
@@ -562,16 +585,26 @@ export function App() {
     showToast(`Consignação ${newConsignment.id} registrada com sucesso!`, 'success');
   };
 
-  const handleAddQuote = (newQuote: Quote) => {
+  const handleAddQuote = async (newQuote: Quote) => {
     setQuotes((prev) => [newQuote, ...prev]);
     showToast(`Orçamento ${newQuote.id} criado com sucesso!`, 'success');
+    try {
+      await createQuote(newQuote);
+    } catch (err) {
+      console.error('Erro ao salvar orçamento no Supabase:', err);
+    }
   };
 
-  const handleUpdateQuoteStatus = (quoteId: string, newStatus: string) => {
+  const handleUpdateQuoteStatus = async (quoteId: string, newStatus: string) => {
     setQuotes((prev) =>
       prev.map((q) => (q.id === quoteId ? { ...q, status: newStatus as any } : q))
     );
     showToast(`Status do orçamento ${quoteId} alterado para "${newStatus}"!`, 'success');
+    try {
+      await updateQuoteStatus(quoteId, newStatus);
+    } catch (err) {
+      console.error('Erro ao atualizar status do orçamento no Supabase:', err);
+    }
   };
 
   const handleConvertQuoteToOrder = async (quote: Quote) => {
@@ -613,6 +646,7 @@ export function App() {
 
     try {
       await createOrder(newOrder);
+      await updateQuoteStatus(quote.id, 'Convertido em Pedido');
     } catch (err) {
       console.error('Erro ao persistir pedido no Supabase:', err);
     }
@@ -743,6 +777,9 @@ export function App() {
           }}
           onQuickAction={(action) => {
             switch (action) {
+              case 'sync-all':
+                handleSyncProductsToSupabase();
+                break;
               case 'calculadora-3d':
                 setCurrentView('calculator');
                 break;

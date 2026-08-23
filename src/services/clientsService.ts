@@ -86,6 +86,16 @@ export async function fetchClients(): Promise<Client[]> {
     }
   }
 
+  const extraLocal = localClients.filter(
+    (c) => !dbIds.has(c.id) && !dbNamesMap.has((c.name || '').toLowerCase().trim())
+  );
+
+  if (extraLocal.length > 0) {
+    syncMissingClientsToSupabase(extraLocal).catch((err) =>
+      console.error('Auto sync clients error:', err)
+    );
+  }
+
   return merged;
 }
 
@@ -137,4 +147,76 @@ export async function createClient(client: Partial<Client>): Promise<Client | nu
   }
 
   return data as any;
+}
+
+export async function updateClient(id: string, updates: Partial<Client>): Promise<Client | null> {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  const payload: any = {
+    name: updates.name,
+    fantasy_name: updates.fantasyName,
+    avatar_url: updates.avatarUrl || '',
+    document: updates.document,
+    responsible: updates.responsible,
+    phone: updates.phone,
+    whatsapp: updates.whatsapp,
+    email: updates.email,
+    cep: updates.cep,
+    street: updates.street,
+    number: updates.number,
+    complement: updates.complement,
+    neighborhood: updates.neighborhood,
+    city: updates.city,
+    state: updates.state,
+    type: updates.type,
+    status: updates.status,
+  };
+
+  const isLocalId = !id || id.startsWith('cli-') || id.length < 30;
+
+  let query = supabase.from('clients').update(payload);
+  if (!isLocalId) {
+    query = query.eq('id', id);
+  } else if (updates.name) {
+    query = query.eq('name', updates.name);
+  }
+
+  let { data, error } = await query.select();
+
+  if (error && (error.message.includes('column') || error.code === 'PGRST204')) {
+    delete payload.avatar_url;
+    let retryQuery = supabase.from('clients').update(payload);
+    if (!isLocalId) {
+      retryQuery = retryQuery.eq('id', id);
+    } else if (updates.name) {
+      retryQuery = retryQuery.eq('name', updates.name);
+    }
+    const retry = await retryQuery.select();
+    data = retry.data;
+    error = retry.error;
+  }
+
+  if (error) {
+    console.error('Erro ao atualizar cliente no Supabase:', error.message);
+    throw error;
+  }
+
+  return (data && data[0]) ? (data[0] as any) : null;
+}
+
+export async function syncMissingClientsToSupabase(missingClients: Client[]): Promise<number> {
+  if (!isSupabaseConfigured() || missingClients.length === 0) return 0;
+
+  let syncedCount = 0;
+  for (const c of missingClients) {
+    try {
+      await createClient(c);
+      syncedCount++;
+    } catch (err) {
+      console.error(`Erro ao sincronizar cliente ${c.name}:`, err);
+    }
+  }
+  return syncedCount;
 }
