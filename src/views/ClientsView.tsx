@@ -10,6 +10,7 @@ import {
   ArrowRight,
   X,
   Building2,
+  Truck,
 } from 'lucide-react';
 
 interface ClientsViewProps {
