@@ -57,8 +57,8 @@ export async function fetchClients(): Promise<Client[]> {
     type: row.type || 'Cliente direto',
     agreedPriceLevel: row.agreed_price_level || 'Padrão',
     visitFrequency: row.visit_frequency || '15 dias',
-    defaultLogisticsType: (parsedLogistics[row.id]?.type || 'combustivel') as any,
-    defaultLogisticsCost: parsedLogistics[row.id]?.cost ?? 50.0,
+    defaultLogisticsType: (row.default_logistics_type || parsedLogistics[row.id]?.type || 'combustivel') as any,
+    defaultLogisticsCost: row.default_logistics_cost !== null && row.default_logistics_cost !== undefined ? Number(row.default_logistics_cost) : (parsedLogistics[row.id]?.cost ?? 50.0),
     notes: row.notes,
     status: row.status || 'Ativo',
     productsOnSiteCount: 0,
@@ -131,6 +131,8 @@ export async function createClient(client: Partial<Client>): Promise<Client | nu
     city: client.city,
     state: client.state,
     type: client.type,
+    default_logistics_type: client.defaultLogisticsType || 'combustivel',
+    default_logistics_cost: client.defaultLogisticsCost ?? 50.0,
     status: client.status || 'Ativo',
   };
 
@@ -142,6 +144,8 @@ export async function createClient(client: Partial<Client>): Promise<Client | nu
 
   if (error && (error.message.includes('column') || error.code === 'PGRST204')) {
     delete payload.avatar_url;
+    delete payload.default_logistics_type;
+    delete payload.default_logistics_cost;
     const retry = await supabase
       .from('clients')
       .insert([payload])
@@ -181,6 +185,8 @@ export async function updateClient(id: string, updates: Partial<Client>): Promis
     city: updates.city,
     state: updates.state,
     type: updates.type,
+    default_logistics_type: updates.defaultLogisticsType,
+    default_logistics_cost: updates.defaultLogisticsCost,
     status: updates.status,
   };
 
@@ -197,6 +203,8 @@ export async function updateClient(id: string, updates: Partial<Client>): Promis
 
   if (error && (error.message.includes('column') || error.code === 'PGRST204')) {
     delete payload.avatar_url;
+    delete payload.default_logistics_type;
+    delete payload.default_logistics_cost;
     let retryQuery = supabase.from('clients').update(payload);
     if (!isLocalId) {
       retryQuery = retryQuery.eq('id', id);
@@ -222,7 +230,7 @@ export async function syncMissingClientsToSupabase(missingClients: Client[]): Pr
   let syncedCount = 0;
 
   try {
-    const { data: dbData } = await supabase.from('clients').select('id, name, avatar_url');
+    const { data: dbData } = await supabase.from('clients').select('id, name, avatar_url, default_logistics_cost');
     const dbNamesMap = new Map((dbData || []).map((c) => [(c.name || '').toLowerCase().trim(), c]));
 
     for (const c of missingClients) {
@@ -231,8 +239,16 @@ export async function syncMissingClientsToSupabase(missingClients: Client[]): Pr
         const existingInDb = dbNamesMap.get(normName);
 
         if (existingInDb) {
+          const updates: Partial<Client> = {};
           if (c.avatarUrl && !existingInDb.avatar_url) {
-            await updateClient(existingInDb.id, { avatarUrl: c.avatarUrl });
+            updates.avatarUrl = c.avatarUrl;
+          }
+          if (c.defaultLogisticsCost !== undefined && c.defaultLogisticsCost !== existingInDb.default_logistics_cost) {
+            updates.defaultLogisticsCost = c.defaultLogisticsCost;
+            updates.defaultLogisticsType = c.defaultLogisticsType;
+          }
+          if (Object.keys(updates).length > 0) {
+            await updateClient(existingInDb.id, updates);
             syncedCount++;
           }
         } else {

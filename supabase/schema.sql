@@ -56,6 +56,8 @@ CREATE TABLE IF NOT EXISTS clients (
   type TEXT NOT NULL DEFAULT 'Cliente direto',
   agreed_price_level TEXT DEFAULT 'Padrão',
   visit_frequency TEXT DEFAULT '15 dias',
+  default_logistics_type TEXT DEFAULT 'combustivel',
+  default_logistics_cost NUMERIC(10,2) DEFAULT 50.0,
   notes TEXT,
   status TEXT NOT NULL DEFAULT 'Ativo',
   last_visit_date DATE,
