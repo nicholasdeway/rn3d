@@ -79,6 +79,8 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
     agreedPriceLevel: 'Padrão',
     visitFrequency: '15 dias',
     status: 'Ativo',
+    defaultLogisticsType: 'combustivel',
+    defaultLogisticsCost: 0,
     productsOnSiteCount: 0,
     productsValuation: 0,
     receivableBalance: 0,
@@ -109,35 +111,18 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
   const selectedClient = availableClientsList.find((c) => c.id === selectedClientId) || fallbackDefaultClient;
 
-  // Sync client logistics memory: Prioritize Client Profile setting, then localStorage, then default 0.0
+  // Sync client logistics memory: Always use selectedClient.defaultLogisticsCost (defaulting strictly to 0)
   React.useEffect(() => {
     if (!selectedClient) return;
 
-    // 1. Prioritize defaultLogisticsCost set on the Client object profile
-    if (selectedClient.defaultLogisticsCost !== undefined && selectedClient.defaultLogisticsCost !== null) {
-      setInternalLogisticsType(selectedClient.defaultLogisticsType || 'combustivel');
-      setInternalLogisticsCost(Number(selectedClient.defaultLogisticsCost));
-      return;
-    }
+    const cost = typeof selectedClient.defaultLogisticsCost === 'number'
+      ? selectedClient.defaultLogisticsCost
+      : (Number(selectedClient.defaultLogisticsCost) || 0);
 
-    // 2. Fallback to localStorage memory
-    try {
-      const saved = localStorage.getItem('rn3d_client_logistics');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed[selectedClient.id]) {
-          setInternalLogisticsType(parsed[selectedClient.id].type || 'combustivel');
-          setInternalLogisticsCost(Number(parsed[selectedClient.id].cost ?? 0));
-          return;
-        }
-      }
-    } catch (e) {
-      console.error('Error loading client logistics memory:', e);
-    }
+    const type = selectedClient.defaultLogisticsType || 'combustivel';
 
-    // 3. Fallback default to 0
-    setInternalLogisticsType('combustivel');
-    setInternalLogisticsCost(0);
+    setInternalLogisticsType(type);
+    setInternalLogisticsCost(cost);
   }, [selectedClient, selectedClientId, isFormOpen]);
 
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
@@ -472,13 +457,12 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                       const newId = e.target.value;
                       setSelectedClientId(newId);
                       const targetCli = availableClientsList.find((c) => c.id === newId);
-                      if (targetCli && targetCli.defaultLogisticsCost !== undefined && targetCli.defaultLogisticsCost !== null) {
-                        setInternalLogisticsCost(Number(targetCli.defaultLogisticsCost));
-                        if (targetCli.defaultLogisticsType) {
-                          setInternalLogisticsType(targetCli.defaultLogisticsType);
-                        }
-                      } else {
-                        setInternalLogisticsCost(0);
+                      const cost = targetCli && typeof targetCli.defaultLogisticsCost === 'number'
+                        ? targetCli.defaultLogisticsCost
+                        : (Number(targetCli?.defaultLogisticsCost) || 0);
+                      setInternalLogisticsCost(cost);
+                      if (targetCli?.defaultLogisticsType) {
+                        setInternalLogisticsType(targetCli.defaultLogisticsType);
                       }
                     }}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-900"
