@@ -460,82 +460,213 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 </div>
               )}
 
-              {/* Items Table */}
+              {/* Selected Items List */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-slate-900">Itens e Serviços do Orçamento</h4>
+                  <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
+                    <span>Itens do Orçamento ({quoteItems.length})</span>
+                  </h4>
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-bold flex items-center gap-1 cursor-pointer"
+                    className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-bold flex items-center gap-1 cursor-pointer text-xs transition-colors"
                   >
-                    <Plus className="w-3.5 h-3.5" /> Adicionar Item Personalizado
+                    <Plus className="w-3.5 h-3.5" /> Item Personalizado
                   </button>
                 </div>
 
                 {quoteItems.length === 0 ? (
-                  <div className="p-6 border-2 border-dashed border-slate-200 rounded-xl text-center text-slate-400">
-                    Nenhum item adicionado ao orçamento. Clique no botão acima para adicionar produtos.
+                  <div className="p-6 border-2 border-dashed border-slate-200 rounded-2xl text-center text-slate-400 space-y-1">
+                    <p className="text-xs font-bold text-slate-700">Nenhum item adicionado ao orçamento</p>
+                    <p className="text-[11px]">Use a busca acima ou clique em "Item Personalizado" para adicionar.</p>
                   </div>
                 ) : (
-                  <div className="border border-slate-200 rounded-xl overflow-hidden">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
-                        <tr>
-                          <th className="p-3">Descrição do Item / Serviço</th>
-                          <th className="p-3 text-center">Qtde</th>
-                          <th className="p-3 text-right">Valor Unit.</th>
-                          <th className="p-3 text-right">Subtotal</th>
-                          <th className="p-3 text-center">Ação</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {quoteItems.map((item, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50">
-                            <td className="p-3">
-                              <input
-                                type="text"
-                                value={item.description}
-                                onChange={(e) => handleUpdateItem(idx, 'description', e.target.value)}
-                                placeholder="Descrição do item ou serviço..."
-                                className="w-full px-2 py-1 border border-slate-200 rounded-lg font-medium placeholder-slate-400"
-                              />
-                            </td>
-                            <td className="p-3 text-center">
-                              <input
-                                type="number"
-                                min="1"
-                                value={item.quantity}
-                                onChange={(e) => handleUpdateItem(idx, 'quantity', Number(e.target.value))}
-                                className="w-16 text-center py-1 border border-slate-200 rounded-lg font-bold"
-                              />
-                            </td>
-                            <td className="p-3 text-right">
-                              <input
-                                type="number"
-                                step="0.10"
-                                value={item.unitPrice}
-                                onChange={(e) => handleUpdateItem(idx, 'unitPrice', Number(e.target.value))}
-                                className="w-20 text-right py-1 border border-slate-200 rounded-lg font-medium"
-                              />
-                            </td>
-                            <td className="p-3 text-right font-bold text-emerald-600">
-                              R$ {item.subtotal.toFixed(2).replace('.', ',')}
-                            </td>
-                            <td className="p-3 text-center">
+                  <>
+                    {/* Mobile Selected Items Cards (< 768px) */}
+                    <div className="block md:hidden space-y-3">
+                      {quoteItems.map((item, idx) => {
+                        const matchingProduct = products.find(
+                          (p) =>
+                            p.id === item.productId ||
+                            p.name.toLowerCase() === item.description.toLowerCase() ||
+                            item.description.toLowerCase().includes(p.name.toLowerCase())
+                        );
+
+                        return (
+                          <div
+                            key={idx}
+                            className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-xs space-y-3"
+                          >
+                            {/* Top Row: Thumbnail Image, Editable Description & Red X Delete */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="w-11 h-11 rounded-xl bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200">
+                                {matchingProduct?.imageUrl ? (
+                                  <img
+                                    src={matchingProduct.imageUrl}
+                                    alt={item.description}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <span>3D</span>
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <label className="text-[10px] font-semibold text-slate-400 block">Descrição do Item</label>
+                                <input
+                                  type="text"
+                                  value={item.description}
+                                  onChange={(e) => handleUpdateItem(idx, 'description', e.target.value)}
+                                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50/50"
+                                />
+                              </div>
+
                               <button
                                 type="button"
                                 onClick={() => handleRemoveItem(idx)}
-                                className="p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0 mt-3"
+                                title="Remover este item do orçamento"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <X className="w-4 h-4 text-rose-500" />
                               </button>
-                            </td>
+                            </div>
+
+                            {/* Bottom Row: Quantity Stepper, Unit Price & Subtotal */}
+                            <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
+                              {/* Quantity Stepper */}
+                              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateItem(idx, 'quantity', Math.max(1, item.quantity - 1))}
+                                  className="w-6 h-6 bg-white hover:bg-slate-200 rounded-lg text-slate-700 font-black flex items-center justify-center cursor-pointer shadow-2xs"
+                                >
+                                  -
+                                </button>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity}
+                                  onChange={(e) => handleUpdateItem(idx, 'quantity', Math.max(1, Number(e.target.value)))}
+                                  className="w-8 text-center font-extrabold text-slate-900 bg-transparent focus:outline-none text-xs"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdateItem(idx, 'quantity', item.quantity + 1)}
+                                  className="w-6 h-6 bg-white hover:bg-slate-200 rounded-lg text-slate-700 font-black flex items-center justify-center cursor-pointer shadow-2xs"
+                                >
+                                  +
+                                </button>
+                              </div>
+
+                              {/* Unit Price */}
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-slate-400 font-medium">Un: R$</span>
+                                <input
+                                  type="number"
+                                  step="0.10"
+                                  value={item.unitPrice}
+                                  onChange={(e) => handleUpdateItem(idx, 'unitPrice', Number(e.target.value))}
+                                  className="w-16 px-1.5 py-1 border border-slate-200 rounded-lg font-bold text-slate-800 text-xs text-right bg-white"
+                                />
+                              </div>
+
+                              {/* Subtotal */}
+                              <div className="text-right">
+                                <span className="text-[10px] text-slate-400 font-medium block">Subtotal</span>
+                                <span className="font-black text-emerald-600 text-xs">
+                                  R$ {item.subtotal.toFixed(2).replace('.', ',')}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Desktop Items Table (>= 768px) */}
+                    <div className="hidden md:block border border-slate-200 rounded-2xl overflow-hidden bg-white">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
+                          <tr>
+                            <th className="p-3">Foto</th>
+                            <th className="p-3">Descrição do Item / Serviço</th>
+                            <th className="p-3 text-center">Qtde</th>
+                            <th className="p-3 text-right">Valor Unit.</th>
+                            <th className="p-3 text-right">Subtotal</th>
+                            <th className="p-3 text-center">Ação</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {quoteItems.map((item, idx) => {
+                            const matchingProduct = products.find(
+                              (p) =>
+                                p.id === item.productId ||
+                                p.name.toLowerCase() === item.description.toLowerCase() ||
+                                item.description.toLowerCase().includes(p.name.toLowerCase())
+                            );
+
+                            return (
+                              <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="p-3">
+                                  <div className="w-9 h-9 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200">
+                                    {matchingProduct?.imageUrl ? (
+                                      <img
+                                        src={matchingProduct.imageUrl}
+                                        alt={item.description}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <span>3D</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="p-3">
+                                  <input
+                                    type="text"
+                                    value={item.description}
+                                    onChange={(e) => handleUpdateItem(idx, 'description', e.target.value)}
+                                    placeholder="Descrição do item ou serviço..."
+                                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-bold text-slate-900 placeholder-slate-400 bg-slate-50/50"
+                                  />
+                                </td>
+                                <td className="p-3 text-center">
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={item.quantity}
+                                    onChange={(e) => handleUpdateItem(idx, 'quantity', Number(e.target.value))}
+                                    className="w-16 text-center py-1 border border-slate-200 rounded-lg font-bold"
+                                  />
+                                </td>
+                                <td className="p-3 text-right">
+                                  <input
+                                    type="number"
+                                    step="0.10"
+                                    value={item.unitPrice}
+                                    onChange={(e) => handleUpdateItem(idx, 'unitPrice', Number(e.target.value))}
+                                    className="w-20 text-right py-1 border border-slate-200 rounded-lg font-semibold"
+                                  />
+                                </td>
+                                <td className="p-3 text-right font-bold text-emerald-600">
+                                  R$ {item.subtotal.toFixed(2).replace('.', ',')}
+                                </td>
+                                <td className="p-3 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveItem(idx)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer transition-colors"
+                                    title="Excluir item"
+                                  >
+                                    <X className="w-4 h-4 text-rose-500" />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -650,33 +781,33 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Action Buttons - Optimized for Mobile & Desktop */}
-            <div className="p-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-              <button
-                type="button"
-                onClick={() => setIsFormOpen(false)}
-                className="order-3 sm:order-1 px-3.5 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl font-semibold text-xs transition-colors cursor-pointer text-center"
-              >
-                Cancelar
-              </button>
-              <div className="order-1 sm:order-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              {/* Action Buttons - Moved Inside Scroll Area (Non-Fixed) */}
+              <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                 <button
                   type="button"
-                  onClick={() => handleSubmitQuote('Rascunho')}
-                  className="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs shadow-2xs transition-colors cursor-pointer whitespace-nowrap text-center"
+                  onClick={() => setIsFormOpen(false)}
+                  className="order-3 sm:order-1 px-3.5 py-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl font-semibold text-xs transition-colors cursor-pointer text-center"
                 >
-                  Salvar Rascunho
+                  Cancelar
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleSubmitQuote('Enviado')}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>Marcar como Enviado</span>
-                </button>
+                <div className="order-1 sm:order-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSubmitQuote('Rascunho')}
+                    className="px-4 py-2.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs shadow-2xs transition-colors cursor-pointer whitespace-nowrap text-center"
+                  >
+                    Salvar Rascunho
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSubmitQuote('Enviado')}
+                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Marcar como Enviado</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
