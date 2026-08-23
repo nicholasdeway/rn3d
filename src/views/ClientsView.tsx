@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Client } from '../types';
 import { fetchAddressByCep } from '../services/viaCepService';
+import { formatPhone, formatDocument } from '../utils/formatters';
 import {
   Users,
   Plus,
@@ -570,9 +571,9 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                     <input
                       type="text"
                       value={formData.document}
-                      onChange={(e) => setFormData({ ...formData, document: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, document: formatDocument(e.target.value) })}
                       placeholder="00.000.000/0001-00"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400 font-mono"
                     />
                   </div>
                   <div>
@@ -591,9 +592,12 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                     <input
                       type="text"
                       value={formData.whatsapp}
-                      onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                      placeholder="(22) 99876-5432"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
+                      onChange={(e) => {
+                        const formatted = formatPhone(e.target.value);
+                        setFormData({ ...formData, whatsapp: formatted, phone: formatted });
+                      }}
+                      placeholder="(22) 99754-0815"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400 font-mono"
                     />
                   </div>
                   <div>

@@ -3,6 +3,7 @@ import { Client, ClientInventoryItem, Order, Quote } from '../types';
 import { ImageCropperModal } from '../components/ImageCropperModal';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 import { fetchAddressByCep } from '../services/viaCepService';
+import { formatPhone, formatDocument } from '../utils/formatters';
 import {
   Building2,
   Phone,
@@ -887,7 +888,8 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                     <input
                       type="text"
                       value={editFormData.document || ''}
-                      onChange={(e) => setEditFormData({ ...editFormData, document: e.target.value })}
+                      onChange={(e) => setEditFormData({ ...editFormData, document: formatDocument(e.target.value) })}
+                      placeholder="00.000.000/0001-00"
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono"
                     />
                   </div>
@@ -913,9 +915,13 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                     <label className="block font-semibold text-slate-700 mb-1">Telefone / WhatsApp</label>
                     <input
                       type="text"
-                      value={editFormData.phone || ''}
-                      onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      value={editFormData.phone || editFormData.whatsapp || ''}
+                      onChange={(e) => {
+                        const formatted = formatPhone(e.target.value);
+                        setEditFormData({ ...editFormData, phone: formatted, whatsapp: formatted });
+                      }}
+                      placeholder="(22) 99754-0815"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono"
                     />
                   </div>
                 </div>
