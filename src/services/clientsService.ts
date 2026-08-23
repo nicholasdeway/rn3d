@@ -218,7 +218,7 @@ export async function syncMissingClientsToSupabase(missingClients: Client[]): Pr
   let syncedCount = 0;
 
   try {
-    const { data: dbData } = await supabase.from('clients').select('id, name, avatar_url, default_logistics_cost');
+    const { data: dbData } = await supabase.from('clients').select('id, name');
     const dbNamesMap = new Map((dbData || []).map((c) => [(c.name || '').toLowerCase().trim(), c]));
 
     for (const c of missingClients) {
@@ -226,20 +226,9 @@ export async function syncMissingClientsToSupabase(missingClients: Client[]): Pr
         const normName = (c.name || '').toLowerCase().trim();
         const existingInDb = dbNamesMap.get(normName);
 
-        if (existingInDb) {
-          const updates: Partial<Client> = {};
-          if (c.avatarUrl && !existingInDb.avatar_url) {
-            updates.avatarUrl = c.avatarUrl;
-          }
-          if (c.defaultLogisticsCost !== undefined && c.defaultLogisticsCost !== existingInDb.default_logistics_cost) {
-            updates.defaultLogisticsCost = c.defaultLogisticsCost;
-            updates.defaultLogisticsType = c.defaultLogisticsType;
-          }
-          if (Object.keys(updates).length > 0) {
-            await updateClient(existingInDb.id, updates);
-            syncedCount++;
-          }
-        } else {
+        // ONLY insert if client does NOT exist in Supabase DB at all!
+        // Never overwrite existing DB records with browser state!
+        if (!existingInDb) {
           await createClient(c);
           syncedCount++;
         }
