@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Product } from '../types';
 import { Search, Plus, X, ChevronDown, Check, Sparkles } from 'lucide-react';
+import { ImageLightboxModal } from './ImageLightboxModal';
 
 interface ProductSelectComboboxProps {
   products: Product[];
@@ -16,6 +17,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [lastAddedId, setLastAddedId] = useState<string | null>(null);
+  const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
@@ -255,7 +257,18 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                     className="w-full p-2.5 text-left hover:bg-indigo-50/80 transition-colors flex items-center justify-between gap-3 group cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 group-hover:border-indigo-300">
+                      <div
+                        onClick={(e) => {
+                          if (p.imageUrl) {
+                            e.stopPropagation();
+                            setZoomImage({ url: p.imageUrl, title: p.name });
+                          }
+                        }}
+                        className={`w-10 h-10 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 group-hover:border-indigo-300 ${
+                          p.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                        }`}
+                        title={p.imageUrl ? 'Clique para ampliar a foto' : undefined}
+                      >
                         {p.imageUrl ? (
                           <img
                             src={p.imageUrl}
@@ -300,6 +313,15 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
             )}
           </div>
         </div>
+      )}
+
+      {/* Lightbox Full-Screen Modal */}
+      {zoomImage && (
+        <ImageLightboxModal
+          imageUrl={zoomImage.url}
+          title={zoomImage.title}
+          onClose={() => setZoomImage(null)}
+        />
       )}
     </div>
   );

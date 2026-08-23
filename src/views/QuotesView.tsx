@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Client, Product, Quote, QuoteItem } from '../types';
 import { ProductSelectCombobox } from '../components/ProductSelectCombobox';
+import { ImageLightboxModal } from '../components/ImageLightboxModal';
 import {
   FileText,
   Plus,
@@ -40,6 +41,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(!!preselectedClientId);
   const [previewPdfQuote, setPreviewPdfQuote] = useState<Quote | null>(null);
+  const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
   const filteredQuotes = quotes.filter((q) => {
     if (!searchQuery || searchQuery.trim() === '') return true;
@@ -499,7 +501,17 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                           >
                             {/* Top Row: Thumbnail Image, Editable Description & Red X Delete */}
                             <div className="flex items-start justify-between gap-3">
-                              <div className="w-11 h-11 rounded-xl bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200">
+                              <div
+                                onClick={() => {
+                                  if (matchingProduct?.imageUrl) {
+                                    setZoomImage({ url: matchingProduct.imageUrl, title: item.description });
+                                  }
+                                }}
+                                className={`w-11 h-11 rounded-xl bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 ${
+                                  matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                                }`}
+                                title={matchingProduct?.imageUrl ? 'Clique para ver foto em tela cheia' : undefined}
+                              >
                                 {matchingProduct?.imageUrl ? (
                                   <img
                                     src={matchingProduct.imageUrl}
@@ -608,7 +620,17 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                             return (
                               <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
                                 <td className="p-3">
-                                  <div className="w-9 h-9 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200">
+                                  <div
+                                    onClick={() => {
+                                      if (matchingProduct?.imageUrl) {
+                                        setZoomImage({ url: matchingProduct.imageUrl, title: item.description });
+                                      }
+                                    }}
+                                    className={`w-9 h-9 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 ${
+                                      matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                                    }`}
+                                    title={matchingProduct?.imageUrl ? 'Clique para ver foto em tela cheia' : undefined}
+                                  >
                                     {matchingProduct?.imageUrl ? (
                                       <img
                                         src={matchingProduct.imageUrl}
@@ -1033,6 +1055,15 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {zoomImage && (
+        <ImageLightboxModal
+          imageUrl={zoomImage.url}
+          title={zoomImage.title}
+          onClose={() => setZoomImage(null)}
+        />
       )}
     </div>
   );
