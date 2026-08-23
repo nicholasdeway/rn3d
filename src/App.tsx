@@ -7,7 +7,7 @@ import { LoginView } from './views/LoginView';
 import { Box } from 'lucide-react';
 import { fetchProducts, createProduct, updateProduct, syncMissingProductsToSupabase } from './services/productsService';
 import { fetchClients, createClient, updateClient, syncMissingClientsToSupabase } from './services/clientsService';
-import { fetchOrders, createOrder, updateOrderStatus, syncMissingOrdersToSupabase } from './services/ordersService';
+import { fetchOrders, createOrder, updateOrderStatus, updateOrderProgress, syncMissingOrdersToSupabase } from './services/ordersService';
 import { fetchQuotes, createQuote, updateQuoteStatus, syncMissingQuotesToSupabase } from './services/quotesService';
 
 // Views
@@ -663,6 +663,47 @@ export function App() {
     }
   };
 
+  const handleUpdateOrderProgress = async (orderId: string, newProgressPct: number) => {
+    const clampedPct = Math.max(0, Math.min(100, Math.round(newProgressPct / 5) * 5));
+
+    let updatedStatus: Order['status'] | undefined;
+    if (clampedPct === 100) {
+      updatedStatus = 'Pronto';
+    } else if (clampedPct > 0) {
+      updatedStatus = 'Em produção';
+    }
+
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id === orderId) {
+          const finalStatus = updatedStatus || o.status;
+          return {
+            ...o,
+            productionProgressPct: clampedPct,
+            status: finalStatus,
+            timeline: [
+              {
+                date: `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
+                title: `Progresso de Impressão 3D: ${clampedPct}%`,
+                description: `Status de Produção: ${finalStatus}`,
+              },
+              ...(o.timeline || []),
+            ],
+          };
+        }
+        return o;
+      })
+    );
+
+    showToast(`Progresso de impressão 3D do Pedido ${orderId} ajustado para ${clampedPct}%!`, 'info');
+
+    try {
+      await updateOrderProgress(orderId, clampedPct, updatedStatus);
+    } catch (err) {
+      console.error('Erro ao atualizar progresso de impressão no Supabase:', err);
+    }
+  };
+
   const handleUpdateOrderPayment = (orderId: string, additionalAmount: number) => {
     setOrders((prev) =>
       prev.map((o) => {
@@ -965,7 +1006,12 @@ export function App() {
               )}
 
               {currentView === 'orders' && (
-                <OrdersView orders={orders} products={products} searchQuery={globalSearchQuery} />
+                <OrdersView
+                  orders={orders}
+                  products={products}
+                  searchQuery={globalSearchQuery}
+                  onUpdateOrderProgress={handleUpdateOrderProgress}
+                />
               )}
 
               {currentView === 'inventory-general' && (

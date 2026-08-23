@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
 import { Order, Product } from '../types';
-import { ShoppingCart, Printer, X, Truck, FileText } from 'lucide-react';
+import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 
 interface OrdersViewProps {
   orders: Order[];
   products?: Product[];
   searchQuery?: string;
+  onUpdateOrderProgress?: (orderId: string, newProgressPct: number) => void;
 }
 
-export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], searchQuery = '' }) => {
+export const OrdersView: React.FC<OrdersViewProps> = ({
+  orders,
+  products = [],
+  searchQuery = '',
+  onUpdateOrderProgress,
+}) => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [previewPdfOrder, setPreviewPdfOrder] = useState<Order | null>(null);
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
+
 
   const filteredOrders = orders.filter((o) => {
     if (!searchQuery || searchQuery.trim() === '') return true;
@@ -61,14 +68,44 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], s
                 onClick={() => setSelectedOrder(o)}
                 className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3 cursor-pointer hover:border-indigo-300 transition-colors"
               >
-                {/* Card Header: Order ID & Production Status */}
+                {/* Card Header: Order ID & Interactive 5% Production Progress */}
                 <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
                   <span className="font-mono font-bold text-indigo-600 text-xs bg-indigo-50 px-2.5 py-1 rounded-lg">
                     {o.id}
                   </span>
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    {o.status} ({o.productionProgressPct}%)
-                  </span>
+                  <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newPct = Math.max(0, o.productionProgressPct - 5);
+                        if (onUpdateOrderProgress) onUpdateOrderProgress(o.id, newPct);
+                      }}
+                      disabled={o.productionProgressPct <= 0}
+                      className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 rounded-md cursor-pointer transition-colors active:scale-95"
+                      title="Diminuir 5%"
+                    >
+                      <Minus className="w-3 h-3 text-rose-500" />
+                    </button>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
+                      o.productionProgressPct === 100
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                    }`}>
+                      {o.status} ({o.productionProgressPct}%)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newPct = Math.min(100, o.productionProgressPct + 5);
+                        if (onUpdateOrderProgress) onUpdateOrderProgress(o.id, newPct);
+                      }}
+                      disabled={o.productionProgressPct >= 100}
+                      className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 rounded-md cursor-pointer transition-colors active:scale-95"
+                      title="Aumentar 5%"
+                    >
+                      <Plus className="w-3 h-3 text-emerald-600" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Card Body: Client Name, Items & Total */}
@@ -127,7 +164,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], s
                     <th className="p-4 text-center">Itens</th>
                     <th className="p-4 text-right">Valor</th>
                     <th className="p-4">Pagamento</th>
-                    <th className="p-4">Status Produção</th>
+                    <th className="p-4">Progresso Impressão 3D</th>
                     <th className="p-4 text-right">Ação</th>
                   </tr>
                 </thead>
@@ -147,9 +184,39 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], s
                       </td>
                       <td className="p-4 font-semibold text-slate-700">{o.paymentStatusText}</td>
                       <td className="p-4">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700">
-                          {o.status} ({o.productionProgressPct}%)
-                        </span>
+                        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newPct = Math.max(0, o.productionProgressPct - 5);
+                              if (onUpdateOrderProgress) onUpdateOrderProgress(o.id, newPct);
+                            }}
+                            disabled={o.productionProgressPct <= 0}
+                            className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 rounded-md cursor-pointer transition-colors active:scale-95"
+                            title="Diminuir 5%"
+                          >
+                            <Minus className="w-3 h-3 text-rose-500" />
+                          </button>
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
+                            o.productionProgressPct === 100
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                          }`}>
+                            {o.status} ({o.productionProgressPct}%)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newPct = Math.min(100, o.productionProgressPct + 5);
+                              if (onUpdateOrderProgress) onUpdateOrderProgress(o.id, newPct);
+                            }}
+                            disabled={o.productionProgressPct >= 100}
+                            className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-30 rounded-md cursor-pointer transition-colors active:scale-95"
+                            title="Aumentar 5%"
+                          >
+                            <Plus className="w-3 h-3 text-emerald-600" />
+                          </button>
+                        </div>
                       </td>
                       <td className="p-4 text-right space-x-2">
                         <button
@@ -207,17 +274,127 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], s
             </div>
 
             <div className="p-6 overflow-y-auto space-y-6 text-xs">
-              {/* Progress bar */}
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-2">
-                <div className="flex justify-between font-bold text-slate-900">
-                  <span>Progresso de Impressão 3D:</span>
-                  <span className="text-indigo-600">{selectedOrder.productionProgressPct}%</span>
+              {/* Interactive 3D Print Progress Regulator (5% increments) */}
+              <div className="p-4 bg-gradient-to-r from-indigo-50/80 via-slate-50 to-cyan-50/60 rounded-2xl border border-indigo-100/90 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
+                      <Printer className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                        Progresso de Impressão 3D
+                        <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-md">
+                          Passo: 5 em 5%
+                        </span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500">Regule o avanço da produção das peças na impressora 3D</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`text-sm font-black font-mono px-3 py-1 rounded-xl border transition-colors ${
+                      selectedOrder.productionProgressPct === 100
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : selectedOrder.productionProgressPct > 0
+                          ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
+                          : 'bg-slate-100 text-slate-700 border-slate-300'
+                    }`}>
+                      {selectedOrder.productionProgressPct}%
+                    </span>
+                  </div>
                 </div>
-                <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+
+                {/* Progress Bar Display */}
+                <div className="w-full h-3 bg-slate-200/90 rounded-full overflow-hidden shadow-inner flex">
                   <div
-                    className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                    className={`h-full transition-all duration-300 ${
+                      selectedOrder.productionProgressPct === 100
+                        ? 'bg-emerald-500'
+                        : selectedOrder.productionProgressPct >= 50
+                          ? 'bg-indigo-600'
+                          : 'bg-cyan-500'
+                    }`}
                     style={{ width: `${selectedOrder.productionProgressPct}%` }}
                   />
+                </div>
+
+                {/* 5% Stepper Controls: -5%, Range Slider (step=5), +5% */}
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newPct = Math.max(0, selectedOrder.productionProgressPct - 5);
+                      if (onUpdateOrderProgress) {
+                        onUpdateOrderProgress(selectedOrder.id, newPct);
+                      }
+                      setSelectedOrder((prev) => (prev ? { ...prev, productionProgressPct: newPct } : null));
+                    }}
+                    disabled={selectedOrder.productionProgressPct <= 0}
+                    className="px-3 py-2 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                    title="Diminuir 5%"
+                  >
+                    <Minus className="w-4 h-4 text-rose-500" />
+                    <span>-5%</span>
+                  </button>
+
+                  <div className="flex-1 px-1">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={selectedOrder.productionProgressPct}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        if (onUpdateOrderProgress) {
+                          onUpdateOrderProgress(selectedOrder.id, val);
+                        }
+                        setSelectedOrder((prev) => (prev ? { ...prev, productionProgressPct: val } : null));
+                      }}
+                      className="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newPct = Math.min(100, selectedOrder.productionProgressPct + 5);
+                      if (onUpdateOrderProgress) {
+                        onUpdateOrderProgress(selectedOrder.id, newPct);
+                      }
+                      setSelectedOrder((prev) => (prev ? { ...prev, productionProgressPct: newPct } : null));
+                    }}
+                    disabled={selectedOrder.productionProgressPct >= 100}
+                    className="px-3 py-2 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-white border border-slate-200 text-slate-800 rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                    title="Aumentar 5%"
+                  >
+                    <Plus className="w-4 h-4 text-emerald-600" />
+                    <span>+5%</span>
+                  </button>
+                </div>
+
+                {/* Preset Chips */}
+                <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Atalhos:</span>
+                  {[0, 25, 50, 75, 100].map((pct) => (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => {
+                        if (onUpdateOrderProgress) {
+                          onUpdateOrderProgress(selectedOrder.id, pct);
+                        }
+                        setSelectedOrder((prev) => (prev ? { ...prev, productionProgressPct: pct } : null));
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        selectedOrder.productionProgressPct === pct
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {pct === 0 ? '0% (Fila)' : pct === 100 ? '100% (Pronto)' : `${pct}%`}
+                    </button>
+                  ))}
                 </div>
               </div>
 

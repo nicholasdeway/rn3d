@@ -134,6 +134,33 @@ export async function updateOrderStatus(orderCode: string, newStatus: string): P
   return true;
 }
 
+export async function updateOrderProgress(
+  orderCode: string,
+  progressPct: number,
+  newStatus?: string
+): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  const updates: Record<string, any> = {
+    production_progress_pct: progressPct,
+  };
+  if (newStatus) {
+    updates.status = newStatus;
+  }
+
+  const { error } = await supabase
+    .from('orders')
+    .update(updates)
+    .eq('order_code', orderCode);
+
+  if (error) {
+    console.error('Erro ao atualizar progresso de impressão 3D:', error.message);
+    return false;
+  }
+  return true;
+}
+
+
 export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promise<number> {
   if (!isSupabaseConfigured() || missingOrders.length === 0) return 0;
 
