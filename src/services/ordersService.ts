@@ -1,10 +1,9 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Order } from '../types';
-import { INITIAL_ORDERS } from '../mockData';
 
 export async function fetchOrders(): Promise<Order[]> {
   if (!isSupabaseConfigured()) {
-    return INITIAL_ORDERS;
+    return [];
   }
 
   const { data, error } = await supabase
@@ -14,7 +13,7 @@ export async function fetchOrders(): Promise<Order[]> {
 
   if (error) {
     console.error('Erro ao buscar pedidos no Supabase:', error.message);
-    return INITIAL_ORDERS;
+    return [];
   }
 
   return (data || []).map((row) => ({

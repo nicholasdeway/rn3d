@@ -44,8 +44,14 @@ export const VisitsView: React.FC<VisitsViewProps> = ({ visits, onStartVisit }) 
         </div>
 
         <button
-          onClick={() => onStartVisit(visits[0]?.clientId || 'cli-1')}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0"
+          onClick={() => {
+            if (visits.length > 0 && visits[0].clientId) {
+              onStartVisit(visits[0].clientId);
+            } else {
+              alert('Nenhuma visita agendada no momento. Cadastre ou selecione um cliente.');
+            }
+          }}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0 cursor-pointer"
         >
           <MapPin className="w-4 h-4" />
           Iniciar Visita Presencial

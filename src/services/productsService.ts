@@ -1,6 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Product } from '../types';
-import { INITIAL_PRODUCTS } from '../mockData';
 
 export async function fetchProducts(): Promise<Product[]> {
   let localProducts: Product[] = [];
@@ -17,14 +16,7 @@ export async function fetchProducts(): Promise<Product[]> {
   }
 
   if (!isSupabaseConfigured()) {
-    if (localProducts.length > 0) {
-      const localSkus = new Set(localProducts.map((p) => (p.sku || '').toLowerCase()));
-      const missingCatalog = INITIAL_PRODUCTS.filter(
-        (p) => p.sku && !localSkus.has(p.sku.toLowerCase())
-      );
-      return [...localProducts, ...missingCatalog];
-    }
-    return INITIAL_PRODUCTS;
+    return localProducts;
   }
 
   const { data, error } = await supabase
@@ -34,14 +26,7 @@ export async function fetchProducts(): Promise<Product[]> {
 
   if (error || !data) {
     console.error('Erro ao buscar produtos no Supabase:', error?.message);
-    if (localProducts.length > 0) {
-      const localSkus = new Set(localProducts.map((p) => (p.sku || '').toLowerCase()));
-      const missingCatalog = INITIAL_PRODUCTS.filter(
-        (p) => p.sku && !localSkus.has(p.sku.toLowerCase())
-      );
-      return [...localProducts, ...missingCatalog];
-    }
-    return INITIAL_PRODUCTS;
+    return localProducts;
   }
 
   const dbProducts: Product[] = data.map((row) => ({
@@ -79,20 +64,13 @@ export async function fetchProducts(): Promise<Product[]> {
     status: row.status as 'Ativo' | 'Inativo',
   }));
 
-  // Merge dbProducts with localProducts and INITIAL_PRODUCTS to guarantee zero loss
   const dbSkus = new Set(dbProducts.map((p) => (p.sku || '').toLowerCase()));
-  const localSkus = new Set(localProducts.map((p) => (p.sku || '').toLowerCase()));
-
   const extraLocal = localProducts.filter((p) => p.sku && !dbSkus.has(p.sku.toLowerCase()));
-  const extraCatalog = INITIAL_PRODUCTS.filter(
-    (p) => p.sku && !dbSkus.has(p.sku.toLowerCase()) && !localSkus.has(p.sku.toLowerCase())
-  );
 
-  const fullList = [...dbProducts, ...extraLocal, ...extraCatalog];
+  const fullList = [...dbProducts, ...extraLocal];
 
-  // Auto-sync missing local/catalog products to Supabase in background
-  if (extraLocal.length > 0 || extraCatalog.length > 0) {
-    syncMissingProductsToSupabase([...extraLocal, ...extraCatalog]).catch((e) =>
+  if (extraLocal.length > 0) {
+    syncMissingProductsToSupabase(extraLocal).catch((e) =>
       console.error('Background product sync error:', e)
     );
   }

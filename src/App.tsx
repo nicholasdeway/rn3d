@@ -29,17 +29,6 @@ import { ReportsView } from './views/ReportsView';
 import { SettingsView } from './views/SettingsView';
 
 import { Client, Consignment, Order, Product, Quote, ViewMode, Visit } from './types';
-import {
-  INITIAL_ORDERS,
-  INITIAL_PRODUCTS,
-  INITIAL_CLIENTS,
-  INITIAL_CONSIGNMENTS,
-  INITIAL_VISITS,
-  INITIAL_EXCHANGES,
-  INITIAL_CLIENT_INVENTORIES,
-  INITIAL_MOVEMENTS,
-  INITIAL_SALES,
-} from './mockData';
 import { MobileFloatingNav } from './components/MobileFloatingNav';
 
 export function App() {
@@ -106,22 +95,59 @@ export function App() {
     },
   ];
 
+  const isSampleMockItem = (item: any) => {
+    if (!item) return false;
+    const id = String(item.id || '');
+    const name = String(item.name || item.clientName || '').toLowerCase();
+    return (
+      id === 'cli-1' ||
+      id === 'cli-2' ||
+      id === 'cli-3' ||
+      id === 'cli-4' ||
+      id === 'cli-5' ||
+      id === 'cli-6' ||
+      id === 'REM-000041' ||
+      id === 'REM-000040' ||
+      id === 'VIS-000052' ||
+      id === 'VIS-000051' ||
+      id === 'VIS-000050' ||
+      id === 'TRC-000014' ||
+      id === 'ORC-000034' ||
+      id === 'ORC-000033' ||
+      id === 'ORC-920984' ||
+      id === 'PED-000081' ||
+      id === 'PED-000080' ||
+      id === 'sal-1' ||
+      id === 'sal-2' ||
+      id === 'sal-3' ||
+      id === 'mov-1' ||
+      id === 'mov-2' ||
+      id === 'mov-3' ||
+      id === 'mov-4' ||
+      name.includes('depósito avenida') ||
+      name.includes('bar do joão') ||
+      name.includes('adega imperial') ||
+      name.includes('conveniência central') ||
+      name.includes('empresa abc')
+    );
+  };
+
   // Real Database State (Initialized with localStorage persistence)
   const [products, setProducts] = useState<Product[]>(() => {
     try {
       const saved = localStorage.getItem('rn3d_products');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error loading products from localStorage:', e);
     }
-    return INITIAL_PRODUCTS;
+    return [];
   });
 
   useEffect(() => {
-    if (products && products.length > 0) {
+    if (products) {
       try {
         localStorage.setItem('rn3d_products', JSON.stringify(products));
       } catch (e) {
@@ -129,17 +155,20 @@ export function App() {
       }
     }
   }, [products]);
+
   const [clients, setClients] = useState<Client[]>(() => {
     try {
       const saved = localStorage.getItem('rn3d_clients');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((c) => !isSampleMockItem(c));
+        }
       }
     } catch (e) {
       console.error('Error loading clients from localStorage:', e);
     }
-    return INITIAL_CLIENTS;
+    return [];
   });
 
   useEffect(() => {
@@ -155,12 +184,14 @@ export function App() {
       const saved = localStorage.getItem('rn3d_consignments');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((c) => !isSampleMockItem(c));
+        }
       }
     } catch (e) {
       console.error('Error loading consignments from localStorage:', e);
     }
-    return INITIAL_CONSIGNMENTS;
+    return [];
   });
 
   useEffect(() => {
@@ -176,12 +207,14 @@ export function App() {
       const saved = localStorage.getItem('rn3d_visits');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((v) => !isSampleMockItem(v));
+        }
       }
     } catch (e) {
       console.error('Error loading visits from localStorage:', e);
     }
-    return INITIAL_VISITS;
+    return [];
   });
 
   useEffect(() => {
@@ -197,12 +230,14 @@ export function App() {
       const saved = localStorage.getItem('rn3d_exchanges');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((ex) => !isSampleMockItem(ex));
+        }
       }
     } catch (e) {
       console.error('Error loading exchanges from localStorage:', e);
     }
-    return INITIAL_EXCHANGES;
+    return [];
   });
 
   useEffect(() => {
@@ -212,17 +247,20 @@ export function App() {
       console.error('Error saving exchanges to localStorage:', e);
     }
   }, [exchanges]);
+
   const [quotes, setQuotes] = useState<Quote[]>(() => {
     try {
       const saved = localStorage.getItem('rn3d_quotes');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((q) => !isSampleMockItem(q));
+        }
       }
     } catch (e) {
       console.error('Error loading quotes from localStorage:', e);
     }
-    return INITIAL_QUOTES;
+    return [];
   });
 
   useEffect(() => {
@@ -240,7 +278,7 @@ export function App() {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           const filtered = parsed
-            .filter((o: any) => o.id !== 'PED-000081' && o.id !== 'PED-000080')
+            .filter((o: any) => !isSampleMockItem(o))
             .map((o: any) => {
               if (o.paymentStatusText === '50% Recebido') {
                 return { ...o, paidAmount: 0.0, paymentStatusText: 'Aguardando Pagamento' };
@@ -253,7 +291,7 @@ export function App() {
     } catch (e) {
       console.error('Error loading orders from localStorage:', e);
     }
-    return INITIAL_ORDERS;
+    return [];
   });
 
   useEffect(() => {
@@ -331,12 +369,14 @@ export function App() {
       const saved = localStorage.getItem('rn3d_transactions');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((t) => !isSampleMockItem(t));
+        }
       }
     } catch (e) {
       console.error('Error loading transactions from localStorage:', e);
     }
-    return INITIAL_SALES;
+    return [];
   });
 
   useEffect(() => {
@@ -352,12 +392,14 @@ export function App() {
       const saved = localStorage.getItem('rn3d_movements');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((m) => !isSampleMockItem(m));
+        }
       }
     } catch (e) {
       console.error('Error loading movements from localStorage:', e);
     }
-    return INITIAL_MOVEMENTS;
+    return [];
   });
 
   useEffect(() => {
@@ -373,13 +415,29 @@ export function App() {
       const saved = localStorage.getItem('rn3d_client_inventories');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') return parsed;
+        if (parsed && typeof parsed === 'object') {
+          const cleaned: Record<string, any> = {};
+          Object.keys(parsed).forEach((key) => {
+            if (key !== 'cli-1' && key !== 'cli-2' && key !== 'cli-3' && key !== 'cli-4' && key !== 'cli-5') {
+              cleaned[key] = parsed[key];
+            }
+          });
+          return cleaned;
+        }
       }
     } catch (e) {
       console.error('Error loading clientInventories from localStorage:', e);
     }
-    return INITIAL_CLIENT_INVENTORIES;
+    return {};
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rn3d_client_inventories', JSON.stringify(clientInventories));
+    } catch (e) {
+      console.error('Error saving clientInventories to localStorage:', e);
+    }
+  }, [clientInventories]);
 
   useEffect(() => {
     try {

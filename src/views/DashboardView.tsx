@@ -236,102 +236,145 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Product Catalogs Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Products List Overview */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Flame className="w-5 h-5 text-amber-500" />
-                Catálogo de Produtos Cadastrados
-              </h3>
-              <p className="text-xs text-slate-500">Produtos gravados no banco de dados Supabase</p>
-            </div>
-            <button
-              onClick={() => onNavigate('products')}
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
-            >
-              Ver catálogo ({products.length})
-            </button>
-          </div>
-
-          {products.length === 0 ? (
-            <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-              <Boxes className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-60" />
-              <p className="text-sm font-semibold text-slate-700">Seu banco de produtos está vazio</p>
-              <p className="text-xs text-slate-400 mt-1 mb-4">Cadastre seu primeiro modelo 3D para gerar orçamentos e pedidos.</p>
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Flame className="w-5 h-5 text-amber-500" />
+                  Catálogo de Produtos Cadastrados
+                </h3>
+                <p className="text-xs text-slate-500">Produtos gravados no banco de dados Supabase</p>
+              </div>
               <button
                 onClick={() => onNavigate('products')}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 transition-colors inline-flex items-center gap-1.5"
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer"
               >
-                <Plus className="w-4 h-4" />
-                Cadastrar Primeiro Produto
+                Ver catálogo ({products.length})
               </button>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {products.slice(0, 5).map((p) => (
-                <div key={p.id} className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0">
-                      3D
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-slate-900 text-sm">{p.name}</h4>
-                      <p className="text-xs text-slate-500">SKU: {p.sku} • {p.material}</p>
-                    </div>
-                  </div>
 
-                  <div className="text-right">
-                    <span className="text-xs font-bold text-slate-900 block">{formatCurrency(p.standardPrice)}</span>
-                    <span className="text-[11px] text-slate-500">{p.currentStock} un em estoque</span>
+            {products.length === 0 ? (
+              <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <Boxes className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-60" />
+                <p className="text-sm font-semibold text-slate-700">Seu banco de produtos está vazio</p>
+                <p className="text-xs text-slate-400 mt-1 mb-4">Cadastre seu primeiro modelo 3D para gerar orçamentos e pedidos.</p>
+                <button
+                  onClick={() => onNavigate('products')}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  Cadastrar Primeiro Produto
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {products.slice(0, 10).map((p) => (
+                  <div key={p.id} className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200">
+                        {p.imageUrl ? (
+                          <img
+                            src={p.imageUrl}
+                            alt={p.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>3D</span>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-slate-900 text-sm">{p.name}</h4>
+                        <p className="text-xs text-slate-500">SKU: {p.sku} • {p.material}</p>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-xs font-bold text-slate-900 block">{formatCurrency(p.standardPrice)}</span>
+                      <span className="text-[11px] text-slate-500">{p.currentStock} un em estoque</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {products.length > 10 && (
+            <div className="mt-4 pt-3 border-t border-slate-100 text-center">
+              <button
+                onClick={() => onNavigate('products')}
+                className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Ver todos os {products.length} produtos do catálogo →
+              </button>
             </div>
           )}
         </div>
 
         {/* Low Stock Alert */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-rose-500" />
-                Alerta de Estoque Mínimo
-              </h3>
-              <p className="text-xs text-slate-500">Itens que precisam de nova impressão em breve</p>
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-rose-500" />
+                  Alerta de Estoque Mínimo
+                </h3>
+                <p className="text-xs text-slate-500">Itens que precisam de nova impressão em breve</p>
+              </div>
+              {products.filter((p) => p.currentStock <= p.minStock).length > 0 && (
+                <button
+                  onClick={() => onNavigate('inventory-general')}
+                  className="text-xs font-semibold text-rose-600 hover:text-rose-700 cursor-pointer"
+                >
+                  Gerenciar estoque ({products.filter((p) => p.currentStock <= p.minStock).length})
+                </button>
+              )}
             </div>
+
+            {products.filter((p) => p.currentStock <= p.minStock).length === 0 ? (
+              <div className="p-8 text-center bg-emerald-50/50 rounded-xl border border-emerald-200/60">
+                <Sparkles className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-emerald-800">Estoque Saudável!</p>
+                <p className="text-xs text-emerald-600/90 mt-1">Todos os produtos estão acima do limite mínimo de estoque.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {products
+                  .filter((p) => p.currentStock <= p.minStock)
+                  .slice(0, 10)
+                  .map((p) => (
+                    <div
+                      key={p.id}
+                      className="p-3.5 bg-rose-50/50 border border-rose-200/80 rounded-xl flex items-center justify-between"
+                    >
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-slate-900 text-sm">{p.name}</h4>
+                        <p className="text-xs text-rose-700 font-semibold">
+                          Estoque atual: {p.currentStock} un (Mínimo: {p.minStock} un)
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => onNavigate('inventory-general')}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shrink-0 transition-colors cursor-pointer"
+                      >
+                        Ajustar Estoque
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
 
-          {products.filter((p) => p.currentStock <= p.minStock).length === 0 ? (
-            <div className="p-8 text-center bg-emerald-50/50 rounded-xl border border-emerald-200/60">
-              <Sparkles className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
-              <p className="text-sm font-semibold text-emerald-800">Estoque Saudável!</p>
-              <p className="text-xs text-emerald-600/90 mt-1">Todos os produtos estão acima do limite mínimo de estoque.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {products
-                .filter((p) => p.currentStock <= p.minStock)
-                .map((p) => (
-                  <div
-                    key={p.id}
-                    className="p-3.5 bg-rose-50/50 border border-rose-200/80 rounded-xl flex items-center justify-between"
-                  >
-                    <div className="space-y-1">
-                      <h4 className="font-bold text-slate-900 text-sm">{p.name}</h4>
-                      <p className="text-xs text-rose-700 font-semibold">
-                        Estoque atual: {p.currentStock} un (Mínimo: {p.minStock} un)
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => onNavigate('inventory-general')}
-                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shrink-0 transition-colors"
-                    >
-                      Ajustar Estoque
-                    </button>
-                  </div>
-                ))}
+          {products.filter((p) => p.currentStock <= p.minStock).length > 10 && (
+            <div className="mt-4 pt-3 border-t border-slate-100 text-center">
+              <button
+                onClick={() => onNavigate('inventory-general')}
+                className="w-full py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl transition-colors cursor-pointer"
+              >
+                Ver todos os {products.filter((p) => p.currentStock <= p.minStock).length} alertas de estoque →
+              </button>
             </div>
           )}
         </div>

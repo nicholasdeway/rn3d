@@ -1,6 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Client } from '../types';
-import { INITIAL_CLIENTS } from '../mockData';
 
 export async function fetchClients(): Promise<Client[]> {
   let localClients: Client[] = [];
@@ -17,12 +16,7 @@ export async function fetchClients(): Promise<Client[]> {
   }
 
   if (!isSupabaseConfigured()) {
-    if (localClients.length > 0) {
-      const localIds = new Set(localClients.map((c) => c.id));
-      const missing = INITIAL_CLIENTS.filter((c) => !localIds.has(c.id));
-      return [...localClients, ...missing];
-    }
-    return INITIAL_CLIENTS;
+    return localClients;
   }
 
   const { data, error } = await supabase
@@ -32,12 +26,7 @@ export async function fetchClients(): Promise<Client[]> {
 
   if (error || !data) {
     console.error('Erro ao buscar clientes no Supabase:', error?.message);
-    if (localClients.length > 0) {
-      const localIds = new Set(localClients.map((c) => c.id));
-      const missing = INITIAL_CLIENTS.filter((c) => !localIds.has(c.id));
-      return [...localClients, ...missing];
-    }
-    return INITIAL_CLIENTS;
+    return localClients;
   }
 
   const dbClients: Client[] = data.map((row) => ({
@@ -70,12 +59,9 @@ export async function fetchClients(): Promise<Client[]> {
   }));
 
   const dbIds = new Set(dbClients.map((c) => c.id));
-  const localIds = new Set(localClients.map((c) => c.id));
-
   const extraLocal = localClients.filter((c) => !dbIds.has(c.id));
-  const extraInitial = INITIAL_CLIENTS.filter((c) => !dbIds.has(c.id) && !localIds.has(c.id));
 
-  return [...dbClients, ...extraLocal, ...extraInitial];
+  return [...dbClients, ...extraLocal];
 }
 
 export async function createClient(client: Partial<Client>): Promise<Client | null> {

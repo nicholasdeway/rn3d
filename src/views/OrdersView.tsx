@@ -50,68 +50,133 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ orders, products = [], s
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
-                <tr>
-                  <th className="p-4">Pedido</th>
-                  <th className="p-4">Cliente</th>
-                  <th className="p-4">Data</th>
-                  <th className="p-4 text-center">Itens</th>
-                  <th className="p-4 text-right">Valor</th>
-                  <th className="p-4">Pagamento</th>
-                  <th className="p-4">Status Produção</th>
-                  <th className="p-4 text-right">Ação</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredOrders.map((o) => (
-                  <tr
-                    key={o.id}
-                    onClick={() => setSelectedOrder(o)}
-                    className="hover:bg-slate-50/80 transition-colors cursor-pointer"
-                  >
-                    <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
-                    <td className="p-4 font-bold text-slate-900">{o.clientName}</td>
-                    <td className="p-4 text-slate-600">{o.date}</td>
-                    <td className="p-4 text-center font-bold text-slate-800">{o.itemsCount} itens</td>
-                    <td className="p-4 text-right font-extrabold text-emerald-600">
+        <>
+          {/* Mobile Card Layout (< 768px) - Eliminates Horizontal Scroll */}
+          <div className="block md:hidden space-y-3">
+            {filteredOrders.map((o) => (
+              <div
+                key={o.id}
+                onClick={() => setSelectedOrder(o)}
+                className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3 cursor-pointer hover:border-indigo-300 transition-colors"
+              >
+                {/* Card Header: Order ID & Production Status */}
+                <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                  <span className="font-mono font-bold text-indigo-600 text-xs bg-indigo-50 px-2.5 py-1 rounded-lg">
+                    {o.id}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    {o.status} ({o.productionProgressPct}%)
+                  </span>
+                </div>
+
+                {/* Card Body: Client Name, Items & Total */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm">{o.clientName}</h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Data: {o.date} • {o.itemsCount} {o.itemsCount === 1 ? 'item' : 'itens'}
+                    </p>
+                    <p className="text-[11px] font-semibold text-slate-700 mt-1">
+                      Pagamento: <span className="text-slate-900">{o.paymentStatusText}</span>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 font-medium block">Valor Total</span>
+                    <span className="font-black text-emerald-600 text-base">
                       R$ {o.totalValue.toFixed(2).replace('.', ',')}
-                    </td>
-                    <td className="p-4 font-semibold text-slate-700">{o.paymentStatusText}</td>
-                    <td className="p-4">
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700">
-                        {o.status} ({o.productionProgressPct}%)
-                      </span>
-                    </td>
-                    <td className="p-4 text-right space-x-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setPreviewPdfOrder(o);
-                        }}
-                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer"
-                        title="Ver Documento PDF A4 do Pedido"
-                      >
-                        <Printer className="w-3.5 h-3.5" /> PDF
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedOrder(o);
-                        }}
-                        className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-semibold cursor-pointer"
-                      >
-                        Detalhes
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card Actions */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewPdfOrder(o);
+                    }}
+                    className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                  >
+                    <Printer className="w-3.5 h-3.5" /> PDF
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedOrder(o);
+                    }}
+                    className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs text-xs transition-colors"
+                  >
+                    Detalhes
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
+
+          {/* Desktop Table Layout (>= 768px) */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+                  <tr>
+                    <th className="p-4">Pedido</th>
+                    <th className="p-4">Cliente</th>
+                    <th className="p-4">Data</th>
+                    <th className="p-4 text-center">Itens</th>
+                    <th className="p-4 text-right">Valor</th>
+                    <th className="p-4">Pagamento</th>
+                    <th className="p-4">Status Produção</th>
+                    <th className="p-4 text-right">Ação</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredOrders.map((o) => (
+                    <tr
+                      key={o.id}
+                      onClick={() => setSelectedOrder(o)}
+                      className="hover:bg-slate-50/80 transition-colors cursor-pointer"
+                    >
+                      <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
+                      <td className="p-4 font-bold text-slate-900">{o.clientName}</td>
+                      <td className="p-4 text-slate-600">{o.date}</td>
+                      <td className="p-4 text-center font-bold text-slate-800">{o.itemsCount} itens</td>
+                      <td className="p-4 text-right font-extrabold text-emerald-600">
+                        R$ {o.totalValue.toFixed(2).replace('.', ',')}
+                      </td>
+                      <td className="p-4 font-semibold text-slate-700">{o.paymentStatusText}</td>
+                      <td className="p-4">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700">
+                          {o.status} ({o.productionProgressPct}%)
+                        </span>
+                      </td>
+                      <td className="p-4 text-right space-x-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewPdfOrder(o);
+                          }}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer text-xs"
+                          title="Ver Documento PDF A4 do Pedido"
+                        >
+                          <Printer className="w-3.5 h-3.5" /> PDF
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedOrder(o);
+                          }}
+                          className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-semibold cursor-pointer text-xs"
+                        >
+                          Detalhes
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Order Details Modal */}

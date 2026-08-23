@@ -240,74 +240,149 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
-                <tr>
-                  <th className="p-4">Número</th>
-                  <th className="p-4">Cliente</th>
-                  <th className="p-4">Data</th>
-                  <th className="p-4 text-right">Valor Total</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredQuotes.map((q) => {
-                  const isConverted =
-                    q.status === 'Convertido em Pedido' ||
-                    q.status === 'Convertido' ||
-                    q.status === 'Aprovado';
+        <>
+          {/* Mobile Card Layout (< 768px) - Eliminates Horizontal Scroll */}
+          <div className="block md:hidden space-y-3">
+            {filteredQuotes.map((q) => {
+              const isConverted =
+                q.status === 'Convertido em Pedido' ||
+                q.status === 'Convertido' ||
+                q.status === 'Aprovado';
 
-                  const displayStatus = isConverted ? 'Convertido em Pedido' : q.status;
+              const displayStatus = isConverted ? 'Convertido em Pedido' : q.status;
 
-                  let badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200';
-                  if (isConverted) badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold';
-                  if (q.status === 'Recusado') badgeStyle = 'bg-rose-50 text-rose-700 border-rose-200';
-                  if (q.status === 'Enviado') badgeStyle = 'bg-blue-50 text-blue-700 border-blue-200';
+              let badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200';
+              if (isConverted) badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold';
+              if (q.status === 'Recusado') badgeStyle = 'bg-rose-50 text-rose-700 border-rose-200';
+              if (q.status === 'Enviado') badgeStyle = 'bg-blue-50 text-blue-700 border-blue-200';
 
-                  return (
-                    <tr key={q.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-4 font-mono font-bold text-indigo-600">{q.id}</td>
-                      <td className="p-4 font-bold text-slate-900">{q.clientName}</td>
-                      <td className="p-4 text-slate-600">{q.date}</td>
-                      <td className="p-4 text-right font-extrabold text-emerald-600">
+              return (
+                <div
+                  key={q.id}
+                  className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3"
+                >
+                  {/* Card Header: ID & Status */}
+                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                    <span className="font-mono font-bold text-indigo-600 text-xs bg-indigo-50 px-2.5 py-1 rounded-lg">
+                      {q.id}
+                    </span>
+                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeStyle}`}>
+                      {displayStatus}
+                    </span>
+                  </div>
+
+                  {/* Card Body: Client, Date & Total */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">{q.clientName}</h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Data: {q.date} • {q.items ? q.items.length : 0} {q.items && q.items.length === 1 ? 'item' : 'itens'}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-slate-400 font-medium block">Valor Total</span>
+                      <span className="font-black text-emerald-600 text-base">
                         R$ {q.total.toFixed(2).replace('.', ',')}
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeStyle}`}>
-                          {displayStatus}
-                        </span>
-                      </td>
-                      <td className="p-4 text-right space-x-2">
-                        <button
-                          onClick={() => setPreviewPdfQuote(q)}
-                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer text-xs"
-                        >
-                          <Printer className="w-3.5 h-3.5" /> PDF
-                        </button>
-                        {isConverted ? (
-                          <span className="px-3.5 py-1.5 bg-emerald-100 text-emerald-800 rounded-lg font-bold inline-flex items-center gap-1.5 border border-emerald-300 text-xs shadow-2xs">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Convertido em Pedido
-                          </span>
-                        ) : (
-                          <button
-                            onClick={() => onConvertQuoteToOrder(q)}
-                            className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-xs text-xs"
-                            title="Gerar Pedido Comercial a partir deste Orçamento"
-                          >
-                            <ShoppingCart className="w-3.5 h-3.5" /> Converter em Pedido
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Card Actions */}
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => setPreviewPdfQuote(q)}
+                      className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                    >
+                      <Printer className="w-3.5 h-3.5" /> PDF
+                    </button>
+                    {isConverted ? (
+                      <span className="flex-1 py-2 bg-emerald-100 text-emerald-800 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 border border-emerald-300 text-xs text-center">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Pedido Gerado
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => onConvertQuoteToOrder(q)}
+                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs text-xs transition-colors"
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" /> Converter Pedido
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+
+          {/* Desktop Table Layout (>= 768px) */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+                  <tr>
+                    <th className="p-4">Número</th>
+                    <th className="p-4">Cliente</th>
+                    <th className="p-4">Data</th>
+                    <th className="p-4 text-right">Valor Total</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredQuotes.map((q) => {
+                    const isConverted =
+                      q.status === 'Convertido em Pedido' ||
+                      q.status === 'Convertido' ||
+                      q.status === 'Aprovado';
+
+                    const displayStatus = isConverted ? 'Convertido em Pedido' : q.status;
+
+                    let badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200';
+                    if (isConverted) badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold';
+                    if (q.status === 'Recusado') badgeStyle = 'bg-rose-50 text-rose-700 border-rose-200';
+                    if (q.status === 'Enviado') badgeStyle = 'bg-blue-50 text-blue-700 border-blue-200';
+
+                    return (
+                      <tr key={q.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="p-4 font-mono font-bold text-indigo-600">{q.id}</td>
+                        <td className="p-4 font-bold text-slate-900">{q.clientName}</td>
+                        <td className="p-4 text-slate-600">{q.date}</td>
+                        <td className="p-4 text-right font-extrabold text-emerald-600">
+                          R$ {q.total.toFixed(2).replace('.', ',')}
+                        </td>
+                        <td className="p-4">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeStyle}`}>
+                            {displayStatus}
+                          </span>
+                        </td>
+                        <td className="p-4 text-right space-x-2">
+                          <button
+                            onClick={() => setPreviewPdfQuote(q)}
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer text-xs"
+                          >
+                            <Printer className="w-3.5 h-3.5" /> PDF
+                          </button>
+                          {isConverted ? (
+                            <span className="px-3.5 py-1.5 bg-emerald-100 text-emerald-800 rounded-lg font-bold inline-flex items-center gap-1.5 border border-emerald-300 text-xs shadow-2xs">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Convertido em Pedido
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => onConvertQuoteToOrder(q)}
+                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-xs text-xs"
+                              title="Gerar Pedido Comercial a partir deste Orçamento"
+                            >
+                              <ShoppingCart className="w-3.5 h-3.5" /> Converter em Pedido
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Cadastrar Orçamento Modal */}

@@ -140,43 +140,101 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
         </div>
       </div>
 
-      {/* Consignment Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
-              <tr>
-                <th className="p-4">Número</th>
-                <th className="p-4">Cliente</th>
-                <th className="p-4">Data</th>
-                <th className="p-4 text-center">Quantidade</th>
-                <th className="p-4 text-right">Valor em Mercadorias</th>
-                <th className="p-4">Status</th>
-                <th className="p-4">Última Conferência</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredConsignments.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="p-4 font-mono font-bold text-indigo-600">{c.id}</td>
-                  <td className="p-4 font-bold text-slate-900">{c.clientName}</td>
-                  <td className="p-4 text-slate-600">{c.date}</td>
-                  <td className="p-4 text-center font-bold text-slate-800">{c.itemsCount} itens</td>
-                  <td className="p-4 text-right font-bold text-emerald-600">
-                    R$ {c.totalValue.toFixed(2)}
-                  </td>
-                  <td className="p-4">
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700">
-                      {c.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-slate-500">{c.lastAuditDate}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Consignment Table / Cards */}
+      {filteredConsignments.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-xs space-y-3">
+          <Boxes className="w-12 h-12 text-slate-300 mx-auto" />
+          <h3 className="font-bold text-slate-800 text-base">Nenhuma remessa de consignação encontrada</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+            Registre envios e alocações de mercadorias para seus estabelecimentos parceiros.
+          </p>
+          <button
+            onClick={() => setIsWizardOpen(true)}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
+          >
+            Registrar Primeira Consignação
+          </button>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Mobile Card Layout (< 768px) - Eliminates Horizontal Scroll */}
+          <div className="block md:hidden space-y-3">
+            {filteredConsignments.map((c) => (
+              <div
+                key={c.id}
+                className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3"
+              >
+                {/* Card Header: REM ID & Status */}
+                <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                  <span className="font-mono font-bold text-indigo-600 text-xs bg-indigo-50 px-2.5 py-1 rounded-lg">
+                    {c.id}
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {c.status}
+                  </span>
+                </div>
+
+                {/* Card Body: Client, Items & Valuation */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 className="font-bold text-slate-900 text-sm">{c.clientName}</h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Data: {c.date} • {c.itemsCount} {c.itemsCount === 1 ? 'item' : 'itens'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Última conferência: <span className="font-semibold text-slate-700">{c.lastAuditDate}</span>
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-400 font-medium block">Valor Mercadorias</span>
+                    <span className="font-black text-emerald-600 text-base">
+                      R$ {c.totalValue.toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table Layout (>= 768px) */}
+          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+                  <tr>
+                    <th className="p-4">Número</th>
+                    <th className="p-4">Cliente</th>
+                    <th className="p-4">Data</th>
+                    <th className="p-4 text-center">Quantidade</th>
+                    <th className="p-4 text-right">Valor em Mercadorias</th>
+                    <th className="p-4">Status</th>
+                    <th className="p-4">Última Conferência</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredConsignments.map((c) => (
+                    <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="p-4 font-mono font-bold text-indigo-600">{c.id}</td>
+                      <td className="p-4 font-bold text-slate-900">{c.clientName}</td>
+                      <td className="p-4 text-slate-600">{c.date}</td>
+                      <td className="p-4 text-center font-bold text-slate-800">{c.itemsCount} itens</td>
+                      <td className="p-4 text-right font-bold text-emerald-600">
+                        R$ {c.totalValue.toFixed(2).replace('.', ',')}
+                      </td>
+                      <td className="p-4">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700">
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className="p-4 text-slate-500">{c.lastAuditDate}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Nova Consignação Modal Wizard */}
       {isWizardOpen && (
