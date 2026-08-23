@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Client, Product, Quote, QuoteItem } from '../types';
+import { Client, Product, Quote, QuoteItem, AttendanceMode } from '../types';
 import { ProductSelectCombobox } from '../components/ProductSelectCombobox';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 import {
@@ -16,6 +16,8 @@ import {
   Sparkles,
   ShoppingCart,
   Truck,
+  MapPin,
+  MessageSquare,
 } from 'lucide-react';
 
 interface QuotesViewProps {
@@ -99,6 +101,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
   const [discount, setDiscount] = useState(0);
   const [paymentTerms, setPaymentTerms] = useState('');
   const [notes, setNotes] = useState('');
+  const [attendanceMode, setAttendanceMode] = useState<AttendanceMode>('presencial');
 
   // Internal Logistics Cost State (Memory per Client)
   const [internalLogisticsType, setInternalLogisticsType] = useState<'combustivel' | 'frete' | 'retirada'>('combustivel');
@@ -222,6 +225,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
       paymentTerms,
       notes,
       status,
+      attendanceMode,
       internalLogisticsType,
       internalLogisticsCost,
     };
@@ -477,6 +481,38 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     onChange={(e) => setProductionSlaDays(Number(e.target.value))}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold"
                   />
+                </div>
+              </div>
+
+              {/* Attendance Mode Selector */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                <label className="block font-bold text-slate-900 text-xs">Modalidade de Atendimento ao Cliente:</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceMode('presencial')}
+                    className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                      attendanceMode === 'presencial'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <MapPin className="w-4 h-4 text-emerald-400" />
+                    <span>📍 Visita Presencial (No Cliente)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAttendanceMode('online')}
+                    className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                      attendanceMode === 'online'
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <MessageSquare className="w-4 h-4 text-cyan-400" />
+                    <span>💬 Atendimento Online / WhatsApp</span>
+                  </button>
                 </div>
               </div>
 

@@ -118,9 +118,18 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     <p className="text-[11px] text-slate-500 mt-0.5">
                       Data: {o.date} • {o.itemsCount} {o.itemsCount === 1 ? 'item' : 'itens'}
                     </p>
-                    <p className="text-[11px] font-semibold text-slate-700 mt-1">
-                      Pagamento: <span className="text-slate-900">{o.paymentStatusText}</span>
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                        o.attendanceMode === 'online'
+                          ? 'bg-cyan-50 text-cyan-800 border-cyan-200'
+                          : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      }`}>
+                        {o.attendanceMode === 'online' ? '💬 Atendimento Online' : '📍 Visita Presencial'}
+                      </span>
+                      <span className="text-[11px] font-semibold text-slate-700">
+                        Pagamento: <strong className="text-slate-900">{o.paymentStatusText}</strong>
+                      </span>
+                    </div>
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] text-slate-400 font-medium block">Valor Total</span>

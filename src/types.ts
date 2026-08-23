@@ -182,6 +182,8 @@ export interface ExchangeNote {
   notes?: string;
 }
 
+export type AttendanceMode = 'presencial' | 'online';
+
 export type QuoteStatus = 'Rascunho' | 'Enviado' | 'Aguardando aprovação' | 'Aprovado' | 'Recusado' | 'Expirado';
 
 export interface QuoteItem {
@@ -209,6 +211,7 @@ export interface Quote {
   paymentTerms: string;
   notes?: string;
   status: QuoteStatus;
+  attendanceMode?: AttendanceMode;
   internalLogisticsType?: 'combustivel' | 'frete' | 'retirada';
   internalLogisticsCost?: number;
 }
@@ -228,6 +231,7 @@ export interface Order {
   productionProgressPct: number;
   productionSlaDate?: string;
   estimatedDeliveryDate?: string;
+  attendanceMode?: AttendanceMode;
   internalLogisticsType?: 'combustivel' | 'frete' | 'retirada';
   internalLogisticsCost?: number;
   notes?: string;

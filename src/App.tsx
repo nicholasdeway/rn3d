@@ -632,6 +632,7 @@ export function App() {
       productionProgressPct: 15,
       productionSlaDate: quote.date || new Date().toISOString().split('T')[0],
       estimatedDeliveryDate: quote.date || new Date().toISOString().split('T')[0],
+      attendanceMode: quote.attendanceMode || 'presencial',
       internalLogisticsType: quote.internalLogisticsType || 'combustivel',
       internalLogisticsCost: quote.internalLogisticsCost ?? 50.0,
       notes: quote.notes,
@@ -705,6 +706,8 @@ export function App() {
   };
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+    const targetOrder = orders.find((o) => o.id === orderId);
+
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id === orderId) {
@@ -724,7 +727,41 @@ export function App() {
       })
     );
 
-    showToast(`Status do Pedido ${orderId} alterado para "${newStatus}"!`, 'info');
+    // Se o pedido for marcado como Entregue, registrar automaticamente uma Visita com data e hora atual
+    if (newStatus === 'Entregue' && targetOrder) {
+      const now = new Date();
+      const formattedDate = now.toLocaleDateString('pt-BR');
+      const formattedTime = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      const modeText = targetOrder.attendanceMode === 'online' ? 'Atendimento Online / Envio' : 'Visita Presencial';
+
+      const deliveryVisit: Visit = {
+        id: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
+        clientId: targetOrder.clientId,
+        clientName: targetOrder.clientName,
+        scheduledDate: formattedDate,
+        timeSlot: formattedTime,
+        reason: `Entrega do Pedido ${targetOrder.id} (${modeText})`,
+        productsOnSite: targetOrder.itemsCount,
+        lastVisitText: `${formattedDate} às ${formattedTime}`,
+        status: 'Concluída',
+        completedAt: `${formattedDate} ${formattedTime}`,
+        completedSummary: {
+          durationMinutes: 15,
+          itemsSold: targetOrder.itemsCount,
+          totalRevenue: targetOrder.totalValue,
+          receivedAmount: targetOrder.paidAmount,
+          itemsRemoved: 0,
+          itemsAdded: targetOrder.itemsCount,
+          finalStockCount: targetOrder.itemsCount,
+          nextVisitDate: 'N/A',
+        },
+      };
+
+      setVisits((prev) => [deliveryVisit, ...prev]);
+      showToast(`📍 Registro de Visita/Entrega gravado em ${formattedDate} às ${formattedTime}!`, 'success');
+    } else {
+      showToast(`Status do Pedido ${orderId} alterado para "${newStatus}"!`, 'info');
+    }
 
     try {
       await updateOrderStatus(orderId, newStatus);
@@ -919,6 +956,8 @@ export function App() {
                   onNavigate={(view) => setCurrentView(view)}
                   onStartVisit={handleStartVisit}
                   onSelectClient={handleSelectClientProfile}
+                  onUpdateOrderProgress={handleUpdateOrderProgress}
+                  onUpdateOrderStatus={handleUpdateOrderStatus}
                   onQuickAction={(action) => {
                     switch (action) {
                       case 'calculadora-3d':
