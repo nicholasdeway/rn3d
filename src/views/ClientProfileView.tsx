@@ -331,12 +331,12 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
         </div>
       </div>
 
-      {/* Profile Tabs Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-2 shadow-xs overflow-x-auto">
-        <div className="flex items-center gap-1 min-w-max">
+      {/* Profile Tabs Bar (No Horizontal Scroll on Mobile) */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap items-center gap-1.5">
           {[
-            { id: 'overview', label: 'Visão Geral & Cadastro', icon: Building2 },
-            { id: 'inventory', label: 'Estoque no Local', icon: Boxes },
+            { id: 'overview', label: 'Visão Geral', icon: Building2 },
+            { id: 'inventory', label: 'Estoque Local', icon: Boxes },
             { id: 'orders', label: `Pedidos (${clientOrders.length})`, icon: ShoppingCart },
             { id: 'quotes', label: `Orçamentos (${clientQuotes.length})`, icon: FileText },
             { id: 'visits', label: 'Visitas', icon: MapPin },
@@ -348,14 +348,14 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   isActive
                     ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 bg-slate-50/60'
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                {tab.label}
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{tab.label}</span>
               </button>
             );
           })}
