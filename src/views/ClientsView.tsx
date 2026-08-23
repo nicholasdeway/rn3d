@@ -38,16 +38,18 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
     phone: '',
     whatsapp: '',
     email: '',
-    cep: '26210-000',
+    cep: '',
     street: '',
     number: '',
     complement: '',
     neighborhood: '',
-    city: 'Nova Iguaçu',
-    state: 'RJ',
+    city: '',
+    state: '',
     type: 'Consignação',
-    agreedPriceLevel: 'Preço Consignado R$ 6,00',
+    agreedPriceLevel: 'Padrão',
     visitFrequency: '15 dias',
+    defaultLogisticsType: 'combustivel',
+    defaultLogisticsCost: 50.0,
     notes: '',
   });
 
@@ -274,46 +276,49 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
       {/* Modal Cadastrar Cliente */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-2xl rounded-2xl border border-slate-300 overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white w-full max-w-3xl rounded-2xl border border-slate-300 overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Header */}
             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <Plus className="w-5 h-5 text-indigo-600" />
-                Cadastrar Novo Cliente / Estabelecimento
+                <Users className="w-5 h-5 text-indigo-600" />
+                Cadastrar Novo Cliente / Ponto de Venda
               </h3>
               <button
+                type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600"
+                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmitNewClient} className="p-6 overflow-y-auto space-y-6 text-xs">
-              {/* Main Fields */}
-              <div className="space-y-4">
-                <h4 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider border-b border-slate-200 pb-1">
-                  Dados do Estabelecimento
+            {/* Scrollable Form Content */}
+            <form onSubmit={handleSubmitNewClient} className="p-6 overflow-y-auto space-y-5 text-xs">
+              {/* Section 1: Main Identification */}
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5 border-b border-slate-200/80 pb-2">
+                  <Building2 className="w-4 h-4 text-indigo-600" /> Dados do Estabelecimento / Parceiro
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Nome / Razão Social *</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Razão Social / Nome Oficial *</label>
                     <input
                       type="text"
                       required
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Ex: Depósito Avenida"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      placeholder="Ex: Adega Imperial Ltda"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900 placeholder-slate-400"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Nome Fantasia</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Nome Fantasia / Nome Popular</label>
                     <input
                       type="text"
                       value={formData.fantasyName}
                       onChange={(e) => setFormData({ ...formData, fantasyName: e.target.value })}
-                      placeholder="Ex: Depósito Avenida Bebidas"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      placeholder="Ex: Adega Imperial"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
                     />
                   </div>
                   <div>
@@ -323,7 +328,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                       value={formData.document}
                       onChange={(e) => setFormData({ ...formData, document: e.target.value })}
                       placeholder="00.000.000/0001-00"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
                     />
                   </div>
                   <div>
@@ -334,7 +339,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                       value={formData.responsible}
                       onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
                       placeholder="Ex: Carlos Henrique"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900 placeholder-slate-400"
                     />
                   </div>
                   <div>
@@ -343,29 +348,59 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                       type="text"
                       value={formData.whatsapp}
                       onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                      placeholder="(21) 98765-4321"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      placeholder="(22) 99876-5432"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">E-mail</label>
+                    <label className="block font-semibold text-slate-700 mb-1">E-mail de Contato</label>
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       placeholder="contato@empresa.com"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Address */}
-              <div className="space-y-4">
-                <h4 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider border-b border-slate-200 pb-1">
-                  Endereço
+              {/* Section 2: Address & Location */}
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5 border-b border-slate-200/80 pb-2">
+                  <MapPin className="w-4 h-4 text-indigo-600" /> Endereço & Localização
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">CEP</label>
+                    <input
+                      type="text"
+                      value={formData.cep}
+                      onChange={(e) => setFormData({ ...formData, cep: e.target.value })}
+                      placeholder="28800-000"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-mono placeholder-slate-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Cidade</label>
+                    <input
+                      type="text"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      placeholder="Casimiro de Abreu"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-semibold text-slate-900 placeholder-slate-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Estado (UF)</label>
+                    <input
+                      type="text"
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      placeholder="RJ"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white uppercase font-bold text-slate-900 placeholder-slate-400"
+                    />
+                  </div>
                   <div className="sm:col-span-2">
                     <label className="block font-semibold text-slate-700 mb-1">Rua / Logradouro</label>
                     <input
@@ -373,7 +408,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                       value={formData.street}
                       onChange={(e) => setFormData({ ...formData, street: e.target.value })}
                       placeholder="Av. Amaral Peixoto"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
                     />
                   </div>
                   <div>
@@ -382,8 +417,8 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                       type="text"
                       value={formData.number}
                       onChange={(e) => setFormData({ ...formData, number: e.target.value })}
-                      placeholder="420"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      placeholder="131"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
                     />
                   </div>
                   <div>
@@ -393,49 +428,39 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                       value={formData.neighborhood}
                       onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
                       placeholder="Centro"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
                     />
                   </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Cidade</label>
+                  <div className="sm:col-span-2">
+                    <label className="block font-semibold text-slate-700 mb-1">Complemento / Ponto de Referência</label>
                     <input
                       type="text"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      placeholder="Nova Iguaçu"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Estado</label>
-                    <input
-                      type="text"
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      placeholder="RJ"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      value={formData.complement}
+                      onChange={(e) => setFormData({ ...formData, complement: e.target.value })}
+                      placeholder="Loja 02 (ao lado do posto)"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Commercial Terms */}
-              <div className="space-y-4">
-                <h4 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider border-b border-slate-200 pb-1">
-                  Informações Comerciais
+              {/* Section 3: Commercial Terms */}
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                <h4 className="font-bold text-slate-900 text-xs border-b border-slate-200/80 pb-2">
+                  Informações Comerciais & Visitas
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Tipo de Cliente</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Tipo de Cliente / Modalidade</label>
                     <select
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900"
                     >
-                      <option value="Consignação">Consignação</option>
-                      <option value="Revendedor">Revendedor</option>
-                      <option value="Cliente direto">Cliente direto</option>
-                      <option value="Outro">Outro</option>
+                      <option value="Consignação">🤝 Consignação (Acerto Periódico)</option>
+                      <option value="Revendedor">🏬 Revendedor / Lojista</option>
+                      <option value="Cliente direto">👤 Cliente Direto / Final</option>
+                      <option value="Outro">🌐 Outro</option>
                     </select>
                   </div>
                   <div>
@@ -443,7 +468,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                     <select
                       value={formData.visitFrequency}
                       onChange={(e) => setFormData({ ...formData, visitFrequency: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900"
                     >
                       <option value="7 dias">7 dias (Semanal)</option>
                       <option value="15 dias">15 dias (Quinzenal)</option>
@@ -454,19 +479,23 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                 </div>
               </div>
 
-              {/* Logistics Default Memory Block */}
-              <div className="space-y-4">
-                <h4 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider border-b border-slate-200 pb-1 flex items-center justify-between">
-                  <span>Logística e Deslocamento Padrão</span>
-                  <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full text-[10px] lowercase font-semibold">🔒 Uso Interno</span>
-                </h4>
+              {/* Section 4: Logistics Memory */}
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                  <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                    <Truck className="w-4 h-4 text-indigo-600" /> Logística e Deslocamento Padrão
+                  </h4>
+                  <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full text-[10px] lowercase font-semibold">
+                    🔒 Uso Interno Oficina
+                  </span>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">Modalidade Padrão de Entrega</label>
                     <select
                       value={formData.defaultLogisticsType || 'combustivel'}
                       onChange={(e) => setFormData({ ...formData, defaultLogisticsType: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900"
                     >
                       <option value="combustivel">⛽ Combustível (Deslocamento Próprio)</option>
                       <option value="frete">🚚 Frete / Motoboy / Terceirizado</option>
@@ -488,19 +517,21 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+              {/* Action Buttons (Non-Fixed / Scrollable) */}
+              <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-semibold"
+                  className="order-2 sm:order-1 px-3.5 py-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl font-semibold text-xs transition-colors cursor-pointer text-center"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold shadow-sm"
+                  className="order-1 sm:order-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
                 >
-                  Salvar Cliente
+                  <Plus className="w-4 h-4" />
+                  <span>Cadastrar Cliente</span>
                 </button>
               </div>
             </form>
