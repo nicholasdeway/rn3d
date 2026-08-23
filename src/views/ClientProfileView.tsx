@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Client, ClientInventoryItem, Order, Quote } from '../types';
+import { ImageCropperModal } from '../components/ImageCropperModal';
+import { ImageLightboxModal } from '../components/ImageLightboxModal';
 import {
   Building2,
   Phone,
@@ -19,6 +21,10 @@ import {
   UserCheck,
   Printer,
   CheckCircle2,
+  Crop,
+  Trash2,
+  ImageIcon,
+  Users,
 } from 'lucide-react';
 
 interface ClientProfileViewProps {
@@ -81,8 +87,27 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
     }
   }, [client.id]);
 
-  // Edit form state
+  // Edit form state & Avatar Cropper state
   const [editFormData, setEditFormData] = useState<Partial<Client>>({});
+  const [croppingImageSrc, setCroppingImageSrc] = useState<string | null>(null);
+  const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.addEventListener('load', () => {
+        setCroppingImageSrc(reader.result as string);
+      });
+      reader.readAsDataURL(file);
+      e.target.value = '';
+    }
+  };
+
+  const handleCropComplete = (croppedBase64: string) => {
+    setEditFormData((prev) => ({ ...prev, avatarUrl: croppedBase64 }));
+    setCroppingImageSrc(null);
+  };
 
   const handleOpenEditModal = () => {
     setEditFormData({
@@ -141,8 +166,22 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           {/* Store Info */}
           <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white font-extrabold text-xl flex items-center justify-center shrink-0 shadow-sm">
-              {currentClientData.name.charAt(0)}
+            <div
+              onClick={() => {
+                if (currentClientData.avatarUrl) {
+                  setZoomImage({ url: currentClientData.avatarUrl, title: currentClientData.name });
+                }
+              }}
+              className={`w-14 h-14 rounded-2xl bg-indigo-600 text-white font-extrabold text-xl flex items-center justify-center shrink-0 shadow-sm overflow-hidden border border-indigo-200 ${
+                currentClientData.avatarUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+              }`}
+              title={currentClientData.avatarUrl ? 'Clique para ver foto em tela cheia' : undefined}
+            >
+              {currentClientData.avatarUrl ? (
+                <img src={currentClientData.avatarUrl} alt={currentClientData.name} className="w-full h-full object-cover" />
+              ) : (
+                <span>{currentClientData.name.charAt(0).toUpperCase()}</span>
+              )}
             </div>
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
@@ -726,11 +765,67 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
             </div>
 
             <form onSubmit={handleSaveEditClient} className="p-6 overflow-y-auto space-y-6 text-xs">
-              {/* Basic Info */}
+              {/* Basic Info & Avatar */}
               <div className="space-y-4">
                 <h4 className="font-bold text-slate-900 uppercase text-[11px] tracking-wider border-b border-slate-200 pb-1">
-                  Dados Cadastrais
+                  Dados Cadastrais & Foto de Avatar
                 </h4>
+
+                {/* Avatar / Foto do Cliente */}
+                <div className="space-y-2 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <label className="block font-bold text-slate-900">Logo / Foto do Cliente (Avatar)</label>
+                    {editFormData.avatarUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setEditFormData({ ...editFormData, avatarUrl: '' })}
+                        className="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer hover:underline"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Remover Foto
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 bg-white border border-slate-200 rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-xs relative">
+                      {editFormData.avatarUrl ? (
+                        <img src={editFormData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <Users className="w-7 h-7 text-slate-400" />
+                      )}
+                    </div>
+                    <div className="space-y-2 flex-1">
+                      <div className="flex flex-wrap gap-2">
+                        <label className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold flex items-center gap-1.5 w-fit cursor-pointer shadow-xs">
+                          <Crop className="w-4 h-4" />
+                          {editFormData.avatarUrl ? 'Substituir / Recortar Foto' : 'Selecionar e Recortar Foto'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageFileChange}
+                            className="hidden"
+                          />
+                        </label>
+                        {editFormData.avatarUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setEditFormData({ ...editFormData, avatarUrl: '' })}
+                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl font-semibold flex items-center gap-1 cursor-pointer border border-rose-200"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Excluir
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        type="url"
+                        value={editFormData.avatarUrl || ''}
+                        onChange={(e) => setEditFormData({ ...editFormData, avatarUrl: e.target.value })}
+                        placeholder="Ou cole a URL da imagem (https://...)"
+                        className="w-full px-3 py-1.5 border border-slate-200 rounded-xl bg-white text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">Razão Social / Nome *</label>
@@ -904,6 +999,24 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Image Cropper Modal for Avatar */}
+      {croppingImageSrc && (
+        <ImageCropperModal
+          imageSrc={croppingImageSrc}
+          onCropComplete={handleCropComplete}
+          onCancel={() => setCroppingImageSrc(null)}
+        />
+      )}
+
+      {/* Lightbox Zoom Modal for Avatar */}
+      {zoomImage && (
+        <ImageLightboxModal
+          imageUrl={zoomImage.url}
+          title={zoomImage.title}
+          onClose={() => setZoomImage(null)}
+        />
       )}
     </div>
   );
