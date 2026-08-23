@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@media print {
+  /* Hide all app components: Header, Sidebar, Mobile Floating Nav, Toasts, Web Buttons */
+  header,
+  nav,
+  aside,
+  footer,
+  button,
+  .no-print,
+  [role="alert"] {
+    display: none !important;
+  }
+
+  body,
+  html,
+  #root,
+  #root > div {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Unconstrain modal overlay so only printable sheet is rendered */
+  .fixed.inset-0 {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+  }
+
+  /* Printable PDF sheet styling */
+  .printable-pdf-document {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 10mm !important;
+    background: white !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+}

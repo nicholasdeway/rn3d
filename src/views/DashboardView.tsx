@@ -1,0 +1,341 @@
+import React from 'react';
+import { Client, Product, Visit, ViewMode, Order } from '../types';
+import {
+  TrendingUp,
+  DollarSign,
+  Boxes,
+  ShoppingBag,
+  MapPin,
+  Flame,
+  AlertTriangle,
+  Clock,
+  ArrowRight,
+  Plus,
+  ArrowUpRight,
+  Sparkles,
+  PackagePlus,
+  Users,
+} from 'lucide-react';
+
+interface DashboardViewProps {
+  onNavigate: (view: ViewMode) => void;
+  onStartVisit: (clientId: string) => void;
+  onQuickAction: (action: string) => void;
+  clients: Client[];
+  products: Product[];
+  visits: Visit[];
+  consignments?: any[];
+  orders?: Order[];
+}
+
+export const DashboardView: React.FC<DashboardViewProps> = ({
+  onNavigate,
+  onStartVisit,
+  onQuickAction,
+  clients,
+  products,
+  visits,
+  consignments = [],
+  orders = [],
+}) => {
+  // Filter pending visits
+  const pendingVisits = visits.filter((v) => v.status !== 'Concluída');
+
+  // Compute dynamic KPIs
+  const totalRevenue = orders.reduce((acc, o) => acc + (Number(o.paidAmount) || 0), 0);
+  const totalReceivable = orders.reduce(
+    (acc, o) => acc + Math.max(0, (Number(o.totalValue) || 0) - (Number(o.paidAmount) || 0)),
+    0
+  );
+  const totalProductsInStock = products.reduce((acc, p) => acc + (Number(p.currentStock) || 0), 0);
+  const totalItemsSold = orders.reduce(
+    (acc, o) => acc + (o.items ? o.items.reduce((sum, item) => sum + item.quantity, 0) : o.itemsCount || 0),
+    0
+  );
+
+  // Top turnover items
+  const bestTurnover = products
+    .filter((p) => (p.monthlySalesCount || 0) > 0)
+    .sort((a, b) => (b.monthlySalesCount || 0) - (a.monthlySalesCount || 0));
+
+  // Low turnover items
+  const lowTurnover = products.filter((p) => p.currentStock > 0 && (p.turnoverRatePct || 0) < 30);
+
+  const formatCurrency = (val: number) => {
+    return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-300">
+      {/* Top Welcome Banner */}
+      <div className="bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-md shadow-indigo-950/10 relative overflow-hidden">
+        <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-indigo-500/10 to-transparent pointer-events-none" />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
+          <div>
+            <div className="flex items-center gap-2 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-1">
+              <Sparkles className="w-4 h-4 text-indigo-400" />
+              Painel Operacional • Banco Supabase Ativo
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Visão Geral da Oficina 3D</h2>
+            <p className="text-indigo-200/80 text-sm mt-1">
+              Acompanhe vendas, clientes, pedidos e estoque em tempo real.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => onQuickAction('product')}
+              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+            >
+              <PackagePlus className="w-4 h-4" />
+              Cadastrar Produto
+            </button>
+            <button
+              onClick={() => onQuickAction('novo-pedido')}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white text-slate-900 hover:bg-indigo-50 rounded-xl text-xs font-semibold transition-all shadow-sm"
+            >
+              <Plus className="w-4 h-4 text-indigo-600" />
+              Novo Pedido
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main KPI Cards Grid (Dynamic values) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Faturamento real */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-slate-500">Faturamento Acumulado</span>
+            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalRevenue)}</p>
+            <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+              <ArrowUpRight className="w-3.5 h-3.5" />
+              <span>Base de dados real</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Card 2: Valor a receber */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-slate-500">Saldo a Receber</span>
+            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+              <DollarSign className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalReceivable)}</p>
+            <p className="text-xs text-slate-400">Em pedidos pendentes</p>
+          </div>
+        </div>
+
+        {/* Card 3: Produtos em estoque */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-slate-500">Estoque de Produtos 3D</span>
+            <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
+              <Boxes className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="text-2xl font-bold text-slate-900">{totalProductsInStock} unidades</p>
+            <p className="text-xs text-purple-600 font-semibold">{products.length} modelos cadastrados</p>
+          </div>
+        </div>
+
+        {/* Card 4: Unidades vendidas */}
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-slate-500">Produtos Vendidos</span>
+            <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+              <ShoppingBag className="w-5 h-5" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="text-2xl font-bold text-slate-900">{totalItemsSold} unidades</p>
+            <p className="text-xs text-slate-400">{orders.length} pedidos efetuados</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Visitas Pendentes Section */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-indigo-600" />
+              Visitas Agendadas e Pendentes
+            </h3>
+            <p className="text-xs text-slate-500">Estabelecimentos cadastrados para rota de consignação</p>
+          </div>
+          <button
+            onClick={() => onNavigate('visits')}
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+          >
+            Ver todas <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {pendingVisits.length === 0 ? (
+          <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <MapPin className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-60" />
+            <p className="text-sm font-semibold text-slate-700">Nenhuma visita pendente no momento</p>
+            <p className="text-xs text-slate-400 mt-1 mb-4">Cadastre novos clientes ou agende visitas para sua rota de consignação.</p>
+            <button
+              onClick={() => onNavigate('clients')}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 transition-colors inline-flex items-center gap-1.5"
+            >
+              <Users className="w-4 h-4" />
+              Ir para Cadastro de Clientes
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {pendingVisits.map((v) => (
+              <div
+                key={v.id}
+                className="p-4 bg-slate-50 hover:bg-slate-100/80 rounded-xl border border-slate-200/60 flex flex-col justify-between transition-colors"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">{v.clientName}</h4>
+                      <p className="text-xs text-slate-500 mt-0.5">Última visita: {v.lastVisitText}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-xs text-slate-600 pt-1">
+                    <span className="flex items-center gap-1 font-medium">
+                      <Boxes className="w-3.5 h-3.5 text-slate-400" />
+                      {v.productsOnSite} produtos no local
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-4 mt-2 border-t border-slate-200/60 flex items-center justify-between">
+                  <span className="text-xs text-slate-500 font-medium">{v.reason}</span>
+                  <button
+                    onClick={() => onStartVisit(v.clientId)}
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    Realizar visita
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Product Catalogs Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Products List Overview */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Flame className="w-5 h-5 text-amber-500" />
+                Catálogo de Produtos Cadastrados
+              </h3>
+              <p className="text-xs text-slate-500">Produtos gravados no banco de dados Supabase</p>
+            </div>
+            <button
+              onClick={() => onNavigate('products')}
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700"
+            >
+              Ver catálogo ({products.length})
+            </button>
+          </div>
+
+          {products.length === 0 ? (
+            <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <Boxes className="w-8 h-8 text-slate-400 mx-auto mb-2 opacity-60" />
+              <p className="text-sm font-semibold text-slate-700">Seu banco de produtos está vazio</p>
+              <p className="text-xs text-slate-400 mt-1 mb-4">Cadastre seu primeiro modelo 3D para gerar orçamentos e pedidos.</p>
+              <button
+                onClick={() => onNavigate('products')}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 transition-colors inline-flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                Cadastrar Primeiro Produto
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {products.slice(0, 5).map((p) => (
+                <div key={p.id} className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0">
+                      3D
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-slate-900 text-sm">{p.name}</h4>
+                      <p className="text-xs text-slate-500">SKU: {p.sku} • {p.material}</p>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-slate-900 block">{formatCurrency(p.standardPrice)}</span>
+                    <span className="text-[11px] text-slate-500">{p.currentStock} un em estoque</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Low Stock Alert */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-rose-500" />
+                Alerta de Estoque Mínimo
+              </h3>
+              <p className="text-xs text-slate-500">Itens que precisam de nova impressão em breve</p>
+            </div>
+          </div>
+
+          {products.filter((p) => p.currentStock <= p.minStock).length === 0 ? (
+            <div className="p-8 text-center bg-emerald-50/50 rounded-xl border border-emerald-200/60">
+              <Sparkles className="w-8 h-8 text-emerald-500 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-emerald-800">Estoque Saudável!</p>
+              <p className="text-xs text-emerald-600/90 mt-1">Todos os produtos estão acima do limite mínimo de estoque.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {products
+                .filter((p) => p.currentStock <= p.minStock)
+                .map((p) => (
+                  <div
+                    key={p.id}
+                    className="p-3.5 bg-rose-50/50 border border-rose-200/80 rounded-xl flex items-center justify-between"
+                  >
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-slate-900 text-sm">{p.name}</h4>
+                      <p className="text-xs text-rose-700 font-semibold">
+                        Estoque atual: {p.currentStock} un (Mínimo: {p.minStock} un)
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => onNavigate('inventory-general')}
+                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shrink-0 transition-colors"
+                    >
+                      Ajustar Estoque
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

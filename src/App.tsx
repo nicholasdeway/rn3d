@@ -1,0 +1,938 @@
+import React, { useState, useEffect } from 'react';
+import { Sidebar } from './components/Sidebar';
+import { Header } from './components/Header';
+import { Toast } from './components/Toast';
+import { useAuth } from './context/AuthContext';
+import { LoginView } from './views/LoginView';
+import { Box } from 'lucide-react';
+import { fetchProducts, createProduct, updateProduct, syncMissingProductsToSupabase } from './services/productsService';
+import { fetchClients, createClient } from './services/clientsService';
+import { fetchOrders, createOrder } from './services/ordersService';
+
+// Views
+import { DashboardView } from './views/DashboardView';
+import { CalculatorView } from './views/CalculatorView';
+import { ProductsView } from './views/ProductsView';
+import { ClientsView } from './views/ClientsView';
+import { ClientProfileView } from './views/ClientProfileView';
+import { ConsignmentsView } from './views/ConsignmentsView';
+import { VisitsView } from './views/VisitsView';
+import { VisitExecutionWizard } from './views/VisitExecutionWizard';
+import { ExchangesView } from './views/ExchangesView';
+import { QuotesView } from './views/QuotesView';
+import { OrdersView } from './views/OrdersView';
+import { GeneralInventoryView } from './views/GeneralInventoryView';
+import { MovementsView } from './views/MovementsView';
+import { ClientInventoryView } from './views/ClientInventoryView';
+import { FinancialView } from './views/FinancialView';
+import { ReportsView } from './views/ReportsView';
+import { SettingsView } from './views/SettingsView';
+
+import { Client, Consignment, Order, Product, Quote, ViewMode, Visit } from './types';
+import {
+  INITIAL_ORDERS,
+  INITIAL_PRODUCTS,
+  INITIAL_CLIENTS,
+  INITIAL_CONSIGNMENTS,
+  INITIAL_VISITS,
+  INITIAL_EXCHANGES,
+  INITIAL_CLIENT_INVENTORIES,
+  INITIAL_MOVEMENTS,
+  INITIAL_SALES,
+} from './mockData';
+import { MobileFloatingNav } from './components/MobileFloatingNav';
+
+export function App() {
+  const { user, loading } = useAuth();
+
+  const [currentView, setCurrentView] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem('rn3d_current_view');
+    return (saved as ViewMode) || 'dashboard';
+  });
+
+  useEffect(() => {
+    if (currentView) {
+      localStorage.setItem('rn3d_current_view', currentView);
+    }
+  }, [currentView]);
+  const [activeClientIdForProfile, setActiveClientIdForProfile] = useState<string | null>(null);
+  const [activeVisitClientId, setActiveVisitClientId] = useState<string | null>(null);
+
+  // Sidebar collapse & mobile menu states
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Preselection for modal wizards
+  const [preselectedClientIdForAction, setPreselectedClientIdForAction] = useState<string | undefined>(undefined);
+
+  // Toast Notification state
+  const [toast, setToast] = useState<{
+    id: string;
+    message: string;
+    type: 'success' | 'error' | 'info';
+  } | null>(null);
+
+  // Initial quotes fallback seed data
+  const INITIAL_QUOTES: Quote[] = [
+    {
+      id: 'ORC-920984',
+      clientId: 'cli-1',
+      clientName: 'Cliente Padrão',
+      clientDocument: '00.000.000/0001-00',
+      clientAddress: 'Av. Amaral Peixoto, 131 - Casimiro de Abreu / RJ',
+      date: '2026-08-23',
+      validityDays: 7,
+      productionSlaDays: 5,
+      items: [
+        {
+          description: 'Base de Mesa Glock (SKU: F-6821)',
+          quantity: 1,
+          unitPrice: 15.0,
+          subtotal: 15.0,
+        },
+        {
+          description: 'Case American Rosqueável .22 LR (SKU: 9750)',
+          quantity: 1,
+          unitPrice: 40.0,
+          subtotal: 40.0,
+        },
+      ],
+      subtotal: 55.0,
+      discount: 0,
+      total: 55.0,
+      paymentTerms: 'Pagamento à Vista (PIX / Dinheiro)',
+      status: 'Enviado',
+      notes: 'Orçamento comercial gerado para aprovação.',
+    },
+  ];
+
+  // Real Database State (Initialized with localStorage persistence)
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_products');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading products from localStorage:', e);
+    }
+    return INITIAL_PRODUCTS;
+  });
+
+  useEffect(() => {
+    if (products && products.length > 0) {
+      try {
+        localStorage.setItem('rn3d_products', JSON.stringify(products));
+      } catch (e) {
+        console.error('Error saving products to localStorage:', e);
+      }
+    }
+  }, [products]);
+  const [clients, setClients] = useState<Client[]>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_clients');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading clients from localStorage:', e);
+    }
+    return INITIAL_CLIENTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rn3d_clients', JSON.stringify(clients));
+    } catch (e) {
+      console.error('Error saving clients to localStorage:', e);
+    }
+  }, [clients]);
+
+  const [consignments, setConsignments] = useState<Consignment[]>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_consignments');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading consignments from localStorage:', e);
+    }
+    return INITIAL_CONSIGNMENTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rn3d_consignments', JSON.stringify(consignments));
+    } catch (e) {
+      console.error('Error saving consignments to localStorage:', e);
+    }
+  }, [consignments]);
+
+  const [visits, setVisits] = useState<Visit[]>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_visits');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading visits from localStorage:', e);
+    }
+    return INITIAL_VISITS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rn3d_visits', JSON.stringify(visits));
+    } catch (e) {
+      console.error('Error saving visits to localStorage:', e);
+    }
+  }, [visits]);
+
+  const [exchanges, setExchanges] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_exchanges');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading exchanges from localStorage:', e);
+    }
+    return INITIAL_EXCHANGES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rn3d_exchanges', JSON.stringify(exchanges));
+    } catch (e) {
+      console.error('Error saving exchanges to localStorage:', e);
+    }
+  }, [exchanges]);
+  const [quotes, setQuotes] = useState<Quote[]>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_quotes');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading quotes from localStorage:', e);
+    }
+    return INITIAL_QUOTES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rn3d_quotes', JSON.stringify(quotes));
+    } catch (e) {
+      console.error('Error saving quotes to localStorage:', e);
+    }
+  }, [quotes]);
+
+  const [orders, setOrders] = useState<Order[]>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_orders');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          const filtered = parsed
+            .filter((o: any) => o.id !== 'PED-000081' && o.id !== 'PED-000080')
+            .map((o: any) => {
+              if (o.paymentStatusText === '50% Recebido') {
+                return { ...o, paidAmount: 0.0, paymentStatusText: 'Aguardando Pagamento' };
+              }
+              return o;
+            });
+          return filtered;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading orders from localStorage:', e);
+    }
+    return INITIAL_ORDERS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rn3d_orders', JSON.stringify(orders));
+    } catch (e) {
+      console.error('Error saving orders to localStorage:', e);
+    }
+  }, [orders]);
+
+  // Auto-sync: Ensure every converted or approved quote has a corresponding Order in orders list
+  useEffect(() => {
+    if (!quotes || quotes.length === 0) return;
+
+    quotes.forEach((q) => {
+      const isApprovedOrConverted =
+        q.status === 'Convertido em Pedido' ||
+        q.status === 'Convertido' ||
+        q.status === 'Aprovado';
+
+      if (isApprovedOrConverted) {
+        setOrders((prevOrders) => {
+          const exists = prevOrders.some(
+            (o) =>
+              o.timeline.some((t) => t.description?.includes(q.id) || t.title?.includes(q.id)) ||
+              (o.clientName === q.clientName && Math.abs(o.totalValue - q.total) < 0.01)
+          );
+
+          if (!exists) {
+            const newOrder: Order = {
+              id: `PED-${Math.floor(Math.random() * 900000 + 100000)}`,
+              clientId: q.clientId,
+              clientName: q.clientName,
+              date: q.date || new Date().toISOString().split('T')[0],
+              itemsCount: q.items ? q.items.reduce((acc, i) => acc + i.quantity, 0) : 1,
+              totalValue: q.total,
+              paidAmount: 0.0,
+              paymentStatusText: 'Aguardando Pagamento',
+              status: 'Em produção',
+              productionProgressPct: 15,
+              productionSlaDate: q.date || new Date().toISOString().split('T')[0],
+              estimatedDeliveryDate: q.date || new Date().toISOString().split('T')[0],
+              internalLogisticsType: q.internalLogisticsType || 'combustivel',
+              internalLogisticsCost: q.internalLogisticsCost ?? 50.0,
+              notes: q.notes,
+              paymentTerms: q.paymentTerms,
+              items: (q.items || []).map((i) => ({
+                productName: i.description,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice || (i.subtotal / (i.quantity || 1)),
+                subtotal: i.subtotal,
+              })),
+              timeline: [
+                {
+                  date: `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
+                  title: `Orçamento ${q.id} Convertido em Pedido Oficial`,
+                  description: `Origem: Orçamento ${q.id}`,
+                },
+                {
+                  date: `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
+                  title: 'Fila de Impressão 3D Iniciada',
+                },
+              ],
+            };
+            return [newOrder, ...prevOrders];
+          }
+          return prevOrders;
+        });
+      }
+    });
+  }, [quotes]);
+
+  const [transactions, setTransactions] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_transactions');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading transactions from localStorage:', e);
+    }
+    return INITIAL_SALES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rn3d_transactions', JSON.stringify(transactions));
+    } catch (e) {
+      console.error('Error saving transactions to localStorage:', e);
+    }
+  }, [transactions]);
+
+  const [movements, setMovements] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_movements');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading movements from localStorage:', e);
+    }
+    return INITIAL_MOVEMENTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rn3d_movements', JSON.stringify(movements));
+    } catch (e) {
+      console.error('Error saving movements to localStorage:', e);
+    }
+  }, [movements]);
+
+  const [clientInventories, setClientInventories] = useState<Record<string, any>>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_client_inventories');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading clientInventories from localStorage:', e);
+    }
+    return INITIAL_CLIENT_INVENTORIES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rn3d_client_inventories', JSON.stringify(clientInventories));
+    } catch (e) {
+      console.error('Error saving clientInventories to localStorage:', e);
+    }
+  }, [clientInventories]);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
+  const [dataLoading, setDataLoading] = useState<boolean>(false);
+
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({
+      id: Date.now().toString(),
+      message,
+      type,
+    });
+  };
+
+  // Fetch real data from Supabase PostgreSQL when authenticated
+  useEffect(() => {
+    if (!user) return;
+
+    let isMounted = true;
+    setDataLoading(true);
+
+    Promise.all([fetchProducts(), fetchClients(), fetchOrders()])
+      .then(([dbProducts, dbClients, dbOrders]) => {
+        if (!isMounted) return;
+        setProducts(dbProducts);
+        setClients(dbClients);
+        if (dbOrders && dbOrders.length > 0) {
+          setOrders((prev) => {
+            const dbIds = new Set(dbOrders.map((o) => o.id));
+            const localOnly = prev.filter((o) => !dbIds.has(o.id));
+            return [...localOnly, ...dbOrders];
+          });
+        }
+      })
+      .catch((err) => {
+        console.error('Erro ao carregar dados do Supabase:', err);
+      })
+      .finally(() => {
+        if (isMounted) setDataLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white gap-4 font-sans">
+        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center animate-pulse shadow-lg shadow-indigo-600/30">
+          <Box className="w-6 h-6 text-white" />
+        </div>
+        <p className="text-xs text-slate-400 font-medium tracking-wide">Carregando credenciais de sessão...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginView />;
+  }
+
+  // Callbacks with Supabase persistence
+  const handleAddProduct = async (newProd: Product) => {
+    setProducts((prev) => [newProd, ...prev]);
+    showToast(`Produto "${newProd.name}" cadastrado com sucesso!`, 'success');
+    try {
+      const savedInDb = await createProduct(newProd);
+      if (savedInDb && savedInDb.id) {
+        setProducts((prev) =>
+          prev.map((p) => (p.id === newProd.id ? { ...p, id: savedInDb.id } : p))
+        );
+      }
+    } catch (err: any) {
+      console.error('Erro ao salvar produto no Supabase:', err);
+    }
+  };
+
+  const handleUpdateProduct = async (updatedProduct: Product) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
+    );
+    showToast(`Produto "${updatedProduct.name}" atualizado com sucesso!`, 'success');
+    try {
+      await updateProduct(updatedProduct.id, updatedProduct);
+    } catch (err) {
+      console.error('Erro ao atualizar produto no Supabase:', err);
+    }
+  };
+
+  const handleSyncProductsToSupabase = async () => {
+    try {
+      showToast('Iniciando sincronização com o Supabase...', 'info');
+      const count = await syncMissingProductsToSupabase(products);
+      if (count > 0) {
+        showToast(`✅ ${count} produtos foram sincronizados com sucesso no Supabase!`, 'success');
+        const dbProds = await fetchProducts();
+        setProducts(dbProds);
+      } else {
+        showToast('Tudo sincronizado! Todos os produtos do sistema já estão gravados no Supabase.', 'info');
+      }
+    } catch (err: any) {
+      showToast(`Erro na sincronização: ${err?.message || 'Falha ao conectar com Supabase'}`, 'error');
+    }
+  };
+
+  const handleAddClient = async (newClient: Client) => {
+    setClients((prev) => [newClient, ...prev]);
+    // Save logistics memory if specified
+    if (newClient.defaultLogisticsCost !== undefined) {
+      try {
+        const saved = localStorage.getItem('rn3d_client_logistics');
+        const parsed = saved ? JSON.parse(saved) : {};
+        parsed[newClient.id] = {
+          type: newClient.defaultLogisticsType || 'combustivel',
+          cost: newClient.defaultLogisticsCost,
+        };
+        localStorage.setItem('rn3d_client_logistics', JSON.stringify(parsed));
+      } catch (e) {
+        console.error('Error saving client logistics memory:', e);
+      }
+    }
+    showToast(`Cliente "${newClient.name}" cadastrado com sucesso!`, 'success');
+    try {
+      await createClient(newClient);
+    } catch (err) {
+      console.error('Erro ao salvar cliente no Supabase:', err);
+    }
+  };
+
+  const handleUpdateClient = async (updatedClient: Client) => {
+    setClients((prev) => prev.map((c) => (c.id === updatedClient.id ? updatedClient : c)));
+    try {
+      const saved = localStorage.getItem('rn3d_client_logistics');
+      const parsed = saved ? JSON.parse(saved) : {};
+      parsed[updatedClient.id] = {
+        type: updatedClient.defaultLogisticsType || 'combustivel',
+        cost: updatedClient.defaultLogisticsCost ?? 50.0,
+      };
+      localStorage.setItem('rn3d_client_logistics', JSON.stringify(parsed));
+    } catch (e) {
+      console.error('Error saving client logistics memory:', e);
+    }
+    showToast(`Cadastro do cliente "${updatedClient.name}" atualizado com sucesso!`, 'success');
+  };
+
+  const handleAddConsignment = (newConsignment: Consignment) => {
+    setConsignments((prev) => [newConsignment, ...prev]);
+    showToast(`Consignação ${newConsignment.id} registrada com sucesso!`, 'success');
+  };
+
+  const handleAddQuote = (newQuote: Quote) => {
+    setQuotes((prev) => [newQuote, ...prev]);
+    showToast(`Orçamento ${newQuote.id} criado com sucesso!`, 'success');
+  };
+
+  const handleUpdateQuoteStatus = (quoteId: string, newStatus: string) => {
+    setQuotes((prev) =>
+      prev.map((q) => (q.id === quoteId ? { ...q, status: newStatus as any } : q))
+    );
+    showToast(`Status do orçamento ${quoteId} alterado para "${newStatus}"!`, 'success');
+  };
+
+  const handleConvertQuoteToOrder = async (quote: Quote) => {
+    const newOrder: Order = {
+      id: `PED-${Math.floor(Math.random() * 900000 + 100000)}`,
+      clientId: quote.clientId,
+      clientName: quote.clientName,
+      date: new Date().toISOString().split('T')[0],
+      itemsCount: quote.items.reduce((acc, i) => acc + i.quantity, 0),
+      totalValue: quote.total,
+      paidAmount: 0.0,
+      paymentStatusText: 'Aguardando Pagamento',
+      status: 'Em produção' as const,
+      productionProgressPct: 15,
+      productionSlaDate: quote.date || new Date().toISOString().split('T')[0],
+      estimatedDeliveryDate: quote.date || new Date().toISOString().split('T')[0],
+      internalLogisticsType: quote.internalLogisticsType || 'combustivel',
+      internalLogisticsCost: quote.internalLogisticsCost ?? 50.0,
+      notes: quote.notes,
+      paymentTerms: quote.paymentTerms,
+      items: quote.items.map((i) => ({
+        productName: i.description,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice || (i.subtotal / i.quantity),
+        subtotal: i.subtotal,
+      })),
+      timeline: [
+        { date: `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`, title: 'Orçamento Convertido em Pedido Oficial' },
+        { date: `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`, title: 'Fila de Impressão 3D Iniciada' },
+      ],
+    };
+
+    setOrders((prev) => [newOrder, ...prev]);
+    setQuotes((prev) =>
+      prev.map((q) => (q.id === quote.id ? { ...q, status: 'Convertido em Pedido' } : q))
+    );
+    setCurrentView('orders');
+    showToast(`Orçamento ${quote.id} convertido com sucesso no Pedido ${newOrder.id}!`, 'success');
+
+    try {
+      await createOrder(newOrder);
+    } catch (err) {
+      console.error('Erro ao persistir pedido no Supabase:', err);
+    }
+  };
+
+  const handleUpdateOrderPayment = (orderId: string, additionalAmount: number) => {
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.id === orderId) {
+          const currentPaid = o.paidAmount || 0;
+          const newPaidAmount = Math.min(o.totalValue, currentPaid + additionalAmount);
+          const isFullyPaid = newPaidAmount >= o.totalValue;
+          const pct = Math.round((newPaidAmount / o.totalValue) * 100);
+          const newPaymentStatus = isFullyPaid ? 'Totalmente Pago' : `${pct}% Recebido`;
+
+          return {
+            ...o,
+            paidAmount: newPaidAmount,
+            paymentStatusText: newPaymentStatus,
+            timeline: [
+              {
+                date: `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
+                title: `Entrada em Caixa Registrada: R$ ${additionalAmount.toFixed(2).replace('.', ',')}`,
+                description: `Status de Pagamento: ${newPaymentStatus}`,
+              },
+              ...(o.timeline || []),
+            ],
+          };
+        }
+        return o;
+      })
+    );
+    showToast(`Recebimento de R$ ${additionalAmount.toFixed(2).replace('.', ',')} registrado no caixa!`, 'success');
+  };
+
+  const handleStartVisit = (clientId: string) => {
+    setActiveVisitClientId(clientId);
+  };
+
+  const handleCompleteVisit = (visitData: any) => {
+    setActiveVisitClientId(null);
+    showToast(`Visita ${visitData.visitId} finalizada! Vendas e estoque atualizados.`, 'success');
+
+    // Add financial record
+    if (visitData.receivedAmount > 0) {
+      setTransactions((prev) => [
+        {
+          id: `PAG-${Math.floor(Math.random() * 9000 + 1000)}`,
+          clientName: clients.find((c) => c.id === visitData.clientId)?.name || 'Cliente',
+          date: '10/08/2026',
+          type: 'Visita Consignação',
+          amount: visitData.receivedAmount,
+          paymentMethod: 'PIX',
+          status: 'Recebido',
+        },
+        ...prev,
+      ]);
+    }
+  };
+
+  const handleUpdateStock = (productId: string, newStock: number) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.productId === productId || p.id === productId ? { ...p, currentStock: newStock } : p))
+    );
+    showToast('Saldo de estoque ajustado com sucesso!', 'success');
+  };
+
+  const handleSelectClientProfile = (clientOrId: string | Client) => {
+    const id = typeof clientOrId === 'string' ? clientOrId : clientOrId.id;
+    setActiveClientIdForProfile(id);
+    setCurrentView('client-profile');
+  };
+
+  const selectedProfileClient = clients.find((c) => c.id === activeClientIdForProfile) || clients[0];
+
+  return (
+    <div className="min-h-screen bg-slate-100/70 text-slate-900 font-sans flex antialiased selection:bg-indigo-500 selection:text-white">
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          id={toast.id}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Desktop & Mobile Responsive Sidebar Drawer */}
+      <Sidebar
+        currentView={currentView}
+        onSelectView={(mode) => {
+          setCurrentView(mode);
+          setActiveClientIdForProfile(null);
+        }}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        isMobileOpen={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
+      />
+
+      {/* Main Right Content Area */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
+          isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        }`}
+      >
+        {/* Top Header */}
+        <Header
+          currentView={currentView}
+          onOpenMobileSidebar={() => setIsMobileMenuOpen(true)}
+          products={products}
+          clients={clients}
+          orders={orders}
+          quotes={quotes}
+          onSearchChange={(query) => setGlobalSearchQuery(query)}
+          onSelectSearchResult={(type, id, item) => {
+            setGlobalSearchQuery(id || item?.id || '');
+            if (type === 'order') {
+              setCurrentView('orders');
+            } else if (type === 'quote') {
+              setCurrentView('quotes');
+            } else if (type === 'product') {
+              setCurrentView('products');
+            } else if (type === 'client') {
+              setActiveClientIdForProfile(id);
+              setCurrentView('client-profile');
+            }
+          }}
+          onQuickAction={(action) => {
+            switch (action) {
+              case 'calculadora-3d':
+                setCurrentView('calculator');
+                break;
+              case 'novo-pedido':
+              case 'order':
+                setCurrentView('orders');
+                break;
+              case 'novo-orcamento':
+              case 'quote':
+                setCurrentView('quotes');
+                break;
+              case 'nova-consignacao':
+              case 'consignment':
+                setCurrentView('consignments');
+                break;
+              case 'registrar-visita':
+              case 'visit':
+                setCurrentView('visits');
+                break;
+              case 'registrar-entrada':
+              case 'inventory':
+                setCurrentView('inventory-general');
+                break;
+              case 'product':
+                setCurrentView('products');
+                break;
+              case 'client':
+                setCurrentView('clients');
+                break;
+              default:
+                break;
+            }
+          }}
+        />
+
+        {/* Dynamic View Body Container */}
+        <main className="p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 flex-1 max-w-7xl w-full mx-auto">
+          {/* Active Visit Wizard Modal Overlay */}
+          {activeVisitClientId ? (
+            <VisitExecutionWizard
+              client={clients.find((c) => c.id === activeVisitClientId) || clients[0]}
+              inventory={clientInventories[activeVisitClientId] || []}
+              allProducts={products}
+              onCompleteVisit={handleCompleteVisit}
+              onCancel={() => setActiveVisitClientId(null)}
+            />
+          ) : (
+            <>
+              {currentView === 'dashboard' && (
+                <DashboardView
+                  clients={clients}
+                  visits={visits}
+                  products={products}
+                  consignments={consignments}
+                  orders={orders}
+                  onNavigate={(view) => setCurrentView(view)}
+                  onStartVisit={handleStartVisit}
+                  onSelectClient={handleSelectClientProfile}
+                  onQuickAction={(action) => {
+                    switch (action) {
+                      case 'calculadora-3d':
+                        setCurrentView('calculator');
+                        break;
+                      case 'novo-pedido':
+                      case 'order':
+                        setCurrentView('orders');
+                        break;
+                      case 'novo-orcamento':
+                      case 'quote':
+                        setCurrentView('quotes');
+                        break;
+                      case 'nova-consignacao':
+                      case 'consignment':
+                        setCurrentView('consignments');
+                        break;
+                      case 'registrar-visita':
+                      case 'visit':
+                        setCurrentView('visits');
+                        break;
+                      case 'registrar-entrada':
+                      case 'inventory':
+                        setCurrentView('inventory-general');
+                        break;
+                      case 'product':
+                        setCurrentView('products');
+                        break;
+                      case 'client':
+                        setCurrentView('clients');
+                        break;
+                      default:
+                        break;
+                    }
+                  }}
+                />
+              )}
+
+              {currentView === 'calculator' && (
+                <CalculatorView
+                  onSaveAsProduct={(newProduct) => {
+                    handleAddProduct(newProduct);
+                    setCurrentView('products');
+                  }}
+                />
+              )}
+
+              {currentView === 'products' && (
+                <ProductsView
+                  products={products}
+                  onAddProduct={handleAddProduct}
+                  onUpdateProduct={handleUpdateProduct}
+                  onSyncSupabase={handleSyncProductsToSupabase}
+                />
+              )}
+
+              {currentView === 'clients' && (
+                <ClientsView
+                  clients={clients}
+                  onAddClient={handleAddClient}
+                  onSelectClient={handleSelectClientProfile}
+                  onStartVisit={handleStartVisit}
+                />
+              )}
+
+              {currentView === 'client-profile' && (
+                <ClientProfileView
+                  client={selectedProfileClient}
+                  clientInventory={clientInventories[selectedProfileClient.id] || []}
+                  orders={orders}
+                  quotes={quotes}
+                  onBack={() => setCurrentView('clients')}
+                  onStartVisit={handleStartVisit}
+                  onNewConsignment={(cliId) => {
+                    setPreselectedClientIdForAction(cliId);
+                    setCurrentView('consignments');
+                  }}
+                  onNewOrder={() => setCurrentView('orders')}
+                  onNewQuote={(cliId) => {
+                    setPreselectedClientIdForAction(cliId);
+                    setCurrentView('quotes');
+                  }}
+                  onUpdateClient={handleUpdateClient}
+                />
+              )}
+
+              {currentView === 'consignments' && (
+                <ConsignmentsView
+                  consignments={consignments}
+                  clients={clients}
+                  products={products}
+                  onAddConsignment={handleAddConsignment}
+                  preselectedClientId={preselectedClientIdForAction}
+                />
+              )}
+
+              {currentView === 'visits' && (
+                <VisitsView visits={visits} onStartVisit={handleStartVisit} />
+              )}
+
+              {currentView === 'exchanges' && <ExchangesView exchanges={exchanges} />}
+
+              {currentView === 'quotes' && (
+                <QuotesView
+                  quotes={quotes}
+                  clients={clients}
+                  products={products}
+                  onAddQuote={handleAddQuote}
+                  onUpdateQuoteStatus={handleUpdateQuoteStatus}
+                  onConvertQuoteToOrder={handleConvertQuoteToOrder}
+                  preselectedClientId={preselectedClientIdForAction}
+                  searchQuery={globalSearchQuery}
+                />
+              )}
+
+              {currentView === 'orders' && (
+                <OrdersView orders={orders} products={products} searchQuery={globalSearchQuery} />
+              )}
+
+              {currentView === 'inventory-general' && (
+                <GeneralInventoryView products={products} onUpdateStock={handleUpdateStock} />
+              )}
+
+              {currentView === 'inventory-movements' && <MovementsView movements={movements} />}
+
+              {currentView === 'inventory-clients' && (
+                <ClientInventoryView clients={clients} clientInventories={clientInventories} />
+              )}
+
+              {currentView === 'financial' && (
+                <FinancialView
+                  transactions={transactions}
+                  consignments={consignments}
+                  orders={orders}
+                  onUpdateOrderPayment={handleUpdateOrderPayment}
+                />
+              )}
+
+              {currentView === 'reports' && (
+                <ReportsView products={products} orders={orders} consignments={consignments} />
+              )}
+
+              {currentView === 'settings' && <SettingsView onShowToast={showToast} />}
+            </>
+          )}
+        </main>
+      </div>
+
+      {/* Floating Bottom Footer Navigation Bar on Mobile */}
+      <MobileFloatingNav
+        currentView={currentView}
+        onSelectView={(mode) => {
+          setCurrentView(mode);
+          setActiveClientIdForProfile(null);
+        }}
+        onQuickAction={() => setCurrentView('orders')}
+      />
+    </div>
+  );
+}
+
+export default App;

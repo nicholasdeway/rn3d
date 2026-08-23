@@ -1,0 +1,8 @@
+{
+  "name": "RN 3D Sistema",
+  "description": "Sistema interno de gestão para empresa de impressão 3D, focado em vendas locais, consignação, controle de estoque, visitas e orçamentos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
