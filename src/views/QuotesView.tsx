@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Client, Product, Quote, QuoteItem } from '../types';
+import { ProductSelectCombobox } from '../components/ProductSelectCombobox';
 import {
   FileText,
   Plus,
@@ -439,35 +440,23 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 </div>
               </div>
 
-              {/* Full Product Catalog Selection Dropdown */}
+              {/* Full Product Catalog Searchable Combobox with Thumbnails */}
               {products.length > 0 && (
-                <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                  <label className="block font-bold text-slate-900 text-xs">
-                    Adicionar do Catálogo de Produtos ({products.length} itens disponíveis):
+                <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-2">
+                  <label className="block font-bold text-slate-900 text-xs flex items-center justify-between">
+                    <span>Adicionar do Catálogo de Produtos ({products.length} itens disponíveis):</span>
+                    <span className="text-[10px] text-indigo-600 font-bold">Pesquisa Instantânea</span>
                   </label>
-                  <select
-                    onChange={(e) => {
-                      const selected = products.find((p) => p.id === e.target.value);
-                      if (selected) {
-                        handleAddProductFromCatalog(selected);
-                        e.target.value = '';
-                      }
-                    }}
-                    defaultValue=""
-                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 cursor-pointer"
-                  >
-                    <option value="" disabled>
-                      🔍 Clique para selecionar qualquer produto do catálogo...
-                    </option>
-                    {products
-                      .slice()
-                      .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
-                      .map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} (SKU: {p.sku}) {p.storageCapacity ? `• ${p.storageCapacity}` : ''} — R$ {p.standardPrice.toFixed(2).replace('.', ',')}
-                        </option>
-                      ))}
-                  </select>
+                  <ProductSelectCombobox
+                    products={products}
+                    onSelectProduct={handleAddProductFromCatalog}
+                    isCashPayment={
+                      paymentTerms.toLowerCase().includes('à vista') ||
+                      paymentTerms.toLowerCase().includes('a vista') ||
+                      paymentTerms.toLowerCase().includes('pix') ||
+                      paymentTerms.toLowerCase().includes('50%')
+                    }
+                  />
                 </div>
               )}
 

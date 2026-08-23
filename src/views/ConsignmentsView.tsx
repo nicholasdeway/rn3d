@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Client, Consignment, ConsignmentItem, Product } from '../types';
+import { ProductSelectCombobox } from '../components/ProductSelectCombobox';
 import {
   Boxes,
   Plus,
@@ -284,47 +285,15 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                         </p>
                       </div>
                     )}
-                  </div>
-
-                  {/* Add Product Search picker */}
+                  {/* Add Product Search Combobox with Thumbnails */}
                   <div>
                     <label className="block font-semibold text-slate-700 mb-1">Buscar Produto para Adicionar</label>
-                    <div className="relative">
-                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        value={productSearch}
-                        onChange={(e) => setProductSearch(e.target.value)}
-                        placeholder="Digite o nome do produto ou SKU..."
-                        className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs"
-                      />
-                    </div>
-
-                    {/* Product Quick Results */}
-                    {productSearch.length > 0 && (
-                      <div className="mt-1 bg-white rounded-xl border border-slate-200 shadow-md max-h-40 overflow-y-auto divide-y divide-slate-100 z-10 relative">
-                        {products
-                          .filter((p) => p.name.toLowerCase().includes(productSearch.toLowerCase()))
-                          .slice(0, 5)
-                          .map((p) => (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => {
-                                handleAddProductToConsignment(p);
-                                setProductSearch('');
-                              }}
-                              className="w-full text-left p-2.5 hover:bg-slate-50 flex items-center justify-between transition-colors"
-                            >
-                              <div>
-                                <p className="font-bold text-slate-900">{p.name}</p>
-                                <p className="text-[10px] text-slate-400">SKU: {p.sku}</p>
-                              </div>
-                              <span className="font-bold text-emerald-600">R$ {p.standardPrice.toFixed(2)}</span>
-                            </button>
-                          ))}
-                      </div>
-                    )}
+                    <ProductSelectCombobox
+                      products={products}
+                      onSelectProduct={handleAddProductToConsignment}
+                      isCashPayment={false}
+                    />
+                  </div>
                   </div>
 
                   {/* Dynamic Items Table */}
