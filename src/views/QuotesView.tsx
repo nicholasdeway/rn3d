@@ -652,29 +652,32 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+            {/* Action Buttons - Optimized for Mobile & Desktop */}
+            <div className="p-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
               <button
                 type="button"
                 onClick={() => setIsFormOpen(false)}
-                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold cursor-pointer"
+                className="order-3 sm:order-1 px-3.5 py-2 text-slate-500 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl font-semibold text-xs transition-colors cursor-pointer text-center"
               >
                 Cancelar
               </button>
-              <button
-                type="button"
-                onClick={() => handleSubmitQuote('Rascunho')}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold cursor-pointer"
-              >
-                Salvar Rascunho
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSubmitQuote('Enviado')}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-sm cursor-pointer"
-              >
-                Marcar como Enviado
-              </button>
+              <div className="order-1 sm:order-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSubmitQuote('Rascunho')}
+                  className="px-3.5 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs shadow-2xs transition-colors cursor-pointer whitespace-nowrap text-center"
+                >
+                  Salvar Rascunho
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmitQuote('Enviado')}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Marcar como Enviado</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
