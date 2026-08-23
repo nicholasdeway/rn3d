@@ -260,7 +260,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 {/* Left Column (2/3): Form & Dynamic Item Table */}
                 <div className="lg:col-span-2 space-y-5">
                   {/* Client Select & Product Search in Responsive Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 relative z-30">
                     <div>
                       <label className="block font-semibold text-slate-700 mb-1">Selecionar Cliente / Loja *</label>
                       <select
@@ -276,7 +276,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                       </select>
                     </div>
 
-                    <div>
+                    <div className="relative z-30">
                       <label className="block font-semibold text-slate-700 mb-1">Buscar Produto para Adicionar</label>
                       <ProductSelectCombobox
                         products={products}

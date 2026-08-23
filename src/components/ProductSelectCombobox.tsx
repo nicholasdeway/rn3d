@@ -230,7 +230,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
 
       {/* 💻 DESKTOP FLOATING DROPDOWN MENU (Visible on screens >= 640px when open) */}
       {isOpen && (
-        <div className="hidden sm:block absolute z-50 left-0 right-0 mt-1 bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="hidden sm:block absolute z-[9999] left-0 right-0 mt-1 bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500">
             <span>
               {searchQuery
