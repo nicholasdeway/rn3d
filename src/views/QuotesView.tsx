@@ -107,26 +107,40 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
   const [internalLogisticsType, setInternalLogisticsType] = useState<'combustivel' | 'frete' | 'retirada'>('combustivel');
   const [internalLogisticsCost, setInternalLogisticsCost] = useState<number>(50.0);
 
-  // Sync client logistics memory from localStorage
+  const selectedClient = availableClientsList.find((c) => c.id === selectedClientId) || fallbackDefaultClient;
+
+  // Sync client logistics memory: Prioritize Client Profile setting, then localStorage, then default 50.0
   React.useEffect(() => {
-    if (!selectedClientId) return;
+    if (!selectedClient) return;
+
+    // 1. Prioritize defaultLogisticsCost set on the Client object profile
+    if (selectedClient.defaultLogisticsCost !== undefined && selectedClient.defaultLogisticsCost !== null) {
+      setInternalLogisticsType(selectedClient.defaultLogisticsType || 'combustivel');
+      setInternalLogisticsCost(Number(selectedClient.defaultLogisticsCost));
+      return;
+    }
+
+    // 2. Fallback to localStorage memory
     try {
       const saved = localStorage.getItem('rn3d_client_logistics');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed[selectedClientId]) {
-          setInternalLogisticsType(parsed[selectedClientId].type || 'combustivel');
-          setInternalLogisticsCost(parsed[selectedClientId].cost ?? 50.0);
+        if (parsed && parsed[selectedClient.id]) {
+          setInternalLogisticsType(parsed[selectedClient.id].type || 'combustivel');
+          setInternalLogisticsCost(Number(parsed[selectedClient.id].cost ?? 50.0));
+          return;
         }
       }
     } catch (e) {
       console.error('Error loading client logistics memory:', e);
     }
-  }, [selectedClientId]);
+
+    // 3. Fallback default
+    setInternalLogisticsType('combustivel');
+    setInternalLogisticsCost(50.0);
+  }, [selectedClient, selectedClientId]);
 
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
-
-  const selectedClient = availableClientsList.find((c) => c.id === selectedClientId) || fallbackDefaultClient;
 
   const handleAddItem = () => {
     setQuoteItems([
