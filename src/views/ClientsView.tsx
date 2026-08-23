@@ -707,15 +707,22 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Custo Padrão de Transporte (R$)</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Custo Padrão de Transporte (R$) *</label>
                     <input
                       type="number"
-                      step="5"
+                      step="any"
                       min="0"
-                      value={formData.defaultLogisticsCost ?? 50.0}
-                      onChange={(e) => setFormData({ ...formData, defaultLogisticsCost: Number(e.target.value) })}
+                      required
+                      value={formData.defaultLogisticsCost === '' || formData.defaultLogisticsCost === undefined || formData.defaultLogisticsCost === null ? '' : formData.defaultLogisticsCost}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData({
+                          ...formData,
+                          defaultLogisticsCost: val === '' ? ('' as any) : Number(val),
+                        });
+                      }}
                       placeholder="Ex: 50.00"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-black text-rose-600"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-black text-rose-600 placeholder-slate-300"
                     />
                   </div>
                 </div>

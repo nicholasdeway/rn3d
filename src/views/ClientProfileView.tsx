@@ -964,14 +964,22 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Custo Logístico Padrão (R$)</label>
+                    <label className="block font-semibold text-slate-700 mb-1">Custo Logístico Padrão (R$) *</label>
                     <input
                       type="number"
-                      step="5"
+                      step="any"
                       min="0"
-                      value={editFormData.defaultLogisticsCost ?? 50.0}
-                      onChange={(e) => setEditFormData({ ...editFormData, defaultLogisticsCost: Number(e.target.value) })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-black text-rose-600 text-sm"
+                      required
+                      value={editFormData.defaultLogisticsCost === '' || editFormData.defaultLogisticsCost === undefined || editFormData.defaultLogisticsCost === null ? '' : editFormData.defaultLogisticsCost}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditFormData({
+                          ...editFormData,
+                          defaultLogisticsCost: val === '' ? ('' as any) : Number(val),
+                        });
+                      }}
+                      placeholder="Ex: 50.00"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-black text-rose-600 text-sm placeholder-slate-300"
                     />
                   </div>
                 </div>
