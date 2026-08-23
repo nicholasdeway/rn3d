@@ -143,20 +143,7 @@ export const LoginView: React.FC = () => {
           </button>
         </form>
 
-        {/* Demo Mode Action */}
-        <div className="mt-6 pt-6 border-t border-slate-800/80 text-center">
-          <p className="text-xs text-slate-400 mb-3">
-            Quer testar sem configurar credenciais agora?
-          </p>
-          <button
-            type="button"
-            onClick={loginAsDemo}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2.5 px-4 rounded-xl text-xs transition-colors flex items-center justify-center gap-2 border border-slate-700"
-          >
-            <Sparkles className="w-4 h-4 text-indigo-400" />
-            Acessar em Modo Demonstração
-          </button>
-        </div>
+
 
         {/* Security Footer Note */}
         <div className="mt-6 text-center text-[10px] text-slate-500 flex items-center justify-center gap-1.5">
