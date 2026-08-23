@@ -62,33 +62,14 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentClientData, setCurrentClientData] = useState<Client>(client);
 
-  // Sync client when prop changes
+  // Sync client & logistics memory when prop changes
   useEffect(() => {
     setCurrentClientData(client);
+    setLogisticsMemory({
+      type: client.defaultLogisticsType || 'combustivel',
+      cost: client.defaultLogisticsCost ?? 50.0,
+    });
   }, [client]);
-
-  // Read saved logistics memory from localStorage if present
-  const [logisticsMemory, setLogisticsMemory] = useState<{ type: string; cost: number }>({
-    type: client.defaultLogisticsType || 'combustivel',
-    cost: client.defaultLogisticsCost ?? 50.0,
-  });
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('rn3d_client_logistics');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed[client.id]) {
-          setLogisticsMemory({
-            type: parsed[client.id].type || 'combustivel',
-            cost: parsed[client.id].cost ?? 50.0,
-          });
-        }
-      }
-    } catch (e) {
-      console.error('Error reading client logistics memory:', e);
-    }
-  }, [client.id]);
 
   // Edit form state & Avatar Cropper state
   const [editFormData, setEditFormData] = useState<Partial<Client>>({});
