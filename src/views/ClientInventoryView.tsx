@@ -25,7 +25,14 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
     const invFromState = clientInventories[cli.id] || [];
 
     invFromState.forEach((item) => {
-      map.set(item.productId || item.productName.toLowerCase().trim(), { ...item });
+      const qty = item.quantityOnSite ?? item.currentQuantity ?? 0;
+      map.set(item.productId || item.productName.toLowerCase().trim(), {
+        ...item,
+        quantityOnSite: qty,
+        currentQuantity: item.currentQuantity ?? qty,
+        sentQuantity: item.sentQuantity ?? qty,
+        soldQuantity: item.soldQuantity ?? 0,
+      });
     });
 
     consignments.forEach((cons) => {
@@ -38,14 +45,21 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
           const key = cItem.productId || cItem.productName.toLowerCase().trim();
           if (map.has(key)) {
             const existing = map.get(key)!;
-            if (existing.quantityOnSite < cItem.quantity) {
+            const currentQty = existing.quantityOnSite ?? existing.currentQuantity ?? 0;
+            if (currentQty < cItem.quantity) {
               existing.quantityOnSite = cItem.quantity;
+              existing.currentQuantity = cItem.quantity;
+              existing.sentQuantity = Math.max(existing.sentQuantity || 0, cItem.quantity);
               existing.valuation = cItem.quantity * existing.unitPrice;
             }
           } else {
             map.set(key, {
               productId: cItem.productId || `prod-${Math.random().toString(36).substr(2, 6)}`,
               productName: cItem.productName,
+              sku: cItem.sku || '',
+              sentQuantity: cItem.quantity,
+              soldQuantity: 0,
+              currentQuantity: cItem.quantity,
               quantityOnSite: cItem.quantity,
               unitPrice: cItem.unitPrice,
               valuation: cItem.subtotal,
@@ -57,7 +71,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
       }
     });
 
-    return Array.from(map.values()).filter((item) => item.quantityOnSite > 0);
+    return Array.from(map.values()).filter((item) => (item.quantityOnSite || item.currentQuantity || 0) > 0);
   };
 
   const totalProductsConsigned = useMemo(() => {
@@ -242,18 +256,23 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {itemsAtStore.map((item) => (
-                            <tr key={item.productId} className="hover:bg-slate-50">
-                              <td className="p-3 font-bold text-slate-900">{item.productName}</td>
-                              <td className="p-3 text-center text-slate-600">{item.sentQuantity}</td>
-                              <td className="p-3 text-center font-bold text-emerald-600">{item.soldQuantity}</td>
-                              <td className="p-3 text-center font-extrabold text-slate-900">{item.currentQuantity} un</td>
-                              <td className="p-3 text-right text-slate-600">R$ {item.unitPrice.toFixed(2)}</td>
-                              <td className="p-3 text-right font-bold text-slate-900">
-                                R$ {(item.currentQuantity * item.unitPrice).toFixed(2)}
-                              </td>
-                            </tr>
-                          ))}
+                          {itemsAtStore.map((item) => {
+                            const qty = item.currentQuantity ?? item.quantityOnSite ?? 0;
+                            const sent = item.sentQuantity ?? qty;
+                            const sold = item.soldQuantity ?? 0;
+                            return (
+                              <tr key={item.productId} className="hover:bg-slate-50">
+                                <td className="p-3 font-bold text-slate-900">{item.productName}</td>
+                                <td className="p-3 text-center text-slate-600">{sent}</td>
+                                <td className="p-3 text-center font-bold text-emerald-600">{sold}</td>
+                                <td className="p-3 text-center font-extrabold text-slate-900">{qty} un</td>
+                                <td className="p-3 text-right text-slate-600">R$ {item.unitPrice.toFixed(2)}</td>
+                                <td className="p-3 text-right font-bold text-slate-900">
+                                  R$ {(qty * item.unitPrice).toFixed(2)}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>

@@ -129,12 +129,16 @@ export interface Consignment {
 export interface ClientInventoryItem {
   productId: string;
   productName: string;
-  sku: string;
-  sentQuantity: number;
-  soldQuantity: number;
-  currentQuantity: number;
+  sku?: string;
+  sentQuantity?: number;
+  soldQuantity?: number;
+  currentQuantity?: number;
+  quantityOnSite?: number;
   unitPrice: number;
-  lastMovementDate: string;
+  valuation?: number;
+  daysOnSite?: number;
+  status?: string;
+  lastMovementDate?: string;
   imageUrl?: string;
 }
 

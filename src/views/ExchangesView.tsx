@@ -41,7 +41,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
   const [destinationClientId, setDestinationClientId] = useState<string>('');
   const [selectedItems, setSelectedItems] = useState<Record<string, number>>({});
   const [exchangeReason, setExchangeReason] = useState<string>('Baixo giro / Peças encalhadas no expositor');
-  const [responsibleName, setResponsibleName] = useState<string>('Nicholas RN 3D');
+  const [responsibleName, setResponsibleName] = useState<string>('Nicholas');
 
   const sourceClient = clients.find((c) => c.id === sourceClientId);
   const availableDestinationClients = clients.filter((c) => c.id !== sourceClientId);
@@ -390,11 +390,10 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setDestinationType('migracao_lojas')}
-                      className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                        destinationType === 'migracao_lojas'
+                      className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${destinationType === 'migracao_lojas'
                           ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                           : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
+                        }`}
                     >
                       <Store className="w-4 h-4 text-indigo-300" />
                       <span>🏬 Migrar para Outra Loja (Loja B)</span>
@@ -403,11 +402,10 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setDestinationType('recolhimento_oficina')}
-                      className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                        destinationType === 'recolhimento_oficina'
+                      className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${destinationType === 'recolhimento_oficina'
                           ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                           : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
+                        }`}
                     >
                       <RotateCcw className="w-4 h-4 text-emerald-300" />
                       <span>🏭 Recolher para Oficina</span>
@@ -472,11 +470,10 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                               </td>
                               <td className="p-3.5 text-center">
                                 <span
-                                  className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
-                                    item.daysOnSite >= 30 || item.status === 'Alerta (Sem Giro)'
+                                  className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${item.daysOnSite >= 30 || item.status === 'Alerta (Sem Giro)'
                                       ? 'bg-amber-100 text-amber-800 border border-amber-300'
                                       : 'bg-emerald-100 text-emerald-800'
-                                  }`}
+                                    }`}
                                 >
                                   {item.daysOnSite >= 30 ? 'Parado (Sem Giro)' : item.status}
                                 </span>
@@ -551,7 +548,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                 <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2 text-right">
                   <span className="text-xs text-slate-400 font-semibold block">Total de Peças em Troca:</span>
                   <span className="text-2xl font-black text-indigo-600 block">
-                    {Object.values(selectedItems).reduce((acc, qty) => acc + qty, 0)} unidades
+                    {(Object.values(selectedItems) as number[]).reduce((acc: number, qty: number) => acc + qty, 0)} unidades
                   </span>
                   <span className="text-[11px] text-slate-500 font-medium block">
                     {destinationType === 'migracao_lojas' ? 'Destino: Loja Parceira' : 'Destino: Oficina Central'}
@@ -570,7 +567,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={Object.values(selectedItems).reduce((acc, qty) => acc + qty, 0) === 0}
+                  disabled={(Object.values(selectedItems) as number[]).reduce((acc: number, qty: number) => acc + qty, 0) === 0}
                   className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm transition-all cursor-pointer flex items-center gap-2"
                 >
                   <Check className="w-4 h-4" />
