@@ -16,7 +16,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
   consignments = [],
   onNavigateToExchanges,
 }) => {
-  const [expandedClientId, setExpandedClientId] = useState<string | null>('cli-1');
+  const [expandedClientId, setExpandedClientId] = useState<string | null>(clients[0]?.id || null);
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
   // Helper to reconcile items for any client

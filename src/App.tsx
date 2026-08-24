@@ -428,6 +428,11 @@ export function App() {
                 <ClientInventoryView
                   clientInventories={appData.clientInventories}
                   clients={appData.clients}
+                  consignments={appData.consignments}
+                  onNavigateToExchanges={(cliId) => {
+                    setPreselectedClientIdForAction(cliId);
+                    setCurrentView('exchanges');
+                  }}
                 />
               )}
 
