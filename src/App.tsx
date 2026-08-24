@@ -36,14 +36,29 @@ function safeSetLocalStorage(key: string, value: string) {
   try {
     localStorage.setItem(key, value);
   } catch (e: any) {
-    console.warn(`[LocalStorage Quota Warning] Exceeded storage quota for ${key}. Clearing cache...`);
+    console.warn(`[LocalStorage Quota Warning] Exceeded storage quota for ${key}. Clearing secondary caches...`);
     try {
       localStorage.removeItem('rn3d_client_logistics');
-      localStorage.removeItem('rn3d_exchanges');
       localStorage.removeItem('rn3d_movements');
+      localStorage.removeItem('rn3d_transactions');
+      localStorage.removeItem('rn3d_visits');
+      localStorage.removeItem('rn3d_current_view');
       localStorage.setItem(key, value);
     } catch (err) {
-      console.error(`[LocalStorage Error] Unable to persist ${key} to localStorage:`, err);
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          const sanitized = parsed.map((item: any) => {
+            const copy = { ...item };
+            if (typeof copy.imageUrl === 'string' && copy.imageUrl.length > 300) copy.imageUrl = '';
+            if (typeof copy.avatarUrl === 'string' && copy.avatarUrl.length > 300) copy.avatarUrl = '';
+            return copy;
+          });
+          localStorage.setItem(key, JSON.stringify(sanitized));
+        }
+      } catch (finalErr) {
+        console.warn(`[LocalStorage Cache Warning] Storage limit reached for ${key}. State kept in memory.`);
+      }
     }
   }
 }
@@ -134,7 +149,13 @@ export function App() {
 
   useEffect(() => {
     if (products) {
-      safeSetLocalStorage('rn3d_products', JSON.stringify(products));
+      const sanitizedProducts = products.map((p) => {
+        if (p.imageUrl && (p.imageUrl.length > 300 || p.imageUrl.startsWith('data:image/'))) {
+          return { ...p, imageUrl: '' };
+        }
+        return p;
+      });
+      safeSetLocalStorage('rn3d_products', JSON.stringify(sanitizedProducts));
     }
   }, [products]);
 
