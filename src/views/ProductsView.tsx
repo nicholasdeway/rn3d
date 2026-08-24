@@ -412,24 +412,24 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
       {/* Grid View */}
       {viewMode === 'grid' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
           {filteredProducts.map((p) => {
             return (
               <div
                 key={p.id}
-                className="bg-white rounded-2xl border border-slate-200/80 p-4.5 shadow-xs hover:shadow-lg transition-all duration-200 group flex flex-col justify-between"
+                className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4.5 shadow-xs hover:shadow-lg transition-all duration-200 group flex flex-col justify-between"
               >
                 <div>
                   {/* Image / Thumbnail */}
                   <div
                     onClick={() => setSelectedProduct(p)}
-                    className="w-full h-52 bg-slate-900/5 rounded-xl flex items-center justify-center relative overflow-hidden mb-3.5 border border-slate-200/80 cursor-pointer group-hover:border-indigo-500/50 transition-all shadow-inner"
+                    className="w-full aspect-square bg-slate-50 rounded-xl flex items-center justify-center relative overflow-hidden mb-3 border border-slate-200/80 cursor-pointer group-hover:border-indigo-500/50 transition-all shadow-inner"
                   >
                     {p.imageUrl ? (
                       <img
                         src={p.imageUrl}
                         alt={p.name}
-                        className="w-full h-full object-cover rounded-xl transform group-hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-contain p-1 rounded-xl transform group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
                       <Printer className="w-12 h-12 text-indigo-300 group-hover:scale-110 transition-transform duration-200" />
