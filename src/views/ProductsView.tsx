@@ -16,6 +16,8 @@ import {
   Trash2,
   Sparkles,
   CloudUpload,
+  ZoomIn,
+  Maximize2,
 } from 'lucide-react';
 import { ImageCropperModal } from '../components/ImageCropperModal';
 
@@ -42,6 +44,9 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Expanded Image Lightbox Modal state
+  const [zoomedImage, setZoomedImage] = useState<{ url: string; title: string; sku: string } | null>(null);
 
   // Image Cropper modal state
   const [croppingImageSrc, setCroppingImageSrc] = useState<string | null>(null);
@@ -78,7 +83,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   // Edit form state
   const [editFormData, setEditFormData] = useState<Partial<Product>>({});
 
-  const categories = ['Todos', 'Case de Munição', 'Fidgets', 'Chaveiro', 'Decoração', 'Acessórios', 'Organizadores'];
+  const categories = ['Todos', 'Case de Munição', 'Fidgets', 'Chaveiro', 'Expositor', 'Decoração', 'Acessórios', 'Organizadores'];
 
   // Default Alphabetical Sorting (A-Z) & Filters
   const filteredProducts = products
@@ -412,29 +417,43 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
       {/* Grid View */}
       {viewMode === 'grid' && (
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {filteredProducts.map((p) => {
             return (
               <div
                 key={p.id}
-                className="bg-white rounded-2xl border border-slate-200/80 p-3 sm:p-4.5 shadow-xs hover:shadow-lg transition-all duration-200 group flex flex-col justify-between"
+                className="bg-white rounded-2xl border border-slate-200/80 p-4.5 shadow-xs hover:shadow-lg transition-all duration-200 group flex flex-col justify-between"
               >
                 <div>
                   {/* Image / Thumbnail */}
                   <div
-                    onClick={() => setSelectedProduct(p)}
-                    className="w-full aspect-square bg-slate-50 rounded-xl flex items-center justify-center relative overflow-hidden mb-3 border border-slate-200/80 cursor-pointer group-hover:border-indigo-500/50 transition-all shadow-inner"
+                    onClick={() => {
+                      if (p.imageUrl) {
+                        setZoomedImage({ url: p.imageUrl, title: p.name, sku: p.sku });
+                      } else {
+                        setSelectedProduct(p);
+                      }
+                    }}
+                    className="w-full aspect-square bg-slate-50 rounded-xl flex items-center justify-center relative overflow-hidden mb-3.5 border border-slate-200/80 cursor-pointer group-hover:border-indigo-500/50 transition-all shadow-inner group/img"
+                    title="Clique para expandir e focar na foto do produto"
                   >
                     {p.imageUrl ? (
-                      <img
-                        src={p.imageUrl}
-                        alt={p.name}
-                        className="w-full h-full object-contain p-1 rounded-xl transform group-hover:scale-105 transition-transform duration-300"
-                      />
+                      <>
+                        <img
+                          src={p.imageUrl}
+                          alt={p.name}
+                          className="w-full h-full object-contain p-1 rounded-xl transform group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="px-3 py-1.5 bg-slate-900/80 text-white font-bold text-[11px] rounded-xl flex items-center gap-1.5 shadow-md">
+                            <Maximize2 className="w-3.5 h-3.5 text-indigo-400" /> Ampliar Foto
+                          </span>
+                        </div>
+                      </>
                     ) : (
                       <Printer className="w-12 h-12 text-indigo-300 group-hover:scale-110 transition-transform duration-200" />
                     )}
-                    <span className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-white/95 text-slate-800 shadow-sm border border-slate-200/60">
+                    <span className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-white/95 text-slate-800 shadow-sm border border-slate-200/60 z-10">
                       {p.sku}
                     </span>
                   </div>
@@ -945,6 +964,45 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           onCropComplete={handleCropComplete}
           onClose={() => setCroppingImageSrc(null)}
         />
+      )}
+
+      {/* Lightbox Modal: Fullscreen Product Photo Expansion */}
+      {zoomedImage && (
+        <div
+          className="fixed inset-0 z-[120] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setZoomedImage(null)}
+        >
+          <div
+            className="bg-white rounded-3xl overflow-hidden max-w-lg w-full p-5 border border-slate-700 shadow-2xl relative flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-slate-900 text-sm leading-snug">{zoomedImage.title}</h3>
+                <span className="font-mono text-xs font-bold text-indigo-600">SKU: {zoomedImage.sku}</span>
+              </div>
+              <button
+                onClick={() => setZoomedImage(null)}
+                className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                title="Fechar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="w-full aspect-square bg-slate-900/5 rounded-2xl overflow-hidden flex items-center justify-center border border-slate-200 p-2 shadow-inner">
+              <img
+                src={zoomedImage.url}
+                alt={zoomedImage.title}
+                className="w-full h-full object-contain rounded-xl"
+              />
+            </div>
+
+            <p className="text-[11px] text-slate-400 font-medium text-center">
+              💡 Clique fora ou pressione fechar para retornar ao catálogo.
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
