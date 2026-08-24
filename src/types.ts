@@ -192,7 +192,15 @@ export interface ExchangeNote {
 
 export type AttendanceMode = 'presencial' | 'online';
 
-export type QuoteStatus = 'Rascunho' | 'Enviado' | 'Aguardando aprovação' | 'Aprovado' | 'Recusado' | 'Expirado';
+export type QuoteStatus =
+  | 'Rascunho'
+  | 'Enviado'
+  | 'Aguardando aprovação'
+  | 'Aprovado'
+  | 'Convertido'
+  | 'Convertido em Pedido'
+  | 'Recusado'
+  | 'Expirado';
 
 export interface QuoteItem {
   productId?: string;
