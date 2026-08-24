@@ -182,7 +182,7 @@ export interface ExchangeNote {
     quantity: number;
     reason?: string;
   }[];
-  itemsAdded: {
+  itemsAdded?: {
     productId: string;
     productName: string;
     quantity: number;

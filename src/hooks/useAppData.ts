@@ -923,6 +923,7 @@ export function useAppData() {
               reason: 'Recolhimento durante visita presencial',
             };
           }),
+        itemsAdded: [],
         responsible: 'Nicholas RN 3D',
         responsibleName: 'Nicholas RN 3D',
         notes: 'Recolhimento durante acerto presencial',
