@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Client, ClientInventoryItem, Product, Visit } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Client, ClientInventoryItem, Product, Visit, Consignment } from '../types';
 import {
   MapPin,
   CheckCircle2,
@@ -20,6 +20,7 @@ import {
 interface VisitExecutionWizardProps {
   client: Client;
   inventory: ClientInventoryItem[];
+  consignments?: Consignment[];
   allProducts: Product[];
   onCompleteVisit: (visitData: any) => void;
   onCancel: () => void;
@@ -27,21 +28,59 @@ interface VisitExecutionWizardProps {
 
 export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
   client,
-  inventory,
+  inventory = [],
+  consignments = [],
   allProducts,
   onCompleteVisit,
   onCancel,
 }) => {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
 
-  // Step 1: Conferência (Counted values)
-  const [counts, setCounts] = useState<Record<string, number>>(() => {
-    const initial: Record<string, number> = {};
-    inventory.forEach((item) => {
-      initial[item.productId] = item.currentQuantity;
+  // 1. Reconcile effective inventory for client from clientInventories & consignments
+  const effectiveInventory = useMemo(() => {
+    const map = new Map<
+      string,
+      { productId: string; productName: string; currentQuantity: number; unitPrice: number }
+    >();
+
+    (inventory || []).forEach((item: any) => {
+      const key = item.productId || item.id || item.productName?.toLowerCase().trim();
+      const qty = item.quantityOnSite ?? item.currentQuantity ?? item.quantity ?? 0;
+      if (key) {
+        map.set(key, {
+          productId: key,
+          productName: item.productName || item.name || 'Produto',
+          currentQuantity: qty,
+          unitPrice: item.unitPrice || 6.0,
+        });
+      }
     });
-    return initial;
-  });
+
+    (consignments || []).forEach((c) => {
+      const matchesClient =
+        c.clientId === client.id ||
+        (c.clientName && client.name && c.clientName.toLowerCase().trim() === client.name.toLowerCase().trim());
+
+      if (matchesClient && c.items) {
+        c.items.forEach((cItem) => {
+          const key = cItem.productId || cItem.productName.toLowerCase().trim();
+          if (!map.has(key) && cItem.quantity > 0) {
+            map.set(key, {
+              productId: key,
+              productName: cItem.productName,
+              currentQuantity: cItem.quantity,
+              unitPrice: cItem.unitPrice || 6.0,
+            });
+          }
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [inventory, consignments, client]);
+
+  // Step 1: Conferência (Counted values)
+  const [counts, setCounts] = useState<Record<string, number>>({});
 
   // Step 3: Trocas (Initialized clean)
   const [removals, setRemovals] = useState<Record<string, number>>({});
@@ -59,7 +98,7 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
   const [paymentNotes, setPaymentNotes] = useState('');
 
   // Calculations
-  const auditCalculations = inventory.map((item) => {
+  const auditCalculations = effectiveInventory.map((item) => {
     const counted = counts[item.productId] ?? item.currentQuantity;
     const sold = Math.max(0, item.currentQuantity - counted);
     const totalSalesValue = sold * item.unitPrice;

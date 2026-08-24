@@ -180,6 +180,7 @@ export function App() {
             <VisitExecutionWizard
               client={appData.clients.find((c) => c.id === activeVisitClientId) || appData.clients[0]}
               inventory={appData.clientInventories[activeVisitClientId] || []}
+              consignments={appData.consignments}
               allProducts={appData.products}
               onCompleteVisit={(visitData) => {
                 setActiveVisitClientId(null);
