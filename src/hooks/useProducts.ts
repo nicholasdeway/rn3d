@@ -8,6 +8,8 @@ import {
   syncMissingProductsToSupabase,
 } from '../services/productsService';
 
+import { compressImage } from '../utils/imageCompressor';
+
 export function useProducts(user: any, showToast: (msg: string, type?: 'success' | 'error' | 'info') => void) {
   const [products, setProducts] = useState<Product[]>(() =>
     getStorageParsed<Product[]>('rn3d_products', [])
@@ -16,7 +18,7 @@ export function useProducts(user: any, showToast: (msg: string, type?: 'success'
   useEffect(() => {
     if (products) {
       const sanitizedProducts = products.map((p) => {
-        if (p.imageUrl && (p.imageUrl.length > 300 || p.imageUrl.startsWith('data:image/'))) {
+        if (p.imageUrl && p.imageUrl.length > 100000) {
           return { ...p, imageUrl: '' };
         }
         return p;
@@ -44,13 +46,18 @@ export function useProducts(user: any, showToast: (msg: string, type?: 'success'
   }, [user]);
 
   const handleAddProduct = async (newProd: Product) => {
-    setProducts((prev) => [newProd, ...prev]);
-    showToast(`Produto "${newProd.name}" cadastrado com sucesso!`, 'success');
+    let finalProd = newProd;
+    if (newProd.imageUrl && newProd.imageUrl.startsWith('data:image/')) {
+      const compressed = await compressImage(newProd.imageUrl, 300, 300, 0.7);
+      finalProd = { ...newProd, imageUrl: compressed };
+    }
+    setProducts((prev) => [finalProd, ...prev]);
+    showToast(`Produto "${finalProd.name}" cadastrado com sucesso!`, 'success');
     try {
-      const savedInDb = await createProduct(newProd);
+      const savedInDb = await createProduct(finalProd);
       if (savedInDb && savedInDb.id) {
         setProducts((prev) =>
-          prev.map((p) => (p.id === newProd.id ? { ...p, id: savedInDb.id } : p))
+          prev.map((p) => (p.id === finalProd.id ? { ...p, id: savedInDb.id } : p))
         );
       }
     } catch (err: any) {
@@ -59,12 +66,17 @@ export function useProducts(user: any, showToast: (msg: string, type?: 'success'
   };
 
   const handleUpdateProduct = async (updatedProduct: Product) => {
+    let finalProd = updatedProduct;
+    if (updatedProduct.imageUrl && updatedProduct.imageUrl.startsWith('data:image/')) {
+      const compressed = await compressImage(updatedProduct.imageUrl, 300, 300, 0.7);
+      finalProd = { ...updatedProduct, imageUrl: compressed };
+    }
     setProducts((prev) =>
-      prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
+      prev.map((p) => (p.id === finalProd.id ? finalProd : p))
     );
-    showToast(`Produto "${updatedProduct.name}" atualizado com sucesso!`, 'success');
+    showToast(`Produto "${finalProd.name}" atualizado com sucesso!`, 'success');
     try {
-      await updateProduct(updatedProduct.id, updatedProduct);
+      await updateProduct(finalProd.id, finalProd);
     } catch (err) {
       console.error('Erro ao atualizar produto no Supabase:', err);
     }

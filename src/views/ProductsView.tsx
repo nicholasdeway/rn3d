@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Product } from '../types';
+import { compressImage } from '../utils/imageCompressor';
 import {
   Package,
   Plus,
@@ -126,11 +127,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     e.target.value = '';
   };
 
-  const handleCropComplete = (croppedBase64: string) => {
+  const handleCropComplete = async (croppedBase64: string) => {
+    const compressed = await compressImage(croppedBase64, 300, 300, 0.7);
     if (isCroppingEditMode) {
-      setEditFormData((prev) => ({ ...prev, imageUrl: croppedBase64 }));
+      setEditFormData((prev) => ({ ...prev, imageUrl: compressed }));
     } else {
-      setFormData((prev) => ({ ...prev, imageUrl: croppedBase64 }));
+      setFormData((prev) => ({ ...prev, imageUrl: compressed }));
     }
     setCroppingImageSrc(null);
   };

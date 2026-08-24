@@ -42,7 +42,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const targetSize = 400; // Output 400x400
+    const targetSize = 280; // Output 280x280 (Thumbnail ultraleve ~15KB)
     canvas.width = targetSize;
     canvas.height = targetSize;
 
@@ -89,7 +89,7 @@ export const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   const handleApplyCrop = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.68);
     onCropComplete(croppedDataUrl);
   };
 
