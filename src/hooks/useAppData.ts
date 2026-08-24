@@ -899,11 +899,11 @@ export function useAppData() {
       })
     );
 
-    const totalRemoved = Object.values(visitData.removals || {}).reduce(
+    const totalRemoved: number = Object.values(visitData.removals || {}).reduce<number>(
       (acc: number, q: any) => acc + Number(q),
       0
     );
-    if (totalRemoved > 0) {
+    if (Number(totalRemoved) > 0) {
       const exchangeNote: ExchangeNote = {
         id: `TRC-${Math.floor(100000 + Math.random() * 900000)}`,
         clientId: client.id,
@@ -923,6 +923,7 @@ export function useAppData() {
               reason: 'Recolhimento durante visita presencial',
             };
           }),
+        responsible: 'Nicholas RN 3D',
         responsibleName: 'Nicholas RN 3D',
         notes: 'Recolhimento durante acerto presencial',
       };

@@ -175,6 +175,7 @@ export interface ExchangeNote {
   type?: 'troca_local' | 'migracao_lojas' | 'recolhimento_oficina';
   date: string;
   responsible: string;
+  responsibleName?: string;
   itemsRemoved: {
     productId: string;
     productName: string;
