@@ -973,6 +973,50 @@ export function App() {
           return p;
         })
       );
+    }
+
+    // 5. Deduct items from active Consignments records so REM-XXXXXX updates itemsCount and totalValue
+    setConsignments((prev) =>
+      prev.map((c) => {
+        const matchesClient =
+          c.clientId === sourceId ||
+          (c.clientName && c.clientName.toLowerCase().trim() === newExchange.clientName.toLowerCase().trim());
+
+        if (matchesClient && c.items) {
+          const updatedItems = c.items
+            .map((cItem) => {
+              const removed = itemsRemoved.find(
+                (r) =>
+                  r.productId === cItem.productId ||
+                  r.productName.toLowerCase().trim() === cItem.productName.toLowerCase().trim()
+              );
+              if (removed) {
+                const newQty = Math.max(0, cItem.quantity - removed.quantity);
+                return {
+                  ...cItem,
+                  quantity: newQty,
+                  subtotal: newQty * cItem.unitPrice,
+                };
+              }
+              return cItem;
+            })
+            .filter((cItem) => cItem.quantity > 0);
+
+          const newItemsCount = updatedItems.reduce((sum, i) => sum + i.quantity, 0);
+          const newTotalValuation = updatedItems.reduce((sum, i) => sum + i.subtotal, 0);
+
+          return {
+            ...c,
+            items: updatedItems,
+            itemsCount: newItemsCount,
+            totalValue: newTotalValuation,
+          };
+        }
+        return c;
+      })
+    );
+
+    if (isOffice) {
       showToast(`Troca / Recolhimento ${newExchange.id} concluído! Peças retornadas ao Estoque Geral.`, 'success');
     } else {
       showToast(`Troca / Migração ${newExchange.id} concluída! Peças transferidas para a nova loja.`, 'success');
@@ -1229,6 +1273,7 @@ export function App() {
                   consignments={consignments}
                   clients={clients}
                   products={products}
+                  exchanges={exchanges}
                   onAddConsignment={handleAddConsignment}
                   preselectedClientId={preselectedClientIdForAction}
                 />

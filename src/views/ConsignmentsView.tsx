@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Client, Consignment, ConsignmentItem, Product } from '../types';
+import { Client, Consignment, ConsignmentItem, Product, ExchangeNote } from '../types';
 import { ProductSelectCombobox } from '../components/ProductSelectCombobox';
 import {
   Boxes,
@@ -19,6 +19,7 @@ interface ConsignmentsViewProps {
   consignments: Consignment[];
   clients: Client[];
   products: Product[];
+  exchanges?: ExchangeNote[];
   onAddConsignment: (consignment: Consignment) => void;
   preselectedClientId?: string;
 }
@@ -27,6 +28,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   consignments,
   clients,
   products,
+  exchanges = [],
   onAddConsignment,
   preselectedClientId,
 }) => {
@@ -625,14 +627,65 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 </table>
               </div>
 
+              {/* Histórico Auditado de Retiradas / Trocas */}
+              {(() => {
+                const clientExchanges = exchanges.filter(
+                  (e) =>
+                    e.clientId === selectedConsignment.clientId ||
+                    (e.clientName &&
+                      selectedConsignment.clientName &&
+                      e.clientName.toLowerCase().trim() === selectedConsignment.clientName.toLowerCase().trim())
+                );
+
+                if (clientExchanges.length === 0) return null;
+
+                return (
+                  <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2">
+                    <h4 className="font-extrabold text-amber-900 text-xs flex items-center justify-between border-b border-amber-200/60 pb-1">
+                      <span>🔄 Histórico de Retiradas & Remanejamentos Auditados (RN 3D)</span>
+                      <span className="font-mono text-[11px] bg-amber-200/80 px-2 py-0.5 rounded-md text-amber-900 font-bold">
+                        {clientExchanges.length} nota(s) vinculada(s)
+                      </span>
+                    </h4>
+                    <div className="space-y-1.5 text-[11px]">
+                      {clientExchanges.map((ex) => {
+                        const totalRemoved = ex.itemsRemoved.reduce((acc, i) => acc + i.quantity, 0);
+                        return (
+                          <div
+                            key={ex.id}
+                            className="flex justify-between items-center bg-white p-2.5 rounded-lg border border-amber-100 shadow-2xs"
+                          >
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
+                                  {ex.id}
+                                </span>
+                                <span className="text-slate-500 font-medium">{ex.date}</span>
+                                <span className="text-slate-400 font-normal">({ex.responsibleName})</span>
+                              </div>
+                              <span className="text-slate-700 block font-medium mt-1">
+                                {ex.itemsRemoved.map((i) => `${i.quantity}x ${i.productName}`).join(', ')}
+                              </span>
+                            </div>
+                            <span className="font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md text-xs">
+                              -{totalRemoved} un
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Summary Valuation */}
               <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 flex justify-between items-center text-xs">
                 <div>
-                  <span className="font-bold text-slate-900 block">Total de Peças Entregues:</span>
-                  <span className="text-slate-600">{selectedConsignment.itemsCount} produtos em exposição</span>
+                  <span className="font-bold text-slate-900 block">Saldo Atual Alocado no Expositor:</span>
+                  <span className="text-slate-600 font-medium">{selectedConsignment.itemsCount} produtos em exibição</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-slate-500 text-[10px] uppercase font-bold block">Valor Total das Mercadorias</span>
+                  <span className="text-slate-500 text-[10px] uppercase font-bold block">Valor Total Auditado / A Cobrar</span>
                   <span className="text-xl font-black text-emerald-700">
                     R$ {selectedConsignment.totalValue.toFixed(2).replace('.', ',')}
                   </span>
