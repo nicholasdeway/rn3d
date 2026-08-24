@@ -16,11 +16,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
   consignments = [],
   onNavigateToExchanges,
 }) => {
-  const [expandedClientState, setExpandedClientState] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    if (clients[0]?.id) initial[clients[0].id] = true;
-    return initial;
-  });
+  const [expandedClientState, setExpandedClientState] = useState<Record<string, boolean>>({});
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
   const handleExpandAll = () => {
