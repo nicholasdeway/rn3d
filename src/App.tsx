@@ -74,6 +74,7 @@ export function App() {
   useEffect(() => {
     if (currentView) {
       safeSetLocalStorage('rn3d_current_view', currentView);
+      setActiveVisitClientId(null);
     }
   }, [currentView]);
   const [activeClientIdForProfile, setActiveClientIdForProfile] = useState<string | null>(null);
@@ -1268,6 +1269,7 @@ export function App() {
       <Sidebar
         currentView={currentView}
         onSelectView={(mode) => {
+          setActiveVisitClientId(null);
           setCurrentView(mode);
           setActiveClientIdForProfile(null);
         }}
