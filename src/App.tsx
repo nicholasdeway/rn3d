@@ -560,8 +560,83 @@ export function App() {
   };
 
   const handleAddConsignment = (newConsignment: Consignment) => {
+    // 1. Add new consignment to state
     setConsignments((prev) => [newConsignment, ...prev]);
-    showToast(`Consignação ${newConsignment.id} registrada com sucesso!`, 'success');
+
+    const clientId = newConsignment.clientId;
+    const items = newConsignment.items || [];
+
+    // 2. Insert or update items into clientInventories[clientId]
+    setClientInventories((prev) => {
+      const currentList = prev[clientId] || [];
+      let updatedList = [...currentList];
+
+      items.forEach((newItem) => {
+        const existingIdx = updatedList.findIndex(
+          (i) =>
+            i.productId === newItem.productId ||
+            i.productName.toLowerCase() === newItem.productName.toLowerCase()
+        );
+
+        if (existingIdx >= 0) {
+          const existing = updatedList[existingIdx];
+          const newQty = existing.quantityOnSite + newItem.quantity;
+          updatedList[existingIdx] = {
+            ...existing,
+            quantityOnSite: newQty,
+            valuation: newQty * existing.unitPrice,
+          };
+        } else {
+          updatedList.push({
+            productId: newItem.productId || `prod-${Math.random().toString(36).substr(2, 6)}`,
+            productName: newItem.productName,
+            quantityOnSite: newItem.quantity,
+            unitPrice: newItem.unitPrice,
+            valuation: newItem.subtotal,
+            daysOnSite: 0,
+            status: 'Normal',
+          });
+        }
+      });
+
+      return {
+        ...prev,
+        [clientId]: updatedList,
+      };
+    });
+
+    // 3. Update Client Metrics (productsOnSiteCount and productsValuation)
+    setClients((prev) =>
+      prev.map((cli) => {
+        if (cli.id === clientId) {
+          return {
+            ...cli,
+            productsOnSiteCount: cli.productsOnSiteCount + newConsignment.itemsCount,
+            productsValuation: cli.productsValuation + newConsignment.totalValue,
+            lastVisitDate: newConsignment.date,
+          };
+        }
+        return cli;
+      })
+    );
+
+    // 4. Deduct items from central Workshop Stock (products currentStock)
+    setProducts((prev) =>
+      prev.map((p) => {
+        const sentItem = items.find(
+          (i) => i.productId === p.id || i.productName.toLowerCase() === p.name.toLowerCase()
+        );
+        if (sentItem) {
+          return {
+            ...p,
+            currentStock: Math.max(0, p.currentStock - sentItem.quantity),
+          };
+        }
+        return p;
+      })
+    );
+
+    showToast(`Consignação ${newConsignment.id} registrada! Estoque do cliente e trocas atualizados.`, 'success');
   };
 
   const handleAddQuote = async (newQuote: Quote) => {

@@ -11,6 +11,8 @@ import {
   Calendar,
   X,
   Package,
+  Printer,
+  FileText,
 } from 'lucide-react';
 
 interface ConsignmentsViewProps {
@@ -28,22 +30,27 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   onAddConsignment,
   preselectedClientId,
 }) => {
-  const [isWizardOpen, setIsWizardOpen] = useState(!!preselectedClientId);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [selectedConsignment, setSelectedConsignment] = useState<Consignment | null>(null);
 
-  // Wizard state
-  const [selectedClientId, setSelectedClientId] = useState(preselectedClientId || clients[0]?.id || '');
-  const [items, setItems] = useState<ConsignmentItem[]>([]);
-  const [productSearch, setProductSearch] = useState('');
-  const [deliveryDate, setDeliveryDate] = useState(new Date().toISOString().slice(0, 10));
+  // Form State
+  const [selectedClientId, setSelectedClientId] = useState<string>(
+    preselectedClientId || clients[0]?.id || ''
+  );
+  const [deliveryDate, setDeliveryDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
   const [notes, setNotes] = useState('');
+  const [items, setItems] = useState<ConsignmentItem[]>([]);
 
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
-  const filteredConsignments = consignments.filter((c) => {
-    const term = searchTerm.toLowerCase();
-    return c.id.toLowerCase().includes(term) || c.clientName.toLowerCase().includes(term);
-  });
+  const filteredConsignments = consignments.filter(
+    (c) =>
+      c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.clientName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleAddProductToConsignment = (prod: Product) => {
     const existingIndex = items.findIndex((i) => i.productId === prod.id);
@@ -120,7 +127,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
         <button
           onClick={() => setIsWizardOpen(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Nova Consignação
@@ -163,7 +170,8 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
             {filteredConsignments.map((c) => (
               <div
                 key={c.id}
-                className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3"
+                onClick={() => setSelectedConsignment(c)}
+                className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs space-y-3 cursor-pointer hover:border-indigo-300 transition-colors"
               >
                 {/* Card Header: REM ID & Status */}
                 <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
@@ -193,6 +201,18 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                     </span>
                   </div>
                 </div>
+
+                <div className="pt-2 border-t border-slate-100 flex justify-end">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedConsignment(c);
+                    }}
+                    className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" /> Ver Comprovante PDF
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -210,24 +230,40 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                     <th className="p-4 text-right">Valor em Mercadorias</th>
                     <th className="p-4">Status</th>
                     <th className="p-4">Última Conferência</th>
+                    <th className="p-4 text-right">Ação</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 font-medium">
                   {filteredConsignments.map((c) => (
-                    <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr
+                      key={c.id}
+                      onClick={() => setSelectedConsignment(c)}
+                      className="hover:bg-slate-50/80 transition-colors cursor-pointer"
+                    >
                       <td className="p-4 font-mono font-bold text-indigo-600">{c.id}</td>
                       <td className="p-4 font-bold text-slate-900">{c.clientName}</td>
                       <td className="p-4 text-slate-600">{c.date}</td>
                       <td className="p-4 text-center font-bold text-slate-800">{c.itemsCount} itens</td>
-                      <td className="p-4 text-right font-bold text-emerald-600">
+                      <td className="p-4 text-right font-extrabold text-emerald-600 text-sm">
                         R$ {c.totalValue.toFixed(2).replace('.', ',')}
                       </td>
                       <td className="p-4">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           {c.status}
                         </span>
                       </td>
                       <td className="p-4 text-slate-500">{c.lastAuditDate}</td>
+                      <td className="p-4 text-right">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedConsignment(c);
+                          }}
+                          className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-semibold flex items-center gap-1.5 ml-auto cursor-pointer"
+                        >
+                          <Printer className="w-3.5 h-3.5" /> Ver PDF
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -464,6 +500,181 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 📄 Modal de Detalhes da Consignação & Comprovante PDF A4 */}
+      {selectedConsignment && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto">
+          <style>{`
+            @media print {
+              body * {
+                visibility: hidden !important;
+              }
+              .print-container,
+              .print-container * {
+                visibility: visible !important;
+              }
+              .print-container {
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                display: block !important;
+                z-index: 999999 !important;
+              }
+              .print-sheet {
+                padding: 12mm 16mm !important;
+                margin: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+              }
+              .no-print {
+                display: none !important;
+              }
+            }
+          `}</style>
+
+          <div className="print-container bg-white w-full max-w-3xl rounded-2xl border border-slate-300 overflow-hidden flex flex-col max-h-[92vh] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            {/* Modal Top Controls (Hidden on Print) */}
+            <div className="no-print p-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
+              <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                <Printer className="w-4 h-4 text-indigo-400" />
+                Comprovante de Remessa em Consignação ({selectedConsignment.id})
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => window.print()}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs transition-colors cursor-pointer shadow-sm"
+                >
+                  <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
+                </button>
+                <button
+                  onClick={() => setSelectedConsignment(null)}
+                  className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* A4 Printed Sheet Document */}
+            <div className="print-sheet p-8 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white text-slate-900 font-sans flex-1">
+              {/* Header */}
+              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5">
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">RN 3D Soluções</h2>
+                  <p className="text-xs font-black text-slate-900 mt-1">CNPJ: 67.570.155/0001-34</p>
+                  <p className="text-[11px] text-slate-700 font-semibold mt-1">
+                    WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="px-3 py-1 bg-indigo-600 text-white font-mono font-bold rounded-md text-xs inline-block">
+                    REMESSA {selectedConsignment.id}
+                  </span>
+                  <p className="text-slate-500 mt-2 text-xs font-medium">Data Envio: {selectedConsignment.date}</p>
+                  <p className="text-slate-500 text-xs font-medium">Status: <span className="font-bold text-emerald-600">{selectedConsignment.status}</span></p>
+                </div>
+              </div>
+
+              {/* Client Details Box */}
+              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <p className="font-bold text-slate-900 text-sm uppercase">ESTABELECIMENTO / CLIENTE: {selectedConsignment.clientName}</p>
+                <p className="text-slate-600 font-medium">Modalidade: Alocação Inicial de Produtos em Consignação</p>
+                <p className="text-slate-500 text-[11px]">Última Conferência Auditada: {selectedConsignment.lastAuditDate}</p>
+              </div>
+
+              {/* Items Table */}
+              <div className="space-y-2">
+                <h3 className="font-extrabold text-slate-900 uppercase tracking-wider text-xs flex items-center justify-between border-b border-slate-200 pb-1">
+                  <span>📦 Produtos Entregues / Alocados no Expositor</span>
+                  <span className="font-mono text-indigo-700 font-bold">
+                    Total: {selectedConsignment.itemsCount} unidades
+                  </span>
+                </h3>
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] bg-slate-50">
+                      <th className="p-2">Item / Descrição do Produto</th>
+                      <th className="p-2 text-center">SKU</th>
+                      <th className="p-2 text-center">Quantidade</th>
+                      <th className="p-2 text-right">Preço Unit.</th>
+                      <th className="p-2 text-right">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium">
+                    {(selectedConsignment.items || []).map((item, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50">
+                        <td className="p-2 font-bold text-slate-900">{item.productName}</td>
+                        <td className="p-2 text-center font-mono text-slate-500">{item.sku || 'N/A'}</td>
+                        <td className="p-2 text-center font-extrabold text-slate-900">{item.quantity} un</td>
+                        <td className="p-2 text-right text-slate-700">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                        <td className="p-2 text-right font-extrabold text-emerald-600">R$ {item.subtotal.toFixed(2).replace('.', ',')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Summary Valuation */}
+              <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 flex justify-between items-center text-xs">
+                <div>
+                  <span className="font-bold text-slate-900 block">Total de Peças Entregues:</span>
+                  <span className="text-slate-600">{selectedConsignment.itemsCount} produtos em exposição</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-slate-500 text-[10px] uppercase font-bold block">Valor Total das Mercadorias</span>
+                  <span className="text-xl font-black text-emerald-700">
+                    R$ {selectedConsignment.totalValue.toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedConsignment.notes && (
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                  <span className="font-bold text-slate-900 block text-[11px]">Observações de Entrega:</span>
+                  <p className="text-slate-600 italic text-[11px]">{selectedConsignment.notes}</p>
+                </div>
+              )}
+
+              {/* Signatures Footer */}
+              <div className="pt-10 grid grid-cols-2 gap-8 text-center text-slate-700 text-[11px]">
+                <div className="border-t border-slate-400 pt-2 space-y-0.5">
+                  <p className="font-bold text-slate-900">{selectedConsignment.clientName}</p>
+                  <p className="text-slate-500">Assinatura de Recebimento do Estabelecimento</p>
+                </div>
+                <div className="border-t border-slate-400 pt-2 space-y-0.5">
+                  <p className="font-bold text-slate-900">RN 3D Soluções</p>
+                  <p className="text-slate-500">Assinatura do Entregador / Responsável</p>
+                </div>
+              </div>
+
+              {/* Print Footer */}
+              <div className="pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
+                RN 3D Soluções — Sistema de Controle de Consignação e Gestão 3D • Documento Gerado em {new Date().toLocaleDateString('pt-BR')}
+              </div>
+            </div>
+
+            {/* Modal Bottom Controls (Hidden on Print) */}
+            <div className="no-print p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
+              <span className="text-slate-500 text-xs font-medium">RN 3D Soluções — Impressão em Formato A4 Padronizado</span>
+              <button
+                onClick={() => window.print()}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs shadow-sm transition-all cursor-pointer"
+              >
+                <Printer className="w-4 h-4" /> Imprimir / Gerar PDF
+              </button>
+            </div>
           </div>
         </div>
       )}
