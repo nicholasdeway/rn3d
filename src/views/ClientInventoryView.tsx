@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Client, ClientInventoryItem, Consignment } from '../types';
-import { Store, ChevronDown, ChevronUp, Boxes, DollarSign, MapPin, Repeat } from 'lucide-react';
+import { Store, ChevronDown, ChevronUp, Boxes, DollarSign, MapPin, Repeat, ChevronsDown, ChevronsUp } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 
 interface ClientInventoryViewProps {
@@ -16,8 +16,31 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
   consignments = [],
   onNavigateToExchanges,
 }) => {
-  const [expandedClientId, setExpandedClientId] = useState<string | null>(clients[0]?.id || null);
+  const [expandedClientState, setExpandedClientState] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    if (clients[0]?.id) initial[clients[0].id] = true;
+    return initial;
+  });
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
+
+  const handleExpandAll = () => {
+    const nextState: Record<string, boolean> = {};
+    clients.forEach((c) => {
+      nextState[c.id] = true;
+    });
+    setExpandedClientState(nextState);
+  };
+
+  const handleCollapseAll = () => {
+    setExpandedClientState({});
+  };
+
+  const toggleClientExpand = (clientId: string) => {
+    setExpandedClientState((prev) => ({
+      ...prev,
+      [clientId]: !prev[clientId],
+    }));
+  };
 
   // Helper to reconcile items for any client
   const getReconciledStoreItems = (cli: Client): ClientInventoryItem[] => {
@@ -112,6 +135,25 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
             Mapeamento em tempo real de onde suas mercadorias em consignação estão alocadas.
           </p>
         </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={handleExpandAll}
+            className="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs border border-indigo-100"
+            title="Expandir a visualização de todos os estabelecimentos"
+          >
+            <ChevronsDown className="w-4 h-4 text-indigo-600" />
+            <span>Expandir Todos</span>
+          </button>
+          <button
+            onClick={handleCollapseAll}
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs border border-slate-200"
+            title="Recolher a visualização de todos os estabelecimentos"
+          >
+            <ChevronsUp className="w-4 h-4 text-slate-500" />
+            <span>Recolher Todos</span>
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -152,7 +194,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
       {/* Client Consignment Accordion List */}
       <div className="space-y-4">
         {clients.map((cli) => {
-          const isExpanded = expandedClientId === cli.id;
+          const isExpanded = !!expandedClientState[cli.id];
           const itemsAtStore = getReconciledStoreItems(cli);
           const storeProductsCount = itemsAtStore.reduce((acc, i) => acc + i.quantityOnSite, 0);
           const storeValuation = itemsAtStore.reduce((acc, i) => acc + i.valuation, 0);
@@ -163,7 +205,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
               className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden transition-all"
             >
               <div
-                onClick={() => setExpandedClientId(isExpanded ? null : cli.id)}
+                onClick={() => toggleClientExpand(cli.id)}
                 className="p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
               >
                 <div className="flex items-center gap-4">
