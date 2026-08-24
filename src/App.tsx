@@ -79,6 +79,64 @@ export function App() {
   const selectedProfileClient =
     appData.clients.find((c) => c.id === activeClientIdForProfile) || appData.clients[0];
 
+  const allMovements = useMemo(() => {
+    if (appData.movements && appData.movements.length > 0) {
+      return appData.movements;
+    }
+
+    const derived: any[] = [];
+
+    (appData.consignments || []).forEach((c) => {
+      (c.items || []).forEach((item, idx) => {
+        derived.push({
+          id: `MOV-REM-${c.id}-${idx}`,
+          timestamp: `${c.date} 10:00`,
+          productId: item.productId,
+          productName: item.productName,
+          quantityDelta: -item.quantity,
+          type: 'Consignação',
+          clientName: c.clientName,
+          referenceCode: c.id,
+          notes: `Remessa alocada no expositor`,
+        });
+      });
+    });
+
+    (appData.exchanges || []).forEach((ex) => {
+      (ex.itemsRemoved || []).forEach((item, idx) => {
+        derived.push({
+          id: `MOV-TRC-${ex.id}-${idx}`,
+          timestamp: `${ex.date} 14:30`,
+          productId: item.productId,
+          productName: item.productName,
+          quantityDelta: item.quantity,
+          type: 'Retirada',
+          clientName: ex.clientName,
+          referenceCode: ex.id,
+          notes: item.reason || 'Recolhimento para Oficina RN 3D',
+        });
+      });
+    });
+
+    (appData.orders || []).forEach((o) => {
+      (o.items || []).forEach((item, idx) => {
+        derived.push({
+          id: `MOV-PED-${o.id}-${idx}`,
+          timestamp: `${o.date} 16:00`,
+          productId: `prod-${idx}`,
+          productName: item.productName,
+          quantityDelta: item.quantity,
+          type: 'Produção',
+          clientName: o.clientName,
+          referenceCode: o.id,
+          notes: `Pedido oficial de venda e produção`,
+        });
+      });
+    });
+
+    return derived;
+  }, [appData.movements, appData.consignments, appData.exchanges, appData.orders]);
+
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-900 font-sans flex antialiased selection:bg-indigo-500 selection:text-white">
       {/* Toast Notification */}
@@ -362,8 +420,8 @@ export function App() {
                 />
               )}
 
-              {currentView === 'movements' && (
-                <MovementsView movements={appData.movements} products={appData.products} />
+              {(currentView === 'movements' || currentView === 'inventory-movements') && (
+                <MovementsView movements={allMovements} />
               )}
 
               {currentView === 'inventory-clients' && (

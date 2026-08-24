@@ -157,8 +157,8 @@ export function useVisits(
             };
           }),
         itemsAdded: [],
-        responsible: 'Nicholas RN 3D',
-        responsibleName: 'Nicholas RN 3D',
+        responsible: 'Nicholas',
+        responsibleName: 'Nicholas',
         notes: 'Recolhimento durante acerto presencial',
       };
       setExchanges((prev) => [exchangeNote, ...prev]);
