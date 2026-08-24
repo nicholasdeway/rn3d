@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ExchangeNote, Client, ClientInventoryItem, Product } from '../types';
+import React, { useState, useMemo } from 'react';
+import { ExchangeNote, Client, ClientInventoryItem, Product, Consignment } from '../types';
 import {
   Repeat,
   Printer,
@@ -18,6 +18,7 @@ interface ExchangesViewProps {
   clients?: Client[];
   clientInventories?: Record<string, ClientInventoryItem[]>;
   products?: Product[];
+  consignments?: Consignment[];
   onExecuteExchange?: (newExchange: ExchangeNote) => void;
   preselectedClientId?: string;
 }
@@ -27,6 +28,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
   clients = [],
   clientInventories = {},
   products = [],
+  consignments = [],
   onExecuteExchange,
   preselectedClientId,
 }) => {
@@ -42,8 +44,68 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
   const [responsibleName, setResponsibleName] = useState<string>('Nicholas RN 3D');
 
   const sourceClient = clients.find((c) => c.id === sourceClientId);
-  const sourceInventory = sourceClientId ? clientInventories[sourceClientId] || [] : [];
   const availableDestinationClients = clients.filter((c) => c.id !== sourceClientId);
+
+  // Reconcile allocated inventory for sourceClient from clientInventories AND consignments
+  const sourceInventory = useMemo(() => {
+    if (!sourceClient) return [];
+
+    const map = new Map<string, ClientInventoryItem>();
+    const invFromState = clientInventories[sourceClient.id] || [];
+
+    // 1. Add items from clientInventories
+    invFromState.forEach((item) => {
+      map.set(item.productId || item.productName.toLowerCase().trim(), { ...item });
+    });
+
+    // 2. Add/Reconcile items from consignments matching client ID or client Name
+    consignments.forEach((cons) => {
+      const matchesClient =
+        cons.clientId === sourceClient.id ||
+        (cons.clientName && cons.clientName.toLowerCase().trim() === sourceClient.name.toLowerCase().trim());
+
+      if (matchesClient && cons.items) {
+        cons.items.forEach((cItem) => {
+          const key = cItem.productId || cItem.productName.toLowerCase().trim();
+          if (map.has(key)) {
+            const existing = map.get(key)!;
+            if (existing.quantityOnSite < cItem.quantity) {
+              existing.quantityOnSite = cItem.quantity;
+              existing.valuation = cItem.quantity * existing.unitPrice;
+            }
+          } else {
+            map.set(key, {
+              productId: cItem.productId || `prod-${Math.random().toString(36).substr(2, 6)}`,
+              productName: cItem.productName,
+              quantityOnSite: cItem.quantity,
+              unitPrice: cItem.unitPrice,
+              valuation: cItem.subtotal,
+              daysOnSite: 0,
+              status: 'Normal',
+            });
+          }
+        });
+      }
+    });
+
+    return Array.from(map.values()).filter((item) => item.quantityOnSite > 0);
+  }, [sourceClient, clientInventories, consignments]);
+
+  // Helper to compute total allocated units for any client
+  const getClientAllocatedQty = (cliId: string, cliName: string) => {
+    const inv = clientInventories[cliId] || [];
+    const invQty = inv.reduce((acc, i) => acc + i.quantityOnSite, 0);
+
+    const clientCons = consignments.filter(
+      (c) => c.clientId === cliId || (c.clientName && c.clientName.toLowerCase().trim() === cliName.toLowerCase().trim())
+    );
+    const consQty = clientCons.reduce((acc, c) => acc + c.itemsCount, 0);
+
+    const targetCli = clients.find((c) => c.id === cliId);
+    const cliMetric = targetCli?.productsOnSiteCount || 0;
+
+    return Math.max(invQty, consQty, cliMetric);
+  };
 
   // Initialize wizard with preselected client if provided
   React.useEffect(() => {
@@ -132,12 +194,12 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
     const inv = clientInventories[cli.id] || [];
     const stagnantItems = inv.filter((item) => item.daysOnSite >= 30 || item.status === 'Alerta (Sem Giro)');
     const totalStagnantQty = stagnantItems.reduce((acc, i) => acc + i.quantityOnSite, 0);
-    const totalStagnantVal = stagnantItems.reduce((acc, i) => acc + i.valuation, 0);
+    const totalAllocatedQty = getClientAllocatedQty(cli.id, cli.name);
     return {
       client: cli,
       stagnantItems,
-      totalStagnantQty,
-      totalStagnantVal,
+      totalStagnantQty: totalStagnantQty || totalAllocatedQty,
+      totalStagnantVal: totalAllocatedQty * 6.0,
     };
   }).filter((alert) => alert.totalStagnantQty > 0 || alert.client.productsOnSiteCount > 0);
 
@@ -307,11 +369,14 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                     }}
                     className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500/20"
                   >
-                    {clients.map((cli) => (
-                      <option key={cli.id} value={cli.id}>
-                        {cli.name} ({cli.city} - {cli.productsOnSiteCount} un alocadas)
-                      </option>
-                    ))}
+                    {clients.map((cli) => {
+                      const qty = getClientAllocatedQty(cli.id, cli.name);
+                      return (
+                        <option key={cli.id} value={cli.id}>
+                          {cli.name} ({cli.city} - {qty} un alocadas)
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 

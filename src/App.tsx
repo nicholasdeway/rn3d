@@ -1244,6 +1244,7 @@ export function App() {
                   clients={clients}
                   clientInventories={clientInventories}
                   products={products}
+                  consignments={consignments}
                   onExecuteExchange={handleExecuteExchange}
                   preselectedClientId={preselectedClientIdForAction}
                 />
@@ -1282,6 +1283,7 @@ export function App() {
                 <ClientInventoryView
                   clients={clients}
                   clientInventories={clientInventories}
+                  consignments={consignments}
                   onNavigateToExchanges={(cliId) => {
                     setPreselectedClientIdForAction(cliId);
                     setCurrentView('exchanges');

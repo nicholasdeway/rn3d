@@ -1,24 +1,80 @@
-import React, { useState } from 'react';
-import { Client, ClientInventoryItem } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Client, ClientInventoryItem, Consignment } from '../types';
 import { Store, ChevronDown, ChevronUp, Boxes, DollarSign, MapPin, Repeat } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 
 interface ClientInventoryViewProps {
   clients: Client[];
   clientInventories: Record<string, ClientInventoryItem[]>;
+  consignments?: Consignment[];
   onNavigateToExchanges?: (clientId: string) => void;
 }
 
 export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
   clients,
   clientInventories,
+  consignments = [],
   onNavigateToExchanges,
 }) => {
   const [expandedClientId, setExpandedClientId] = useState<string | null>('cli-1');
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
-  const totalProductsConsigned = clients.reduce((acc, c) => acc + c.productsOnSiteCount, 0);
-  const totalValuation = clients.reduce((acc, c) => acc + c.productsValuation, 0);
+  // Helper to reconcile items for any client
+  const getReconciledStoreItems = (cli: Client): ClientInventoryItem[] => {
+    const map = new Map<string, ClientInventoryItem>();
+    const invFromState = clientInventories[cli.id] || [];
+
+    invFromState.forEach((item) => {
+      map.set(item.productId || item.productName.toLowerCase().trim(), { ...item });
+    });
+
+    consignments.forEach((cons) => {
+      const matchesClient =
+        cons.clientId === cli.id ||
+        (cons.clientName && cons.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim());
+
+      if (matchesClient && cons.items) {
+        cons.items.forEach((cItem) => {
+          const key = cItem.productId || cItem.productName.toLowerCase().trim();
+          if (map.has(key)) {
+            const existing = map.get(key)!;
+            if (existing.quantityOnSite < cItem.quantity) {
+              existing.quantityOnSite = cItem.quantity;
+              existing.valuation = cItem.quantity * existing.unitPrice;
+            }
+          } else {
+            map.set(key, {
+              productId: cItem.productId || `prod-${Math.random().toString(36).substr(2, 6)}`,
+              productName: cItem.productName,
+              quantityOnSite: cItem.quantity,
+              unitPrice: cItem.unitPrice,
+              valuation: cItem.subtotal,
+              daysOnSite: 0,
+              status: 'Normal',
+            });
+          }
+        });
+      }
+    });
+
+    return Array.from(map.values()).filter((item) => item.quantityOnSite > 0);
+  };
+
+  const totalProductsConsigned = useMemo(() => {
+    return clients.reduce((acc, c) => {
+      const items = getReconciledStoreItems(c);
+      const itemsQty = items.reduce((sum, i) => sum + i.quantityOnSite, 0);
+      return acc + Math.max(c.productsOnSiteCount || 0, itemsQty);
+    }, 0);
+  }, [clients, clientInventories, consignments]);
+
+  const totalValuation = useMemo(() => {
+    return clients.reduce((acc, c) => {
+      const items = getReconciledStoreItems(c);
+      const itemsVal = items.reduce((sum, i) => sum + i.valuation, 0);
+      return acc + Math.max(c.productsValuation || 0, itemsVal);
+    }, 0);
+  }, [clients, clientInventories, consignments]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -83,7 +139,9 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
       <div className="space-y-4">
         {clients.map((cli) => {
           const isExpanded = expandedClientId === cli.id;
-          const itemsAtStore = clientInventories[cli.id] || [];
+          const itemsAtStore = getReconciledStoreItems(cli);
+          const storeProductsCount = itemsAtStore.reduce((acc, i) => acc + i.quantityOnSite, 0);
+          const storeValuation = itemsAtStore.reduce((acc, i) => acc + i.valuation, 0);
 
           return (
             <div
@@ -138,10 +196,10 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
 
                   <div className="text-right text-xs">
                     <span className="font-bold text-slate-900 block">
-                      {cli.productsOnSiteCount} produtos
+                      {Math.max(cli.productsOnSiteCount || 0, storeProductsCount)} produtos
                     </span>
                     <span className="font-semibold text-emerald-600">
-                      R$ {cli.productsValuation.toFixed(2)}
+                      R$ {Math.max(cli.productsValuation || 0, storeValuation).toFixed(2)}
                     </span>
                   </div>
 
