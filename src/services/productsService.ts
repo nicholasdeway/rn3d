@@ -29,40 +29,47 @@ export async function fetchProducts(): Promise<Product[]> {
     return localProducts;
   }
 
-  const dbProducts: Product[] = data.map((row) => ({
-    id: row.id,
-    name: row.name,
-    sku: row.sku,
-    category: row.category,
-    isKeychain: row.is_keychain ?? false,
-    description: row.description || '',
-    storageCapacity: row.storage_capacity || '',
-    imageUrl: row.image_url || '',
-    material: row.material || 'PLA',
-    color: row.color || 'Preto',
-    weightGram: Number(row.weight_gram) || 0,
-    lengthMm: Number(row.length_mm) || 0,
-    widthMm: Number(row.width_mm) || 0,
-    heightMm: Number(row.height_mm) || 0,
-    avgPrintTimeMinutes: row.avg_print_time_minutes || 0,
-    batchQuantity: row.batch_quantity || 1,
-    estimatedCost: Number(row.estimated_cost) || 0,
-    standardPrice: Number(row.standard_price) || 0,
-    cashPrice: row.cash_price !== undefined ? Number(row.cash_price) : Number(row.standard_price) || 0,
-    minPrice: Number(row.min_price) || 0,
-    suggestedRetailPrice: Number(row.suggested_retail_price) || 0,
-    currentStock: row.current_stock || 0,
-    minStock: row.min_stock || 5,
-    allowsCustomization: row.allows_customization ?? false,
-    customizationOptions: {
-      name: true,
-      logo: false,
-      color: true,
-      text: false,
-      other: false,
-    },
-    status: row.status as 'Ativo' | 'Inativo',
-  }));
+  const dbProducts: Product[] = data.map((row) => {
+    const localMatch = localProducts.find(
+      (lp) => (lp.sku && row.sku && lp.sku.toLowerCase() === row.sku.toLowerCase()) || lp.id === row.id
+    );
+    const resolvedImageUrl = (row.image_url && row.image_url.trim().length > 0) ? row.image_url : (localMatch?.imageUrl || '');
+
+    return {
+      id: row.id,
+      name: row.name,
+      sku: row.sku,
+      category: row.category,
+      isKeychain: row.is_keychain ?? false,
+      description: row.description || '',
+      storageCapacity: row.storage_capacity || '',
+      imageUrl: resolvedImageUrl,
+      material: row.material || 'PLA',
+      color: row.color || 'Preto',
+      weightGram: Number(row.weight_gram) || 0,
+      lengthMm: Number(row.length_mm) || 0,
+      widthMm: Number(row.width_mm) || 0,
+      heightMm: Number(row.height_mm) || 0,
+      avgPrintTimeMinutes: row.avg_print_time_minutes || 0,
+      batchQuantity: row.batch_quantity || 1,
+      estimatedCost: Number(row.estimated_cost) || 0,
+      standardPrice: Number(row.standard_price) || 0,
+      cashPrice: row.cash_price !== undefined ? Number(row.cash_price) : Number(row.standard_price) || 0,
+      minPrice: Number(row.min_price) || 0,
+      suggestedRetailPrice: Number(row.suggested_retail_price) || 0,
+      currentStock: row.current_stock || 0,
+      minStock: row.min_stock || 5,
+      allowsCustomization: row.allows_customization ?? false,
+      customizationOptions: {
+        name: true,
+        logo: false,
+        color: true,
+        text: false,
+        other: false,
+      },
+      status: row.status as 'Ativo' | 'Inativo',
+    };
+  });
 
   try {
     localStorage.setItem('rn3d_products', JSON.stringify(dbProducts));
