@@ -246,25 +246,28 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {stagnantAlerts.map((st) => (
-            <div
-              key={st.client.id}
-              className="bg-white p-4 rounded-xl border border-amber-200 shadow-xs flex items-center justify-between gap-3 hover:border-indigo-300 transition-colors"
-            >
-              <div className="min-w-0">
-                <h4 className="font-bold text-slate-900 text-xs truncate">{st.client.name}</h4>
-                <p className="text-[11px] text-amber-700 font-semibold mt-0.5">
-                  {st.client.productsOnSiteCount} produtos alocados ({st.totalStagnantQty > 0 ? `${st.totalStagnantQty} un encalhadas` : 'Giro normal'})
-                </p>
-              </div>
-              <button
-                onClick={() => handleOpenWizardForClient(st.client.id)}
-                className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg font-bold text-xs shrink-0 transition-colors cursor-pointer flex items-center gap-1"
+          {stagnantAlerts.map((st) => {
+            const totalQty = getClientAllocatedQty(st.client.id, st.client.name);
+            return (
+              <div
+                key={st.client.id}
+                className="bg-white p-4 rounded-xl border border-amber-200 shadow-xs flex items-center justify-between gap-3 hover:border-indigo-300 transition-colors"
               >
-                <Repeat className="w-3.5 h-3.5" /> Remanejar
-              </button>
-            </div>
-          ))}
+                <div className="min-w-0">
+                  <h4 className="font-bold text-slate-900 text-xs truncate">{st.client.name}</h4>
+                  <p className="text-[11px] text-indigo-700 font-semibold mt-0.5">
+                    {totalQty} produtos alocados
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleOpenWizardForClient(st.client.id)}
+                  className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg font-bold text-xs shrink-0 transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <Repeat className="w-3.5 h-3.5" /> Remanejar
+                </button>
+              </div>
+            );
+          })}
         </div>
       </div>
 

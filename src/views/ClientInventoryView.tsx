@@ -235,7 +235,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                         onClick={() => onNavigateToExchanges(cli.id)}
                         className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1"
                       >
-                        <Repeat className="w-3.5 h-3.5" /> Migrar peças encalhadas desta loja ➔
+                        <Repeat className="w-3.5 h-3.5" /> Migrar peças desta loja ➔
                       </button>
                     )}
                   </div>
