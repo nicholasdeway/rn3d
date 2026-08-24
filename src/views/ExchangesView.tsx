@@ -32,7 +32,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
   onExecuteExchange,
   preselectedClientId,
 }) => {
-  const [selectedExchange, setSelectedExchange] = useState<ExchangeNote | null>(exchanges[0] || null);
+  const [selectedExchange, setSelectedExchange] = useState<ExchangeNote | null>(null);
 
   // Wizard state
   const [isWizardOpen, setIsWizardOpen] = useState(false);
