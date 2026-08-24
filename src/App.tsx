@@ -51,34 +51,6 @@ export function App() {
     }
   }, [currentView]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white gap-4 font-sans">
-        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center animate-pulse shadow-lg shadow-indigo-600/30">
-          <Box className="w-6 h-6 text-white" />
-        </div>
-        <p className="text-xs text-slate-400 font-medium tracking-wide">Carregando credenciais de sessão...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <LoginView />;
-  }
-
-  const handleStartVisit = (clientId: string) => {
-    setActiveVisitClientId(clientId);
-  };
-
-  const handleSelectClientProfile = (clientOrId: string | Client) => {
-    const id = typeof clientOrId === 'string' ? clientOrId : clientOrId.id;
-    setActiveClientIdForProfile(id);
-    setCurrentView('client-profile');
-  };
-
-  const selectedProfileClient =
-    appData.clients.find((c) => c.id === activeClientIdForProfile) || appData.clients[0];
-
   const allMovements = useMemo(() => {
     if (appData.movements && appData.movements.length > 0) {
       return appData.movements;
@@ -136,6 +108,34 @@ export function App() {
 
     return derived;
   }, [appData.movements, appData.consignments, appData.exchanges, appData.orders]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white gap-4 font-sans">
+        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center animate-pulse shadow-lg shadow-indigo-600/30">
+          <Box className="w-6 h-6 text-white" />
+        </div>
+        <p className="text-xs text-slate-400 font-medium tracking-wide">Carregando credenciais de sessão...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginView />;
+  }
+
+  const handleStartVisit = (clientId: string) => {
+    setActiveVisitClientId(clientId);
+  };
+
+  const handleSelectClientProfile = (clientOrId: string | Client) => {
+    const id = typeof clientOrId === 'string' ? clientOrId : clientOrId.id;
+    setActiveClientIdForProfile(id);
+    setCurrentView('client-profile');
+  };
+
+  const selectedProfileClient =
+    appData.clients.find((c) => c.id === activeClientIdForProfile) || appData.clients[0];
 
   return (
     <div className="min-h-screen bg-slate-100/70 text-slate-900 font-sans flex antialiased selection:bg-indigo-500 selection:text-white">
