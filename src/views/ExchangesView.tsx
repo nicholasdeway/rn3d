@@ -147,14 +147,14 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
     if (!sourceClient) return;
 
     const itemsRemoved = Object.entries(selectedItems)
-      .filter(([_, qty]) => qty > 0)
+      .filter(([_, qty]) => (qty as number) > 0)
       .map(([prodId, qty]) => {
         const invItem = sourceInventory.find((i) => i.productId === prodId);
         const prod = products.find((p) => p.id === prodId);
         return {
           productId: prodId,
           productName: invItem?.productName || prod?.name || 'Produto Consignado',
-          quantity: qty,
+          quantity: qty as number,
           reason: exchangeReason,
         };
       });
