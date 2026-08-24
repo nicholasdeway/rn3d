@@ -29,7 +29,7 @@ import { FinancialView } from './views/FinancialView';
 import { ReportsView } from './views/ReportsView';
 import { SettingsView } from './views/SettingsView';
 
-import { Client, Consignment, Order, Product, Quote, ViewMode, Visit } from './types';
+import { Client, Consignment, ExchangeNote, Order, Product, Quote, ViewMode, Visit } from './types';
 import { MobileFloatingNav } from './components/MobileFloatingNav';
 
 function safeSetLocalStorage(key: string, value: string) {
