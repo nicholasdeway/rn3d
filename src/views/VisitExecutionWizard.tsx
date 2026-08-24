@@ -486,10 +486,12 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
             <div className="bg-slate-50 border-2 border-indigo-200 rounded-2xl p-6 space-y-5">
               <div className="flex items-center justify-between border-b border-slate-200 pb-4">
                 <div>
-                  <span className="text-xs font-mono font-bold text-indigo-600">VIS-000052</span>
+                  <span className="text-xs font-mono font-bold text-indigo-600">
+                    VIS-{Math.floor(100000 + Math.random() * 900000)}
+                  </span>
                   <h3 className="text-xl font-bold text-slate-900">{client.name}</h3>
                   <p className="text-xs text-slate-500">
-                    10/08/2026 • Atendimento de Visita por Nicholas
+                    {new Date().toLocaleDateString('pt-BR')} • Atendimento e Acerto Presencial por Nicholas
                   </p>
                 </div>
                 <div className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full font-bold text-xs">
@@ -511,7 +513,7 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
                 <div className="p-3 bg-white rounded-xl border border-slate-200">
                   <span className="text-slate-400 block font-medium">Total Recebido:</span>
                   <span className="text-lg font-bold text-slate-900">
-                    R$ {receivedAmount.toFixed(2)}
+                    R$ {(receivedAmount || totalRevenueCalculated).toFixed(2)}
                   </span>
                 </div>
                 <div className="p-3 bg-white rounded-xl border border-slate-200">
@@ -525,7 +527,10 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
                   <strong>Trocas Efetuadas:</strong> {totalItemsRemoved} itens retirados | {totalItemsAddedEx} itens adicionados.
                 </p>
                 <p>
-                  <strong>Próxima Visita Agendada:</strong> 24/08/2026 (Quinzenal).
+                  <strong>Reposições Adicionadas:</strong> {totalRestockUnits} novas peças alocadas.
+                </p>
+                <p>
+                  <strong>Forma de Pagamento:</strong> {paymentMethod} ({paymentStatus}).
                 </p>
               </div>
             </div>
@@ -533,17 +538,10 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
             <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => alert('Comprovante em PDF gerado para compartilhamento no WhatsApp!')}
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold flex items-center gap-2"
+                onClick={() => window.print()}
+                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold flex items-center gap-2 cursor-pointer transition-colors"
               >
-                <Printer className="w-4 h-4 text-slate-600" /> Gerar Comprovante
-              </button>
-              <button
-                type="button"
-                onClick={() => alert('Nota de Troca TRC-000014 gerada com sucesso!')}
-                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-bold flex items-center gap-2"
-              >
-                <Repeat className="w-4 h-4 text-slate-600" /> Gerar Nota de Troca
+                <Printer className="w-4 h-4 text-indigo-600" /> Imprimir / Gerar PDF
               </button>
             </div>
           </div>
@@ -555,15 +553,20 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
         <button
           disabled={currentStep === 1}
           onClick={() => setCurrentStep((prev) => (prev > 1 ? ((prev - 1) as any) : prev))}
-          className="px-4 py-2 text-slate-600 hover:bg-slate-200 disabled:opacity-40 rounded-xl font-bold flex items-center gap-1.5"
+          className="px-4 py-2 text-slate-600 hover:bg-slate-200 disabled:opacity-40 rounded-xl font-bold flex items-center gap-1.5 cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" /> Anterior
         </button>
 
         {currentStep < 6 ? (
           <button
-            onClick={() => setCurrentStep((prev) => (prev < 6 ? ((prev + 1) as any) : prev))}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-xs"
+            onClick={() => {
+              if (currentStep === 4 && receivedAmount === 0 && totalRevenueCalculated > 0) {
+                setReceivedAmount(totalRevenueCalculated);
+              }
+              setCurrentStep((prev) => (prev < 6 ? ((prev + 1) as any) : prev));
+            }}
+            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-xs cursor-pointer"
           >
             Avançar <ArrowRight className="w-4 h-4" />
           </button>
@@ -571,16 +574,24 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
           <button
             onClick={() =>
               onCompleteVisit({
-                visitId: 'VIS-000052',
-                clientId: client.id,
+                visitId: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
+                client,
+                auditCalculations,
                 totalSoldUnits,
                 totalRevenueCalculated,
-                receivedAmount,
+                removals,
+                additionsInExchange,
+                restocks,
+                paymentStatus,
+                paymentMethod,
+                receivedAmount: receivedAmount || totalRevenueCalculated,
+                paymentNotes,
+                finalEstimatedStock,
               })
             }
-            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-extrabold flex items-center gap-2 shadow-sm"
+            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-extrabold flex items-center gap-2 shadow-sm cursor-pointer"
           >
-            <CheckCircle2 className="w-5 h-5" /> Finalizar Visita
+            <CheckCircle2 className="w-5 h-5" /> Finalizar Visita & Processar Estoque
           </button>
         )}
       </div>
