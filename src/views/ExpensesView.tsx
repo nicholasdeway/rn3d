@@ -809,8 +809,133 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
         </div>
       </div>
 
-      {/* Main Expenses & Audit Log Table */}
-      <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
+      {/* MOBILE / TABLET CARD GRID VIEW (lg:hidden) */}
+      <div className="lg:hidden grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        {filteredExpenses.length === 0 ? (
+          <div className="col-span-full bg-white dark:bg-[#12151c] p-8 rounded-2xl border border-slate-200/80 dark:border-[#202531] text-center text-slate-400 space-y-2">
+            <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+            <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">Nenhuma movimentação encontrada</p>
+            <p className="text-[11px] text-slate-400">
+              Cadastre despesas, retiradas, lançamentos ou resgates de marketplaces nos botões no topo.
+            </p>
+          </div>
+        ) : (
+          filteredExpenses.map((exp) => (
+            <div
+              key={exp.id}
+              className="bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all space-y-3 flex flex-col justify-between"
+            >
+              {/* Top Row: Category Badge + Value */}
+              <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800/80 pb-3">
+                <div className="flex items-center gap-1.5">
+                  {exp.category === 'Retirada' ? (
+                    <Users className="w-4 h-4 text-amber-500 shrink-0" />
+                  ) : exp.category === 'Aporte / Reembolso de Sócio' ? (
+                    <ArrowDownLeft className="w-4 h-4 text-emerald-500 shrink-0" />
+                  ) : exp.category === 'Transferência de Marketplace' ? (
+                    <RefreshCw className="w-4 h-4 text-cyan-500 shrink-0" />
+                  ) : exp.category === 'Entrada de Pedido' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  ) : exp.isAutoReplicated ? (
+                    <Truck className="w-4 h-4 text-indigo-500 shrink-0" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-rose-500 shrink-0" />
+                  )}
+                  <span
+                    className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                      exp.category === 'Retirada'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900'
+                        : exp.category === 'Aporte / Reembolso de Sócio'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
+                        : exp.category === 'Transferência de Marketplace'
+                        ? 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-900'
+                        : exp.category === 'Entrada de Pedido'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
+                        : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                    }`}
+                  >
+                    {exp.category}
+                  </span>
+                </div>
+
+                <span
+                  className={`text-base font-black tracking-tight shrink-0 ${
+                    exp.category === 'Entrada de Pedido' || exp.category === 'Transferência de Marketplace' || exp.category === 'Aporte / Reembolso de Sócio'
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-rose-600 dark:text-rose-400'
+                  }`}
+                >
+                  {exp.category === 'Entrada de Pedido' || exp.category === 'Transferência de Marketplace' || exp.category === 'Aporte / Reembolso de Sócio' ? '+' : '-'} R${' '}
+                  {exp.amount.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+
+              {/* Middle Row: Description & Ref */}
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">{exp.description}</p>
+                {exp.referenceCode && (
+                  <span className="inline-block text-[10px] font-mono font-semibold text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 rounded">
+                    Ref: {exp.referenceCode}
+                  </span>
+                )}
+                {exp.notes && (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 italic line-clamp-2">{exp.notes}</p>
+                )}
+              </div>
+
+              {/* Info Badges: Date/Time + Responsavel */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/60 text-xs">
+                <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-semibold text-[11px]">
+                  <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{formatDateBR(exp.date)}</span>
+                  <span className="text-slate-400 font-mono text-[10px]">({exp.timestamp || '18:00:00'})</span>
+                </div>
+
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 rounded-lg text-[11px] font-bold border border-indigo-100 dark:border-indigo-900/50">
+                  <UserCheck className="w-3 h-3" />
+                  {exp.createdBy || exp.beneficiary || 'Nicholas'}
+                </span>
+              </div>
+
+              {/* Footer Actions: Receipt + Delete */}
+              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/60">
+                <div>
+                  {exp.receiptUrl ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedReceipt({
+                          url: exp.receiptUrl!,
+                          type: exp.receiptType,
+                          name: exp.receiptName,
+                          title: exp.description,
+                        })
+                      }
+                      className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900"
+                    >
+                      <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Ver Comprovante</span>
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-slate-400 font-normal">Sem anexo</span>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => onDeleteExpense(exp.id)}
+                  className="p-1.5 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-lg font-bold transition-colors cursor-pointer"
+                  title="Excluir movimentação"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* DESKTOP TABLE VIEW (hidden lg:block) */}
+      <div className="hidden lg:block bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
