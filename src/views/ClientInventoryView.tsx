@@ -8,6 +8,7 @@ interface ClientInventoryViewProps {
   clients: Client[];
   clientInventories: Record<string, ClientInventoryItem[]>;
   consignments?: Consignment[];
+  exchanges?: any[];
   onNavigateToExchanges?: (clientId: string) => void;
 }
 
@@ -15,6 +16,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
   clients,
   clientInventories,
   consignments = [],
+  exchanges = [],
   onNavigateToExchanges,
 }) => {
   const [expandedClientState, setExpandedClientState] = useState<Record<string, boolean>>({});
@@ -39,22 +41,11 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
     }));
   };
 
-  // Helper to reconcile items for any client
+  // Helper to reconcile items for any client across all consignments and exchanges
   const getReconciledStoreItems = (cli: Client): ClientInventoryItem[] => {
     const map = new Map<string, ClientInventoryItem>();
-    const invFromState = clientInventories[cli.id] || [];
 
-    invFromState.forEach((item) => {
-      const qty = item.quantityOnSite ?? item.currentQuantity ?? 0;
-      map.set(item.productId || item.productName.toLowerCase().trim(), {
-        ...item,
-        quantityOnSite: qty,
-        currentQuantity: item.currentQuantity ?? qty,
-        sentQuantity: item.sentQuantity ?? qty,
-        soldQuantity: item.soldQuantity ?? 0,
-      });
-    });
-
+    // 1. Accumulate items from ALL consignments for this client
     consignments.forEach((cons) => {
       const matchesClient =
         cons.clientId === cli.id ||
@@ -65,13 +56,11 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
           const key = cItem.productId || cItem.productName.toLowerCase().trim();
           if (map.has(key)) {
             const existing = map.get(key)!;
-            const currentQty = existing.quantityOnSite ?? existing.currentQuantity ?? 0;
-            if (currentQty < cItem.quantity) {
-              existing.quantityOnSite = cItem.quantity;
-              existing.currentQuantity = cItem.quantity;
-              existing.sentQuantity = Math.max(existing.sentQuantity || 0, cItem.quantity);
-              existing.valuation = cItem.quantity * existing.unitPrice;
-            }
+            const newQty = existing.quantityOnSite + cItem.quantity;
+            existing.quantityOnSite = newQty;
+            existing.currentQuantity = newQty;
+            existing.sentQuantity = (existing.sentQuantity || 0) + cItem.quantity;
+            existing.valuation = newQty * existing.unitPrice;
           } else {
             map.set(key, {
               productId: cItem.productId || `prod-${Math.random().toString(36).substr(2, 6)}`,
@@ -90,6 +79,44 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
         });
       }
     });
+
+    // 2. Subtract items removed in exchanges/withdrawals for this client
+    exchanges.forEach((ex) => {
+      const matchesClient =
+        ex.clientId === cli.id ||
+        (ex.clientName && ex.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim());
+
+      if (matchesClient && ex.itemsRemoved) {
+        ex.itemsRemoved.forEach((rItem: any) => {
+          const key = rItem.productId || rItem.productName.toLowerCase().trim();
+          if (map.has(key)) {
+            const existing = map.get(key)!;
+            const newQty = Math.max(0, existing.quantityOnSite - rItem.quantity);
+            existing.quantityOnSite = newQty;
+            existing.currentQuantity = newQty;
+            existing.soldQuantity = (existing.soldQuantity || 0) + rItem.quantity;
+            existing.valuation = newQty * existing.unitPrice;
+          }
+        });
+      }
+    });
+
+    // 3. Fallback to clientInventories state if no consignments exist
+    if (map.size === 0) {
+      const invFromState = clientInventories[cli.id] || [];
+      invFromState.forEach((item) => {
+        const qty = item.quantityOnSite ?? item.currentQuantity ?? 0;
+        if (qty > 0) {
+          map.set(item.productId || item.productName.toLowerCase().trim(), {
+            ...item,
+            quantityOnSite: qty,
+            currentQuantity: qty,
+            sentQuantity: item.sentQuantity ?? qty,
+            soldQuantity: item.soldQuantity ?? 0,
+          });
+        }
+      });
+    }
 
     return Array.from(map.values()).filter((item) => (item.quantityOnSite || item.currentQuantity || 0) > 0);
   };

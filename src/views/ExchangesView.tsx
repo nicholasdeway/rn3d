@@ -51,19 +51,13 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
   const sourceClient = clients.find((c) => c.id === sourceClientId);
   const availableDestinationClients = clients.filter((c) => c.id !== sourceClientId);
 
-  // Reconcile allocated inventory for sourceClient from clientInventories AND consignments
+  // Reconcile allocated inventory for sourceClient from clientInventories AND consignments AND exchanges
   const sourceInventory = useMemo(() => {
     if (!sourceClient) return [];
 
     const map = new Map<string, ClientInventoryItem>();
-    const invFromState = clientInventories[sourceClient.id] || [];
 
-    // 1. Add items from clientInventories
-    invFromState.forEach((item) => {
-      map.set(item.productId || item.productName.toLowerCase().trim(), { ...item });
-    });
-
-    // 2. Add/Reconcile items from consignments matching client ID or client Name
+    // 1. Accumulate items from consignments matching sourceClient
     consignments.forEach((cons) => {
       const matchesClient =
         cons.clientId === sourceClient.id ||
@@ -74,10 +68,9 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
           const key = cItem.productId || cItem.productName.toLowerCase().trim();
           if (map.has(key)) {
             const existing = map.get(key)!;
-            if (existing.quantityOnSite < cItem.quantity) {
-              existing.quantityOnSite = cItem.quantity;
-              existing.valuation = cItem.quantity * existing.unitPrice;
-            }
+            const newQty = existing.quantityOnSite + cItem.quantity;
+            existing.quantityOnSite = newQty;
+            existing.valuation = newQty * existing.unitPrice;
           } else {
             map.set(key, {
               productId: cItem.productId || `prod-${Math.random().toString(36).substr(2, 6)}`,
@@ -93,23 +86,62 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
       }
     });
 
+    // 2. Subtract items removed in previous exchanges for sourceClient
+    exchanges.forEach((ex) => {
+      const matchesClient =
+        ex.clientId === sourceClient.id ||
+        (ex.clientName && ex.clientName.toLowerCase().trim() === sourceClient.name.toLowerCase().trim());
+
+      if (matchesClient && ex.itemsRemoved) {
+        ex.itemsRemoved.forEach((rItem) => {
+          const key = rItem.productId || rItem.productName.toLowerCase().trim();
+          if (map.has(key)) {
+            const existing = map.get(key)!;
+            const newQty = Math.max(0, existing.quantityOnSite - rItem.quantity);
+            existing.quantityOnSite = newQty;
+            existing.valuation = newQty * existing.unitPrice;
+          }
+        });
+      }
+    });
+
+    // 3. Fallback to clientInventories if no consignments found
+    if (map.size === 0) {
+      const invFromState = clientInventories[sourceClient.id] || [];
+      invFromState.forEach((item) => {
+        if (item.quantityOnSite > 0) {
+          map.set(item.productId || item.productName.toLowerCase().trim(), { ...item });
+        }
+      });
+    }
+
     return Array.from(map.values()).filter((item) => item.quantityOnSite > 0);
-  }, [sourceClient, clientInventories, consignments]);
+  }, [sourceClient, clientInventories, consignments, exchanges]);
 
   // Helper to compute total allocated units for any client
   const getClientAllocatedQty = (cliId: string, cliName: string) => {
-    const inv = clientInventories[cliId] || [];
-    const invQty = inv.reduce((acc, i) => acc + i.quantityOnSite, 0);
-
     const clientCons = consignments.filter(
       (c) => c.clientId === cliId || (c.clientName && c.clientName.toLowerCase().trim() === cliName.toLowerCase().trim())
     );
-    const consQty = clientCons.reduce((acc, c) => acc + c.itemsCount, 0);
+    const totalConsQty = clientCons.reduce((acc, c) => acc + c.itemsCount, 0);
 
+    const clientExchanges = exchanges.filter(
+      (e) => e.clientId === cliId || (e.clientName && e.clientName.toLowerCase().trim() === cliName.toLowerCase().trim())
+    );
+    const totalRemovedQty = clientExchanges.reduce(
+      (acc, e) => acc + (e.itemsRemoved ? e.itemsRemoved.reduce((sum, i) => sum + i.quantity, 0) : 0),
+      0
+    );
+
+    const reconciled = Math.max(0, totalConsQty - totalRemovedQty);
+    if (reconciled > 0) return reconciled;
+
+    const inv = clientInventories[cliId] || [];
+    const invQty = inv.reduce((acc, i) => acc + i.quantityOnSite, 0);
     const targetCli = clients.find((c) => c.id === cliId);
     const cliMetric = targetCli?.productsOnSiteCount || 0;
 
-    return Math.max(invQty, consQty, cliMetric);
+    return Math.max(invQty, cliMetric);
   };
 
   // Initialize wizard with preselected client if provided
