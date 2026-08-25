@@ -586,7 +586,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     step="1"
                     value={inputs.failureRatePct}
                     onChange={(e) => handleInputChange('failureRatePct', parseInt(e.target.value) || 0)}
-                    className="w-full accent-indigo-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                    className="w-full accent-indigo-600 dark:accent-indigo-400 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
                   />
                 </div>
               </div>
@@ -603,8 +603,8 @@ Qualquer dúvida estou à disposição! 🚀`;
                       type="button"
                       onClick={() => handleInputChange('materialType', mat)}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${inputs.materialType === mat
-                          ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                     >
                       {mat}
@@ -855,8 +855,8 @@ Qualquer dúvida estou à disposição! 🚀`;
                       type="button"
                       onClick={() => setSelectedMarketplaceId(mkt.id)}
                       className={`p-3 rounded-xl border text-left transition-all ${isSelected
-                          ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/60 ring-2 ring-indigo-500/20'
-                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/60'
+                        ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/60 ring-2 ring-indigo-500/20'
+                        : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/60'
                         }`}
                     >
                       <div className="flex items-center justify-between mb-1">
@@ -944,31 +944,31 @@ Qualquer dúvida estou à disposição! 🚀`;
           </div>
 
           {/* SECTION 5: COMISSÕES, DESCONTOS E AFILIADOS */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-xs space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white dark:bg-[#12151c] rounded-2xl p-6 border border-slate-200/80 dark:border-[#202531] shadow-xs space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-cyan-50 text-cyan-600">
+                <div className="p-2 rounded-xl bg-cyan-50 dark:bg-cyan-950/60 text-cyan-600 dark:text-cyan-400">
                   <Gift className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-slate-900">5. Comissões, Descontos e Afiliados</h3>
-                  <p className="text-xs text-slate-500">Desconto adicional ou comissão para afiliados / cupons</p>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">5. Comissões, Descontos e Afiliados</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Desconto adicional ou comissão para afiliados / cupons</p>
                 </div>
               </div>
-              <span className="text-xs font-mono font-bold text-cyan-700 bg-cyan-50 px-2.5 py-1 rounded-lg">
+              <span className="text-xs font-mono font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-100 dark:border-cyan-900/50 px-2.5 py-1 rounded-lg">
                 {inputs.extraDiscountAffiliatePct}% adicionados
               </span>
             </div>
 
             <div className="space-y-4">
               {/* Stepper with -1% and +1% buttons */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200/80 space-y-3">
+              <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-cyan-600" />
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                     Taxa Extra de Afiliados / Desconto (%):
                   </label>
-                  <span className="text-cyan-700 font-mono text-sm font-extrabold bg-white px-3 py-1 rounded-lg border border-cyan-200 shadow-2xs">
+                  <span className="text-cyan-700 dark:text-cyan-300 font-mono text-sm font-extrabold bg-white dark:bg-slate-900 px-3 py-1 rounded-lg border border-cyan-200 dark:border-cyan-800 shadow-2xs">
                     {inputs.extraDiscountAffiliatePct}%
                   </span>
                 </div>
@@ -979,11 +979,11 @@ Qualquer dúvida estou à disposição! 🚀`;
                     onClick={() =>
                       handleInputChange('extraDiscountAffiliatePct', Math.max(0, inputs.extraDiscountAffiliatePct - 1))
                     }
-                    className="flex-1 py-2.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1"
+                    className="flex-1 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1"
                     title="Diminuir 1%"
                   >
                     <Minus className="w-4 h-4 text-rose-500" />
-                    <span>-1%</span>
+                    <span>1%</span>
                   </button>
 
                   <div className="relative w-28 shrink-0">
@@ -996,7 +996,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                       onChange={(e) =>
                         handleInputChange('extraDiscountAffiliatePct', Math.max(0, parseFloat(e.target.value) || 0))
                       }
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-900 text-center focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-900 dark:text-slate-100 text-center focus:outline-none focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">%</span>
                   </div>
@@ -1004,11 +1004,11 @@ Qualquer dúvida estou à disposição! 🚀`;
                   <button
                     type="button"
                     onClick={() => handleInputChange('extraDiscountAffiliatePct', inputs.extraDiscountAffiliatePct + 1)}
-                    className="flex-1 py-2.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-800 rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1"
+                    className="flex-1 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all flex items-center justify-center gap-1"
                     title="Aumentar 1%"
                   >
-                    <Plus className="w-4 h-4 text-emerald-600" />
-                    <span>+1%</span>
+                    <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span>1%</span>
                   </button>
                 </div>
 
@@ -1020,20 +1020,20 @@ Qualquer dúvida estou à disposição! 🚀`;
                   step="1"
                   value={inputs.extraDiscountAffiliatePct}
                   onChange={(e) => handleInputChange('extraDiscountAffiliatePct', parseInt(e.target.value) || 0)}
-                  className="w-full accent-cyan-600 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                  className="w-full accent-cyan-600 dark:accent-cyan-400 h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
                 />
 
                 {/* Quick selection preset chips */}
-                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-200/60">
-                  <span className="text-[11px] font-semibold text-slate-500 mr-1">Atalhos:</span>
+                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-200/60 dark:border-slate-800">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mr-1">Atalhos:</span>
                   {[0, 5, 10, 15, 20].map((pct) => (
                     <button
                       key={pct}
                       type="button"
                       onClick={() => handleInputChange('extraDiscountAffiliatePct', pct)}
                       className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${inputs.extraDiscountAffiliatePct === pct
-                          ? 'bg-cyan-600 text-white shadow-xs'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                        ? 'bg-cyan-600 text-white shadow-xs'
+                        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                         }`}
                     >
                       {pct === 10 ? '10% (Padrão)' : `${pct}%`}
