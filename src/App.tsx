@@ -376,9 +376,17 @@ export function App() {
                   quotes={appData.quotes.filter((q) => q.clientId === selectedProfileClient?.id)}
                   onBack={() => setCurrentView('clients')}
                   onStartVisit={() => handleStartVisit(selectedProfileClient.id)}
-                  onAddConsignment={() => {
-                    setPreselectedClientIdForAction(selectedProfileClient.id);
+                  onNewConsignment={(clientId) => {
+                    setPreselectedClientIdForAction(clientId || selectedProfileClient.id);
                     setCurrentView('consignments');
+                  }}
+                  onNewOrder={(clientId) => {
+                    setPreselectedClientIdForAction(clientId || selectedProfileClient.id);
+                    setCurrentView('orders');
+                  }}
+                  onNewQuote={(clientId) => {
+                    setPreselectedClientIdForAction(clientId || selectedProfileClient.id);
+                    setCurrentView('quotes');
                   }}
                   onNewExchange={() => setCurrentView('exchanges')}
                   onUpdateClient={appData.handleUpdateClient}

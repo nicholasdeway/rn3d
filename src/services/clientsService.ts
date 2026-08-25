@@ -33,11 +33,19 @@ export async function fetchClients(): Promise<Client[]> {
     localStorage.removeItem('rn3d_client_logistics');
   } catch (e) {}
 
+  const localAvatarMap = new Map<string, string>();
+  localClients.forEach((lc) => {
+    if (lc.avatarUrl) {
+      localAvatarMap.set(lc.id, lc.avatarUrl);
+      if (lc.name) localAvatarMap.set(lc.name.toLowerCase().trim(), lc.avatarUrl);
+    }
+  });
+
   const dbClients: Client[] = data.map((row) => ({
     id: row.id,
     name: row.name,
     fantasyName: row.fantasy_name,
-    avatarUrl: row.avatar_url || '',
+    avatarUrl: row.avatar_url || localAvatarMap.get(row.id) || localAvatarMap.get((row.name || '').toLowerCase().trim()) || '',
     document: row.document,
     responsible: row.responsible,
     phone: row.phone,

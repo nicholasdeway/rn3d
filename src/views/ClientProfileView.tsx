@@ -243,37 +243,37 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
           <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 shrink-0 w-full lg:w-auto">
             <button
               onClick={handleOpenEditModal}
-              className="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-2.5 bg-slate-800 dark:bg-slate-800 hover:bg-slate-900 dark:hover:bg-slate-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-slate-700/50"
             >
               <Edit3 className="w-4 h-4 text-emerald-400" />
               <span>Editar Dados</span>
             </button>
             <button
               onClick={() => onStartVisit(client.id)}
-              className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-2.5 bg-emerald-600 dark:bg-emerald-600 hover:bg-emerald-700 dark:hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <MapPin className="w-4 h-4" />
               <span>Registrar visita</span>
             </button>
             <button
               onClick={() => onNewConsignment(client.id)}
-              className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-2.5 bg-indigo-600 dark:bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <Boxes className="w-4 h-4" />
               <span>Nova consignação</span>
             </button>
             <button
               onClick={() => onNewOrder(client.id)}
-              className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3.5 py-2.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
-              <ShoppingCart className="w-4 h-4 text-slate-600" />
+              <ShoppingCart className="w-4 h-4" />
               <span>Novo pedido</span>
             </button>
             <button
               onClick={() => onNewQuote(client.id)}
-              className="col-span-2 sm:col-span-1 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="col-span-2 sm:col-span-1 px-3.5 py-2.5 bg-purple-600 dark:bg-purple-600 hover:bg-purple-700 dark:hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
-              <FileText className="w-4 h-4 text-slate-600" />
+              <FileText className="w-4 h-4" />
               <span>Novo orçamento</span>
             </button>
           </div>

@@ -21,8 +21,7 @@ export function safeSetLocalStorage(key: string, value: string): void {
         if (Array.isArray(parsed)) {
           const sanitized = parsed.map((item: any) => {
             const copy = { ...item };
-            if (typeof copy.imageUrl === 'string' && copy.imageUrl.length > 300) copy.imageUrl = '';
-            if (typeof copy.avatarUrl === 'string' && copy.avatarUrl.length > 300) copy.avatarUrl = '';
+            if (typeof copy.imageUrl === 'string' && copy.imageUrl.length > 500000) copy.imageUrl = '';
             return copy;
           });
           localStorage.setItem(key, JSON.stringify(sanitized));

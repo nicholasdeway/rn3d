@@ -14,13 +14,7 @@ export function useClients(user: any, showToast: (msg: string, type?: 'success' 
   );
 
   useEffect(() => {
-    const sanitizedClients = clients.map((c) => {
-      if (c.avatarUrl && c.avatarUrl.length > 500 && c.avatarUrl.startsWith('data:image/')) {
-        return { ...c, avatarUrl: '' };
-      }
-      return c;
-    });
-    safeSetLocalStorage('rn3d_clients', JSON.stringify(sanitizedClients));
+    safeSetLocalStorage('rn3d_clients', JSON.stringify(clients));
   }, [clients]);
 
   // Load from Supabase on mount
