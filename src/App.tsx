@@ -255,8 +255,7 @@ export function App() {
 
         {/* Dynamic View Body Container (Full-width expanded layout) */}
         <main className="p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 flex-1 w-full">
-          {/* Active Visit Wizard Full Screen Overlay */}
-          {activeVisitClientId && (
+          {activeVisitClientId ? (
             <VisitExecutionWizard
               client={appData.clients.find((c) => c.id === activeVisitClientId) || appData.clients[0]}
               inventory={appData.clientInventories[activeVisitClientId] || []}
@@ -268,10 +267,10 @@ export function App() {
               }}
               onCancel={() => setActiveVisitClientId(null)}
             />
-          )}
-
-          {currentView === 'dashboard' && (
-            <DashboardView
+          ) : (
+            <>
+              {currentView === 'dashboard' && (
+                <DashboardView
                   clients={appData.clients}
                   visits={appData.visits}
                   products={appData.products}
@@ -489,6 +488,8 @@ export function App() {
               )}
 
               {currentView === 'settings' && <SettingsView onShowToast={appData.showToast} />}
+            </>
+          )}
         </main>
       </div>
 

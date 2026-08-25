@@ -191,23 +191,30 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-white dark:bg-[#0c0e12] text-slate-900 dark:text-slate-100 w-full h-full min-h-screen overflow-y-auto flex flex-col animate-in fade-in duration-200">
-      <div className="w-full flex-1 flex flex-col">
-        {/* Top Wizard Header */}
-        <div className="bg-slate-900 dark:bg-[#06070a] text-white p-4 sm:p-6 flex items-center justify-between border-b border-slate-800 dark:border-[#202531]">
+    <div className="w-full space-y-6 animate-in fade-in duration-200">
+      {/* Top Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
         <div>
-          <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider block">
+          <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">
             ATENDIMENTO PRESENCIAL — {visitType === 'entrega_pedido' ? 'ENTREGA DE REMESSA' : visitType === 'troca' ? 'TROCA / RECOLHIMENTO' : visitType === 'comercial' ? 'REUNIÃO COMERCIAL' : 'CONSIGNADO'}
           </span>
-          <h2 className="text-xl font-bold">Realizar Visita — {client.name}</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 mt-1">
+            <MapPin className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+            Realizar Visita — {client.name}
+          </h2>
         </div>
+
         <button
           onClick={onCancel}
-          className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0 cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
+          Voltar / Sair
         </button>
       </div>
+
+      {/* Main Wizard Card Container */}
+      <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
 
       {/* Stepper Progress Bar (Only visible if Step > 0) */}
       {currentStep > 0 && (
