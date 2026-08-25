@@ -511,6 +511,7 @@ export function App() {
                   orders={appData.orders}
                   consignments={appData.consignments}
                   transactions={appData.transactions}
+                  clients={appData.clients}
                 />
               )}
 
