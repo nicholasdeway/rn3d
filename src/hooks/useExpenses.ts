@@ -105,6 +105,8 @@ export function useExpenses(
         }
         if (dbBalances) {
           setAccountBalances(dbBalances);
+        } else {
+          saveAccountBalancesToSupabase(accountBalances);
         }
       })
       .catch((err) => console.error('Erro ao carregar despesas do Supabase:', err));

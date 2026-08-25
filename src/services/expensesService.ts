@@ -1,5 +1,63 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { ExpenseItem, AccountBalances } from '../types';
+import { ExpenseItem, ExpenseCategory, AccountBalances } from '../types';
+
+const STANDARD_DB_CATEGORIES = [
+  'Combustível & Transporte',
+  'Compra de Filamento',
+  'Bicos & Peças',
+  'Manutenção & Reparos',
+  'Caixas & Embalagens',
+  'Álcool & Insumos',
+  'Impostos (DAS)',
+  'Outros',
+];
+
+function encodeNotesAndMetadata(item: Partial<ExpenseItem>): string {
+  const userNotes = item.notes || '';
+  const meta = {
+    userNotes,
+    realCategory: item.category,
+    createdBy: item.createdBy,
+    timestamp: item.timestamp,
+    sourceAccount: item.sourceAccount,
+    destinationAccount: item.destinationAccount,
+  };
+  return `[META:${JSON.stringify(meta)}]${userNotes}`;
+}
+
+function decodeNotesAndMetadata(row: any): {
+  notes: string;
+  category: ExpenseCategory;
+  createdBy: string;
+  timestamp: string;
+  sourceAccount?: any;
+  destinationAccount?: any;
+} {
+  let notes = row.notes || '';
+  let category = row.category as ExpenseCategory;
+  let createdBy = row.created_by || 'Nicholas';
+  let timestamp = row.timestamp || row.created_at || new Date().toLocaleTimeString('pt-BR');
+  let sourceAccount = row.source_account;
+  let destinationAccount = row.destination_account;
+
+  if (notes.startsWith('[META:')) {
+    const endIdx = notes.indexOf(']');
+    if (endIdx > 6) {
+      try {
+        const jsonStr = notes.substring(6, endIdx);
+        const meta = JSON.parse(jsonStr);
+        if (meta.realCategory) category = meta.realCategory;
+        if (meta.createdBy) createdBy = meta.createdBy;
+        if (meta.timestamp) timestamp = meta.timestamp;
+        if (meta.sourceAccount) sourceAccount = meta.sourceAccount;
+        if (meta.destinationAccount) destinationAccount = meta.destinationAccount;
+        notes = meta.userNotes !== undefined ? meta.userNotes : notes.substring(endIdx + 1);
+      } catch (e) {}
+    }
+  }
+
+  return { notes, category, createdBy, timestamp, sourceAccount, destinationAccount };
+}
 
 export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balances?: AccountBalances }> {
   let localExpenses: ExpenseItem[] = [];
@@ -39,7 +97,15 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
   const sysBalanceRow = data.find((row) => row.reference_code === 'SYS_ACCOUNT_BALANCES');
   if (sysBalanceRow && sysBalanceRow.notes) {
     try {
-      const parsedBalances = JSON.parse(sysBalanceRow.notes);
+      let rawJson = sysBalanceRow.notes;
+      if (rawJson.startsWith('[META:')) {
+        const endIdx = rawJson.indexOf(']');
+        if (endIdx > 6) {
+          const meta = JSON.parse(rawJson.substring(6, endIdx));
+          rawJson = meta.userNotes || rawJson.substring(endIdx + 1);
+        }
+      }
+      const parsedBalances = JSON.parse(rawJson);
       if (parsedBalances && typeof parsedBalances === 'object') {
         localBalances = parsedBalances;
         localStorage.setItem('rn3d_account_balances', JSON.stringify(parsedBalances));
@@ -50,25 +116,28 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
 
   const dbExpenses: ExpenseItem[] = data
     .filter((row) => row.reference_code !== 'SYS_ACCOUNT_BALANCES')
-    .map((row) => ({
-      id: row.id,
-      description: row.description,
-      category: row.category,
-      amount: Number(row.amount) || 0,
-      date: row.date,
-      timestamp: row.timestamp || row.created_at || new Date().toLocaleTimeString('pt-BR'),
-      paymentStatus: row.payment_status || 'Pago',
-      beneficiary: row.beneficiary || '',
-      createdBy: row.created_by || 'Nicholas',
-      sourceAccount: row.source_account || undefined,
-      destinationAccount: row.destination_account || undefined,
-      receiptUrl: row.receipt_url || '',
-      receiptType: row.receipt_type || (row.receipt_url?.startsWith('data:application/pdf') ? 'pdf' : 'image'),
-      receiptName: row.receipt_name || '',
-      isAutoReplicated: row.is_auto_replicated ?? false,
-      referenceCode: row.reference_code || '',
-      notes: row.notes || '',
-    }));
+    .map((row) => {
+      const decoded = decodeNotesAndMetadata(row);
+      return {
+        id: row.id,
+        description: row.description,
+        category: decoded.category,
+        amount: Number(row.amount) || 0,
+        date: row.date,
+        timestamp: decoded.timestamp,
+        paymentStatus: row.payment_status || 'Pago',
+        beneficiary: row.beneficiary || '',
+        createdBy: decoded.createdBy,
+        sourceAccount: decoded.sourceAccount,
+        destinationAccount: decoded.destinationAccount,
+        receiptUrl: row.receipt_url || '',
+        receiptType: row.receipt_type || (row.receipt_url?.startsWith('data:application/pdf') ? 'pdf' : 'image'),
+        receiptName: row.receipt_name || '',
+        isAutoReplicated: row.is_auto_replicated ?? false,
+        referenceCode: row.reference_code || '',
+        notes: decoded.notes,
+      };
+    });
 
   try {
     localStorage.setItem('rn3d_expenses', JSON.stringify(dbExpenses));
@@ -117,9 +186,13 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
     return null;
   }
 
+  const safeCategory = STANDARD_DB_CATEGORIES.includes(expense.category || '')
+    ? expense.category
+    : 'Outros';
+
   const payload: any = {
     description: expense.description,
-    category: expense.category || 'Outros',
+    category: safeCategory,
     amount: expense.amount || 0,
     date: expense.date || new Date().toISOString().split('T')[0],
     payment_status: expense.paymentStatus || 'Pago',
@@ -129,7 +202,7 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
     receipt_name: expense.receiptName || '',
     is_auto_replicated: expense.isAutoReplicated ?? false,
     reference_code: expense.referenceCode || '',
-    notes: expense.notes || '',
+    notes: encodeNotesAndMetadata(expense),
   };
 
   const { data, error } = await supabase
@@ -153,7 +226,9 @@ export async function updateExpense(id: string, updates: Partial<ExpenseItem>): 
 
   const payload: any = {};
   if (updates.description !== undefined) payload.description = updates.description;
-  if (updates.category !== undefined) payload.category = updates.category;
+  if (updates.category !== undefined) {
+    payload.category = STANDARD_DB_CATEGORIES.includes(updates.category) ? updates.category : 'Outros';
+  }
   if (updates.amount !== undefined) payload.amount = updates.amount;
   if (updates.date !== undefined) payload.date = updates.date;
   if (updates.paymentStatus !== undefined) payload.payment_status = updates.paymentStatus;
@@ -161,7 +236,7 @@ export async function updateExpense(id: string, updates: Partial<ExpenseItem>): 
   if (updates.receiptUrl !== undefined) payload.receipt_url = updates.receiptUrl;
   if (updates.receiptType !== undefined) payload.receipt_type = updates.receiptType;
   if (updates.receiptName !== undefined) payload.receipt_name = updates.receiptName;
-  if (updates.notes !== undefined) payload.notes = updates.notes;
+  payload.notes = encodeNotesAndMetadata(updates);
 
   const isLocalId = !id || id.startsWith('exp-') || id.length < 30;
   let query = supabase.from('expenses').update(payload);
@@ -213,7 +288,7 @@ export async function syncMissingExpensesToSupabase(expenses: ExpenseItem[]): Pr
 
     const rows = toInsert.map((e) => ({
       description: e.description,
-      category: e.category,
+      category: STANDARD_DB_CATEGORIES.includes(e.category) ? e.category : 'Outros',
       amount: e.amount,
       date: e.date,
       payment_status: e.paymentStatus,
@@ -223,7 +298,7 @@ export async function syncMissingExpensesToSupabase(expenses: ExpenseItem[]): Pr
       receipt_name: e.receiptName || '',
       is_auto_replicated: e.isAutoReplicated ?? false,
       reference_code: e.referenceCode || '',
-      notes: e.notes || '',
+      notes: encodeNotesAndMetadata(e),
     }));
 
     const { error } = await supabase.from('expenses').insert(rows);
