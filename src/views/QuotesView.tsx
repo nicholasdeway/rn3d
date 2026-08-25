@@ -349,10 +349,10 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   </div>
 
                   {/* Card Actions */}
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
                     <button
                       onClick={() => setPreviewPdfQuote(q)}
-                      className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                      className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
                     >
                       <Printer className="w-3.5 h-3.5" /> PDF
                     </button>
@@ -375,17 +375,17 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
           </div>
 
           {/* Desktop Table Layout (>= 768px) */}
-          <div className="hidden md:block bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div className="hidden md:block bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+                <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
                   <tr>
-                    <th className="p-4">Número</th>
-                    <th className="p-4">Cliente</th>
-                    <th className="p-4">Data</th>
-                    <th className="p-4 text-right">Valor Total</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4 text-right">Ações</th>
+                    <th className="p-4 whitespace-nowrap">Número</th>
+                    <th className="p-4 whitespace-nowrap">Cliente</th>
+                    <th className="p-4 whitespace-nowrap">Data</th>
+                    <th className="p-4 text-right whitespace-nowrap">Valor Total</th>
+                    <th className="p-4 text-center whitespace-nowrap">Status</th>
+                    <th className="p-4 text-right whitespace-nowrap">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
@@ -405,37 +405,42 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
                     return (
                       <tr key={q.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                        <td className="p-4 font-mono font-bold text-indigo-600">{q.id}</td>
-                        <td className="p-4 font-bold text-slate-900">{q.clientName}</td>
-                        <td className="p-4 text-slate-600">{formatDateBR(q.date)}</td>
-                        <td className="p-4 text-right font-extrabold text-emerald-600">
+                        <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{q.id}</td>
+                        <td className="p-4 font-bold text-slate-900 dark:text-slate-100 min-w-[140px] max-w-[220px] truncate">{q.clientName}</td>
+                        <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(q.date)}</td>
+                        <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                           R$ {q.total.toFixed(2).replace('.', ',')}
                         </td>
-                        <td className="p-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeStyle}`}>
-                            {displayStatus}
+                        <td className="p-4 text-center whitespace-nowrap">
+                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center justify-center gap-1 whitespace-nowrap ${badgeStyle}`}>
+                            {isConverted && <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                            <span>{displayStatus}</span>
                           </span>
                         </td>
-                        <td className="p-4 text-right space-x-2">
-                          <button
-                            onClick={() => setPreviewPdfQuote(q)}
-                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer text-xs"
-                          >
-                            <Printer className="w-3.5 h-3.5" /> PDF
-                          </button>
-                          {isConverted ? (
-                            <span className="px-3.5 py-1.5 bg-emerald-100 text-emerald-800 rounded-lg font-bold inline-flex items-center gap-1.5 border border-emerald-300 text-xs shadow-2xs">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Convertido em Pedido
-                            </span>
-                          ) : (
+                        <td className="p-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                             <button
-                              onClick={() => onConvertQuoteToOrder(q)}
-                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-xs text-xs"
-                              title="Gerar Pedido Comercial a partir deste Orçamento"
+                              onClick={() => setPreviewPdfQuote(q)}
+                              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
                             >
-                              <ShoppingCart className="w-3.5 h-3.5" /> Converter em Pedido
+                              <Printer className="w-3.5 h-3.5" /> PDF
                             </button>
-                          )}
+                            {isConverted ? (
+                              <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-lg font-bold inline-flex items-center gap-1.5 border border-emerald-300 dark:border-emerald-800/80 text-xs shadow-2xs shrink-0 whitespace-nowrap">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                <span>Pedido Gerado</span>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => onConvertQuoteToOrder(q)}
+                                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-xs text-xs transition-colors shrink-0 whitespace-nowrap"
+                                title="Gerar Pedido Comercial a partir deste Orçamento"
+                              >
+                                <ShoppingCart className="w-3.5 h-3.5" />
+                                <span>Converter <span className="hidden xl:inline">em Pedido</span></span>
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

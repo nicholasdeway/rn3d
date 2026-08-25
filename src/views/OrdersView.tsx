@@ -663,58 +663,132 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       {/* Printable PDF Modal Overlay for Order */}
       {previewPdfOrder && (
         <div className="printable-quote-modal fixed inset-0 z-[100] bg-slate-900/60 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-          <div className="print-container bg-white w-full max-w-3xl rounded-2xl border border-slate-300 overflow-hidden flex flex-col max-h-[92vh]">
+          {/* Print CSS Rules - Ensures ONLY the selected order PDF is printed */}
+          <style>{`
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 0;
+              }
+
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                height: 100% !important;
+                overflow: visible !important;
+              }
+
+              /* Hide all background app elements, headers, sidebars & other order cards */
+              body * {
+                visibility: hidden !important;
+              }
+
+              /* Display ONLY the active PDF document sheet */
+              .printable-quote-modal,
+              .printable-quote-modal * {
+                visibility: visible !important;
+              }
+
+              .printable-quote-modal {
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                display: block !important;
+                z-index: 999999 !important;
+              }
+
+              .print-container {
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                max-height: none !important;
+                overflow: visible !important;
+                display: block !important;
+              }
+
+              .print-sheet {
+                padding: 12mm 16mm !important;
+                margin: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                background: white !important;
+                color: black !important;
+              }
+
+              .no-print {
+                display: none !important;
+              }
+            }
+          `}</style>
+
+          <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[92vh]">
             {/* Modal Header (Hidden on Print) */}
-            <div className="no-print p-4 bg-slate-800 text-white flex items-center justify-between">
+            <div className="no-print p-4 bg-slate-800 dark:bg-[#181c26] text-white flex items-center justify-between border-b border-slate-700 dark:border-[#202531]">
               <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
                 <Printer className="w-4 h-4 text-emerald-400" /> Preview do Documento PDF do Pedido (Formato A4)
               </span>
               <button
                 onClick={() => setPreviewPdfOrder(null)}
-                className="p-1 hover:bg-slate-700 rounded-lg text-slate-300 cursor-pointer"
+                className="p-1 hover:bg-slate-700 dark:hover:bg-slate-800 rounded-lg text-slate-300 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* A4 Sheet Rendering */}
-            <div className="p-8 overflow-y-auto space-y-6 text-slate-900 bg-white">
+            <div className="print-sheet p-6 sm:p-8 overflow-y-auto space-y-6 text-slate-900 dark:text-slate-100 bg-white dark:bg-[#12151c]">
               {/* PDF Header */}
-              <div className="flex justify-between items-start pb-6 border-b border-slate-200">
+              <div className="flex justify-between items-start pb-6 border-b border-slate-200 dark:border-slate-800">
                 <div>
-                  <div className="flex items-center gap-2 text-indigo-600 font-extrabold text-xl">
+                  <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-extrabold text-xl">
                     <ShoppingCart className="w-6 h-6" /> RN 3D Sistema
                   </div>
-                  <p className="text-xs text-slate-500 mt-1 font-medium">Soluções em Impressão 3D & Manufatura Aditiva</p>
-                  <p className="text-[11px] text-slate-400">Atendimento Comercial & Logística Integrada</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Soluções em Impressão 3D & Manufatura Aditiva</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Atendimento Comercial & Logística Integrada</p>
                 </div>
                 <div className="text-right">
-                  <span className="px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-lg text-xs font-mono font-bold block">
+                  <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-mono font-bold block">
                     PEDIDO DE VENDA #{previewPdfOrder.id}
                   </span>
-                  <span className="text-xs text-slate-500 block mt-1">Data: {formatDateBR(previewPdfOrder.date)}</span>
-                  <span className="text-[11px] text-emerald-600 font-bold block mt-0.5">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 block mt-1">Data: {formatDateBR(previewPdfOrder.date)}</span>
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">
                     Status: {previewPdfOrder.status} ({previewPdfOrder.productionProgressPct}%)
                   </span>
                 </div>
               </div>
 
               {/* Client Info Card */}
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
+              <div className="bg-slate-50 dark:bg-[#181c26] p-4 rounded-xl border border-slate-200 dark:border-[#202531] flex justify-between items-center text-xs">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Cliente Destinatário</span>
-                  <strong className="text-slate-900 text-sm block">{previewPdfOrder.clientName}</strong>
-                  <span className="text-slate-500 block">Modalidade: {previewPdfOrder.attendanceMode === 'online' ? 'Atendimento Online / WhatsApp' : 'Visita Presencial'}</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Cliente Destinatário</span>
+                  <strong className="text-slate-900 dark:text-slate-100 text-sm block">{previewPdfOrder.clientName}</strong>
+                  <span className="text-slate-500 dark:text-slate-400 block">Modalidade: {previewPdfOrder.attendanceMode === 'online' ? 'Atendimento Online / WhatsApp' : 'Visita Presencial'}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block">Condição de Pagamento</span>
-                  <span className="font-bold text-indigo-700 text-xs block">{previewPdfOrder.paymentStatusText}</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Condição de Pagamento</span>
+                  <span className="font-bold text-indigo-700 dark:text-indigo-400 text-xs block">{previewPdfOrder.paymentStatusText}</span>
                 </div>
               </div>
 
               {/* Table of Products in PDF */}
-              <table className="w-full text-xs text-left border border-slate-200 rounded-xl overflow-hidden">
-                <thead className="bg-slate-100 text-slate-600 font-bold uppercase border-b border-slate-200">
+              <table className="w-full text-xs text-left border border-slate-200 dark:border-[#202531] rounded-xl overflow-hidden">
+                <thead className="bg-slate-100 dark:bg-[#181c26] text-slate-600 dark:text-slate-300 font-bold uppercase border-b border-slate-200 dark:border-[#202531]">
                   <tr>
                     <th className="p-3">Item / Descrição do Produto</th>
                     <th className="p-3 text-center">Qtd</th>
@@ -722,15 +796,15 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     <th className="p-3 text-right">Subtotal</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                   {previewPdfOrder.items.map((it, idx) => (
                     <tr key={idx}>
-                      <td className="p-3 font-semibold text-slate-900">{it.productName}</td>
-                      <td className="p-3 text-center font-bold">{it.quantity}</td>
-                      <td className="p-3 text-right">
+                      <td className="p-3 font-semibold text-slate-900 dark:text-slate-100">{it.productName}</td>
+                      <td className="p-3 text-center font-bold dark:text-slate-200">{it.quantity}</td>
+                      <td className="p-3 text-right dark:text-slate-300">
                         R$ {(it.unitPrice ?? (it.subtotal / it.quantity)).toFixed(2).replace('.', ',')}
                       </td>
-                      <td className="p-3 text-right font-bold text-slate-900">
+                      <td className="p-3 text-right font-bold text-slate-900 dark:text-slate-100">
                         R$ {it.subtotal.toFixed(2).replace('.', ',')}
                       </td>
                     </tr>
@@ -740,28 +814,28 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
 
               {/* PDF Totals */}
               <div className="flex justify-end pt-2">
-                <div className="w-64 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
-                  <div className="flex justify-between font-black text-sm text-slate-900 border-t border-slate-200 pt-2">
+                <div className="w-64 bg-slate-50 dark:bg-[#181c26] p-4 rounded-xl border border-slate-200 dark:border-[#202531] space-y-2 text-xs">
+                  <div className="flex justify-between font-black text-sm text-slate-900 dark:text-slate-100 border-t border-slate-200 dark:border-slate-800 pt-2">
                     <span>VALOR TOTAL:</span>
-                    <span className="text-emerald-600">R$ {previewPdfOrder.totalValue.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">R$ {previewPdfOrder.totalValue.toFixed(2).replace('.', ',')}</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Print Trigger Footer */}
-            <div className="no-print p-4 bg-slate-100 border-t border-slate-200 flex justify-between items-center">
-              <span className="text-xs text-slate-500 font-medium">Imprima ou salve em PDF usando Ctrl + P no seu navegador.</span>
+            <div className="no-print p-4 bg-slate-100 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] flex justify-between items-center">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Imprima ou salve em PDF usando Ctrl + P no seu navegador.</span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setPreviewPdfOrder(null)}
-                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold text-xs cursor-pointer"
+                  className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs cursor-pointer transition-colors"
                 >
                   Fechar
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs inline-flex items-center gap-1.5"
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs inline-flex items-center gap-1.5 transition-all"
                 >
                   <Printer className="w-4 h-4" /> Imprimir Documento
                 </button>

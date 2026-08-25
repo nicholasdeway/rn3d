@@ -36,7 +36,15 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   onSyncSupabase,
   autoOpenNewModal,
 }) => {
-  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
+    const saved = localStorage.getItem('rn3d_products_view_mode');
+    return saved === 'grid' || saved === 'table' ? saved : 'grid';
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('rn3d_products_view_mode', viewMode);
+  }, [viewMode]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('Todos');
   const [statusFilter, setStatusFilter] = useState('Todos');
@@ -671,15 +679,15 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       {/* Edit Product Modal */}
       {editingProduct && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-2xl rounded-2xl border border-slate-300 overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <Edit2 className="w-5 h-5 text-indigo-600" />
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-2xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <Edit2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 Editar Produto: {editingProduct.sku}
               </h3>
               <button
                 onClick={() => setEditingProduct(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -861,15 +869,15 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       {/* Cadastrar Produto Modal Form */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-3xl rounded-2xl border border-slate-300 overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <Plus className="w-5 h-5 text-indigo-600" />
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <Plus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 Cadastrar Novo Produto
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1070,24 +1078,24 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           onClick={() => setZoomedImage(null)}
         >
           <div
-            className="bg-white rounded-3xl overflow-hidden max-w-lg w-full p-5 border border-slate-700 shadow-2xl relative flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-150"
+            className="bg-white dark:bg-[#12151c] rounded-3xl overflow-hidden max-w-lg w-full p-5 border border-slate-700 dark:border-[#202531] shadow-2xl relative flex flex-col items-center gap-4 animate-in fade-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-full flex items-center justify-between border-b border-slate-100 pb-3">
+            <div className="w-full flex items-center justify-between border-b border-slate-100 dark:border-[#202531] pb-3">
               <div>
-                <h3 className="font-bold text-slate-900 text-sm leading-snug">{zoomedImage.title}</h3>
-                <span className="font-mono text-xs font-bold text-indigo-600">SKU: {zoomedImage.sku}</span>
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm leading-snug">{zoomedImage.title}</h3>
+                <span className="font-mono text-xs font-bold text-indigo-600 dark:text-indigo-400">SKU: {zoomedImage.sku}</span>
               </div>
               <button
                 onClick={() => setZoomedImage(null)}
-                className="p-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition-colors"
                 title="Fechar"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="w-full aspect-square bg-slate-900/5 rounded-2xl overflow-hidden flex items-center justify-center border border-slate-200 p-2 shadow-inner">
+            <div className="w-full aspect-square bg-slate-900/5 dark:bg-slate-800/40 rounded-2xl overflow-hidden flex items-center justify-center border border-slate-200 dark:border-[#202531] p-2 shadow-inner">
               <img
                 src={zoomedImage.url}
                 alt={zoomedImage.title}
@@ -1095,7 +1103,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               />
             </div>
 
-            <p className="text-[11px] text-slate-400 font-medium text-center">
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium text-center">
               💡 Clique fora ou pressione fechar para retornar ao catálogo.
             </p>
           </div>
@@ -1105,16 +1113,16 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       {/* Modal para Cadastrar Nova Categoria de Produto */}
       {isNewCategoryModalOpen && (
         <div className="fixed inset-0 z-[130] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl border border-slate-300 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <Plus className="w-4 h-4 text-indigo-600" />
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-md rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-[#202531] pb-3">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
+                <Plus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 Cadastrar Nova Categoria
               </h3>
               <button
                 type="button"
                 onClick={() => setIsNewCategoryModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 text-slate-600 cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
