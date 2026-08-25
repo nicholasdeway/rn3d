@@ -41,11 +41,11 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
     }));
   };
 
-  // Helper to reconcile items for any client across all consignments and exchanges
+  // Helper to reconcile items for any client across all active consignments
   const getReconciledStoreItems = (cli: Client): ClientInventoryItem[] => {
     const map = new Map<string, ClientInventoryItem>();
 
-    // 1. Accumulate items from ALL consignments for this client
+    // 1. Accumulate items from ALL active consignments for this client (normalized by productName)
     consignments.forEach((cons) => {
       const matchesClient =
         cons.clientId === cli.id ||
@@ -53,7 +53,9 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
 
       if (matchesClient && cons.items) {
         cons.items.forEach((cItem) => {
-          const key = cItem.productId || cItem.productName.toLowerCase().trim();
+          const key = (cItem.productName || '').toLowerCase().trim();
+          if (!key) return;
+
           if (map.has(key)) {
             const existing = map.get(key)!;
             const newQty = existing.quantityOnSite + cItem.quantity;
@@ -80,34 +82,14 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
       }
     });
 
-    // 2. Subtract items removed in exchanges/withdrawals for this client
-    exchanges.forEach((ex) => {
-      const matchesClient =
-        ex.clientId === cli.id ||
-        (ex.clientName && ex.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim());
-
-      if (matchesClient && ex.itemsRemoved) {
-        ex.itemsRemoved.forEach((rItem: any) => {
-          const key = rItem.productId || rItem.productName.toLowerCase().trim();
-          if (map.has(key)) {
-            const existing = map.get(key)!;
-            const newQty = Math.max(0, existing.quantityOnSite - rItem.quantity);
-            existing.quantityOnSite = newQty;
-            existing.currentQuantity = newQty;
-            existing.soldQuantity = (existing.soldQuantity || 0) + rItem.quantity;
-            existing.valuation = newQty * existing.unitPrice;
-          }
-        });
-      }
-    });
-
-    // 3. Fallback to clientInventories state if no consignments exist
+    // 2. Fallback to clientInventories state if no consignments exist
     if (map.size === 0) {
       const invFromState = clientInventories[cli.id] || [];
       invFromState.forEach((item) => {
+        const key = (item.productName || '').toLowerCase().trim();
         const qty = item.quantityOnSite ?? item.currentQuantity ?? 0;
-        if (qty > 0) {
-          map.set(item.productId || item.productName.toLowerCase().trim(), {
+        if (qty > 0 && key) {
+          map.set(key, {
             ...item,
             quantityOnSite: qty,
             currentQuantity: qty,
@@ -125,17 +107,17 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
     return clients.reduce((acc, c) => {
       const items = getReconciledStoreItems(c);
       const itemsQty = items.reduce((sum, i) => sum + i.quantityOnSite, 0);
-      return acc + Math.max(c.productsOnSiteCount || 0, itemsQty);
+      return acc + itemsQty;
     }, 0);
-  }, [clients, clientInventories, consignments, exchanges]);
+  }, [clients, clientInventories, consignments]);
 
   const totalValuation = useMemo(() => {
     return clients.reduce((acc, c) => {
       const items = getReconciledStoreItems(c);
       const itemsVal = items.reduce((sum, i) => sum + i.valuation, 0);
-      return acc + Math.max(c.productsValuation || 0, itemsVal);
+      return acc + itemsVal;
     }, 0);
-  }, [clients, clientInventories, consignments, exchanges]);
+  }, [clients, clientInventories, consignments]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -286,10 +268,10 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
 
                   <div className="text-right text-xs">
                     <span className="font-bold text-slate-900 block">
-                      {Math.max(cli.productsOnSiteCount || 0, storeProductsCount)} produtos
+                      {storeProductsCount} produtos
                     </span>
                     <span className="font-semibold text-emerald-600">
-                      R$ {Math.max(cli.productsValuation || 0, storeValuation).toFixed(2)}
+                      R$ {storeValuation.toFixed(2).replace('.', ',')}
                     </span>
                   </div>
 

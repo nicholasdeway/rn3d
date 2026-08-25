@@ -213,7 +213,7 @@ export function useAppData() {
 
       return changed ? updated : prevClients;
     });
-  }, [consignments]);
+  }, [consignments, clients]);
 
   const handleSyncProductsToSupabase = async () => {
     try {
