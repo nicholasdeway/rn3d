@@ -88,7 +88,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div>
             <div className="flex items-center gap-2 text-indigo-300 text-xs font-semibold uppercase tracking-wider mb-1">
               <Sparkles className="w-4 h-4 text-indigo-400" />
-              Painel Operacional • Banco Supabase Ativo
+              Painel Operacional • Banco Ativo
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Visão Geral da Oficina 3D</h2>
             <p className="text-indigo-200/80 text-sm mt-1">
@@ -227,11 +227,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <span className="font-mono font-bold text-indigo-600 text-xs bg-indigo-100 px-2.5 py-1 rounded-lg">
                     {o.id}
                   </span>
-                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
-                    o.attendanceMode === 'online'
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${o.attendanceMode === 'online'
                       ? 'bg-cyan-50 text-cyan-800 border-cyan-200'
                       : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  }`}>
+                    }`}>
                     {o.attendanceMode === 'online' ? '💬 Atendimento Online' : '📍 Visita Presencial'}
                   </span>
                 </div>
@@ -269,11 +268,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       >
                         <Minus className="w-3 h-3 text-rose-500" />
                       </button>
-                      <span className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-extrabold border ${
-                        o.productionProgressPct === 100
+                      <span className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-extrabold border ${o.productionProgressPct === 100
                           ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                           : 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                      }`}>
+                        }`}>
                         {o.status} ({o.productionProgressPct}%)
                       </span>
                       <button
@@ -292,9 +290,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                   <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden flex">
                     <div
-                      className={`h-full transition-all duration-300 ${
-                        o.productionProgressPct === 100 ? 'bg-emerald-500' : 'bg-indigo-600'
-                      }`}
+                      className={`h-full transition-all duration-300 ${o.productionProgressPct === 100 ? 'bg-emerald-500' : 'bg-indigo-600'
+                        }`}
                       style={{ width: `${o.productionProgressPct}%` }}
                     />
                   </div>

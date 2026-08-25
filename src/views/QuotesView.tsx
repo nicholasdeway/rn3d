@@ -102,6 +102,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
   const [validityDays, setValidityDays] = useState(7);
   const [productionSlaDays, setProductionSlaDays] = useState(5);
   const [discount, setDiscount] = useState(0);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [paymentTerms, setPaymentTerms] = useState('');
   const [notes, setNotes] = useState('');
   const [attendanceMode, setAttendanceMode] = useState<AttendanceMode>('presencial');
@@ -883,17 +884,56 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   <span>Subtotal:</span>
                   <span className="font-bold">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
                 </div>
-                <div className="flex justify-between text-slate-600 dark:text-slate-300 items-center">
-                  <span>Desconto Concedido:</span>
-                  <input
-                    type="number"
-                    step="1"
-                    min="0"
-                    value={discount}
-                    onChange={(e) => setDiscount(Number(e.target.value))}
-                    className="w-24 px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-right font-bold text-rose-600 dark:text-rose-400 bg-white dark:bg-slate-800"
-                  />
+
+                {/* Linked Discount in % and R$ */}
+                <div className="flex justify-between items-center gap-2 text-slate-600 dark:text-slate-300">
+                  <span className="font-semibold text-xs">Desconto Concedido:</span>
+                  <div className="flex items-center gap-2">
+                    {/* Discount % Field */}
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-lg">
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        max="100"
+                        value={discountPercent || ''}
+                        onChange={(e) => {
+                          const pct = Math.max(0, Math.min(100, Number(e.target.value)));
+                          setDiscountPercent(pct);
+                          if (subtotal > 0) {
+                            const calcVal = Number(((subtotal * pct) / 100).toFixed(2));
+                            setDiscount(calcVal);
+                          }
+                        }}
+                        className="w-12 text-right font-bold text-rose-600 dark:text-rose-400 bg-transparent focus:outline-none text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        placeholder="0"
+                      />
+                      <span className="text-xs font-bold text-slate-400 dark:text-slate-500">%</span>
+                    </div>
+
+                    {/* Discount R$ Field */}
+                    <div className="flex items-center gap-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-lg">
+                      <span className="text-xs font-bold text-slate-400 dark:text-slate-500">R$</span>
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        value={discount || ''}
+                        onChange={(e) => {
+                          const val = Math.max(0, Number(e.target.value));
+                          setDiscount(val);
+                          if (subtotal > 0) {
+                            const calcPct = Number(((val / subtotal) * 100).toFixed(1));
+                            setDiscountPercent(calcPct);
+                          }
+                        }}
+                        className="w-16 text-right font-bold text-rose-600 dark:text-rose-400 bg-transparent focus:outline-none text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        placeholder="0,00"
+                      />
+                    </div>
+                  </div>
                 </div>
+
                 <div className="flex justify-between text-slate-900 dark:text-slate-100 text-base font-black border-t border-slate-200 dark:border-slate-700 pt-2">
                   <span>TOTAL FINAL:</span>
                   <span className="text-emerald-600 dark:text-emerald-400">R$ {total.toFixed(2).replace('.', ',')}</span>

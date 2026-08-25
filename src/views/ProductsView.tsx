@@ -434,7 +434,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 title="Cadastrar Nova Categoria de Produto"
               >
                 <Plus className="w-3.5 h-3.5 text-indigo-600" />
-                <span className="hidden xl:inline">+ Categoria</span>
+                <span className="hidden xl:inline">ategoria</span>
               </button>
             </div>
 
@@ -520,8 +520,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         type="button"
                         onClick={(e) => handleToggleProductStatus(p, e)}
                         className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full cursor-pointer transition-colors shadow-2xs ${p.status === 'Ativo'
-                            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200'
+                          ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200'
                           }`}
                         title="Clique para alternar entre Ativo e Inativo"
                       >
@@ -620,8 +620,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                         type="button"
                         onClick={(e) => handleToggleProductStatus(p, e)}
                         className={`text-[11px] font-bold px-2.5 py-1 rounded-full cursor-pointer transition-colors shadow-2xs ${p.status === 'Ativo'
-                            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200'
+                          ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200'
                           }`}
                         title="Clique para alternar entre Ativo e Inativo"
                       >
