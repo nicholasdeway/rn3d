@@ -593,9 +593,9 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
             }
           `}</style>
 
-          <div className="print-container bg-white w-full max-w-3xl rounded-2xl border border-slate-300 overflow-hidden flex flex-col max-h-[92vh] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+          <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[92vh] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Top Controls (Hidden on Print) */}
-            <div className="no-print p-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
+            <div className="no-print p-4 bg-slate-900 dark:bg-[#181c26] text-white flex items-center justify-between shrink-0 border-b border-slate-800 dark:border-[#202531]">
               <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
                 <Printer className="w-4 h-4 text-indigo-400" />
                 Comprovante de Remessa em Consignação ({selectedConsignment.id})
@@ -609,7 +609,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 </button>
                 <button
                   onClick={() => setSelectedConsignment(null)}
-                  className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                  className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -617,13 +617,13 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
             </div>
 
             {/* A4 Printed Sheet Document */}
-            <div className="print-sheet p-8 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white text-slate-900 font-sans flex-1">
+            <div className="print-sheet p-8 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white dark:bg-[#12151c] text-slate-900 dark:text-slate-100 font-sans flex-1">
               {/* Header */}
-              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5">
+              <div className="flex justify-between items-start border-b-2 border-slate-900 dark:border-slate-700 pb-5">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">RN 3D Soluções</h2>
-                  <p className="text-xs font-black text-slate-900 mt-1">CNPJ: 67.570.155/0001-34</p>
-                  <p className="text-[11px] text-slate-700 font-semibold mt-1">
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">RN 3D Soluções</h2>
+                  <p className="text-xs font-black text-slate-900 dark:text-slate-200 mt-1">CNPJ: 67.570.155/0001-34</p>
+                  <p className="text-[11px] text-slate-700 dark:text-slate-400 font-semibold mt-1">
                     WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
                   </p>
                 </div>
@@ -631,29 +631,29 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                   <span className="px-3 py-1 bg-indigo-600 text-white font-mono font-bold rounded-md text-xs inline-block">
                     REMESSA {selectedConsignment.id}
                   </span>
-                  <p className="text-slate-500 mt-2 text-xs font-medium">Data Envio: {selectedConsignment.date}</p>
-                  <p className="text-slate-500 text-xs font-medium">Status: <span className="font-bold text-emerald-600">{selectedConsignment.status}</span></p>
+                  <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs font-medium">Data Envio: {selectedConsignment.date}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Status: <span className="font-bold text-emerald-600 dark:text-emerald-400">{selectedConsignment.status}</span></p>
                 </div>
               </div>
 
               {/* Client Details Box */}
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <p className="font-bold text-slate-900 text-sm uppercase">ESTABELECIMENTO / CLIENTE: {selectedConsignment.clientName}</p>
-                <p className="text-slate-600 font-medium">Modalidade: Alocação Inicial de Produtos em Consignação</p>
-                <p className="text-slate-500 text-[11px]">Última Conferência Auditada: {selectedConsignment.lastAuditDate}</p>
+              <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-1">
+                <p className="font-bold text-slate-900 dark:text-slate-100 text-sm uppercase">ESTABELECIMENTO / CLIENTE: {selectedConsignment.clientName}</p>
+                <p className="text-slate-600 dark:text-slate-300 font-medium">Modalidade: Alocação Inicial de Produtos em Consignação</p>
+                <p className="text-slate-500 dark:text-slate-400 text-[11px]">Última Conferência Auditada: {selectedConsignment.lastAuditDate}</p>
               </div>
 
               {/* Items Table */}
               <div className="space-y-2">
-                <h3 className="font-extrabold text-slate-900 uppercase tracking-wider text-xs flex items-center justify-between border-b border-slate-200 pb-1">
+                <h3 className="font-extrabold text-slate-900 dark:text-slate-100 uppercase tracking-wider text-xs flex items-center justify-between border-b border-slate-200 dark:border-[#202531] pb-1">
                   <span>📦 Produtos Entregues / Alocados no Expositor</span>
-                  <span className="font-mono text-indigo-700 font-bold">
+                  <span className="font-mono text-indigo-700 dark:text-indigo-400 font-bold">
                     Total: {selectedConsignment.itemsCount} unidades
                   </span>
                 </h3>
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse border border-slate-200 dark:border-[#202531]">
                   <thead>
-                    <tr className="border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] bg-slate-50">
+                    <tr className="border-b border-slate-200 dark:border-[#202531] text-slate-700 dark:text-slate-300 font-bold uppercase text-[10px] bg-slate-50 dark:bg-[#181c26]">
                       <th className="p-2">Item / Descrição do Produto</th>
                       <th className="p-2 text-center">SKU</th>
                       <th className="p-2 text-center">Quantidade</th>
@@ -661,14 +661,14 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                       <th className="p-2 text-right">Subtotal</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                     {(selectedConsignment.items || []).map((item, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50">
-                        <td className="p-2 font-bold text-slate-900">{item.productName}</td>
-                        <td className="p-2 text-center font-mono text-slate-500">{item.sku || 'N/A'}</td>
-                        <td className="p-2 text-center font-extrabold text-slate-900">{item.quantity} un</td>
-                        <td className="p-2 text-right text-slate-700">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
-                        <td className="p-2 text-right font-extrabold text-emerald-600">R$ {item.subtotal.toFixed(2).replace('.', ',')}</td>
+                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/60">
+                        <td className="p-2 font-bold text-slate-900 dark:text-slate-100">{item.productName}</td>
+                        <td className="p-2 text-center font-mono text-slate-500 dark:text-slate-400">{item.sku || 'N/A'}</td>
+                        <td className="p-2 text-center font-extrabold text-slate-900 dark:text-slate-200">{item.quantity} un</td>
+                        <td className="p-2 text-right text-slate-700 dark:text-slate-300">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                        <td className="p-2 text-right font-extrabold text-emerald-600 dark:text-emerald-400">R$ {item.subtotal.toFixed(2).replace('.', ',')}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -688,10 +688,10 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 if (clientExchanges.length === 0) return null;
 
                 return (
-                  <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2">
-                    <h4 className="font-extrabold text-amber-900 text-xs flex items-center justify-between border-b border-amber-200/60 pb-1">
+                  <div className="p-3.5 bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 rounded-xl space-y-2">
+                    <h4 className="font-extrabold text-amber-900 dark:text-amber-200 text-xs flex items-center justify-between border-b border-amber-200/60 dark:border-amber-900/40 pb-1">
                       <span>🔄 Histórico de Retiradas & Remanejamentos Auditados (RN 3D)</span>
-                      <span className="font-mono text-[11px] bg-amber-200/80 px-2 py-0.5 rounded-md text-amber-900 font-bold">
+                      <span className="font-mono text-[11px] bg-amber-200/80 dark:bg-amber-900/70 px-2 py-0.5 rounded-md text-amber-900 dark:text-amber-200 font-bold">
                         {clientExchanges.length} nota(s) vinculada(s)
                       </span>
                     </h4>
@@ -701,21 +701,21 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                         return (
                           <div
                             key={ex.id}
-                            className="flex justify-between items-center bg-white p-2.5 rounded-lg border border-amber-100 shadow-2xs"
+                            className="flex justify-between items-center bg-white dark:bg-[#181c26] p-2.5 rounded-lg border border-amber-200/60 dark:border-[#202531] shadow-2xs"
                           >
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
+                                <span className="font-mono font-bold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded-md border border-indigo-100 dark:border-indigo-900/50">
                                   {ex.id}
                                 </span>
-                                <span className="text-slate-500 font-medium">{ex.date}</span>
-                                <span className="text-slate-400 font-normal">({ex.responsibleName})</span>
+                                <span className="text-slate-600 dark:text-slate-300 font-medium">{ex.date}</span>
+                                <span className="text-slate-500 dark:text-slate-400 font-normal">({ex.responsibleName})</span>
                               </div>
-                              <span className="text-slate-700 block font-medium mt-1">
+                              <span className="text-slate-800 dark:text-slate-200 block font-bold mt-1 text-xs">
                                 {ex.itemsRemoved.map((i) => `${i.quantity}x ${i.productName}`).join(', ')}
                               </span>
                             </div>
-                            <span className="font-extrabold text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-md text-xs">
+                            <span className="font-extrabold text-amber-800 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-800 px-2.5 py-1 rounded-md text-xs shrink-0 whitespace-nowrap">
                               -{totalRemoved} un
                             </span>
                           </div>
@@ -727,14 +727,14 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
               })()}
 
               {/* Summary Valuation */}
-              <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 flex justify-between items-center text-xs">
+              <div className="p-4 bg-emerald-50/60 dark:bg-emerald-950/40 rounded-xl border border-emerald-200 dark:border-emerald-900/50 flex justify-between items-center text-xs">
                 <div>
-                  <span className="font-bold text-slate-900 block">Saldo Atual Alocado no Expositor:</span>
-                  <span className="text-slate-600 font-medium">{selectedConsignment.itemsCount} produtos em exibição</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100 block">Saldo Atual Alocado no Expositor:</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">{selectedConsignment.itemsCount} produtos em exibição</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-slate-500 text-[10px] uppercase font-bold block">Valor Total Auditado / A Cobrar</span>
-                  <span className="text-xl font-black text-emerald-700">
+                  <span className="text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold block">Valor Total Auditado / A Cobrar</span>
+                  <span className="text-xl font-black text-emerald-700 dark:text-emerald-400">
                     R$ {selectedConsignment.totalValue.toFixed(2).replace('.', ',')}
                   </span>
                 </div>
@@ -742,33 +742,33 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
               {/* Notes */}
               {selectedConsignment.notes && (
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                  <span className="font-bold text-slate-900 block text-[11px]">Observações de Entrega:</span>
-                  <p className="text-slate-600 italic text-[11px]">{selectedConsignment.notes}</p>
+                <div className="p-3 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-1">
+                  <span className="font-bold text-slate-900 dark:text-slate-100 block text-[11px]">Observações de Entrega:</span>
+                  <p className="text-slate-600 dark:text-slate-300 italic text-[11px]">{selectedConsignment.notes}</p>
                 </div>
               )}
 
               {/* Signatures Footer */}
-              <div className="pt-10 grid grid-cols-2 gap-8 text-center text-slate-700 text-[11px]">
-                <div className="border-t border-slate-400 pt-2 space-y-0.5">
-                  <p className="font-bold text-slate-900">{selectedConsignment.clientName}</p>
-                  <p className="text-slate-500">Assinatura de Recebimento do Estabelecimento</p>
+              <div className="pt-10 grid grid-cols-2 gap-8 text-center text-slate-700 dark:text-slate-300 text-[11px]">
+                <div className="border-t border-slate-400 dark:border-slate-700 pt-2 space-y-0.5">
+                  <p className="font-bold text-slate-900 dark:text-slate-100">{selectedConsignment.clientName}</p>
+                  <p className="text-slate-500 dark:text-slate-400">Assinatura de Recebimento do Estabelecimento</p>
                 </div>
-                <div className="border-t border-slate-400 pt-2 space-y-0.5">
-                  <p className="font-bold text-slate-900">RN 3D Soluções</p>
-                  <p className="text-slate-500">Assinatura do Entregador / Responsável</p>
+                <div className="border-t border-slate-400 dark:border-slate-700 pt-2 space-y-0.5">
+                  <p className="font-bold text-slate-900 dark:text-slate-100">RN 3D Soluções</p>
+                  <p className="text-slate-500 dark:text-slate-400">Assinatura do Entregador / Responsável</p>
                 </div>
               </div>
 
               {/* Print Footer */}
-              <div className="pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
+              <div className="pt-4 border-t border-slate-200 dark:border-[#202531] text-center text-[10px] text-slate-400 dark:text-slate-500">
                 RN 3D Soluções — Sistema de Controle de Consignação e Gestão 3D • Documento Gerado em {new Date().toLocaleDateString('pt-BR')}
               </div>
             </div>
 
             {/* Modal Bottom Controls (Hidden on Print) */}
-            <div className="no-print p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-              <span className="text-slate-500 text-xs font-medium">RN 3D Soluções — Impressão em Formato A4 Padronizado</span>
+            <div className="no-print p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] flex items-center justify-between shrink-0">
+              <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">RN 3D Soluções — Impressão em Formato A4 Padronizado</span>
               <button
                 onClick={() => window.print()}
                 className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs shadow-sm transition-all cursor-pointer"
