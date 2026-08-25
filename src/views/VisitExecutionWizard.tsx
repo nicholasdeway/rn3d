@@ -762,7 +762,7 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
                 </div>
 
                 {allProducts.length > 0 && (
-                  <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 space-y-2">
+                  <div className="p-4 bg-indigo-50/50 dark:bg-[#181c26] rounded-2xl border border-indigo-100 dark:border-[#202531] space-y-2">
                     <label className="block font-bold text-slate-900 dark:text-slate-100 text-xs">
                       Adicionar Produtos do Catálogo para Entrega Presencial:
                     </label>

@@ -230,17 +230,17 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
 
       {/* 💻 DESKTOP FLOATING DROPDOWN MENU (Visible on screens >= 640px when open) */}
       {isOpen && (
-        <div className="hidden sm:block absolute z-[9999] left-0 right-0 mt-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="p-2.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
+        <div className="hidden sm:block absolute z-[9999] left-0 right-0 mt-1 bg-white dark:bg-[#181c26] text-slate-900 dark:text-slate-100 rounded-2xl border border-slate-200 dark:border-[#202531] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="p-2.5 bg-slate-50 dark:bg-[#12151c] border-b border-slate-100 dark:border-[#202531] flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
             <span>
               {searchQuery
                 ? `${filteredProducts.length} ${filteredProducts.length === 1 ? 'produto encontrado' : 'produtos encontrados'}`
                 : `Mostrando catálogo completo (${products.length} itens)`}
             </span>
-            <span className="text-[10px] font-normal text-slate-400">Clique para adicionar ao orçamento</span>
+            <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500">Clique para adicionar ao orçamento</span>
           </div>
 
-          <div className="max-h-[520px] lg:max-h-[620px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80">
+          <div className="max-h-[580px] lg:max-h-[680px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80">
             {filteredProducts.length === 0 ? (
               <div className="p-8 text-center text-slate-400 dark:text-slate-500 space-y-1">
                 <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Nenhum produto localizado</p>

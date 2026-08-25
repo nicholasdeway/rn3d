@@ -430,494 +430,500 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
         </>
       )}
 
-      {/* Cadastrar Orçamento Modal */}
+      {/* Cadastrar Orçamento — Inline Page View (Sem modal) */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-2 sm:p-4 md:p-6">
-          <div className="bg-white w-full max-w-[96vw] xl:max-w-7xl rounded-2xl border border-slate-300 overflow-hidden max-h-[95vh] flex flex-col animate-in fade-in zoom-in-95 duration-150 shadow-2xl">
-            <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-900 text-base sm:text-lg flex items-center gap-2">
-                <FileText className="w-6 h-6 text-indigo-600" />
+        <div className="w-full space-y-6 animate-in fade-in duration-200">
+          {/* Top Page Header Card */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
+            <div>
+              <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">
+                OPERAÇÃO COMERCIAL — PROPOSTA & COTAÇÃO
+              </span>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 mt-1">
+                <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                 Criar Novo Orçamento Comercial
-              </h3>
-              <button
-                onClick={() => setIsFormOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              </h2>
+            </div>
+            <button
+              onClick={() => setIsFormOpen(false)}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+              Voltar para Lista de Orçamentos
+            </button>
+          </div>
+
+          {/* Main Form Body Card */}
+          <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs p-6 space-y-6 text-xs text-slate-900 dark:text-slate-100">
+            {/* Client & SLA */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Cliente *</label>
+                <select
+                  value={selectedClientId}
+                  onChange={(e) => {
+                    const newId = e.target.value;
+                    setSelectedClientId(newId);
+                    const targetCli = availableClientsList.find((c) => c.id === newId);
+                    const cost = targetCli && typeof targetCli.defaultLogisticsCost === 'number'
+                      ? targetCli.defaultLogisticsCost
+                      : (Number(targetCli?.defaultLogisticsCost) || 0);
+                    setInternalLogisticsCost(cost);
+                    if (targetCli?.defaultLogisticsType) {
+                      setInternalLogisticsType(targetCli.defaultLogisticsType);
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                >
+                  {availableClientsList.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Validade da Proposta (Dias)</label>
+                <input
+                  type="number"
+                  value={validityDays}
+                  onChange={(e) => setValidityDays(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Prazo de Produção SLA (Dias)</label>
+                <input
+                  type="number"
+                  value={productionSlaDays}
+                  onChange={(e) => setProductionSlaDays(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                />
+              </div>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-6 text-xs">
-              {/* Client & SLA */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Cliente *</label>
-                  <select
-                    value={selectedClientId}
-                    onChange={(e) => {
-                      const newId = e.target.value;
-                      setSelectedClientId(newId);
-                      const targetCli = availableClientsList.find((c) => c.id === newId);
-                      const cost = targetCli && typeof targetCli.defaultLogisticsCost === 'number'
-                        ? targetCli.defaultLogisticsCost
-                        : (Number(targetCli?.defaultLogisticsCost) || 0);
-                      setInternalLogisticsCost(cost);
-                      if (targetCli?.defaultLogisticsType) {
-                        setInternalLogisticsType(targetCli.defaultLogisticsType);
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-900"
-                  >
-                    {availableClientsList.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Validade da Proposta (Dias)</label>
-                  <input
-                    type="number"
-                    value={validityDays}
-                    onChange={(e) => setValidityDays(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Prazo de Produção SLA (Dias)</label>
-                  <input
-                    type="number"
-                    value={productionSlaDays}
-                    onChange={(e) => setProductionSlaDays(Number(e.target.value))}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold"
-                  />
-                </div>
+            {/* Attendance Mode Selector */}
+            <div className="p-4 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-2xl space-y-2">
+              <label className="block font-bold text-slate-900 dark:text-slate-100 text-xs">Modalidade de Atendimento ao Cliente:</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setAttendanceMode('presencial')}
+                  className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${attendanceMode === 'presencial'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    }`}
+                >
+                  <MapPin className="w-4 h-4 text-emerald-400" />
+                  <span>📍 Visita Presencial (No Cliente)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAttendanceMode('online')}
+                  className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${attendanceMode === 'online'
+                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    }`}
+                >
+                  <MessageSquare className="w-4 h-4 text-cyan-400" />
+                  <span>💬 Atendimento Online / WhatsApp</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Full Product Catalog Searchable Combobox with Thumbnails */}
+            {products.length > 0 && (
+              <div className="p-4 bg-indigo-50/50 dark:bg-[#181c26] rounded-2xl border border-indigo-100 dark:border-[#202531] space-y-2">
+                <label className="block font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center justify-between">
+                  <span>Adicionar do Catálogo de Produtos ({products.length} itens disponíveis):</span>
+                  <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">Pesquisa Instantânea</span>
+                </label>
+                <ProductSelectCombobox
+                  products={products}
+                  onSelectProduct={handleAddProductFromCatalog}
+                  isCashPayment={
+                    paymentTerms.toLowerCase().includes('à vista') ||
+                    paymentTerms.toLowerCase().includes('a vista') ||
+                    paymentTerms.toLowerCase().includes('pix') ||
+                    paymentTerms.toLowerCase().includes('50%')
+                  }
+                />
+              </div>
+            )}
+
+            {/* Selected Items List */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-2">
+                  <span>Itens do Orçamento ({quoteItems.length})</span>
+                </h4>
+                <button
+                  type="button"
+                  onClick={handleAddItem}
+                  className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-lg font-bold flex items-center gap-1 cursor-pointer text-xs transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Item Personalizado
+                </button>
               </div>
 
-              {/* Attendance Mode Selector */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
-                <label className="block font-bold text-slate-900 text-xs">Modalidade de Atendimento ao Cliente:</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setAttendanceMode('presencial')}
-                    className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${attendanceMode === 'presencial'
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
-                  >
-                    <MapPin className="w-4 h-4 text-emerald-400" />
-                    <span>📍 Visita Presencial (No Cliente)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setAttendanceMode('online')}
-                    className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${attendanceMode === 'online'
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                        : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
-                  >
-                    <MessageSquare className="w-4 h-4 text-cyan-400" />
-                    <span>💬 Atendimento Online / WhatsApp</span>
-                  </button>
+              {quoteItems.length === 0 ? (
+                <div className="p-6 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl text-center text-slate-400 dark:text-slate-500 space-y-1">
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Nenhum item adicionado ao orçamento</p>
+                  <p className="text-[11px]">Use a busca acima ou clique em "Item Personalizado" para adicionar.</p>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Mobile Selected Items Cards (< 768px) */}
+                  <div className="block md:hidden space-y-3">
+                    {quoteItems.map((item, idx) => {
+                      const matchingProduct = products.find(
+                        (p) =>
+                          p.id === item.productId ||
+                          p.name.toLowerCase() === item.description.toLowerCase() ||
+                          item.description.toLowerCase().includes(p.name.toLowerCase())
+                      );
 
-              {/* Full Product Catalog Searchable Combobox with Thumbnails */}
-              {products.length > 0 && (
-                <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-2">
-                  <label className="block font-bold text-slate-900 text-xs flex items-center justify-between">
-                    <span>Adicionar do Catálogo de Produtos ({products.length} itens disponíveis):</span>
-                    <span className="text-[10px] text-indigo-600 font-bold">Pesquisa Instantânea</span>
-                  </label>
-                  <ProductSelectCombobox
-                    products={products}
-                    onSelectProduct={handleAddProductFromCatalog}
-                    isCashPayment={
-                      paymentTerms.toLowerCase().includes('à vista') ||
-                      paymentTerms.toLowerCase().includes('a vista') ||
-                      paymentTerms.toLowerCase().includes('pix') ||
-                      paymentTerms.toLowerCase().includes('50%')
-                    }
-                  />
-                </div>
-              )}
+                      return (
+                        <div
+                          key={idx}
+                          className="bg-white dark:bg-[#181c26] p-3.5 rounded-2xl border border-slate-200/90 dark:border-[#202531] shadow-xs space-y-3 text-slate-900 dark:text-slate-100"
+                        >
+                          {/* Top Row: Thumbnail Image, Editable Description & Red X Delete */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div
+                              onClick={() => {
+                                if (matchingProduct?.imageUrl) {
+                                  setZoomImage({ url: matchingProduct.imageUrl, title: item.description });
+                                }
+                              }}
+                              className={`w-11 h-11 rounded-xl bg-indigo-100/80 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700 ${matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                                }`}
+                              title={matchingProduct?.imageUrl ? 'Clique para ver foto em tela cheia' : undefined}
+                            >
+                              {matchingProduct?.imageUrl ? (
+                                <img
+                                  src={matchingProduct.imageUrl}
+                                  alt={item.description}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span>3D</span>
+                              )}
+                            </div>
 
-              {/* Selected Items List */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
-                    <span>Itens do Orçamento ({quoteItems.length})</span>
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={handleAddItem}
-                    className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-bold flex items-center gap-1 cursor-pointer text-xs transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Item Personalizado
-                  </button>
-                </div>
+                            <div className="flex-1 min-w-0">
+                              <label className="text-[10px] font-semibold text-slate-400 block">Descrição do Item</label>
+                              <input
+                                type="text"
+                                value={item.description}
+                                onChange={(e) => handleUpdateItem(idx, 'description', e.target.value)}
+                                className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100 bg-slate-50/50 dark:bg-slate-800"
+                              />
+                            </div>
 
-                {quoteItems.length === 0 ? (
-                  <div className="p-6 border-2 border-dashed border-slate-200 rounded-2xl text-center text-slate-400 space-y-1">
-                    <p className="text-xs font-bold text-slate-700">Nenhum item adicionado ao orçamento</p>
-                    <p className="text-[11px]">Use a busca acima ou clique em "Item Personalizado" para adicionar.</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Mobile Selected Items Cards (< 768px) */}
-                    <div className="block md:hidden space-y-3">
-                      {quoteItems.map((item, idx) => {
-                        const matchingProduct = products.find(
-                          (p) =>
-                            p.id === item.productId ||
-                            p.name.toLowerCase() === item.description.toLowerCase() ||
-                            item.description.toLowerCase().includes(p.name.toLowerCase())
-                        );
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(idx)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 rounded-lg transition-colors cursor-pointer shrink-0 mt-3"
+                              title="Remover este item do orçamento"
+                            >
+                              <X className="w-4 h-4 text-rose-500" />
+                            </button>
+                          </div>
 
-                        return (
-                          <div
-                            key={idx}
-                            className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-xs space-y-3"
-                          >
-                            {/* Top Row: Thumbnail Image, Editable Description & Red X Delete */}
-                            <div className="flex items-start justify-between gap-3">
-                              <div
-                                onClick={() => {
-                                  if (matchingProduct?.imageUrl) {
-                                    setZoomImage({ url: matchingProduct.imageUrl, title: item.description });
-                                  }
-                                }}
-                                className={`w-11 h-11 rounded-xl bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 ${matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
-                                  }`}
-                                title={matchingProduct?.imageUrl ? 'Clique para ver foto em tela cheia' : undefined}
+                          {/* Bottom Row: Quantity Stepper (- and + as sole control), Unit Price & Subtotal */}
+                          <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
+                            {/* Quantity Stepper */}
+                            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateItem(idx, 'quantity', Math.max(1, item.quantity - 1))}
+                                className="w-7 h-7 bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 text-slate-800 dark:text-slate-100 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
                               >
-                                {matchingProduct?.imageUrl ? (
-                                  <img
-                                    src={matchingProduct.imageUrl}
-                                    alt={item.description}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <span>3D</span>
-                                )}
-                              </div>
+                                -
+                              </button>
+                              <span className="w-8 text-center font-black text-slate-900 dark:text-slate-100 text-xs select-none">
+                                {item.quantity}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateItem(idx, 'quantity', item.quantity + 1)}
+                                className="w-7 h-7 bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 text-slate-800 dark:text-slate-100 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
+                              >
+                                +
+                              </button>
+                            </div>
 
-                              <div className="flex-1 min-w-0">
-                                <label className="text-[10px] font-semibold text-slate-400 block">Descrição do Item</label>
+                            {/* Unit Price */}
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] text-slate-400 font-medium">Un: R$</span>
+                              <input
+                                type="number"
+                                step="0.10"
+                                value={item.unitPrice}
+                                onChange={(e) => handleUpdateItem(idx, 'unitPrice', Number(e.target.value))}
+                                className="w-16 px-1.5 py-1 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-slate-800 dark:text-slate-100 text-xs text-right bg-white dark:bg-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                            </div>
+
+                            {/* Subtotal */}
+                            <div className="text-right">
+                              <span className="text-[10px] text-slate-400 font-medium block">Subtotal</span>
+                              <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs">
+                                R$ {item.subtotal.toFixed(2).replace('.', ',')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop Items Table (>= 768px) */}
+                  <div className="hidden md:block border border-slate-200 dark:border-[#202531] rounded-2xl overflow-hidden bg-white dark:bg-[#181c26]">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 dark:bg-[#12151c] border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase">
+                        <tr>
+                          <th className="p-3">Foto</th>
+                          <th className="p-3">Descrição do Item / Serviço</th>
+                          <th className="p-3 text-center">Qtde</th>
+                          <th className="p-3 text-right">Valor Unit.</th>
+                          <th className="p-3 text-right">Subtotal</th>
+                          <th className="p-3 text-center">Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {quoteItems.map((item, idx) => {
+                          const matchingProduct = products.find(
+                            (p) =>
+                              p.id === item.productId ||
+                              p.name.toLowerCase() === item.description.toLowerCase() ||
+                              item.description.toLowerCase().includes(p.name.toLowerCase())
+                          );
+
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                              <td className="p-3">
+                                <div
+                                  onClick={() => {
+                                    if (matchingProduct?.imageUrl) {
+                                      setZoomImage({ url: matchingProduct.imageUrl, title: item.description });
+                                    }
+                                  }}
+                                  className={`w-9 h-9 rounded-lg bg-indigo-100/80 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700 ${matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
+                                    }`}
+                                  title={matchingProduct?.imageUrl ? 'Clique para ver foto em tela cheia' : undefined}
+                                >
+                                  {matchingProduct?.imageUrl ? (
+                                    <img
+                                      src={matchingProduct.imageUrl}
+                                      alt={item.description}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <span>3D</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="p-3">
                                 <input
                                   type="text"
                                   value={item.description}
                                   onChange={(e) => handleUpdateItem(idx, 'description', e.target.value)}
-                                  className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 bg-slate-50/50"
+                                  placeholder="Descrição do item ou serviço..."
+                                  className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 bg-slate-50/50 dark:bg-slate-800"
                                 />
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveItem(idx)}
-                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0 mt-3"
-                                title="Remover este item do orçamento"
-                              >
-                                <X className="w-4 h-4 text-rose-500" />
-                              </button>
-                            </div>
-
-                            {/* Bottom Row: Quantity Stepper (- and + as sole control), Unit Price & Subtotal */}
-                            <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 text-xs">
-                              {/* Quantity Stepper */}
-                              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateItem(idx, 'quantity', Math.max(1, item.quantity - 1))}
-                                  className="w-7 h-7 bg-white hover:bg-slate-200 active:scale-95 text-slate-800 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
-                                >
-                                  -
-                                </button>
-                                <span className="w-8 text-center font-black text-slate-900 text-xs select-none">
-                                  {item.quantity}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUpdateItem(idx, 'quantity', item.quantity + 1)}
-                                  className="w-7 h-7 bg-white hover:bg-slate-200 active:scale-95 text-slate-800 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
-                                >
-                                  +
-                                </button>
-                              </div>
-
-                              {/* Unit Price */}
-                              <div className="flex items-center gap-1">
-                                <span className="text-[10px] text-slate-400 font-medium">Un: R$</span>
+                              </td>
+                              <td className="p-3 text-center">
+                                <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateItem(idx, 'quantity', Math.max(1, item.quantity - 1))}
+                                    className="w-6 h-6 bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 text-slate-800 dark:text-slate-100 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="w-7 text-center font-black text-slate-900 dark:text-slate-100 text-xs select-none">
+                                    {item.quantity}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateItem(idx, 'quantity', item.quantity + 1)}
+                                    className="w-6 h-6 bg-white dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 text-slate-800 dark:text-slate-100 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="p-3 text-right">
                                 <input
                                   type="number"
                                   step="0.10"
                                   value={item.unitPrice}
                                   onChange={(e) => handleUpdateItem(idx, 'unitPrice', Number(e.target.value))}
-                                  className="w-16 px-1.5 py-1 border border-slate-200 rounded-lg font-bold text-slate-800 text-xs text-right bg-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  className="w-20 text-right py-1 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
                                 />
-                              </div>
+                              </td>
+                              <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">
+                                R$ {item.subtotal.toFixed(2).replace('.', ',')}
+                              </td>
+                              <td className="p-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveItem(idx)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer transition-colors"
+                                  title="Excluir item"
+                                >
+                                  <X className="w-4 h-4 text-rose-500" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
 
-                              {/* Subtotal */}
-                              <div className="text-right">
-                                <span className="text-[10px] text-slate-400 font-medium block">Subtotal</span>
-                                <span className="font-black text-emerald-600 text-xs">
-                                  R$ {item.subtotal.toFixed(2).replace('.', ',')}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Desktop Items Table (>= 768px) */}
-                    <div className="hidden md:block border border-slate-200 rounded-2xl overflow-hidden bg-white">
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
-                          <tr>
-                            <th className="p-3">Foto</th>
-                            <th className="p-3">Descrição do Item / Serviço</th>
-                            <th className="p-3 text-center">Qtde</th>
-                            <th className="p-3 text-right">Valor Unit.</th>
-                            <th className="p-3 text-right">Subtotal</th>
-                            <th className="p-3 text-center">Ação</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {quoteItems.map((item, idx) => {
-                            const matchingProduct = products.find(
-                              (p) =>
-                                p.id === item.productId ||
-                                p.name.toLowerCase() === item.description.toLowerCase() ||
-                                item.description.toLowerCase().includes(p.name.toLowerCase())
-                            );
-
-                            return (
-                              <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                                <td className="p-3">
-                                  <div
-                                    onClick={() => {
-                                      if (matchingProduct?.imageUrl) {
-                                        setZoomImage({ url: matchingProduct.imageUrl, title: item.description });
-                                      }
-                                    }}
-                                    className={`w-9 h-9 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 ${matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
-                                      }`}
-                                    title={matchingProduct?.imageUrl ? 'Clique para ver foto em tela cheia' : undefined}
-                                  >
-                                    {matchingProduct?.imageUrl ? (
-                                      <img
-                                        src={matchingProduct.imageUrl}
-                                        alt={item.description}
-                                        className="w-full h-full object-cover"
-                                      />
-                                    ) : (
-                                      <span>3D</span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="p-3">
-                                  <input
-                                    type="text"
-                                    value={item.description}
-                                    onChange={(e) => handleUpdateItem(idx, 'description', e.target.value)}
-                                    placeholder="Descrição do item ou serviço..."
-                                    className="w-full px-2.5 py-1.5 border border-slate-200 rounded-lg font-bold text-slate-900 placeholder-slate-400 bg-slate-50/50"
-                                  />
-                                </td>
-                                <td className="p-3 text-center">
-                                  <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                                    <button
-                                      type="button"
-                                      onClick={() => handleUpdateItem(idx, 'quantity', Math.max(1, item.quantity - 1))}
-                                      className="w-6 h-6 bg-white hover:bg-slate-200 active:scale-95 text-slate-800 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
-                                    >
-                                      -
-                                    </button>
-                                    <span className="w-7 text-center font-black text-slate-900 text-xs select-none">
-                                      {item.quantity}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleUpdateItem(idx, 'quantity', item.quantity + 1)}
-                                      className="w-6 h-6 bg-white hover:bg-slate-200 active:scale-95 text-slate-800 font-black rounded-lg flex items-center justify-center cursor-pointer shadow-2xs select-none"
-                                    >
-                                      +
-                                    </button>
-                                  </div>
-                                </td>
-                                <td className="p-3 text-right">
-                                  <input
-                                    type="number"
-                                    step="0.10"
-                                    value={item.unitPrice}
-                                    onChange={(e) => handleUpdateItem(idx, 'unitPrice', Number(e.target.value))}
-                                    className="w-20 text-right py-1 border border-slate-200 rounded-lg font-semibold"
-                                  />
-                                </td>
-                                <td className="p-3 text-right font-bold text-emerald-600">
-                                  R$ {item.subtotal.toFixed(2).replace('.', ',')}
-                                </td>
-                                <td className="p-3 text-center">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveItem(idx)}
-                                    className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg cursor-pointer transition-colors"
-                                    title="Excluir item"
-                                  >
-                                    <X className="w-4 h-4 text-rose-500" />
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
+            {/* Internal Logistics Memory & Cost Block (Hidden on Client PDF) */}
+            <div className="p-4 bg-slate-50 dark:bg-[#181c26] border border-slate-200/80 dark:border-[#202531] rounded-2xl space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5">
+                  <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Custo Interno de Logística & Entrega
+                </span>
+                <span className="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-bold rounded-full border border-amber-200 dark:border-amber-800">
+                  🔒 Uso Interno Oficina (Oculto no PDF)
+                </span>
               </div>
 
-              {/* Internal Logistics Memory & Cost Block (Hidden on Client PDF) */}
-              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                    <Truck className="w-4 h-4 text-indigo-600" /> Custo Interno de Logística & Entrega
-                  </span>
-                  <span className="px-2.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full border border-amber-200">
-                    🔒 Uso Interno Oficina (Oculto no PDF)
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Modalidade de Logística / Deslocamento</label>
-                    <select
-                      value={internalLogisticsType}
-                      onChange={(e) => setInternalLogisticsType(e.target.value as any)}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900"
-                    >
-                      <option value="combustivel">⛽ Combustível (Deslocamento Próprio)</option>
-                      <option value="frete">🚚 Frete / Motoboy / Envio Terceirizado</option>
-                      <option value="retirada">🚗 Sem Custo (Retirada na Oficina)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Custo Estimado (R$) — Salvo para {selectedClient?.name || 'Cliente'}
-                    </label>
-                    <input
-                      type="number"
-                      step="5"
-                      min="0"
-                      value={internalLogisticsCost}
-                      onChange={(e) => setInternalLogisticsCost(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-black text-rose-600 text-sm"
-                    />
-                  </div>
-                </div>
-                <p className="text-[11px] text-slate-500 italic">
-                  💡 Este valor é salvo na memória para {selectedClient?.name || 'este cliente'}, sugerindo R$ {internalLogisticsCost.toFixed(2).replace('.', ',')} na próxima vez, mas você pode editá-lo livremente caso faça mais viagens.
-                </p>
-              </div>
-
-              {/* Totals & Conditions */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Condições Comerciais / Modalidade</label>
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {[
-                      '⚡ Pagamento à Vista (PIX / Dinheiro)',
-                      '🤝 Consignado (Acerto Periódico)',
-                      '💳 50% no Pedido e 50% na Entrega',
-                      '📅 Faturado a Prazo (30 Dias)',
-                    ].map((preset) => {
-                      const isSelected = paymentTerms === preset;
-                      return (
-                        <button
-                          key={preset}
-                          type="button"
-                          onClick={() => handleSelectPaymentTerms(preset)}
-                          className={`px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer border ${isSelected
-                              ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/30'
-                              : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100 hover:border-indigo-400'
-                            }`}
-                        >
-                          {preset}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Modalidade de Logística / Deslocamento</label>
+                  <select
+                    value={internalLogisticsType}
+                    onChange={(e) => setInternalLogisticsType(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 font-bold text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="combustivel">⛽ Combustível (Deslocamento Próprio)</option>
+                    <option value="frete">🚚 Frete / Motoboy / Envio Terceirizado</option>
+                    <option value="retirada">🚗 Sem Custo (Retirada na Oficina)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Custo Estimado (R$) — Salvo para {selectedClient?.name || 'Cliente'}
+                  </label>
                   <input
-                    type="text"
-                    value={paymentTerms}
-                    onChange={(e) => handleSelectPaymentTerms(e.target.value)}
-                    placeholder="Ex: Pagamento à Vista com 5% de desconto via PIX..."
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white placeholder-slate-400 font-medium"
+                    type="number"
+                    step="5"
+                    min="0"
+                    value={internalLogisticsCost}
+                    onChange={(e) => setInternalLogisticsCost(Number(e.target.value))}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 font-black text-rose-600 dark:text-rose-400 text-sm"
                   />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Observações do Projeto</label>
-                  <textarea
-                    rows={2}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Instruções adicionais..."
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white"
-                  />
-                </div>
-                <div className="space-y-3 text-right flex flex-col justify-end">
-                  <div className="flex justify-between text-slate-600">
-                    <span>Subtotal:</span>
-                    <span className="font-bold">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                  <div className="flex justify-between text-slate-600 items-center">
-                    <span>Desconto Concedido:</span>
-                    <input
-                      type="number"
-                      step="1"
-                      min="0"
-                      value={discount}
-                      onChange={(e) => setDiscount(Number(e.target.value))}
-                      className="w-24 px-2 py-1 border border-slate-200 rounded-lg text-right font-bold text-rose-600"
-                    />
-                  </div>
-                  <div className="flex justify-between text-slate-900 text-base font-black border-t border-slate-200 pt-2">
-                    <span>TOTAL FINAL:</span>
-                    <span className="text-emerald-600">R$ {total.toFixed(2).replace('.', ',')}</span>
-                  </div>
                 </div>
               </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+                💡 Este valor é salvo na memória para {selectedClient?.name || 'este cliente'}, sugerindo R$ {internalLogisticsCost.toFixed(2).replace('.', ',')} na próxima vez, mas você pode editá-lo livremente caso faça mais viagens.
+              </p>
+            </div>
 
-              {/* Action Buttons - Moved Inside Scroll Area (Non-Fixed) */}
-              <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+            {/* Totals & Conditions */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-50 dark:bg-[#181c26] p-4 rounded-2xl border border-slate-200 dark:border-[#202531]">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Condições Comerciais / Modalidade</label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {[
+                    '⚡ Pagamento à Vista (PIX / Dinheiro)',
+                    '🤝 Consignado (Acerto Periódico)',
+                    '💳 50% no Pedido e 50% na Entrega',
+                    '📅 Faturado a Prazo (30 Dias)',
+                  ].map((preset) => {
+                    const isSelected = paymentTerms === preset;
+                    return (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => handleSelectPaymentTerms(preset)}
+                        className={`px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer border ${isSelected
+                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/30'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                          }`}
+                      >
+                        {preset}
+                      </button>
+                    );
+                  })}
+                </div>
+                <input
+                  type="text"
+                  value={paymentTerms}
+                  onChange={(e) => handleSelectPaymentTerms(e.target.value)}
+                  placeholder="Ex: Pagamento à Vista com 5% de desconto via PIX..."
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 font-medium"
+                />
+              </div>
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Observações do Projeto</label>
+                <textarea
+                  rows={2}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Instruções adicionais..."
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+                />
+              </div>
+              <div className="space-y-3 text-right flex flex-col justify-end">
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                  <span>Subtotal:</span>
+                  <span className="font-bold">R$ {subtotal.toFixed(2).replace('.', ',')}</span>
+                </div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-300 items-center">
+                  <span>Desconto Concedido:</span>
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    value={discount}
+                    onChange={(e) => setDiscount(Number(e.target.value))}
+                    className="w-24 px-2 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-right font-bold text-rose-600 dark:text-rose-400 bg-white dark:bg-slate-800"
+                  />
+                </div>
+                <div className="flex justify-between text-slate-900 dark:text-slate-100 text-base font-black border-t border-slate-200 dark:border-slate-700 pt-2">
+                  <span>TOTAL FINAL:</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">R$ {total.toFixed(2).replace('.', ',')}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsFormOpen(false)}
+                className="order-3 sm:order-1 px-4 py-2.5 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-800 rounded-xl font-semibold text-xs transition-colors cursor-pointer text-center"
+              >
+                Cancelar
+              </button>
+              <div className="order-1 sm:order-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsFormOpen(false)}
-                  className="order-3 sm:order-1 px-3.5 py-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl font-semibold text-xs transition-colors cursor-pointer text-center"
+                  onClick={() => handleSubmitQuote('Rascunho')}
+                  className="px-4 py-2.5 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs shadow-2xs transition-colors cursor-pointer whitespace-nowrap text-center"
                 >
-                  Cancelar
+                  Salvar Rascunho
                 </button>
-                <div className="order-1 sm:order-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSubmitQuote('Rascunho')}
-                    className="px-4 py-2.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl font-bold text-xs shadow-2xs transition-colors cursor-pointer whitespace-nowrap text-center"
-                  >
-                    Salvar Rascunho
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSubmitQuote('Enviado')}
-                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Marcar como Enviado</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSubmitQuote('Enviado')}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Marcar como Enviado</span>
+                </button>
               </div>
             </div>
           </div>
