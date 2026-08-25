@@ -29,7 +29,9 @@ export async function fetchOrders(): Promise<Order[]> {
     return localOrders;
   }
 
-  const dbOrders: Order[] = data.map((row) => ({
+  const dbOrders: Order[] = data
+    .filter((row) => row.order_code !== 'SYS_ACCOUNT_BALANCES' && row.client_name !== 'SISTEMA_BALANCES')
+    .map((row) => ({
     id: row.order_code || row.id,
     clientId: row.client_id || '',
     clientName: row.client_name,

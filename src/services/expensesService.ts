@@ -83,17 +83,35 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
     return { expenses: localExpenses, balances: localBalances };
   }
 
+  // Attempt to read balances from orders table as guaranteed fallback
+  try {
+    const { data: orderSys } = await supabase
+      .from('orders')
+      .select('payment_status_text')
+      .eq('order_code', 'SYS_ACCOUNT_BALANCES')
+      .maybeSingle();
+
+    if (orderSys && orderSys.payment_status_text) {
+      const parsed = JSON.parse(orderSys.payment_status_text);
+      if (parsed && typeof parsed === 'object' && typeof parsed.nubank === 'number') {
+        localBalances = parsed;
+        localStorage.setItem('rn3d_account_balances', JSON.stringify(parsed));
+        localStorage.setItem('rn3d_account_balance', (parsed.nubank || 0).toString());
+      }
+    }
+  } catch (e) {}
+
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
     .order('date', { ascending: false });
 
   if (error || !data) {
-    console.error('Erro ao buscar despesas no Supabase:', error?.message);
+    // If expenses table not created in Supabase yet, return local + order fallback balances quietly
     return { expenses: localExpenses, balances: localBalances };
   }
 
-  // Extract system account balances row if present
+  // Extract system account balances row if present in expenses
   const sysBalanceRow = data.find((row) => row.reference_code === 'SYS_ACCOUNT_BALANCES');
   if (sysBalanceRow && sysBalanceRow.notes) {
     try {
@@ -106,7 +124,7 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
         }
       }
       const parsedBalances = JSON.parse(rawJson);
-      if (parsedBalances && typeof parsedBalances === 'object') {
+      if (parsedBalances && typeof parsedBalances === 'object' && typeof parsedBalances.nubank === 'number') {
         localBalances = parsedBalances;
         localStorage.setItem('rn3d_account_balances', JSON.stringify(parsedBalances));
         localStorage.setItem('rn3d_account_balance', (parsedBalances.nubank || 0).toString());
@@ -153,6 +171,20 @@ export async function saveAccountBalancesToSupabase(balances: AccountBalances): 
 
     if (!isSupabaseConfigured()) return true;
 
+    // Guaranteed fallback: Save to orders table (order_code = 'SYS_ACCOUNT_BALANCES')
+    try {
+      const orderPayload = {
+        order_code: 'SYS_ACCOUNT_BALANCES',
+        client_name: 'SISTEMA_BALANCES',
+        total_value: 0,
+        paid_amount: 0,
+        payment_status_text: JSON.stringify(balances),
+        status: 'Novo',
+      };
+      await supabase.from('orders').upsert(orderPayload, { onConflict: 'order_code' });
+    } catch (e) {}
+
+    // Primary: Save to expenses table if created
     const payload = {
       description: 'Saldos de Contas e Marketplaces',
       category: 'Outros',
@@ -176,7 +208,6 @@ export async function saveAccountBalancesToSupabase(balances: AccountBalances): 
     }
     return true;
   } catch (err) {
-    console.error('Erro ao salvar saldos no Supabase:', err);
     return false;
   }
 }
@@ -212,7 +243,6 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
     .single();
 
   if (error) {
-    console.error('Erro ao cadastrar despesa no Supabase:', error.message);
     return null;
   }
 
@@ -250,7 +280,6 @@ export async function updateExpense(id: string, updates: Partial<ExpenseItem>): 
 
   const { error } = await query;
   if (error) {
-    console.error('Erro ao atualizar despesa no Supabase:', error.message);
     return false;
   }
   return true;
@@ -266,7 +295,6 @@ export async function deleteExpense(id: string): Promise<boolean> {
 
   const { error } = await supabase.from('expenses').delete().eq('id', id);
   if (error) {
-    console.error('Erro ao excluir despesa no Supabase:', error.message);
     return false;
   }
   return true;
@@ -277,6 +305,8 @@ export async function syncMissingExpensesToSupabase(expenses: ExpenseItem[]): Pr
 
   try {
     const { data: dbData } = await supabase.from('expenses').select('id, reference_code');
+    if (!dbData) return 0;
+
     const existingIds = new Set((dbData || []).map((row) => row.id));
     const existingRefCodes = new Set((dbData || []).map((row) => row.reference_code).filter(Boolean));
 
@@ -303,12 +333,10 @@ export async function syncMissingExpensesToSupabase(expenses: ExpenseItem[]): Pr
 
     const { error } = await supabase.from('expenses').insert(rows);
     if (error) {
-      console.warn('Erro ao sincronizar despesas no Supabase:', error.message);
       return 0;
     }
     return rows.length;
   } catch (err) {
-    console.error('Erro ao sincronizar despesas:', err);
     return 0;
   }
 }
