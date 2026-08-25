@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Product, Order, Consignment, Client } from '../types';
+import { Product, Order, Consignment, Client, ExpenseItem } from '../types';
 import {
   BarChart3,
   Calendar,
@@ -27,6 +27,7 @@ interface ReportsViewProps {
   consignments: Consignment[];
   transactions?: any[];
   clients?: Client[];
+  expenses?: ExpenseItem[];
 }
 
 export const ReportsView: React.FC<ReportsViewProps> = ({
@@ -35,6 +36,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   consignments,
   transactions = [],
   clients = [],
+  expenses = [],
 }) => {
   const [period, setPeriod] = useState('Este Mês');
   const [subScreen, setSubScreen] = useState<'dashboard' | 'full-products-ranking' | 'full-clients-ranking'>('dashboard');
@@ -42,8 +44,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
   // 1. Monthly analytics data for charts
   const monthlyAnalyticsData = useMemo(() => {
-    return computeMonthlyAnalyticsData(orders, transactions, consignments);
-  }, [orders, transactions, consignments]);
+    return computeMonthlyAnalyticsData(orders, transactions, consignments, expenses);
+  }, [orders, transactions, consignments, expenses]);
 
   // 2. Compute Product Profitability Rankings
   const productProfitability = useMemo(() => {

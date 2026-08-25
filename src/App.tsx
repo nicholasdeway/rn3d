@@ -26,6 +26,7 @@ import { GeneralInventoryView } from './views/GeneralInventoryView';
 import { MovementsView } from './views/MovementsView';
 import { ClientInventoryView } from './views/ClientInventoryView';
 import { FinancialView } from './views/FinancialView';
+import { ExpensesView } from './views/ExpensesView';
 import { ReportsView } from './views/ReportsView';
 import { SettingsView } from './views/SettingsView';
 
@@ -288,6 +289,7 @@ export function App() {
                   consignments={appData.consignments}
                   orders={appData.orders}
                   transactions={appData.transactions}
+                  expenses={appData.expenses}
                   onNavigate={(view) => setCurrentView(view)}
                   onStartVisit={handleStartVisit}
                   onSelectClient={handleSelectClientProfile}
@@ -505,6 +507,17 @@ export function App() {
                 />
               )}
 
+              {currentView === 'expenses' && (
+                <ExpensesView
+                  expenses={appData.expenses}
+                  accountBalance={appData.accountBalance}
+                  onCreateExpense={appData.handleCreateExpense}
+                  onUpdateExpense={appData.handleUpdateExpense}
+                  onDeleteExpense={appData.handleDeleteExpense}
+                  onUpdateAccountBalance={appData.handleUpdateAccountBalance}
+                />
+              )}
+
               {currentView === 'reports' && (
                 <ReportsView
                   products={appData.products}
@@ -512,6 +525,7 @@ export function App() {
                   consignments={appData.consignments}
                   transactions={appData.transactions}
                   clients={appData.clients}
+                  expenses={appData.expenses}
                 />
               )}
 

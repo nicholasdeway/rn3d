@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { ExpenseItem } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from './useProducts';
 import { useClients } from './useClients';
@@ -8,6 +9,7 @@ import { useQuotes } from './useQuotes';
 import { useOrders } from './useOrders';
 import { useExchanges } from './useExchanges';
 import { useVisits } from './useVisits';
+import { useExpenses } from './useExpenses';
 
 import { fetchProducts } from '../services/productsService';
 import { fetchClients } from '../services/clientsService';
@@ -52,6 +54,17 @@ export function useAppData() {
     handleAddClient,
     handleUpdateClient,
   } = useClients(user, showToast);
+
+  const {
+    expenses,
+    setExpenses,
+    accountBalance,
+    setAccountBalance,
+    handleCreateExpense,
+    handleUpdateExpense,
+    handleDeleteExpense,
+    handleUpdateAccountBalance,
+  } = useExpenses(user, showToast);
 
   const {
     transactions,
@@ -216,6 +229,63 @@ export function useAppData() {
     });
   }, [consignments, clients]);
 
+  // Auto-replicate internal logistics costs from orders and visits into expenses (Combustível & Transporte)
+  useEffect(() => {
+    if ((!orders || orders.length === 0) && (!visits || visits.length === 0)) return;
+
+    setExpenses((prevExpenses) => {
+      let changed = false;
+      const newAutoExpenses: ExpenseItem[] = [];
+
+      orders.forEach((o) => {
+        const cost = Number(o.internalLogisticsCost) || 0;
+        if (cost > 0) {
+          const alreadyExists = prevExpenses.some((e) => e.referenceCode === o.id);
+          if (!alreadyExists) {
+            changed = true;
+            newAutoExpenses.push({
+              id: `exp-auto-${o.id}`,
+              description: `Custo de Logística / Frete (${o.id} - ${o.clientName})`,
+              category: 'Combustível & Transporte',
+              amount: cost,
+              date: o.date || new Date().toISOString().split('T')[0],
+              paymentStatus: 'Pago',
+              beneficiary: 'Logística de Entrega',
+              isAutoReplicated: true,
+              referenceCode: o.id,
+              notes: `Gerado automaticamente via Pedido ${o.id}`,
+            });
+          }
+        }
+      });
+
+      visits.forEach((v) => {
+        if (v.status === 'Concluída') {
+          const cost = 25.0; // Standard estimated visit fuel cost if presencial visit completed
+          const refCode = `VIS-${v.id}`;
+          const alreadyExists = prevExpenses.some((e) => e.referenceCode === refCode);
+          if (!alreadyExists) {
+            changed = true;
+            newAutoExpenses.push({
+              id: `exp-auto-${refCode}`,
+              description: `Deslocamento / Combustível Visita (${v.clientName})`,
+              category: 'Combustível & Transporte',
+              amount: cost,
+              date: v.completedAt ? v.completedAt.split('T')[0] : v.scheduledDate,
+              paymentStatus: 'Pago',
+              beneficiary: 'Rota de Consignação',
+              isAutoReplicated: true,
+              referenceCode: refCode,
+              notes: `Gerado automaticamente via Visita Presencial ${v.id}`,
+            });
+          }
+        }
+      });
+
+      return changed ? [...newAutoExpenses, ...prevExpenses] : prevExpenses;
+    });
+  }, [orders, visits]);
+
   const handleSyncProductsToSupabase = async () => {
     try {
       showToast('Sincronizando todo o sistema com o Banco de Dados', 'info');
@@ -260,6 +330,8 @@ export function useAppData() {
     transactions,
     movements,
     clientInventories,
+    expenses,
+    accountBalance,
     globalSearchQuery,
     dataLoading,
     toast,
@@ -276,6 +348,10 @@ export function useAppData() {
     handleAddConsignment,
     handleCreateQuote,
     handleUpdateQuoteStatus,
+    handleCreateExpense,
+    handleUpdateExpense,
+    handleDeleteExpense,
+    handleUpdateAccountBalance,
     handleCreateOrder,
     handleDeleteOrder,
     handleUpdateOrderProgress,

@@ -1,4 +1,4 @@
-import { Order, Consignment, SaleTransaction } from '../types';
+import { Order, Consignment, ExpenseItem } from '../types';
 
 export interface MonthlyAnalyticsData {
   month: string;
@@ -11,7 +11,8 @@ export interface MonthlyAnalyticsData {
 export function computeMonthlyAnalyticsData(
   orders: Order[] = [],
   transactions: any[] = [],
-  consignments: Consignment[] = []
+  consignments: Consignment[] = [],
+  expenses: ExpenseItem[] = []
 ): MonthlyAnalyticsData[] {
   const monthsNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
   const fullMonthsNames = [
@@ -98,6 +99,17 @@ export function computeMonthlyAnalyticsData(
     if (key && monthlyMap.has(key)) {
       const cur = monthlyMap.get(key)!;
       cur.receitas += val * 0.3;
+    }
+  });
+
+  expenses.forEach((exp) => {
+    if (exp.paymentStatus === 'Pago') {
+      const key = parseDateToMonthKey(exp.date);
+      const amt = Number(exp.amount) || 0;
+      if (key && monthlyMap.has(key)) {
+        const cur = monthlyMap.get(key)!;
+        cur.despesas += amt;
+      }
     }
   });
 

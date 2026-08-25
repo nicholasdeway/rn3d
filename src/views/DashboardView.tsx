@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Client, Product, Visit, ViewMode, Order, SaleTransaction } from '../types';
+import { Client, Product, Visit, ViewMode, Order, SaleTransaction, ExpenseItem } from '../types';
 import { formatDateBR } from '../utils/formatters';
 import { MonthlyComparisonChart } from '../components/charts/MonthlyComparisonChart';
 import { BalanceEvolutionChart } from '../components/charts/BalanceEvolutionChart';
@@ -36,6 +36,7 @@ interface DashboardViewProps {
   consignments?: any[];
   orders?: Order[];
   transactions?: any[];
+  expenses?: ExpenseItem[];
   onSelectClient?: (clientOrId: string | Client) => void;
   onUpdateOrderProgress?: (orderId: string, newProgressPct: number) => void;
   onUpdateOrderStatus?: (orderId: string, newStatus: Order['status']) => void;
@@ -51,6 +52,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   consignments = [],
   orders = [],
   transactions = [],
+  expenses = [],
   onSelectClient,
   onUpdateOrderProgress,
   onUpdateOrderStatus,
@@ -61,8 +63,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   // Compute dynamic analytics for charts
   const monthlyAnalyticsData = useMemo(() => {
-    return computeMonthlyAnalyticsData(orders, transactions, consignments);
-  }, [orders, transactions, consignments]);
+    return computeMonthlyAnalyticsData(orders, transactions, consignments, expenses);
+  }, [orders, transactions, consignments, expenses]);
 
   // Compute dynamic KPIs
   const totalRevenue = orders.reduce((acc, o) => acc + (Number(o.paidAmount) || 0), 0);

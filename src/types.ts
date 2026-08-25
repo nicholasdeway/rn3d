@@ -14,6 +14,7 @@ export type ViewMode =
   | 'inventory-movements'
   | 'inventory-clients'
   | 'financial'
+  | 'expenses'
   | 'reports'
   | 'settings';
 
@@ -299,6 +300,33 @@ export interface SaleTransaction {
   status: 'Pago' | 'Parcial' | 'Pendente' | 'Atrasado';
   dueDate: string;
   referenceCode?: string;
+}
+
+export type ExpenseCategory =
+  | 'Combustível & Transporte'
+  | 'Compra de Filamento'
+  | 'Bicos & Peças'
+  | 'Manutenção & Reparos'
+  | 'Caixas & Embalagens'
+  | 'Álcool & Insumos'
+  | 'Impostos (DAS)'
+  | 'Retirada de Sócio / Pro-labore'
+  | 'Outros';
+
+export interface ExpenseItem {
+  id: string;
+  description: string;
+  category: ExpenseCategory;
+  amount: number;
+  date: string;
+  paymentStatus: 'Pago' | 'Pendente' | 'Agendado';
+  beneficiary?: string; // Nome do Sócio / Fornecedor / Posto
+  receiptUrl?: string; // Comprovante em Base64 ou URL
+  receiptType?: 'image' | 'pdf';
+  receiptName?: string;
+  isAutoReplicated?: boolean; // Réplica automática de logística
+  referenceCode?: string; // ex: PED-000081, VIS-000052
+  notes?: string;
 }
 
 export interface AppSettings {
