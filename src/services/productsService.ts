@@ -250,3 +250,31 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
 
   return (data && data[0]) ? (data[0] as any) : null;
 }
+
+export async function deleteProduct(id: string, sku?: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) {
+    return true;
+  }
+
+  const isLocalId = !id || id.startsWith('prod-') || id.length < 30;
+
+  let query = supabase.from('products').delete();
+  if (!isLocalId) {
+    query = query.eq('id', id);
+  } else if (sku) {
+    query = query.eq('sku', sku);
+  } else {
+    query = query.eq('id', id);
+  }
+
+  const { error } = await query;
+  if (error) {
+    console.error('Erro ao deletar produto no Supabase:', error.message);
+    if (error.message.includes('row-level security')) {
+      throw new Error('Política RLS no Supabase bloqueou a exclusão. Verifique as permissões de DELETE no Supabase.');
+    }
+    throw error;
+  }
+
+  return true;
+}

@@ -5,6 +5,7 @@ import {
   fetchProducts,
   createProduct,
   updateProduct,
+  deleteProduct,
   syncMissingProductsToSupabase,
 } from '../services/productsService';
 
@@ -101,11 +102,27 @@ export function useProducts(user: any, showToast: (msg: string, type?: 'success'
     }
   };
 
+  const handleDeleteProduct = async (productId: string) => {
+    const prod = products.find((p) => p.id === productId);
+    const prodName = prod ? prod.name : 'Produto';
+
+    setProducts((prev) => prev.filter((p) => p.id !== productId));
+    showToast(`Produto "${prodName}" excluído com sucesso!`, 'success');
+
+    try {
+      await deleteProduct(productId, prod?.sku);
+    } catch (err: any) {
+      console.error('Erro ao excluir produto no Supabase:', err);
+      showToast(`Aviso: Erro ao excluir no Supabase (${err?.message || 'Erro RLS/Permissão'})`, 'error');
+    }
+  };
+
   return {
     products,
     setProducts,
     handleAddProduct,
     handleUpdateProduct,
+    handleDeleteProduct,
     handleUpdateStock,
     handleSyncProductsToSupabase,
   };

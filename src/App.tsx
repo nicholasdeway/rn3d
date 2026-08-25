@@ -368,6 +368,7 @@ export function App() {
                     setAutoOpenNewProductModal(false);
                   }}
                   onUpdateProduct={appData.handleUpdateProduct}
+                  onDeleteProduct={appData.handleDeleteProduct}
                   onSyncSupabase={appData.handleSyncProductsToSupabase}
                   autoOpenNewModal={autoOpenNewProductModal}
                 />

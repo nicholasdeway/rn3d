@@ -42,6 +42,7 @@ export function useAppData() {
     setProducts,
     handleAddProduct,
     handleUpdateProduct,
+    handleDeleteProduct,
     handleUpdateStock,
   } = useProducts(user, showToast);
 
@@ -267,6 +268,7 @@ export function useAppData() {
     showToast,
     handleAddProduct,
     handleUpdateProduct,
+    handleDeleteProduct,
     handleSyncProductsToSupabase,
     handleUpdateStock,
     handleAddClient,
