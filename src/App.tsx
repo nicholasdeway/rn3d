@@ -253,8 +253,8 @@ export function App() {
           }}
         />
 
-        {/* Dynamic View Body Container */}
-        <main className="p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 flex-1 max-w-7xl w-full mx-auto">
+        {/* Dynamic View Body Container (Full-width expanded layout) */}
+        <main className="p-4 sm:p-6 lg:p-8 pb-28 lg:pb-8 flex-1 w-full">
           {/* Active Visit Wizard Modal Overlay */}
           {activeVisitClientId ? (
             <VisitExecutionWizard

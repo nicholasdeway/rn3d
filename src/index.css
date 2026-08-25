@@ -16,6 +16,20 @@ html.dark .min-h-screen {
   color: #f1f5f9 !important;
 }
 
+/* Instant 0ms Theme Switching Synchronization across all components */
+html.dark header,
+html.dark aside,
+html.dark main,
+html.dark div,
+html.dark table,
+html:not(.dark) header,
+html:not(.dark) aside,
+html:not(.dark) main,
+html:not(.dark) div,
+html:not(.dark) table {
+  transition-property: color, border-color, box-shadow, transform, opacity;
+}
+
 /* Header, Sidebar, Nav, Main Container & Card Backgrounds no Modo Escuro */
 html.dark header,
 html.dark nav,
