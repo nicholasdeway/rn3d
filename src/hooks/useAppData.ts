@@ -76,6 +76,7 @@ export function useAppData() {
   const {
     visits,
     setVisits,
+    handleScheduleVisit,
     handleCompleteVisit,
   } = useVisits(
     clients,
@@ -245,6 +246,7 @@ export function useAppData() {
     handleUpdateOrderStatus,
     handleUpdateOrderPayment,
     handleExecuteExchange,
+    handleScheduleVisit,
     handleCompleteVisit,
   };
 }

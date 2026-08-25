@@ -407,7 +407,12 @@ export function App() {
               )}
 
               {currentView === 'visits' && (
-                <VisitsView visits={appData.visits} onStartVisit={handleStartVisit} />
+                <VisitsView
+                  visits={appData.visits}
+                  clients={appData.clients}
+                  onStartVisit={handleStartVisit}
+                  onScheduleVisit={appData.handleScheduleVisit}
+                />
               )}
 
               {currentView === 'exchanges' && (

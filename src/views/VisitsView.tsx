@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Visit } from '../types';
+import { Visit, Client } from '../types';
 import { formatDateBR } from '../utils/formatters';
 import {
   MapPin,
@@ -11,16 +11,33 @@ import {
   Search,
   List,
   Grid,
+  X,
+  CalendarPlus,
 } from 'lucide-react';
 
 interface VisitsViewProps {
   visits: Visit[];
+  clients?: Client[];
   onStartVisit: (clientId: string) => void;
+  onScheduleVisit?: (data: { clientId: string; scheduledDate: string; timeSlot?: string; reason?: string }) => void;
 }
 
-export const VisitsView: React.FC<VisitsViewProps> = ({ visits, onStartVisit }) => {
+export const VisitsView: React.FC<VisitsViewProps> = ({
+  visits,
+  clients = [],
+  onStartVisit,
+  onScheduleVisit,
+}) => {
   const [filter, setFilter] = useState<'Todas' | 'Hoje' | 'Atrasadas' | 'Próximas' | 'Concluídas'>('Todas');
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [isSelectClientModalOpen, setIsSelectClientModalOpen] = useState(false);
+
+  // Form State
+  const [scheduleClientId, setScheduleClientId] = useState(clients[0]?.id || '');
+  const [scheduleDate, setScheduleDate] = useState(new Date().toISOString().split('T')[0]);
+  const [scheduleTime, setScheduleTime] = useState('14:00');
+  const [scheduleReason, setScheduleReason] = useState('Conferência e reposição de estoque 3D');
 
   const filteredVisits = visits.filter((v) => {
     if (filter === 'Hoje') return v.status === 'Hoje';
@@ -29,6 +46,29 @@ export const VisitsView: React.FC<VisitsViewProps> = ({ visits, onStartVisit }) 
     if (filter === 'Concluídas') return v.status === 'Concluída';
     return true;
   });
+
+  const handleOpenScheduleModal = () => {
+    if (clients.length > 0 && !scheduleClientId) {
+      setScheduleClientId(clients[0].id);
+    }
+    setIsScheduleModalOpen(true);
+  };
+
+  const handleConfirmSchedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!scheduleClientId) return;
+
+    if (onScheduleVisit) {
+      onScheduleVisit({
+        clientId: scheduleClientId,
+        scheduledDate: scheduleDate,
+        timeSlot: scheduleTime,
+        reason: scheduleReason,
+      });
+    }
+
+    setIsScheduleModalOpen(false);
+  };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -44,19 +84,22 @@ export const VisitsView: React.FC<VisitsViewProps> = ({ visits, onStartVisit }) 
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            if (visits.length > 0 && visits[0].clientId) {
-              onStartVisit(visits[0].clientId);
-            } else {
-              alert('Nenhuma visita agendada no momento. Cadastre ou selecione um cliente.');
-            }
-          }}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0 cursor-pointer"
-        >
-          <MapPin className="w-4 h-4" />
-          Iniciar Visita Presencial
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button
+            onClick={handleOpenScheduleModal}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
+          >
+            <CalendarPlus className="w-4 h-4" />
+            Agendar Nova Visita
+          </button>
+          <button
+            onClick={() => setIsSelectClientModalOpen(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
+          >
+            <MapPin className="w-4 h-4" />
+            Iniciar Visita Presencial
+          </button>
+        </div>
       </div>
 
       {/* Filter Tabs & Toggle */}
@@ -158,14 +201,142 @@ export const VisitsView: React.FC<VisitsViewProps> = ({ visits, onStartVisit }) 
         </div>
       )}
 
-      {/* Calendar View Placeholder */}
-      {viewMode === 'calendar' && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-8 text-center text-slate-500 space-y-3">
-          <Calendar className="w-10 h-10 text-indigo-500 mx-auto" />
-          <h3 className="font-bold text-slate-800 text-base">Visão de Calendário Mensal</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Todas as visitas estão organizadas na grade mensal com lembretes quinzenais de atendimento.
-          </p>
+      {/* Modal 1: Agendar Nova Visita */}
+      {isScheduleModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-lg rounded-2xl border border-slate-200 dark:border-[#202531] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <CalendarPlus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                Agendar Nova Visita ao Cliente
+              </h3>
+              <button
+                onClick={() => setIsScheduleModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmSchedule} className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Cliente / Ponto de Venda *
+                </label>
+                <select
+                  value={scheduleClientId}
+                  onChange={(e) => setScheduleClientId(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                  required
+                >
+                  {clients.map((cli) => (
+                    <option key={cli.id} value={cli.id}>
+                      {cli.name} ({cli.city} - {cli.state})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Data da Visita *
+                  </label>
+                  <input
+                    type="date"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Horário Estimado
+                  </label>
+                  <input
+                    type="time"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  Motivo / Observação Comercial
+                </label>
+                <input
+                  type="text"
+                  value={scheduleReason}
+                  onChange={(e) => setScheduleReason(e.target.value)}
+                  placeholder="Ex: Reposição de expositor, novos modelos 3D..."
+                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 dark:border-[#202531] flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsScheduleModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <CalendarPlus className="w-4 h-4" />
+                  Salvar Agendamento
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 2: Selecionar Cliente para Iniciar Visita */}
+      {isSelectClientModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-md rounded-2xl border border-slate-200 dark:border-[#202531] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                Iniciar Visita — Escolha o Cliente
+              </h3>
+              <button
+                onClick={() => setIsSelectClientModalOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
+              {clients.map((cli) => (
+                <button
+                  key={cli.id}
+                  onClick={() => {
+                    setIsSelectClientModalOpen(false);
+                    onStartVisit(cli.id);
+                  }}
+                  className="w-full p-3.5 bg-slate-50 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-left flex items-center justify-between cursor-pointer transition-colors group"
+                >
+                  <div>
+                    <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                      {cli.name}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {cli.city} - {cli.state} • {cli.productsOnSiteCount} peças no local
+                    </p>
+                  </div>
+                  <MapPin className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform shrink-0" />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

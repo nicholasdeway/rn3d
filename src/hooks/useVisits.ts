@@ -20,6 +20,68 @@ export function useVisits(
     safeSetLocalStorage('rn3d_visits', JSON.stringify(visits));
   }, [visits]);
 
+  // Auto-gerar visitas pendentes caso a lista esteja vazia ou faltem visitas para os clientes
+  useEffect(() => {
+    if (clients.length > 0 && visits.filter((v) => v.status !== 'Concluída').length === 0) {
+      const generated: Visit[] = clients.map((cli, idx) => {
+        const today = new Date();
+        const scheduledDate = new Date(today.getTime() + (idx + 1) * 3 * 86400000);
+        const day = String(scheduledDate.getDate()).padStart(2, '0');
+        const month = String(scheduledDate.getMonth() + 1).padStart(2, '0');
+        const year = scheduledDate.getFullYear();
+        const dateFormatted = `${day}/${month}/${year}`;
+
+        return {
+          id: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
+          clientId: cli.id,
+          clientName: cli.name,
+          scheduledDate: cli.nextVisitDate && cli.nextVisitDate !== 'A agendar' ? cli.nextVisitDate : dateFormatted,
+          timeSlot: '14:00',
+          reason: 'Conferência quinzenal de estoque e reposição de lançamentos 3D',
+          productsOnSite: cli.productsOnSiteCount || 0,
+          lastVisitText: cli.lastVisitDate || 'N/A',
+          status: idx === 0 ? 'Hoje' : 'Em breve',
+        };
+      });
+
+      setVisits((prev) => [...prev, ...generated]);
+    }
+  }, [clients]);
+
+  const handleScheduleVisit = (newVisitData: {
+    clientId: string;
+    scheduledDate: string;
+    timeSlot?: string;
+    reason?: string;
+  }) => {
+    const client = clients.find((c) => c.id === newVisitData.clientId);
+    if (!client) return;
+
+    const formattedDate = newVisitData.scheduledDate.includes('/')
+      ? newVisitData.scheduledDate
+      : newVisitData.scheduledDate.split('-').reverse().join('/');
+
+    const newVisit: Visit = {
+      id: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
+      clientId: client.id,
+      clientName: client.name,
+      scheduledDate: formattedDate,
+      timeSlot: newVisitData.timeSlot || '14:00',
+      reason: newVisitData.reason || 'Conferência e reposição presencial',
+      productsOnSite: client.productsOnSiteCount || 0,
+      lastVisitText: client.lastVisitDate || 'N/A',
+      status: 'Em breve',
+    };
+
+    setVisits((prev) => [newVisit, ...prev]);
+
+    setClients((prev) =>
+      prev.map((c) => (c.id === client.id ? { ...c, nextVisitDate: formattedDate, visitStatus: 'Em breve' } : c))
+    );
+
+    showToast(`🗓️ Visita agendada para ${client.name} em ${formattedDate}!`, 'success');
+  };
+
   const handleCompleteVisit = (visitData: any) => {
     const client = visitData.client || clients.find((c) => c.id === visitData.clientId);
     if (!client) return;
@@ -32,6 +94,13 @@ export function useVisits(
 
     const dateStr = new Date().toLocaleDateString('pt-BR');
     const timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    // Calcular proxima visita em +15 dias
+    const nextVisit = new Date(Date.now() + 15 * 86400000);
+    const nextVisitDay = String(nextVisit.getDate()).padStart(2, '0');
+    const nextVisitMonth = String(nextVisit.getMonth() + 1).padStart(2, '0');
+    const nextVisitYear = nextVisit.getFullYear();
+    const nextVisitStr = `${nextVisitDay}/${nextVisitMonth}/${nextVisitYear}`;
 
     if (visitData.auditCalculations && Array.isArray(visitData.auditCalculations)) {
       setClientInventories((prev) => {
@@ -83,6 +152,8 @@ export function useVisits(
             ...c,
             productsOnSiteCount: finalStock,
             lastVisitDate: dateStr,
+            nextVisitDate: nextVisitStr,
+            visitStatus: 'Em breve',
           };
         }
         return c;
@@ -180,19 +251,52 @@ export function useVisits(
       ]);
     }
 
-    setVisits((prev) =>
-      prev.map((v) => {
+    setVisits((prev) => {
+      let foundExisting = false;
+      const updated = prev.map((v) => {
         if (v.clientId === clientId && v.status !== 'Concluída') {
+          foundExisting = true;
           return {
             ...v,
-            status: 'Concluída',
+            status: 'Concluída' as const,
             productsOnSite: finalStock,
             lastVisitText: `${dateStr} às ${timeStr}`,
+            completedAt: `${dateStr} ${timeStr}`,
           };
         }
         return v;
-      })
-    );
+      });
+
+      if (!foundExisting) {
+        updated.unshift({
+          id: visitId,
+          clientId: clientId,
+          clientName: client.name,
+          scheduledDate: dateStr,
+          timeSlot: timeStr,
+          reason: 'Visita presencial e conferência de expositor',
+          productsOnSite: finalStock,
+          lastVisitText: `${dateStr} às ${timeStr}`,
+          status: 'Concluída',
+          completedAt: `${dateStr} ${timeStr}`,
+        });
+      }
+
+      // Criar o proximo lembrete na agenda para a data da proxima visita (+15 dias)
+      const nextPendingVisit: Visit = {
+        id: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
+        clientId: clientId,
+        clientName: client.name,
+        scheduledDate: nextVisitStr,
+        timeSlot: '14:00',
+        reason: 'Conferência periódica de expositor e nova reposição',
+        productsOnSite: finalStock,
+        lastVisitText: dateStr,
+        status: 'Em breve',
+      };
+
+      return [nextPendingVisit, ...updated];
+    });
 
     showToast(
       `📍 Visita ${visitId} concluída! Estoque do cliente, Vendas e Recebimento de R$ ${received.toFixed(
@@ -205,6 +309,7 @@ export function useVisits(
   return {
     visits,
     setVisits,
+    handleScheduleVisit,
     handleCompleteVisit,
   };
 }
