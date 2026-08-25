@@ -136,6 +136,88 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
 
+  // LOCAL STORAGE DRAFT AUTO-PERSISTENCE
+  const DRAFT_STORAGE_KEY = 'rn3d_quote_form_draft';
+  const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
+
+  // Restore draft on mount
+  React.useEffect(() => {
+    try {
+      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (savedDraft) {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.selectedClientId) setSelectedClientId(parsed.selectedClientId);
+          if (typeof parsed.validityDays === 'number') setValidityDays(parsed.validityDays);
+          if (typeof parsed.productionSlaDays === 'number') setProductionSlaDays(parsed.productionSlaDays);
+          if (typeof parsed.discount === 'number') setDiscount(parsed.discount);
+          if (typeof parsed.discountPercent === 'number') setDiscountPercent(parsed.discountPercent);
+          if (parsed.paymentTerms) setPaymentTerms(parsed.paymentTerms);
+          if (parsed.notes) setNotes(parsed.notes);
+          if (parsed.attendanceMode) setAttendanceMode(parsed.attendanceMode);
+          if (Array.isArray(parsed.quoteItems) && parsed.quoteItems.length > 0) {
+            setQuoteItems(parsed.quoteItems);
+            setHasRestoredDraft(true);
+          }
+          if (parsed.internalLogisticsType) setInternalLogisticsType(parsed.internalLogisticsType);
+          if (typeof parsed.internalLogisticsCost === 'number') setInternalLogisticsCost(parsed.internalLogisticsCost);
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao restaurar rascunho de orçamento:', err);
+    }
+  }, []);
+
+  // Auto-save draft on form changes
+  React.useEffect(() => {
+    if (quoteItems.length > 0 || paymentTerms || notes || selectedClientId !== fallbackDefaultClient.id) {
+      try {
+        const draftData = {
+          selectedClientId,
+          validityDays,
+          productionSlaDays,
+          discount,
+          discountPercent,
+          paymentTerms,
+          notes,
+          attendanceMode,
+          quoteItems,
+          internalLogisticsType,
+          internalLogisticsCost,
+          updatedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+      } catch (err) {
+        console.error('Erro ao salvar rascunho de orçamento:', err);
+      }
+    }
+  }, [
+    selectedClientId,
+    validityDays,
+    productionSlaDays,
+    discount,
+    discountPercent,
+    paymentTerms,
+    notes,
+    attendanceMode,
+    quoteItems,
+    internalLogisticsType,
+    internalLogisticsCost,
+  ]);
+
+  const handleClearDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch (e) {}
+    setQuoteItems([]);
+    setDiscount(0);
+    setDiscountPercent(0);
+    setPaymentTerms('');
+    setNotes('');
+    setHasRestoredDraft(false);
+    setSelectedClientId(fallbackDefaultClient.id);
+  };
+
   const handleAddItem = () => {
     setQuoteItems([
       ...quoteItems,
@@ -336,6 +418,10 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
     }
 
     onAddQuote(newQuote);
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch (e) {}
+    setHasRestoredDraft(false);
     setIsFormOpen(false);
     setQuoteItems([]);
     setDiscount(0);
@@ -765,6 +851,23 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
   ) : (
     /* Cadastrar Orçamento — Inline Page View (Sem modal) */
     <div className="w-full space-y-6 animate-in fade-in duration-200">
+          {/* DRAFT RESTORED NOTIFICATION BANNER */}
+          {hasRestoredDraft && quoteItems.length > 0 && (
+            <div className="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300 font-bold shadow-xs animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Rascunho de orçamento recuperado do salvamento automático em tempo real ({quoteItems.length} {quoteItems.length === 1 ? 'item' : 'itens'} restaurados)</span>
+              </div>
+              <button
+                type="button"
+                onClick={handleClearDraft}
+                className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950 text-rose-600 dark:text-rose-400 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Limpar Rascunho
+              </button>
+            </div>
+          )}
+
           {/* Top Page Header Card */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
             <div>
