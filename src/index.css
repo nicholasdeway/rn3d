@@ -245,8 +245,23 @@ html.dark table tbody tr {
   border-color: #202531 !important;
 }
 
-/* PDF Preview Sheet Overrides (Sempre folha A4 limpa com texto legivel) */
+/* PDF Preview Sheet Overrides (Sempre folha A4 limpa com texto legível em qualquer tema) */
 .print-sheet {
+  color-scheme: light !important;
+}
+
+html.dark .print-sheet,
+html.dark .print-sheet div,
+html.dark .print-sheet table,
+html.dark .print-sheet tr,
+html.dark .print-sheet th,
+html.dark .print-sheet td,
+html.dark .print-sheet span,
+html.dark .print-sheet p,
+html.dark .print-sheet h2,
+html.dark .print-sheet h3,
+html.dark .print-sheet h4,
+html.dark .print-sheet strong {
   color-scheme: light !important;
 }
 
@@ -256,14 +271,75 @@ html.dark .print-sheet {
   border-color: #e2e8f0 !important;
 }
 
-html.dark .print-sheet .bg-slate-50 {
+html.dark .print-sheet .bg-white {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.dark .print-sheet .bg-slate-50,
+html.dark .print-sheet .bg-slate-50\/80,
+html.dark .print-sheet .bg-slate-50\/90,
+html.dark .print-sheet .bg-slate-50\/50,
+html.dark .print-sheet .bg-slate-50\/60,
+html.dark .print-sheet .bg-slate-100 {
   background-color: #f8fafc !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
 }
 
+html.dark .print-sheet .bg-amber-50,
+html.dark .print-sheet .bg-amber-50\/70,
+html.dark .print-sheet .bg-amber-50\/80,
+html.dark .print-sheet .bg-amber-100,
+html.dark .print-sheet .bg-amber-200,
+html.dark .print-sheet .bg-amber-200\/80 {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+  color: #78350f !important;
+}
+
+html.dark .print-sheet .text-amber-900,
+html.dark .print-sheet .text-amber-800,
+html.dark .print-sheet .text-amber-700 {
+  color: #78350f !important;
+}
+
+html.dark .print-sheet .border-amber-200,
+html.dark .print-sheet .border-amber-100,
+html.dark .print-sheet .border-amber-300,
+html.dark .print-sheet .border-amber-200\/60 {
+  border-color: #fde68a !important;
+}
+
+html.dark .print-sheet .bg-indigo-50,
+html.dark .print-sheet .bg-indigo-100 {
+  background-color: #e0e7ff !important;
+  border-color: #c7d2fe !important;
+  color: #3730a3 !important;
+}
+
+html.dark .print-sheet .text-indigo-700,
+html.dark .print-sheet .text-indigo-600 {
+  color: #4338ca !important;
+}
+
+html.dark .print-sheet .bg-emerald-50,
+html.dark .print-sheet .bg-emerald-50\/60,
+html.dark .print-sheet .bg-emerald-100 {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+  color: #065f46 !important;
+}
+
+html.dark .print-sheet .text-emerald-700,
+html.dark .print-sheet .text-emerald-600 {
+  color: #047857 !important;
+}
+
 html.dark .print-sheet .bg-rose-50,
-html.dark .print-sheet .bg-rose-50\/40 {
+html.dark .print-sheet .bg-rose-50\/40,
+html.dark .print-sheet .bg-rose-100 {
   background-color: #fff1f2 !important;
   border-color: #fecdd3 !important;
   color: #9f1239 !important;
@@ -283,9 +359,20 @@ html.dark .print-sheet .text-slate-700 {
 }
 
 html.dark .print-sheet .text-slate-600,
-html.dark .print-sheet .text-slate-500,
-html.dark .print-sheet .text-slate-400 {
+html.dark .print-sheet .text-slate-500 {
   color: #475569 !important;
+}
+
+html.dark .print-sheet .text-slate-400 {
+  color: #64748b !important;
+}
+
+html.dark .print-sheet .border-slate-200,
+html.dark .print-sheet .border-slate-100,
+html.dark .print-sheet .border-slate-300,
+html.dark .print-sheet .divide-slate-100 > * + *,
+html.dark .print-sheet .divide-slate-200 > * + * {
+  border-color: #e2e8f0 !important;
 }
 
 @media print {
