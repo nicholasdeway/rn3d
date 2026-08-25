@@ -510,11 +510,13 @@ export function App() {
               {currentView === 'expenses' && (
                 <ExpensesView
                   expenses={appData.expenses}
+                  accountBalances={appData.accountBalances}
                   accountBalance={appData.accountBalance}
                   onCreateExpense={appData.handleCreateExpense}
+                  onExecuteTransfer={appData.handleExecuteTransfer}
                   onUpdateExpense={appData.handleUpdateExpense}
                   onDeleteExpense={appData.handleDeleteExpense}
-                  onUpdateAccountBalance={appData.handleUpdateAccountBalance}
+                  onUpdateSingleBalance={appData.handleUpdateSingleBalance}
                 />
               )}
 

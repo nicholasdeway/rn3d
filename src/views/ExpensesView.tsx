@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ExpenseItem, ExpenseCategory } from '../types';
+import { ExpenseItem, ExpenseCategory, AccountBalances, MarketplaceAccount } from '../types';
 import {
   TrendingDown,
   Plus,
@@ -24,16 +24,33 @@ import {
   Sparkles,
   Check,
   Building,
+  ArrowRight,
+  RefreshCw,
+  ShoppingBag,
+  Store,
+  UserCheck,
 } from 'lucide-react';
 import { formatDateBR } from '../utils/formatters';
 
 interface ExpensesViewProps {
   expenses: ExpenseItem[];
-  accountBalance: number;
+  accountBalances?: AccountBalances;
+  accountBalance?: number;
   onCreateExpense: (expense: ExpenseItem) => void;
+  onExecuteTransfer?: (
+    source: MarketplaceAccount,
+    destination: MarketplaceAccount,
+    amount: number,
+    responsible: string,
+    notes?: string,
+    receiptUrl?: string,
+    receiptType?: 'image' | 'pdf',
+    receiptName?: string
+  ) => void;
   onUpdateExpense: (expense: ExpenseItem) => void;
   onDeleteExpense: (expenseId: string) => void;
-  onUpdateAccountBalance: (newBalance: number) => void;
+  onUpdateSingleBalance?: (accountKey: keyof AccountBalances, newBalance: number) => void;
+  onUpdateAccountBalance?: (newBalance: number) => void;
 }
 
 const CATEGORIES: ExpenseCategory[] = [
@@ -44,16 +61,22 @@ const CATEGORIES: ExpenseCategory[] = [
   'Caixas & Embalagens',
   'Álcool & Insumos',
   'Impostos (DAS)',
-  'Retirada de Sócio / Pro-labore',
+  'Retirada',
+  'Transferência de Marketplace',
+  'Entrada de Pedido',
   'Outros',
 ];
 
+const PARTNERS = ['Nicholas', 'Rafael'];
+
 export const ExpensesView: React.FC<ExpensesViewProps> = ({
   expenses = [],
-  accountBalance = 3500.0,
+  accountBalances = { nubank: 3500.0, shopee: 100.0, mercadoLivre: 0.0, tikTokShop: 0.0, amazon: 0.0 },
   onCreateExpense,
+  onExecuteTransfer,
   onUpdateExpense,
   onDeleteExpense,
+  onUpdateSingleBalance,
   onUpdateAccountBalance,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,12 +85,32 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
   // Modals state
   const [isNewExpenseModalOpen, setIsNewExpenseModalOpen] = useState(false);
-  const [isPartnerWithdrawalModalOpen, setIsPartnerWithdrawalModalOpen] = useState(false);
+  const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<{ url: string; type?: 'image' | 'pdf'; name?: string; title: string } | null>(null);
 
-  // Edit Account Balance state
-  const [isEditingBalance, setIsEditingBalance] = useState(false);
-  const [balanceInput, setBalanceInput] = useState(accountBalance.toString());
+  // Transfer Modal State
+  const [transferData, setTransferData] = useState<{
+    source: MarketplaceAccount;
+    amount: string;
+    responsible: string;
+    notes: string;
+    receiptUrl: string;
+    receiptType: 'image' | 'pdf';
+    receiptName: string;
+  }>({
+    source: 'Shopee',
+    amount: '100.00',
+    responsible: 'Nicholas',
+    notes: '',
+    receiptUrl: '',
+    receiptType: 'image',
+    receiptName: '',
+  });
+
+  // Edit Single Account Balance State
+  const [editingAccountKey, setEditingAccountKey] = useState<keyof AccountBalances | null>(null);
+  const [balanceInputValue, setBalanceInputValue] = useState('');
 
   // Form state for General Expense
   const [formData, setFormData] = useState<{
@@ -75,8 +118,10 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     category: ExpenseCategory;
     amount: string;
     date: string;
+    timestamp: string;
     paymentStatus: 'Pago' | 'Pendente' | 'Agendado';
     beneficiary: string;
+    createdBy: string;
     notes: string;
     receiptUrl: string;
     receiptType: 'image' | 'pdf';
@@ -86,27 +131,31 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     category: 'Compra de Filamento',
     amount: '',
     date: new Date().toISOString().split('T')[0],
+    timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     paymentStatus: 'Pago',
     beneficiary: '',
+    createdBy: 'Nicholas',
     notes: '',
     receiptUrl: '',
     receiptType: 'image',
     receiptName: '',
   });
 
-  // Form state for Partner Withdrawal
+  // Form state for Retirada
   const [withdrawalData, setWithdrawalData] = useState<{
-    partnerName: string;
+    responsible: string;
     amount: string;
     date: string;
+    timestamp: string;
     notes: string;
     receiptUrl: string;
     receiptType: 'image' | 'pdf';
     receiptName: string;
   }>({
-    partnerName: '',
+    responsible: 'Nicholas',
     amount: '',
     date: new Date().toISOString().split('T')[0],
+    timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     notes: '',
     receiptUrl: '',
     receiptType: 'image',
@@ -119,6 +168,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       const matchesSearch =
         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.beneficiary && item.beneficiary.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.createdBy && item.createdBy.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (item.referenceCode && item.referenceCode.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchesCategory = categoryFilter === 'Todas' || item.category === categoryFilter;
@@ -130,39 +180,38 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
   // Financial KPI totals
   const totalExpensesAmount = useMemo(() => {
-    return expenses.reduce((acc, e) => acc + (e.paymentStatus === 'Pago' ? e.amount : 0), 0);
-  }, [expenses]);
-
-  const partnerWithdrawalsAmount = useMemo(() => {
     return expenses
-      .filter((e) => e.category === 'Retirada de Sócio / Pro-labore' && e.paymentStatus === 'Pago')
+      .filter((e) => e.paymentStatus === 'Pago' && e.category !== 'Retirada' && e.category !== 'Transferência de Marketplace' && e.category !== 'Entrada de Pedido')
       .reduce((acc, e) => acc + e.amount, 0);
   }, [expenses]);
 
-  const autoLogisticsAmount = useMemo(() => {
+  const totalWithdrawalsAmount = useMemo(() => {
     return expenses
-      .filter((e) => e.category === 'Combustível & Transporte' && e.paymentStatus === 'Pago')
+      .filter((e) => e.category === 'Retirada' && e.paymentStatus === 'Pago')
       .reduce((acc, e) => acc + e.amount, 0);
   }, [expenses]);
 
-  const pendingExpensesAmount = useMemo(() => {
+  const totalOrderPaymentsAmount = useMemo(() => {
     return expenses
-      .filter((e) => e.paymentStatus === 'Pendente' || e.paymentStatus === 'Agendado')
+      .filter((e) => e.category === 'Entrada de Pedido')
       .reduce((acc, e) => acc + e.amount, 0);
   }, [expenses]);
 
   // Handle balance edit submission
-  const handleSaveBalance = (e: React.FormEvent) => {
-    e.preventDefault();
-    const val = parseFloat(balanceInput.replace(',', '.'));
+  const handleSaveBalance = (accountKey: keyof AccountBalances) => {
+    const val = parseFloat(balanceInputValue.replace(',', '.'));
     if (!isNaN(val)) {
-      onUpdateAccountBalance(val);
+      if (onUpdateSingleBalance) {
+        onUpdateSingleBalance(accountKey, val);
+      } else if (accountKey === 'nubank' && onUpdateAccountBalance) {
+        onUpdateAccountBalance(val);
+      }
     }
-    setIsEditingBalance(false);
+    setEditingAccountKey(null);
   };
 
   // Handle file uploads (Base64 conversion)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, isWithdrawal = false) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, targetForm: 'expense' | 'withdrawal' | 'transfer') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -171,8 +220,15 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
     reader.onloadend = () => {
       const base64Url = reader.result as string;
-      if (isWithdrawal) {
+      if (targetForm === 'withdrawal') {
         setWithdrawalData((prev) => ({
+          ...prev,
+          receiptUrl: base64Url,
+          receiptType: isPdf ? 'pdf' : 'image',
+          receiptName: file.name,
+        }));
+      } else if (targetForm === 'transfer') {
+        setTransferData((prev) => ({
           ...prev,
           receiptUrl: base64Url,
           receiptType: isPdf ? 'pdf' : 'image',
@@ -191,11 +247,57 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     reader.readAsDataURL(file);
   };
 
+  // Open Transfer modal pre-selecting a source marketplace
+  const handleOpenTransferModal = (sourceAccount: MarketplaceAccount) => {
+    const currentBalance =
+      sourceAccount === 'Shopee'
+        ? accountBalances.shopee
+        : sourceAccount === 'Mercado Livre'
+        ? accountBalances.mercadoLivre
+        : sourceAccount === 'TikTok Shop'
+        ? accountBalances.tikTokShop
+        : accountBalances.amazon;
+
+    setTransferData({
+      source: sourceAccount,
+      amount: currentBalance.toFixed(2),
+      responsible: 'Nicholas',
+      notes: '',
+      receiptUrl: '',
+      receiptType: 'image',
+      receiptName: '',
+    });
+    setIsTransferModalOpen(true);
+  };
+
+  // Submit Transfer / Resgate
+  const handleSubmitTransfer = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amountVal = parseFloat(transferData.amount.replace(',', '.'));
+    if (isNaN(amountVal) || amountVal <= 0) return;
+
+    if (onExecuteTransfer) {
+      onExecuteTransfer(
+        transferData.source,
+        'Nubank',
+        amountVal,
+        transferData.responsible,
+        transferData.notes,
+        transferData.receiptUrl,
+        transferData.receiptType,
+        transferData.receiptName
+      );
+    }
+    setIsTransferModalOpen(false);
+  };
+
   // Submit General Expense
   const handleSubmitExpense = (e: React.FormEvent) => {
     e.preventDefault();
     const amountVal = parseFloat(formData.amount.replace(',', '.'));
     if (isNaN(amountVal) || amountVal <= 0 || !formData.description.trim()) return;
+
+    const timeString = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     const newExpense: ExpenseItem = {
       id: `exp-${Date.now()}`,
@@ -203,8 +305,10 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       category: formData.category,
       amount: amountVal,
       date: formData.date,
+      timestamp: timeString,
       paymentStatus: formData.paymentStatus,
       beneficiary: formData.beneficiary.trim() || 'Fornecedor',
+      createdBy: formData.createdBy,
       receiptUrl: formData.receiptUrl,
       receiptType: formData.receiptType,
       receiptName: formData.receiptName,
@@ -218,8 +322,10 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       category: 'Compra de Filamento',
       amount: '',
       date: new Date().toISOString().split('T')[0],
+      timestamp: timeString,
       paymentStatus: 'Pago',
       beneficiary: '',
+      createdBy: 'Nicholas',
       notes: '',
       receiptUrl: '',
       receiptType: 'image',
@@ -227,20 +333,24 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     });
   };
 
-  // Submit Partner Withdrawal
+  // Submit Retirada
   const handleSubmitWithdrawal = (e: React.FormEvent) => {
     e.preventDefault();
     const amountVal = parseFloat(withdrawalData.amount.replace(',', '.'));
-    if (isNaN(amountVal) || amountVal <= 0 || !withdrawalData.partnerName.trim()) return;
+    if (isNaN(amountVal) || amountVal <= 0 || !withdrawalData.responsible.trim()) return;
+
+    const timeString = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     const newExpense: ExpenseItem = {
       id: `ret-${Date.now()}`,
-      description: `Retirada de Sócio / Pro-labore (${withdrawalData.partnerName.trim()})`,
-      category: 'Retirada de Sócio / Pro-labore',
+      description: `Retirada (${withdrawalData.responsible.trim()})`,
+      category: 'Retirada',
       amount: amountVal,
       date: withdrawalData.date,
+      timestamp: timeString,
       paymentStatus: 'Pago',
-      beneficiary: withdrawalData.partnerName.trim(),
+      beneficiary: withdrawalData.responsible.trim(),
+      createdBy: withdrawalData.responsible.trim(),
       receiptUrl: withdrawalData.receiptUrl,
       receiptType: withdrawalData.receiptType,
       receiptName: withdrawalData.receiptName,
@@ -248,11 +358,12 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     };
 
     onCreateExpense(newExpense);
-    setIsPartnerWithdrawalModalOpen(false);
+    setIsWithdrawalModalOpen(false);
     setWithdrawalData({
-      partnerName: '',
+      responsible: 'Nicholas',
       amount: '',
       date: new Date().toISOString().split('T')[0],
+      timestamp: timeString,
       notes: '',
       receiptUrl: '',
       receiptType: 'image',
@@ -267,20 +378,20 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
         <div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             <TrendingDown className="w-6 h-6 text-rose-500" />
-            Controle de Saídas, Despesas e Retiradas
+            Controle de Saídas, Retiradas e Saldos de Marketplaces
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Gerenciamento de custos operacionais, insumos, fretes e retiradas de sócios com comprovantes.
+            Gestão financeira de custos, retiradas de sócios, resgates de marketplaces e auditoria com horário exato.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={() => setIsPartnerWithdrawalModalOpen(true)}
+            onClick={() => setIsWithdrawalModalOpen(true)}
             className="px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
           >
             <Users className="w-4 h-4" />
-            <span>Nova Retirada de Sócio</span>
+            <span>Retirada</span>
           </button>
 
           <button
@@ -293,127 +404,261 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
         </div>
       </div>
 
-      {/* EDITABLE ACCOUNT BALANCE CARD (Lápis Icon) */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 rounded-2xl border border-indigo-900/40 text-white shadow-lg space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-emerald-400" />
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-                Saldo Atual em Conta da Oficina RN 3D
+      {/* MULTI-ACCOUNT & MARKETPLACE BALANCES GRID (5 BALANCES WITH EDIT PENCILS ✏️) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        {/* CARD 1: CONTA NUBANK / OFICINA */}
+        <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 p-4.5 rounded-2xl border border-indigo-900/50 text-white shadow-md flex flex-col justify-between space-y-3">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1">
+                <Wallet className="w-3.5 h-3.5 text-emerald-400" /> Nubank / Oficina
               </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setBalanceInputValue(accountBalances.nubank.toString());
+                  setEditingAccountKey('nubank');
+                }}
+                className="p-1 text-slate-400 hover:text-emerald-400 cursor-pointer transition-colors"
+                title="Editar Saldo Nubank"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
             </div>
 
-            {!isEditingBalance ? (
-              <div className="flex items-center gap-3 pt-1">
-                <span className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight">
-                  R$ {accountBalance.toFixed(2).replace('.', ',')}
-                </span>
+            {editingAccountKey === 'nubank' ? (
+              <div className="flex items-center gap-1 mt-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={balanceInputValue}
+                  onChange={(e) => setBalanceInputValue(e.target.value)}
+                  className="w-full px-2 py-1 bg-slate-800 border border-emerald-500 rounded-lg text-xs font-bold text-white"
+                />
                 <button
-                  type="button"
-                  onClick={() => {
-                    setBalanceInput(accountBalance.toString());
-                    setIsEditingBalance(true);
-                  }}
-                  className="p-2 bg-white/10 hover:bg-white/20 text-emerald-300 rounded-xl transition-colors cursor-pointer border border-white/10"
-                  title="Editar Saldo em Conta da Oficina"
+                  onClick={() => handleSaveBalance('nubank')}
+                  className="p-1 bg-emerald-500 text-white rounded-lg cursor-pointer"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Check className="w-3.5 h-3.5" />
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSaveBalance} className="flex items-center gap-2 pt-2">
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">R$</span>
-                  <input
-                    type="text"
-                    autoFocus
-                    value={balanceInput}
-                    onChange={(e) => setBalanceInput(e.target.value)}
-                    placeholder="0,00"
-                    className="pl-8 pr-3 py-2 bg-slate-800 border border-emerald-500 rounded-xl text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
+              <p className="text-xl font-black text-emerald-400 tracking-tight mt-1.5">
+                R$ {accountBalances.nubank.toFixed(2).replace('.', ',')}
+              </p>
+            )}
+          </div>
+          <span className="text-[10px] text-emerald-400/90 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md inline-block">
+            Conta Principal
+          </span>
+        </div>
+
+        {/* CARD 2: SALDO SHOPEE */}
+        <div className="bg-white dark:bg-[#12151c] p-4.5 rounded-2xl border border-amber-200 dark:border-amber-900/50 shadow-xs flex flex-col justify-between space-y-3">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <ShoppingBag className="w-3.5 h-3.5" /> Saldo Shopee
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setBalanceInputValue(accountBalances.shopee.toString());
+                  setEditingAccountKey('shopee');
+                }}
+                className="p-1 text-slate-400 hover:text-amber-500 cursor-pointer transition-colors"
+                title="Editar Saldo Shopee"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {editingAccountKey === 'shopee' ? (
+              <div className="flex items-center gap-1 mt-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={balanceInputValue}
+                  onChange={(e) => setBalanceInputValue(e.target.value)}
+                  className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-amber-500 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100"
+                />
                 <button
-                  type="submit"
-                  className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl cursor-pointer shadow-xs transition-colors"
+                  onClick={() => handleSaveBalance('shopee')}
+                  className="p-1 bg-amber-500 text-white rounded-lg cursor-pointer"
                 >
-                  Salvar
+                  <Check className="w-3.5 h-3.5" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditingBalance(false)}
-                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-slate-300 font-bold text-xs rounded-xl cursor-pointer transition-colors"
-                >
-                  Cancelar
-                </button>
-              </form>
+              </div>
+            ) : (
+              <p className="text-xl font-black text-amber-600 dark:text-amber-400 tracking-tight mt-1.5">
+                R$ {accountBalances.shopee.toFixed(2).replace('.', ',')}
+              </p>
             )}
           </div>
 
-          <div className="flex items-center gap-3 bg-white/5 border border-white/10 px-4 py-3 rounded-xl backdrop-blur-xs">
-            <div className="text-left">
-              <span className="text-[10px] text-slate-400 font-bold uppercase block">Disponibilidade</span>
-              <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Caixa Operacional Ativo
+          <button
+            onClick={() => handleOpenTransferModal('Shopee')}
+            className="w-full py-1.5 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900 text-amber-800 dark:text-amber-200 font-bold text-[11px] rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1 border border-amber-200/60 dark:border-amber-900/50"
+          >
+            <RefreshCw className="w-3 h-3 text-amber-600" />
+            <span>Resgatar p/ Nubank</span>
+          </button>
+        </div>
+
+        {/* CARD 3: SALDO MERCADO LIVRE */}
+        <div className="bg-white dark:bg-[#12151c] p-4.5 rounded-2xl border border-yellow-200 dark:border-yellow-900/50 shadow-xs flex flex-col justify-between space-y-3">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-yellow-600 dark:text-yellow-400 flex items-center gap-1">
+                <Store className="w-3.5 h-3.5" /> Mercado Livre
               </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setBalanceInputValue(accountBalances.mercadoLivre.toString());
+                  setEditingAccountKey('mercadoLivre');
+                }}
+                className="p-1 text-slate-400 hover:text-yellow-500 cursor-pointer transition-colors"
+                title="Editar Saldo Mercado Livre"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
             </div>
-          </div>
-        </div>
-      </div>
 
-      {/* KPI Cards Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Total de Saídas</span>
-            <div className="p-2 rounded-xl bg-rose-500/10 text-rose-500">
-              <TrendingDown className="w-4 h-4" />
-            </div>
+            {editingAccountKey === 'mercadoLivre' ? (
+              <div className="flex items-center gap-1 mt-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={balanceInputValue}
+                  onChange={(e) => setBalanceInputValue(e.target.value)}
+                  className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-yellow-500 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100"
+                />
+                <button
+                  onClick={() => handleSaveBalance('mercadoLivre')}
+                  className="p-1 bg-yellow-500 text-white rounded-lg cursor-pointer"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <p className="text-xl font-black text-yellow-600 dark:text-yellow-400 tracking-tight mt-1.5">
+                R$ {accountBalances.mercadoLivre.toFixed(2).replace('.', ',')}
+              </p>
+            )}
           </div>
-          <p className="text-lg sm:text-2xl font-black text-rose-600 dark:text-rose-400 mt-2 tracking-tight">
-            R$ {totalExpensesAmount.toFixed(2).replace('.', ',')}
-          </p>
-          <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">Despesas pagas registradas</p>
+
+          <button
+            onClick={() => handleOpenTransferModal('Mercado Livre')}
+            className="w-full py-1.5 bg-yellow-50 dark:bg-yellow-950/60 hover:bg-yellow-100 dark:hover:bg-yellow-900 text-yellow-800 dark:text-yellow-200 font-bold text-[11px] rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1 border border-yellow-200/60 dark:border-yellow-900/50"
+          >
+            <RefreshCw className="w-3 h-3 text-yellow-600" />
+            <span>Resgatar p/ Nubank</span>
+          </button>
         </div>
 
-        <div className="bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Retiradas de Sócios</span>
-            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-500">
-              <Users className="w-4 h-4" />
+        {/* CARD 4: SALDO TIKTOK SHOP */}
+        <div className="bg-white dark:bg-[#12151c] p-4.5 rounded-2xl border border-cyan-200 dark:border-cyan-900/50 shadow-xs flex flex-col justify-between space-y-3">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5" /> TikTok Shop
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setBalanceInputValue(accountBalances.tikTokShop.toString());
+                  setEditingAccountKey('tikTokShop');
+                }}
+                className="p-1 text-slate-400 hover:text-cyan-500 cursor-pointer transition-colors"
+                title="Editar Saldo TikTok Shop"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
             </div>
+
+            {editingAccountKey === 'tikTokShop' ? (
+              <div className="flex items-center gap-1 mt-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={balanceInputValue}
+                  onChange={(e) => setBalanceInputValue(e.target.value)}
+                  className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-cyan-500 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100"
+                />
+                <button
+                  onClick={() => handleSaveBalance('tikTokShop')}
+                  className="p-1 bg-cyan-500 text-white rounded-lg cursor-pointer"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <p className="text-xl font-black text-cyan-600 dark:text-cyan-400 tracking-tight mt-1.5">
+                R$ {accountBalances.tikTokShop.toFixed(2).replace('.', ',')}
+              </p>
+            )}
           </div>
-          <p className="text-lg sm:text-2xl font-black text-amber-600 dark:text-amber-400 mt-2 tracking-tight">
-            R$ {partnerWithdrawalsAmount.toFixed(2).replace('.', ',')}
-          </p>
-          <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">Pro-labore & Sangrias</p>
+
+          <button
+            onClick={() => handleOpenTransferModal('TikTok Shop')}
+            className="w-full py-1.5 bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 dark:hover:bg-cyan-900 text-cyan-800 dark:text-cyan-200 font-bold text-[11px] rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1 border border-cyan-200/60 dark:border-cyan-900/50"
+          >
+            <RefreshCw className="w-3 h-3 text-cyan-600" />
+            <span>Resgatar p/ Nubank</span>
+          </button>
         </div>
 
-        <div className="bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Logística & Frete</span>
-            <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
-              <Truck className="w-4 h-4" />
+        {/* CARD 5: SALDO AMAZON */}
+        <div className="bg-white dark:bg-[#12151c] p-4.5 rounded-2xl border border-indigo-200 dark:border-indigo-900/50 shadow-xs flex flex-col justify-between space-y-3">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                <Building className="w-3.5 h-3.5" /> Amazon
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setBalanceInputValue(accountBalances.amazon.toString());
+                  setEditingAccountKey('amazon');
+                }}
+                className="p-1 text-slate-400 hover:text-indigo-500 cursor-pointer transition-colors"
+                title="Editar Saldo Amazon"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
             </div>
-          </div>
-          <p className="text-lg sm:text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-2 tracking-tight">
-            R$ {autoLogisticsAmount.toFixed(2).replace('.', ',')}
-          </p>
-          <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">Réplica de pedidos / visitas</p>
-        </div>
 
-        <div className="bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400">Pendente / Agendado</span>
-            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-400">
-              <Clock className="w-4 h-4" />
-            </div>
+            {editingAccountKey === 'amazon' ? (
+              <div className="flex items-center gap-1 mt-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={balanceInputValue}
+                  onChange={(e) => setBalanceInputValue(e.target.value)}
+                  className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-indigo-500 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100"
+                />
+                <button
+                  onClick={() => handleSaveBalance('amazon')}
+                  className="p-1 bg-indigo-500 text-white rounded-lg cursor-pointer"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <p className="text-xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight mt-1.5">
+                R$ {accountBalances.amazon.toFixed(2).replace('.', ',')}
+              </p>
+            )}
           </div>
-          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 tracking-tight">
-            R$ {pendingExpensesAmount.toFixed(2).replace('.', ',')}
-          </p>
-          <p className="text-[10px] sm:text-xs text-slate-500 font-medium mt-1">A pagar em breve</p>
+
+          <button
+            onClick={() => handleOpenTransferModal('Amazon')}
+            className="w-full py-1.5 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-800 dark:text-indigo-200 font-bold text-[11px] rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1 border border-indigo-200/60 dark:border-indigo-900/50"
+          >
+            <RefreshCw className="w-3 h-3 text-indigo-600" />
+            <span>Resgatar p/ Nubank</span>
+          </button>
         </div>
       </div>
 
@@ -426,7 +671,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por descrição, sócio, fornecedor ou código..."
+              placeholder="Buscar por descrição, sócio, responsável ou código de referência..."
               className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-rose-500 font-semibold"
             />
           </div>
@@ -459,16 +704,16 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
         </div>
       </div>
 
-      {/* Main Expenses Table */}
+      {/* Main Expenses & Audit Log Table */}
       <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
               <tr>
-                <th className="p-4">Data</th>
-                <th className="p-4">Descrição</th>
+                <th className="p-4">Data & Horário Exato</th>
+                <th className="p-4">Descrição do Lançamento</th>
                 <th className="p-4">Categoria</th>
-                <th className="p-4">Favorecido / Sócio</th>
+                <th className="p-4">Responsável</th>
                 <th className="p-4 text-right">Valor (R$)</th>
                 <th className="p-4">Status</th>
                 <th className="p-4 text-center">Comprovante</th>
@@ -480,9 +725,9 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 <tr>
                   <td colSpan={8} className="p-8 text-center text-slate-400 space-y-2">
                     <FileText className="w-10 h-10 text-slate-300 mx-auto" />
-                    <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">Nenhuma saída ou despesa encontrada</p>
+                    <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">Nenhuma movimentação encontrada</p>
                     <p className="text-[11px] text-slate-400">
-                      Cadastre novos gastos ou retiradas de sócios clicando nos botões no topo.
+                      Cadastre despesas, retiradas ou resgates de marketplaces nos botões no topo.
                     </p>
                   </td>
                 </tr>
@@ -490,12 +735,19 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 filteredExpenses.map((exp) => (
                   <tr key={exp.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="p-4 font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                      {formatDateBR(exp.date)}
+                      <div>
+                        <p className="font-bold text-slate-900 dark:text-slate-100">{formatDateBR(exp.date)}</p>
+                        <p className="text-[10px] text-slate-400 font-mono">{exp.timestamp || '18:00:00'}</p>
+                      </div>
                     </td>
                     <td className="p-4 font-bold text-slate-900 dark:text-slate-100">
                       <div className="flex items-center gap-2">
-                        {exp.category === 'Retirada de Sócio / Pro-labore' ? (
+                        {exp.category === 'Retirada' ? (
                           <Users className="w-4 h-4 text-amber-500 shrink-0" />
+                        ) : exp.category === 'Transferência de Marketplace' ? (
+                          <RefreshCw className="w-4 h-4 text-cyan-500 shrink-0" />
+                        ) : exp.category === 'Entrada de Pedido' ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                         ) : exp.isAutoReplicated ? (
                           <Truck className="w-4 h-4 text-indigo-500 shrink-0" />
                         ) : (
@@ -514,21 +766,35 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     <td className="p-4">
                       <span
                         className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                          exp.category === 'Retirada de Sócio / Pro-labore'
+                          exp.category === 'Retirada'
                             ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900'
-                            : exp.category === 'Combustível & Transporte'
-                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-900'
+                            : exp.category === 'Transferência de Marketplace'
+                            ? 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-900'
+                            : exp.category === 'Entrada de Pedido'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
                             : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                         }`}
                       >
                         {exp.category}
                       </span>
                     </td>
-                    <td className="p-4 font-semibold text-slate-700 dark:text-slate-300">
-                      {exp.beneficiary || '-'}
+                    <td className="p-4 font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-bold border border-indigo-100 dark:border-indigo-900/50">
+                        <UserCheck className="w-3.5 h-3.5" />
+                        {exp.createdBy || exp.beneficiary || 'Nicholas'}
+                      </span>
                     </td>
-                    <td className="p-4 text-right font-black text-rose-600 dark:text-rose-400 text-sm whitespace-nowrap">
-                      R$ {exp.amount.toFixed(2).replace('.', ',')}
+                    <td className="p-4 text-right font-black text-sm whitespace-nowrap">
+                      <span
+                        className={
+                          exp.category === 'Entrada de Pedido' || exp.category === 'Transferência de Marketplace'
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-rose-600 dark:text-rose-400'
+                        }
+                      >
+                        {exp.category === 'Entrada de Pedido' || exp.category === 'Transferência de Marketplace' ? '+' : '-'} R${' '}
+                        {exp.amount.toFixed(2).replace('.', ',')}
+                      </span>
                     </td>
                     <td className="p-4 whitespace-nowrap">
                       <span
@@ -567,7 +833,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                       <button
                         onClick={() => onDeleteExpense(exp.id)}
                         className="p-1.5 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-lg font-bold transition-colors cursor-pointer"
-                        title="Excluir despesa"
+                        title="Excluir movimentação"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -580,7 +846,113 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
         </div>
       </div>
 
-      {/* MODAL: NOVA DESPESA / SAÍDA */}
+      {/* MODAL: RESGATE / TRANSFERÊNCIA DE MARKETPLACE */}
+      {isTransferModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-amber-500" />
+                Resgatar Saldo de Marketplace
+              </h3>
+              <button
+                onClick={() => setIsTransferModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitTransfer} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Marketplace de Origem</label>
+                <select
+                  value={transferData.source}
+                  onChange={(e) => setTransferData({ ...transferData, source: e.target.value as MarketplaceAccount })}
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-bold text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
+                >
+                  <option value="Shopee">Shopee (Disponível: R$ {accountBalances.shopee.toFixed(2)})</option>
+                  <option value="Mercado Livre">Mercado Livre (Disponível: R$ {accountBalances.mercadoLivre.toFixed(2)})</option>
+                  <option value="TikTok Shop">TikTok Shop (Disponível: R$ {accountBalances.tikTokShop.toFixed(2)})</option>
+                  <option value="Amazon">Amazon (Disponível: R$ {accountBalances.amazon.toFixed(2)})</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Destino da Transferência</label>
+                <input
+                  type="text"
+                  disabled
+                  value="Conta Nubank (Oficina RN 3D)"
+                  className="w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-emerald-600 cursor-not-allowed"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Valor a Transferir (R$)</label>
+                  <input
+                    type="text"
+                    required
+                    value={transferData.amount}
+                    onChange={(e) => setTransferData({ ...transferData, amount: e.target.value })}
+                    placeholder="0,00"
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-black text-amber-600 focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Responsável</label>
+                  <select
+                    value={transferData.responsible}
+                    onChange={(e) => setTransferData({ ...transferData, responsible: e.target.value })}
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-bold text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
+                  >
+                    {PARTNERS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Comprovante de Transferência/Resgate (Opcional - PNG/PDF)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => handleFileUpload(e, 'transfer')}
+                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                />
+                {transferData.receiptName && (
+                  <p className="text-[11px] text-emerald-600 font-bold mt-1">✓ Anexado: {transferData.receiptName}</p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsTransferModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold shadow-xs cursor-pointer"
+                >
+                  Confirmar Resgate
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: NOVA DESPESA OPERACIONAL */}
       {isNewExpenseModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
@@ -654,14 +1026,18 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Favorecido / Fornecedor</label>
-                  <input
-                    type="text"
-                    value={formData.beneficiary}
-                    onChange={(e) => setFormData({ ...formData, beneficiary: e.target.value })}
-                    placeholder="Ex: 3D Fila, Posto X, Mercado..."
-                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-rose-500"
-                  />
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Responsável</label>
+                  <select
+                    value={formData.createdBy}
+                    onChange={(e) => setFormData({ ...formData, createdBy: e.target.value })}
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-bold text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
+                  >
+                    {PARTNERS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -672,13 +1048,11 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 <input
                   type="file"
                   accept="image/*,application/pdf"
-                  onChange={(e) => handleFileUpload(e, false)}
+                  onChange={(e) => handleFileUpload(e, 'expense')}
                   className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer"
                 />
                 {formData.receiptName && (
-                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
-                    ✓ Arquivo anexado: {formData.receiptName}
-                  </p>
+                  <p className="text-[11px] text-emerald-600 font-bold mt-1">✓ Arquivo anexado: {formData.receiptName}</p>
                 )}
               </div>
 
@@ -686,13 +1060,13 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsNewExpenseModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs cursor-pointer transition-colors"
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs cursor-pointer"
                 >
                   Salvar Despesa
                 </button>
@@ -702,17 +1076,17 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
         </div>
       )}
 
-      {/* MODAL: NOVA RETIRADA DE SÓCIO */}
-      {isPartnerWithdrawalModalOpen && (
+      {/* MODAL: RETIRADA */}
+      {isWithdrawalModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
           <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
                 <Users className="w-5 h-5 text-amber-500" />
-                Registrar Retirada de Sócio / Pro-labore
+                Registrar Retirada
               </h3>
               <button
-                onClick={() => setIsPartnerWithdrawalModalOpen(false)}
+                onClick={() => setIsWithdrawalModalOpen(false)}
                 className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -721,15 +1095,18 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
             <form onSubmit={handleSubmitWithdrawal} className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Nome do Sócio / Favorecido</label>
-                <input
-                  type="text"
-                  required
-                  value={withdrawalData.partnerName}
-                  onChange={(e) => setWithdrawalData({ ...withdrawalData, partnerName: e.target.value })}
-                  placeholder="Ex: Nicholas, Sócio 2..."
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-amber-500"
-                />
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Responsável pela Retirada</label>
+                <select
+                  value={withdrawalData.responsible}
+                  onChange={(e) => setWithdrawalData({ ...withdrawalData, responsible: e.target.value })}
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-bold text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
+                >
+                  {PARTNERS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -764,27 +1141,25 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 <input
                   type="file"
                   accept="image/*,application/pdf"
-                  onChange={(e) => handleFileUpload(e, true)}
+                  onChange={(e) => handleFileUpload(e, 'withdrawal')}
                   className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-50 file:text-amber-800 hover:file:bg-amber-100 cursor-pointer"
                 />
                 {withdrawalData.receiptName && (
-                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1">
-                    ✓ Arquivo anexado: {withdrawalData.receiptName}
-                  </p>
+                  <p className="text-[11px] text-emerald-600 font-bold mt-1">✓ Arquivo anexado: {withdrawalData.receiptName}</p>
                 )}
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setIsPartnerWithdrawalModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition-colors cursor-pointer"
+                  onClick={() => setIsWithdrawalModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold shadow-xs cursor-pointer transition-colors"
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold shadow-xs cursor-pointer"
                 >
                   Confirmar Retirada
                 </button>
@@ -794,7 +1169,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
         </div>
       )}
 
-      {/* MODAL: VISUALIZADOR DE COMPROVANTE (LIGHTBOX / PDF VIEWER) */}
+      {/* MODAL: VISUALIZADOR DE COMPROVANTE */}
       {selectedReceipt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">

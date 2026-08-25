@@ -310,8 +310,20 @@ export type ExpenseCategory =
   | 'Caixas & Embalagens'
   | 'Álcool & Insumos'
   | 'Impostos (DAS)'
-  | 'Retirada de Sócio / Pro-labore'
+  | 'Retirada'
+  | 'Transferência de Marketplace'
+  | 'Entrada de Pedido'
   | 'Outros';
+
+export type MarketplaceAccount = 'Nubank' | 'Shopee' | 'Mercado Livre' | 'TikTok Shop' | 'Amazon';
+
+export interface AccountBalances {
+  nubank: number;
+  shopee: number;
+  mercadoLivre: number;
+  tikTokShop: number;
+  amazon: number;
+}
 
 export interface ExpenseItem {
   id: string;
@@ -319,12 +331,16 @@ export interface ExpenseItem {
   category: ExpenseCategory;
   amount: number;
   date: string;
+  timestamp?: string; // HH:mm:ss ou ISO String com horário exato
   paymentStatus: 'Pago' | 'Pendente' | 'Agendado';
   beneficiary?: string; // Nome do Sócio / Fornecedor / Posto
+  createdBy?: 'Nicholas' | 'Rafael' | string; // Responsável pela transação
+  sourceAccount?: MarketplaceAccount;
+  destinationAccount?: MarketplaceAccount;
   receiptUrl?: string; // Comprovante em Base64 ou URL
   receiptType?: 'image' | 'pdf';
   receiptName?: string;
-  isAutoReplicated?: boolean; // Réplica automática de logística
+  isAutoReplicated?: boolean; // Réplica automática de logística ou pagamento de pedido
   referenceCode?: string; // ex: PED-000081, VIS-000052
   notes?: string;
 }

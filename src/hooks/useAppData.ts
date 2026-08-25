@@ -58,12 +58,13 @@ export function useAppData() {
   const {
     expenses,
     setExpenses,
+    accountBalances,
     accountBalance,
-    setAccountBalance,
     handleCreateExpense,
+    handleExecuteTransfer,
     handleUpdateExpense,
     handleDeleteExpense,
-    handleUpdateAccountBalance,
+    handleUpdateSingleBalance,
   } = useExpenses(user, showToast);
 
   const {
@@ -286,6 +287,44 @@ export function useAppData() {
     });
   }, [orders, visits]);
 
+  // Auto-mirror order local payments (e.g. 50% signal deposit / 50% completion) into expenses/transactions log
+  useEffect(() => {
+    if (!orders || orders.length === 0) return;
+
+    setExpenses((prevExpenses) => {
+      let changed = false;
+      const newPaymentEntries: ExpenseItem[] = [];
+
+      orders.forEach((o) => {
+        const paid = Number(o.paidAmount) || 0;
+        if (paid > 0) {
+          const refCode = `PED-PAY-${o.id}`;
+          const alreadyExists = prevExpenses.some((e) => e.referenceCode === refCode);
+          if (!alreadyExists) {
+            changed = true;
+            newPaymentEntries.push({
+              id: `exp-pay-${o.id}`,
+              description: `Entrada / Pagamento de Pedido (${o.id} - ${o.clientName})`,
+              category: 'Entrada de Pedido',
+              amount: paid,
+              date: o.date || new Date().toISOString().split('T')[0],
+              timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              paymentStatus: 'Pago',
+              beneficiary: o.clientName || 'Cliente Local',
+              createdBy: 'Sistema RN 3D',
+              destinationAccount: 'Nubank',
+              isAutoReplicated: true,
+              referenceCode: refCode,
+              notes: `Pagamento de ${o.paymentMethod || 'PIX'} referente ao pedido ${o.id}`,
+            });
+          }
+        }
+      });
+
+      return changed ? [...newPaymentEntries, ...prevExpenses] : prevExpenses;
+    });
+  }, [orders]);
+
   const handleSyncProductsToSupabase = async () => {
     try {
       showToast('Sincronizando todo o sistema com o Banco de Dados', 'info');
@@ -331,6 +370,7 @@ export function useAppData() {
     movements,
     clientInventories,
     expenses,
+    accountBalances,
     accountBalance,
     globalSearchQuery,
     dataLoading,
@@ -349,9 +389,10 @@ export function useAppData() {
     handleCreateQuote,
     handleUpdateQuoteStatus,
     handleCreateExpense,
+    handleExecuteTransfer,
     handleUpdateExpense,
     handleDeleteExpense,
-    handleUpdateAccountBalance,
+    handleUpdateSingleBalance,
     handleCreateOrder,
     handleDeleteOrder,
     handleUpdateOrderProgress,
