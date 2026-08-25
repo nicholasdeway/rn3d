@@ -475,26 +475,28 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
           <button
             onClick={() => setIsAporteModalOpen(true)}
             className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
-            title="Registrar lançamento / pagamento do sócio diretamente para a conta da empresa"
+            title="Registrar entrada/crédito do sócio para a conta da empresa (+)"
           >
             <ArrowDownLeft className="w-4 h-4" />
-            <span>Lançamento / Aporte</span>
+            <span>Lançamento / Aporte <span className="bg-emerald-800/80 px-1.5 py-0.5 rounded text-[10px] ml-0.5 font-mono">(+ Entrada)</span></span>
           </button>
 
           <button
             onClick={() => setIsWithdrawalModalOpen(true)}
             className="px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+            title="Registrar retirada/saque do sócio da conta da empresa (-)"
           >
             <Users className="w-4 h-4" />
-            <span>Retirada</span>
+            <span>Retirada de Sócio <span className="bg-amber-700/80 px-1.5 py-0.5 rounded text-[10px] ml-0.5 font-mono">(- Saída)</span></span>
           </button>
 
           <button
             onClick={() => setIsNewExpenseModalOpen(true)}
             className="px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+            title="Registrar gasto operacional da empresa (-)"
           >
             <Plus className="w-4 h-4" />
-            <span>Nova Despesa</span>
+            <span>Nova Despesa <span className="bg-rose-800/80 px-1.5 py-0.5 rounded text-[10px] ml-0.5 font-mono">(- Custo)</span></span>
           </button>
         </div>
       </div>

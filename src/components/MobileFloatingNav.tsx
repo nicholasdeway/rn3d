@@ -111,8 +111,8 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
             >
               <ArrowDownLeft className="w-4 h-4 shrink-0 text-emerald-400" />
               <div>
-                <p className="text-xs font-bold">📥 Lançamento / Aporte</p>
-                <p className="text-[10px] text-emerald-300/80 font-normal">Entrada de valor na conta empresa</p>
+                <p className="text-xs font-bold">📥 Lançamento / Aporte <span className="text-[10px] text-emerald-300 font-mono font-bold">(+ Entrada)</span></p>
+                <p className="text-[10px] text-emerald-300/80 font-normal">Sócio colocando/devolvendo valor na empresa</p>
               </div>
             </button>
 
@@ -122,8 +122,8 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
             >
               <Users className="w-4 h-4 shrink-0 text-amber-400" />
               <div>
-                <p className="text-xs font-bold">🤝 Retirada</p>
-                <p className="text-[10px] text-amber-300/80 font-normal">Retirada de sócio com comprovante</p>
+                <p className="text-xs font-bold">🤝 Retirada de Sócio <span className="text-[10px] text-amber-300 font-mono font-bold">(- Saída)</span></p>
+                <p className="text-[10px] text-amber-300/80 font-normal">Sócio tirando dinheiro da conta para uso pessoal</p>
               </div>
             </button>
 
