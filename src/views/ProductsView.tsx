@@ -345,13 +345,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <div className="hidden sm:flex px-4 py-2 bg-indigo-50/80 border border-indigo-100 rounded-xl items-center gap-2.5 shadow-xs">
+          <div className="hidden sm:flex px-4 py-2 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/50 rounded-xl items-center gap-2.5 shadow-xs">
             <div className="p-1.5 bg-indigo-600 text-white rounded-lg">
               <Package className="w-4 h-4" />
             </div>
             <div className="text-left">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Total no Catálogo</span>
-              <span className="text-sm font-black text-indigo-700">{products.length} Produtos</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-wider block">Total no Catálogo</span>
+              <span className="text-sm font-black text-indigo-700 dark:text-indigo-300">{products.length} Produtos</span>
             </div>
           </div>
 

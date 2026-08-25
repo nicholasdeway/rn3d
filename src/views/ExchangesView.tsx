@@ -234,15 +234,15 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
       </div>
 
       {/* Smart Alert Banner: Encalhados nos Clientes */}
-      <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent p-5 rounded-2xl border border-amber-200/80 space-y-4">
+      <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-transparent p-5 rounded-2xl border border-amber-200/80 dark:border-amber-900/60 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-amber-500/20 text-amber-700 rounded-xl">
+            <div className="p-2.5 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-xl">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 text-sm">Alerta de Remanejamento & Giro de Estoque</h3>
-              <p className="text-xs text-slate-600">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">Alerta de Remanejamento & Giro de Estoque</h3>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 Lojas com produtos alocados sem vendas. Faça o trade de produtos para evitar encalhe no expositor!
               </p>
             </div>
@@ -255,17 +255,17 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
             return (
               <div
                 key={st.client.id}
-                className="bg-white p-4 rounded-xl border border-amber-200 shadow-xs flex items-center justify-between gap-3 hover:border-indigo-300 transition-colors"
+                className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-amber-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between gap-3 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors"
               >
                 <div className="min-w-0">
-                  <h4 className="font-bold text-slate-900 text-xs truncate">{st.client.name}</h4>
-                  <p className="text-[11px] text-indigo-700 font-semibold mt-0.5">
+                  <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">{st.client.name}</h4>
+                  <p className="text-[11px] text-indigo-700 dark:text-indigo-400 font-semibold mt-0.5">
                     {totalQty} produtos alocados
                   </p>
                 </div>
                 <button
                   onClick={() => handleOpenWizardForClient(st.client.id)}
-                  className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-lg font-bold text-xs shrink-0 transition-colors cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white rounded-lg font-bold text-xs shrink-0 transition-colors cursor-pointer flex items-center gap-1 border border-indigo-100 dark:border-indigo-900/50"
                 >
                   <Repeat className="w-3.5 h-3.5" /> Remanejar
                 </button>

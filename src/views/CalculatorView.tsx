@@ -1061,9 +1061,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-600 leading-relaxed bg-cyan-50/60 p-3.5 rounded-xl border border-cyan-100 space-y-1">
-                <div className="font-bold text-cyan-950 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-cyan-600" /> Impacto no Valor Final:
+              <div className="text-[11px] text-slate-600 dark:text-cyan-200/90 leading-relaxed bg-cyan-50/60 dark:bg-cyan-950/40 p-3.5 rounded-xl border border-cyan-100 dark:border-cyan-900/50 space-y-1">
+                <div className="font-bold text-cyan-950 dark:text-cyan-200 flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" /> Impacto no Valor Final:
                 </div>
                 <p>
                   Com <b>{inputs.extraDiscountAffiliatePct}%</b> configurados, adicionamos <b>R$ {selectedMetrics.extraDiscountAffiliateAmount.toFixed(2)}</b> ao preço de venda para que você continue garantindo seu lucro líquido total de <b>R$ {selectedMetrics.netProfit.toFixed(2)} ({inputs.desiredProfitMarginPct}%)</b> mesmo após repassar descontos ou comissões a parceiros.

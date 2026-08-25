@@ -489,18 +489,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   .map((p) => (
                     <div
                       key={p.id}
-                      className="p-3.5 bg-rose-50/50 border border-rose-200/80 rounded-xl flex items-center justify-between"
+                      className="p-3.5 bg-rose-50/50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-900/60 rounded-xl flex items-center justify-between"
                     >
                       <div className="space-y-1">
-                        <h4 className="font-bold text-slate-900 text-sm">{p.name}</h4>
-                        <p className="text-xs text-rose-700 font-semibold">
+                        <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{p.name}</h4>
+                        <p className="text-xs text-rose-700 dark:text-rose-400 font-semibold">
                           Estoque atual: {p.currentStock} un (Mínimo: {p.minStock} un)
                         </p>
                       </div>
 
                       <button
                         onClick={() => onNavigate('inventory-general')}
-                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shrink-0 transition-colors cursor-pointer"
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shrink-0 transition-colors cursor-pointer shadow-xs"
                       >
                         Ajustar Estoque
                       </button>

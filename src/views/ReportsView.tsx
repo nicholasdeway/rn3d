@@ -139,14 +139,14 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           ) : (
             <div className="space-y-3">
               {slowProducts.map((prod, idx) => (
-                <div key={idx} className="p-3.5 bg-amber-50/50 rounded-xl border border-amber-200/60 flex items-center justify-between">
+                <div key={idx} className="p-3.5 bg-amber-50/50 dark:bg-amber-950/40 rounded-xl border border-amber-200/60 dark:border-amber-900/50 flex items-center justify-between">
                   <div>
-                    <p className="font-bold text-slate-900 text-xs">{prod.name}</p>
-                    <p className="text-[10px] text-amber-800">
+                    <p className="font-bold text-slate-900 dark:text-slate-100 text-xs">{prod.name}</p>
+                    <p className="text-[10px] text-amber-800 dark:text-amber-400 font-medium">
                       Estoque acumulado: {prod.currentStock} unidades sem movimentação recente
                     </p>
                   </div>
-                  <span className="px-2.5 py-1 bg-amber-100 text-amber-900 rounded-lg text-[10px] font-bold">
+                  <span className="px-2.5 py-1 bg-amber-100 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 rounded-lg text-[10px] font-bold border border-amber-200 dark:border-amber-800/80 shrink-0">
                     Sugerir Recolhimento
                   </span>
                 </div>

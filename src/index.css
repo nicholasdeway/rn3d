@@ -194,6 +194,49 @@ html.dark .divide-slate-100 > * + * {
   border-color: #202531 !important;
 }
 
+/* PDF Preview Sheet Overrides (Sempre folha A4 limpa com texto legivel) */
+.print-sheet {
+  color-scheme: light !important;
+}
+
+html.dark .print-sheet {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.dark .print-sheet .bg-slate-50 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.dark .print-sheet .bg-rose-50,
+html.dark .print-sheet .bg-rose-50\/40 {
+  background-color: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+  color: #9f1239 !important;
+}
+
+html.dark .print-sheet .text-rose-700,
+html.dark .print-sheet .text-rose-800,
+html.dark .print-sheet .text-rose-900,
+html.dark .print-sheet .text-rose-950 {
+  color: #9f1239 !important;
+}
+
+html.dark .print-sheet .text-slate-900,
+html.dark .print-sheet .text-slate-800,
+html.dark .print-sheet .text-slate-700 {
+  color: #0f172a !important;
+}
+
+html.dark .print-sheet .text-slate-600,
+html.dark .print-sheet .text-slate-500,
+html.dark .print-sheet .text-slate-400 {
+  color: #475569 !important;
+}
+
 @media print {
   /* Hide all app components: Header, Sidebar, Mobile Floating Nav, Toasts, Web Buttons */
   header,
