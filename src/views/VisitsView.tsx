@@ -73,46 +73,46 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#12151c] p-5 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <MapPin className="w-6 h-6 text-indigo-600" />
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <MapPin className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400" />
             Agenda de Visitas e Conferências
           </h2>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Programe e execute visitas presenciais nos pontos de venda em consignação.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full sm:w-auto shrink-0">
           <button
             onClick={handleOpenScheduleModal}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             <CalendarPlus className="w-4 h-4" />
-            Agendar Nova Visita
+            <span>Agendar Nova Visita</span>
           </button>
           <button
             onClick={() => setIsSelectClientModalOpen(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
           >
             <MapPin className="w-4 h-4" />
-            Iniciar Visita Presencial
+            <span>Iniciar Visita Presencial</span>
           </button>
         </div>
       </div>
 
       {/* Filter Tabs & Toggle */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="bg-white dark:bg-[#12151c] p-3 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="grid grid-cols-3 sm:flex sm:flex-wrap items-center gap-1.5 w-full sm:w-auto">
           {['Todas', 'Hoje', 'Atrasadas', 'Próximas', 'Concluídas'].map((tab) => (
             <button
               key={tab}
               onClick={() => setFilter(tab as any)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-3 py-2 sm:py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
                 filter === tab
                   ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                  : 'bg-slate-50 dark:bg-[#181c26] text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               {tab}
@@ -120,28 +120,30 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
           ))}
         </div>
 
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
+        <div className="flex items-center justify-center sm:justify-end bg-slate-100 dark:bg-[#181c26] p-1 rounded-xl border border-slate-200 dark:border-[#202531] shrink-0 self-end sm:self-auto w-full sm:w-auto">
           <button
             onClick={() => setViewMode('list')}
-            className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
+            className={`flex-1 sm:flex-initial py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
               viewMode === 'list'
-                ? 'bg-white text-indigo-600 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
             title="Visualização em Lista"
           >
             <List className="w-4 h-4" />
+            <span className="sm:hidden text-xs">Lista</span>
           </button>
           <button
             onClick={() => setViewMode('calendar')}
-            className={`p-1.5 rounded-lg text-xs font-medium transition-colors ${
+            className={`flex-1 sm:flex-initial py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
               viewMode === 'calendar'
-                ? 'bg-white text-indigo-600 shadow-xs'
-                : 'text-slate-500 hover:text-slate-900'
+                ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
             title="Visualização em Calendário"
           >
             <Calendar className="w-4 h-4" />
+            <span className="sm:hidden text-xs">Calendário</span>
           </button>
         </div>
       </div>

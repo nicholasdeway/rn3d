@@ -98,7 +98,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => onQuickAction('product')}
+              onClick={() => onQuickAction('novo-produto')}
               className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
             >
               <PackagePlus className="w-4 h-4" />
@@ -415,7 +415,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <p className="text-sm font-semibold text-slate-700">Seu banco de produtos está vazio</p>
                 <p className="text-xs text-slate-400 mt-1 mb-4">Cadastre seu primeiro modelo 3D para gerar orçamentos e pedidos.</p>
                 <button
-                  onClick={() => onNavigate('products')}
+                  onClick={() => onQuickAction('novo-produto')}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-500 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />

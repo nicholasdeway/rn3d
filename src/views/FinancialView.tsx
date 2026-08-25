@@ -144,152 +144,252 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white p-2 rounded-2xl border border-slate-200/80 shadow-xs flex flex-wrap gap-2">
+      {/* Navigation Tabs (Segmented Control on Mobile and Desktop) */}
+      <div className="bg-slate-100 dark:bg-[#12151c] p-1.5 rounded-2xl border border-slate-200 dark:border-[#202531] shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-1.5">
         <button
           onClick={() => setTab('extrato')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
             tab === 'extrato'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-600 hover:bg-slate-100'
+              ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Extrato Completo de Vendas & Pedidos ({orders.length + transactions.length})
+          Extrato Completo ({orders.length + transactions.length})
         </button>
         <button
           onClick={() => setTab('entradas')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
             tab === 'entradas'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-600 hover:bg-slate-100'
+              ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Entradas em Caixa (Pagamentos Confirmados)
+          Entradas em Caixa
         </button>
         <button
           onClick={() => setTab('receber')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
             tab === 'receber'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'text-slate-600 hover:bg-slate-100'
+              ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
+              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Contas a Receber / Financiado ({orders.filter((o) => o.totalValue > (o.paidAmount || 0)).length})
+          Contas a Receber ({orders.filter((o) => o.totalValue > (o.paidAmount || 0)).length})
         </button>
       </div>
 
       {/* TAB 1: Extrato Completo de Vendas & Pedidos */}
       {tab === 'extrato' && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+        <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
           {orders.length === 0 && transactions.length === 0 ? (
             <div className="p-12 text-center space-y-3">
-              <Wallet className="w-12 h-12 text-slate-300 mx-auto" />
-              <h3 className="font-bold text-slate-800 text-base">Nenhum pedido ou transação financeira</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <Wallet className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
+              <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">Nenhum pedido ou transação financeira</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
                 Assim que orçamentos forem convertidos em pedidos ou vendas forem efetuadas, o faturamento aparecerá aqui.
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
-                  <tr>
-                    <th className="p-4">Código</th>
-                    <th className="p-4">Cliente</th>
-                    <th className="p-4">Data</th>
-                    <th className="p-4 text-right">Valor Total</th>
-                    <th className="p-4 text-right">Entrou em Caixa</th>
-                    <th className="p-4 text-right">A Receber / Saldo</th>
-                    <th className="p-4">Status Pagamento</th>
-                    <th className="p-4 text-right">Ação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {/* Orders */}
-                  {orders.map((o) => {
-                    const paid = o.paidAmount || 0;
-                    const pending = Math.max(0, o.totalValue - paid);
-                    const isFullyPaid = pending === 0;
+            <>
+              {/* Mobile View: Financial Cards */}
+              <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+                {orders.map((o) => {
+                  const paid = o.paidAmount || 0;
+                  const pending = Math.max(0, o.totalValue - paid);
+                  const isFullyPaid = pending === 0;
 
-                    let statusBadge = 'bg-amber-50 text-amber-700 border-amber-200';
-                    if (isFullyPaid) statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold';
-                    else if (paid > 0) statusBadge = 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold';
+                  let statusBadge = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+                  if (isFullyPaid) statusBadge = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
+                  else if (paid > 0) statusBadge = 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/50 font-bold';
 
-                    return (
-                      <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                        <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
-                        <td className="p-4 font-bold text-slate-900">{o.clientName}</td>
-                        <td className="p-4 text-slate-600">{formatDateBR(o.date)}</td>
-                        <td className="p-4 text-right font-extrabold text-slate-900">
-                          R$ {o.totalValue.toFixed(2).replace('.', ',')}
+                  return (
+                    <div key={o.id} className="p-4 space-y-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] border ${statusBadge}`}>
+                          {isFullyPaid ? 'Totalmente Pago' : o.paymentStatusText || 'Pendente'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-slate-900 dark:text-slate-100">{o.clientName}</span>
+                        <span className="text-slate-500 dark:text-slate-400">{formatDateBR(o.date)}</span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/60 dark:border-[#202531] text-[11px]">
+                        <div>
+                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Total</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100">R$ {o.totalValue.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Caixa</span>
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {paid.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Saldo</span>
+                          <span className="font-extrabold text-rose-600 dark:text-rose-400">R$ {pending.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end pt-1">
+                        {!isFullyPaid ? (
+                          <button
+                            onClick={() => handleOpenPaymentModal(o)}
+                            className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                          >
+                            <HandCoins className="w-4 h-4" /> Registrar Recebimento
+                          </button>
+                        ) : (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 text-[11px]">
+                            <CheckCircle2 className="w-4 h-4" /> Quitado
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {transactions.map((t) => (
+                  <div key={t.id} className="p-4 space-y-2 bg-slate-50/40 dark:bg-slate-900/40">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">{t.id}</span>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80">
+                        {t.status || 'Recebido'} ({t.paymentMethod || 'PIX'})
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-900 dark:text-slate-100">{t.clientName}</span>
+                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {t.amount.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop View: Table */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                    <tr>
+                      <th className="p-4">Código</th>
+                      <th className="p-4">Cliente</th>
+                      <th className="p-4">Data</th>
+                      <th className="p-4 text-right">Valor Total</th>
+                      <th className="p-4 text-right">Entrou em Caixa</th>
+                      <th className="p-4 text-right">A Receber / Saldo</th>
+                      <th className="p-4">Status Pagamento</th>
+                      <th className="p-4 text-right">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
+                    {/* Orders */}
+                    {orders.map((o) => {
+                      const paid = o.paidAmount || 0;
+                      const pending = Math.max(0, o.totalValue - paid);
+                      const isFullyPaid = pending === 0;
+
+                      let statusBadge = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+                      if (isFullyPaid) statusBadge = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
+                      else if (paid > 0) statusBadge = 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/50 font-bold';
+
+                      return (
+                        <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                          <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">{o.id}</td>
+                          <td className="p-4 font-bold text-slate-900 dark:text-slate-100">{o.clientName}</td>
+                          <td className="p-4 text-slate-600 dark:text-slate-400">{formatDateBR(o.date)}</td>
+                          <td className="p-4 text-right font-extrabold text-slate-900 dark:text-slate-100">
+                            R$ {o.totalValue.toFixed(2).replace('.', ',')}
+                          </td>
+                          <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
+                            R$ {paid.toFixed(2).replace('.', ',')}
+                          </td>
+                          <td className="p-4 text-right font-extrabold text-rose-600 dark:text-rose-400">
+                            R$ {pending.toFixed(2).replace('.', ',')}
+                          </td>
+                          <td className="p-4">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] border ${statusBadge}`}>
+                              {isFullyPaid ? 'Totalmente Pago' : o.paymentStatusText || 'Pendente'}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right">
+                            {!isFullyPaid ? (
+                              <button
+                                onClick={() => handleOpenPaymentModal(o)}
+                                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
+                              >
+                                <HandCoins className="w-3.5 h-3.5" /> Registrar Recebimento
+                              </button>
+                            ) : (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-end gap-1 text-[11px]">
+                                <CheckCircle2 className="w-4 h-4" /> Quitado
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {/* Direct Sale Transactions */}
+                    {transactions.map((t) => (
+                      <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-slate-50/40 dark:bg-slate-900/40">
+                        <td className="p-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">{t.id}</td>
+                        <td className="p-4 font-bold text-slate-900 dark:text-slate-100">{t.clientName}</td>
+                        <td className="p-4 text-slate-600 dark:text-slate-400">{formatDateBR(t.date)}</td>
+                        <td className="p-4 text-right font-extrabold text-slate-900 dark:text-slate-100">
+                          R$ {t.amount.toFixed(2).replace('.', ',')}
                         </td>
-                        <td className="p-4 text-right font-extrabold text-emerald-600">
-                          R$ {paid.toFixed(2).replace('.', ',')}
+                        <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
+                          R$ {t.amount.toFixed(2).replace('.', ',')}
                         </td>
-                        <td className="p-4 text-right font-extrabold text-rose-600">
-                          R$ {pending.toFixed(2).replace('.', ',')}
-                        </td>
+                        <td className="p-4 text-right font-extrabold text-slate-400">R$ 0,00</td>
                         <td className="p-4">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] border ${statusBadge}`}>
-                            {isFullyPaid ? 'Totalmente Pago' : o.paymentStatusText || 'Pendente'}
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80">
+                            {t.status || 'Recebido'} ({t.paymentMethod || 'PIX'})
                           </span>
                         </td>
                         <td className="p-4 text-right">
-                          {!isFullyPaid ? (
-                            <button
-                              onClick={() => handleOpenPaymentModal(o)}
-                              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
-                            >
-                              <HandCoins className="w-3.5 h-3.5" /> Registrar Recebimento
-                            </button>
-                          ) : (
-                            <span className="text-emerald-600 font-bold flex items-center justify-end gap-1 text-[11px]">
-                              <CheckCircle2 className="w-4 h-4" /> Quitado
-                            </span>
-                          )}
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-end gap-1 text-[11px]">
+                            <CheckCircle2 className="w-4 h-4" /> Recebido
+                          </span>
                         </td>
                       </tr>
-                    );
-                  })}
-
-                  {/* Direct Sale Transactions */}
-                  {transactions.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-slate-50/40 dark:bg-slate-900/40">
-                      <td className="p-4 font-mono font-bold text-emerald-600">{t.id}</td>
-                      <td className="p-4 font-bold text-slate-900">{t.clientName}</td>
-                      <td className="p-4 text-slate-600">{formatDateBR(t.date)}</td>
-                      <td className="p-4 text-right font-extrabold text-slate-900">
-                        R$ {t.amount.toFixed(2).replace('.', ',')}
-                      </td>
-                      <td className="p-4 text-right font-extrabold text-emerald-600">
-                        R$ {t.amount.toFixed(2).replace('.', ',')}
-                      </td>
-                      <td className="p-4 text-right font-extrabold text-slate-400">R$ 0,00</td>
-                      <td className="p-4">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                          {t.status || 'Recebido'} ({t.paymentMethod || 'PIX'})
-                        </span>
-                      </td>
-                      <td className="p-4 text-right">
-                        <span className="text-emerald-600 font-bold flex items-center justify-end gap-1 text-[11px]">
-                          <CheckCircle2 className="w-4 h-4" /> Recebido
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}
 
       {/* TAB 2: Entradas em Caixa (Pagamentos Confirmados) */}
       {tab === 'entradas' && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
+          {/* Mobile View */}
+          <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+            {orders
+              .filter((o) => (o.paidAmount || 0) > 0)
+              .map((o) => (
+                <div key={o.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">{formatDateBR(o.date)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{o.clientName}</span>
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}</span>
+                  </div>
+                  <span className="inline-block px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold text-[10px]">
+                    ✓ Recebido no Sinal / Entrada
+                  </span>
+                </div>
+              ))}
+          </div>
+
+          {/* Desktop View */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+              <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
                   <th className="p-4">Origem / Código</th>
                   <th className="p-4">Cliente</th>
@@ -298,19 +398,19 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   <th className="p-4">Status de Confirmação</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                 {orders
                   .filter((o) => (o.paidAmount || 0) > 0)
                   .map((o) => (
                     <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                      <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
-                      <td className="p-4 font-bold text-slate-900">{o.clientName}</td>
-                      <td className="p-4 text-slate-600">{formatDateBR(o.date)}</td>
-                      <td className="p-4 text-right font-extrabold text-emerald-600">
+                      <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">{o.id}</td>
+                      <td className="p-4 font-bold text-slate-900 dark:text-slate-100">{o.clientName}</td>
+                      <td className="p-4 text-slate-600 dark:text-slate-400">{formatDateBR(o.date)}</td>
+                      <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
                         R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}
                       </td>
-                      <td className="p-4 font-semibold text-emerald-700">
-                        <span className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full font-bold">
+                      <td className="p-4 font-semibold text-emerald-700 dark:text-emerald-400">
+                        <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold">
                           ✓ Recebido no Sinal / Entrada
                         </span>
                       </td>
@@ -318,14 +418,14 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   ))}
                 {transactions.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                    <td className="p-4 font-mono font-bold text-emerald-600">{t.id}</td>
-                    <td className="p-4 font-bold text-slate-900">{t.clientName}</td>
-                    <td className="p-4 text-slate-600">{formatDateBR(t.date)}</td>
-                    <td className="p-4 text-right font-extrabold text-emerald-600">
+                    <td className="p-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">{t.id}</td>
+                    <td className="p-4 font-bold text-slate-900 dark:text-slate-100">{t.clientName}</td>
+                    <td className="p-4 text-slate-600 dark:text-slate-400">{formatDateBR(t.date)}</td>
+                    <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
                       R$ {t.amount.toFixed(2).replace('.', ',')}
                     </td>
-                    <td className="p-4 font-semibold text-emerald-700">
-                      <span className="px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full font-bold">
+                    <td className="p-4 font-semibold text-emerald-700 dark:text-emerald-400">
+                      <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold">
                         ✓ Venda Confirmada ({t.paymentMethod})
                       </span>
                     </td>
@@ -339,10 +439,50 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
       {/* TAB 3: Contas a Receber / Financiados */}
       {tab === 'receber' && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
+          {/* Mobile View */}
+          <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+            {orders
+              .filter((o) => o.totalValue > (o.paidAmount || 0))
+              .map((o) => {
+                const remaining = o.totalValue - (o.paidAmount || 0);
+                return (
+                  <div key={o.id} className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
+                      <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">{o.clientName}</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/60 dark:border-[#202531] text-[11px]">
+                      <div>
+                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Total</span>
+                        <span className="font-bold text-slate-900 dark:text-slate-100">R$ {o.totalValue.toFixed(2).replace('.', ',')}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Já Pago</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Pendente</span>
+                        <span className="font-extrabold text-rose-600 dark:text-rose-400">R$ {remaining.toFixed(2).replace('.', ',')}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleOpenPaymentModal(o)}
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                    >
+                      <HandCoins className="w-4 h-4" /> Dar Baixa / Quitar
+                    </button>
+                  </div>
+                );
+              })}
+          </div>
+
+          {/* Desktop View */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+              <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
                 <tr>
                   <th className="p-4">Pedido / Loja</th>
                   <th className="p-4">Cliente</th>
@@ -352,22 +492,22 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   <th className="p-4 text-right">Ação de Recebimento</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                 {orders
                   .filter((o) => o.totalValue > (o.paidAmount || 0))
                   .map((o) => {
                     const remaining = o.totalValue - (o.paidAmount || 0);
                     return (
-                      <tr key={o.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
-                        <td className="p-4 font-bold text-slate-900">{o.clientName}</td>
-                        <td className="p-4 text-right font-bold text-slate-700">
+                      <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                        <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">{o.id}</td>
+                        <td className="p-4 font-bold text-slate-900 dark:text-slate-100">{o.clientName}</td>
+                        <td className="p-4 text-right font-bold text-slate-700 dark:text-slate-300">
                           R$ {o.totalValue.toFixed(2).replace('.', ',')}
                         </td>
-                        <td className="p-4 text-right font-bold text-emerald-600">
+                        <td className="p-4 text-right font-bold text-emerald-600 dark:text-emerald-400">
                           R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}
                         </td>
-                        <td className="p-4 text-right font-extrabold text-rose-600">
+                        <td className="p-4 text-right font-extrabold text-rose-600 dark:text-rose-400">
                           R$ {remaining.toFixed(2).replace('.', ',')}
                         </td>
                         <td className="p-4 text-right">
@@ -382,18 +522,18 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     );
                   })}
                 {consignments.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/80 transition-colors bg-purple-50/30">
-                    <td className="p-4 font-mono font-bold text-purple-600">{c.id} (Consignação)</td>
-                    <td className="p-4 font-bold text-slate-900">{c.clientName}</td>
-                    <td className="p-4 text-right font-bold text-slate-700">
+                  <tr key={c.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-purple-50/30 dark:bg-purple-950/20">
+                    <td className="p-4 font-mono font-bold text-purple-600 dark:text-purple-400">{c.id} (Consignação)</td>
+                    <td className="p-4 font-bold text-slate-900 dark:text-slate-100">{c.clientName}</td>
+                    <td className="p-4 text-right font-bold text-slate-700 dark:text-slate-300">
                       R$ {c.totalValue.toFixed(2).replace('.', ',')}
                     </td>
                     <td className="p-4 text-right font-bold text-slate-400">R$ 0,00</td>
-                    <td className="p-4 text-right font-extrabold text-indigo-600">
+                    <td className="p-4 text-right font-extrabold text-indigo-600 dark:text-indigo-400">
                       R$ {c.totalValue.toFixed(2).replace('.', ',')}
                     </td>
                     <td className="p-4 text-right">
-                      <span className="text-purple-700 font-semibold text-xs">
+                      <span className="text-purple-700 dark:text-purple-300 font-semibold text-xs">
                         Acerto na Visita
                       </span>
                     </td>
@@ -408,36 +548,36 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
       {/* Payment Entry Modal */}
       {selectedOrderForPayment && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-2xl border border-slate-300 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <HandCoins className="w-5 h-5 text-emerald-600" />
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-md rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 shadow-2xl">
+            <div className="p-5 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <HandCoins className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 Registrar Pagamento — {selectedOrderForPayment.id}
               </h3>
               <button
                 onClick={() => setSelectedOrderForPayment(null)}
-                className="p-1 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <form onSubmit={handleConfirmPayment} className="p-6 space-y-4 text-xs">
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <p className="font-bold text-slate-900 text-sm">Cliente: {selectedOrderForPayment.clientName}</p>
-                <p className="text-slate-600">
+              <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-1">
+                <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">Cliente: {selectedOrderForPayment.clientName}</p>
+                <p className="text-slate-600 dark:text-slate-400">
                   Valor Total do Pedido: <strong>R$ {selectedOrderForPayment.totalValue.toFixed(2).replace('.', ',')}</strong>
                 </p>
-                <p className="text-emerald-700 font-semibold">
+                <p className="text-emerald-700 dark:text-emerald-400 font-semibold">
                   Valor Já Pago: <strong>R$ {(selectedOrderForPayment.paidAmount || 0).toFixed(2).replace('.', ',')}</strong>
                 </p>
-                <p className="text-rose-600 font-bold">
+                <p className="text-rose-600 dark:text-rose-400 font-bold">
                   Saldo Restante: <strong>R$ {(selectedOrderForPayment.totalValue - (selectedOrderForPayment.paidAmount || 0)).toFixed(2).replace('.', ',')}</strong>
                 </p>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 mb-1">
+                <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1">
                   Valor Entrado em Caixa (R$) *
                 </label>
                 <input
@@ -446,23 +586,23 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   value={paymentAmountInput}
                   onChange={(e) => setPaymentAmountInput(e.target.value)}
                   placeholder="Ex: 27,50"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl font-extrabold text-emerald-600 text-base"
+                  className="w-full px-3 py-2 bg-white dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-extrabold text-emerald-600 dark:text-emerald-400 text-base focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex justify-end gap-2">
+              <div className="pt-3 border-t border-slate-100 dark:border-[#202531] flex items-center justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => setSelectedOrderForPayment(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl cursor-pointer shadow-xs"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  Confirmar Entrada em Caixa
+                  <HandCoins className="w-4 h-4" /> Confirmar Recebimento
                 </button>
               </div>
             </form>

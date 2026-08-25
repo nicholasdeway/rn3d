@@ -432,7 +432,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             >
               {categories.map((c) => (
                 <option key={c} value={c} className="dark:bg-[#181c26]">
-                  Cat: {c}
+                  Categoria: {c}
                 </option>
               ))}
             </select>
@@ -444,7 +444,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               title="Cadastrar Nova Categoria de Produto"
             >
               <Plus className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-              <span className="text-[11px] font-bold">+ Cat</span>
+              <span className="text-[11px] font-bold">Categoria</span>
             </button>
           </div>
 
@@ -463,22 +463,20 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
           <div className="flex items-center justify-between bg-slate-100 dark:bg-[#181c26] p-1 rounded-xl border border-slate-200 dark:border-[#202531]">
             <button
               onClick={() => setViewMode('grid')}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
-                viewMode === 'grid'
-                  ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${viewMode === 'grid'
+                ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
               <Grid className="w-4 h-4" />
               <span>Grid</span>
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
-                viewMode === 'table'
-                  ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-              }`}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${viewMode === 'table'
+                ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
             >
               <List className="w-4 h-4" />
               <span>Lista</span>

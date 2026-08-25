@@ -276,15 +276,67 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
         </div>
       </div>
 
-      {/* Exchanges History Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-          <h3 className="font-bold text-slate-900 text-sm">Registro de Notas de Troca & Remanejamento</h3>
+      {/* Exchanges History Table / Mobile Cards */}
+      <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
+        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between">
+          <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base">Registro de Notas de Troca & Remanejamento</h3>
           <span className="text-xs text-slate-400 font-medium">{exchanges.length} registros</span>
         </div>
-        <div className="overflow-x-auto">
+
+        {/* Mobile View: Cards */}
+        <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+          {exchanges.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+              Nenhuma troca ou migração de estoque registrada ainda. Clique em "Nova Troca / Migração entre Lojas" para realizar um remanejamento.
+            </div>
+          ) : (
+            exchanges.map((ex) => {
+              const totalRem = ex.itemsRemoved.reduce((acc, i) => acc + i.quantity, 0);
+
+              return (
+                <div
+                  key={ex.id}
+                  onClick={() => setSelectedExchange(ex)}
+                  className="p-4 space-y-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{ex.id}</span>
+                    <span className="px-2.5 py-0.5 text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/50 rounded-lg">
+                      {totalRem} unidades remanejadas
+                    </span>
+                  </div>
+
+                  <div className="space-y-1 text-xs">
+                    <p className="text-slate-900 dark:text-slate-100 font-bold">
+                      <span className="text-slate-400 font-normal">Origem:</span> {ex.clientName}
+                    </p>
+                    <p className="text-slate-700 dark:text-slate-300 font-semibold">
+                      <span className="text-slate-400 font-normal">Destino:</span> {ex.destinationClientName || (ex.type === 'recolhimento_oficina' ? 'Estoque Geral (Oficina)' : 'Troca Direta')}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                    <span>Data: {formatDateBR(ex.date)}</span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedExchange(ex);
+                      }}
+                      className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-lg font-bold text-[11px] cursor-pointer"
+                    >
+                      Ver Comprovante PDF
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Desktop View: Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+            <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
               <tr>
                 <th className="p-4">Nota / ID</th>
                 <th className="p-4">Loja Origem (Retirado)</th>
@@ -295,10 +347,10 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                 <th className="p-4 text-right">Ação</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 font-medium">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
               {exchanges.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-8 text-center text-slate-400">
+                  <td colSpan={7} className="p-8 text-center text-slate-400 dark:text-slate-500">
                     Nenhuma troca ou migração de estoque registrada ainda. Clique em "Nova Troca / Migração entre Lojas" para realizar um remanejamento.
                   </td>
                 </tr>
@@ -307,30 +359,30 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                   const totalRem = ex.itemsRemoved.reduce((acc, i) => acc + i.quantity, 0);
 
                   return (
-                      <tr
-                        key={ex.id}
-                        onClick={() => setSelectedExchange(ex)}
-                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
-                      >
-                      <td className="p-4 font-mono font-bold text-indigo-600">{ex.id}</td>
-                      <td className="p-4 font-bold text-slate-900">{ex.clientName}</td>
-                      <td className="p-4 font-bold text-slate-700">
+                    <tr
+                      key={ex.id}
+                      onClick={() => setSelectedExchange(ex)}
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
+                    >
+                      <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400">{ex.id}</td>
+                      <td className="p-4 font-bold text-slate-900 dark:text-slate-100">{ex.clientName}</td>
+                      <td className="p-4 font-bold text-slate-700 dark:text-slate-300">
                         {ex.destinationClientName || (ex.type === 'recolhimento_oficina' ? 'Estoque Geral (Oficina)' : 'Troca Direta')}
                       </td>
-                      <td className="p-4 text-slate-600">{formatDateBR(ex.date)}</td>
+                      <td className="p-4 text-slate-600 dark:text-slate-400">{formatDateBR(ex.date)}</td>
                       <td className="p-4 text-center">
                         <span className="px-2.5 py-1 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/50 rounded-lg inline-block">
                           {totalRem} un
                         </span>
                       </td>
-                      <td className="p-4 font-medium text-slate-700">{ex.responsible}</td>
+                      <td className="p-4 font-medium text-slate-700 dark:text-slate-300">{ex.responsible}</td>
                       <td className="p-4 text-right">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedExchange(ex);
                           }}
-                          className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-semibold cursor-pointer"
+                          className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-lg font-semibold cursor-pointer text-xs"
                         >
                           Ver Comprovante PDF
                         </button>
