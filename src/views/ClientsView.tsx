@@ -193,48 +193,62 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
         </button>
       </div>
 
-      {/* Top Overview KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] text-slate-400 font-medium block">Clientes Ativos</span>
-            <span className="text-lg font-bold text-slate-900">{activeClientsCount} parceiros</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-            <Boxes className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] text-slate-400 font-medium block">Produtos em Clientes</span>
-            <span className="text-lg font-bold text-slate-900">{totalProductsOnSite} un</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-            <DollarSign className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] text-slate-400 font-medium block">Total a Receber</span>
-            <span className="text-lg font-bold text-emerald-600">
-              R$ {totalReceivable.toFixed(2)}
+      {/* Top Overview KPI Cards (Definance 2x2 Mobile Layout) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-indigo-500/40 dark:hover:border-indigo-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Clientes Ativos
             </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-indigo-500/10 text-indigo-400 shrink-0">
+              <Users className="w-4 h-4 sm:w-4 sm:h-4" />
+            </div>
           </div>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
+            {activeClientsCount} <span className="text-xs sm:text-sm font-bold text-slate-400">parceiros</span>
+          </p>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-3">
-          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
-            <MapPin className="w-5 h-5" />
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-purple-500/40 dark:hover:border-purple-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Produtos em Clientes
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-purple-500/10 text-purple-400 shrink-0">
+              <Boxes className="w-4 h-4 sm:w-4 sm:h-4" />
+            </div>
           </div>
-          <div>
-            <span className="text-[11px] text-slate-400 font-medium block">Visitas Pendentes</span>
-            <span className="text-lg font-bold text-amber-600">{pendingVisitsCount} pendentes</span>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
+            {totalProductsOnSite} <span className="text-xs sm:text-sm font-bold text-slate-400">un</span>
+          </p>
+        </div>
+
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-emerald-500/40 dark:hover:border-emerald-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Total a Receber
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+              <DollarSign className="w-4 h-4 sm:w-4 sm:h-4" />
+            </div>
           </div>
+          <p className="text-lg sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2 sm:mt-3 tracking-tight truncate">
+            R$ {totalReceivable.toFixed(2).replace('.', ',')}
+          </p>
+        </div>
+
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-amber-500/40 dark:hover:border-amber-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Visitas Pendentes
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/10 text-amber-400 shrink-0">
+              <MapPin className="w-4 h-4 sm:w-4 sm:h-4" />
+            </div>
+          </div>
+          <p className="text-lg sm:text-2xl font-black text-amber-600 dark:text-amber-400 mt-2 sm:mt-3 tracking-tight truncate">
+            {pendingVisitsCount} <span className="text-xs sm:text-sm font-bold text-slate-400">pendentes</span>
+          </p>
         </div>
       </div>
 

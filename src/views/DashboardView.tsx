@@ -114,65 +114,79 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Main KPI Cards Grid (Dynamic values) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Main KPI Cards Grid (Definance 2x2 Mobile Layout) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Faturamento real */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-slate-500">Faturamento Acumulado</span>
-            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
-              <TrendingUp className="w-5 h-5" />
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-emerald-500/40 dark:hover:border-emerald-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Faturamento Acumulado
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+              <TrendingUp className="w-4 h-4 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="space-y-1">
-            <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalRevenue)}</p>
-            <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-              <ArrowUpRight className="w-3.5 h-3.5" />
-              <span>Base de dados real</span>
-            </p>
-          </div>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
+            {formatCurrency(totalRevenue)}
+          </p>
+          <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 mt-1 truncate">
+            <ArrowUpRight className="w-3 h-3 shrink-0" />
+            <span>Base real</span>
+          </p>
         </div>
 
         {/* Card 2: Valor a receber */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-slate-500">Saldo a Receber</span>
-            <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
-              <DollarSign className="w-5 h-5" />
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-indigo-500/40 dark:hover:border-indigo-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Saldo a Receber
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-indigo-500/10 text-indigo-400 shrink-0">
+              <DollarSign className="w-4 h-4 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="space-y-1">
-            <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalReceivable)}</p>
-            <p className="text-xs text-slate-400">Em pedidos pendentes</p>
-          </div>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
+            {formatCurrency(totalReceivable)}
+          </p>
+          <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
+            Em pedidos pendentes
+          </p>
         </div>
 
         {/* Card 3: Produtos em estoque */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-slate-500">Estoque de Produtos 3D</span>
-            <div className="p-2 rounded-xl bg-purple-50 text-purple-600">
-              <Boxes className="w-5 h-5" />
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-purple-500/40 dark:hover:border-purple-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Estoque Produtos
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-purple-500/10 text-purple-400 shrink-0">
+              <Boxes className="w-4 h-4 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="space-y-1">
-            <p className="text-2xl font-bold text-slate-900">{totalProductsInStock} unidades</p>
-            <p className="text-xs text-purple-600 font-semibold">{products.length} modelos cadastrados</p>
-          </div>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
+            {totalProductsInStock} <span className="text-xs sm:text-sm font-bold text-slate-400">un</span>
+          </p>
+          <p className="text-[10px] sm:text-xs text-purple-600 dark:text-purple-400 font-semibold mt-1 truncate">
+            {products.length} modelos cadastrados
+          </p>
         </div>
 
         {/* Card 4: Unidades vendidas */}
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-medium text-slate-500">Produtos Vendidos</span>
-            <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
-              <ShoppingBag className="w-5 h-5" />
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-blue-500/40 dark:hover:border-blue-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Produtos Vendidos
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-blue-500/10 text-blue-400 shrink-0">
+              <ShoppingBag className="w-4 h-4 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="space-y-1">
-            <p className="text-2xl font-bold text-slate-900">{totalItemsSold} unidades</p>
-            <p className="text-xs text-slate-400">{orders.length} pedidos efetuados</p>
-          </div>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
+            {totalItemsSold} <span className="text-xs sm:text-sm font-bold text-slate-400">un</span>
+          </p>
+          <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
+            {orders.length} pedidos efetuados
+          </p>
         </div>
       </div>
 

@@ -72,46 +72,74 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         </div>
       </div>
 
-      {/* Dynamic KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
-          <span className="text-[11px] text-slate-500 font-bold block">Total Recebido (Entrou em Caixa)</span>
-          <span className="text-2xl font-black text-emerald-600 block">
+      {/* Dynamic KPI Cards (Definance 2x2 Mobile Layout) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-emerald-500/40 dark:hover:border-emerald-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Total Recebido
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+              <TrendingUp className="w-4 h-4 sm:w-4 sm:h-4" />
+            </div>
+          </div>
+          <p className="text-lg sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2 sm:mt-3 tracking-tight truncate">
             R$ {totalReceived.toFixed(2).replace('.', ',')}
-          </span>
-          <span className="text-[10px] text-emerald-700 font-semibold block">
-             Pagamentos confirmados
-          </span>
+          </p>
+          <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1 truncate">
+            Entrou em Caixa
+          </p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
-          <span className="text-[11px] text-slate-500 font-bold block">Saldo a Receber / Pendente</span>
-          <span className="text-2xl font-black text-indigo-600 block">
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-indigo-500/40 dark:hover:border-indigo-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Saldo a Receber
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-indigo-500/10 text-indigo-400 shrink-0">
+              <DollarSign className="w-4 h-4 sm:w-4 sm:h-4" />
+            </div>
+          </div>
+          <p className="text-lg sm:text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-2 sm:mt-3 tracking-tight truncate">
             R$ {totalReceivable.toFixed(2).replace('.', ',')}
-          </span>
-          <span className="text-[10px] text-indigo-600 font-semibold block">
-             A receber nos pedidos
-          </span>
+          </p>
+          <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
+            Pendente em pedidos
+          </p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
-          <span className="text-[11px] text-slate-500 font-bold block">Faturamento Total Emitido</span>
-          <span className="text-2xl font-black text-slate-900 block">
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-purple-500/40 dark:hover:border-purple-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Total Emitido
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-purple-500/10 text-purple-400 shrink-0">
+              <Wallet className="w-4 h-4 sm:w-4 sm:h-4" />
+            </div>
+          </div>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
             R$ {totalGrossSales.toFixed(2).replace('.', ',')}
-          </span>
-          <span className="text-[10px] text-slate-400 font-medium block">
-            Soma dos valores dos pedidos gerados
-          </span>
+          </p>
+          <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
+            Faturamento bruto
+          </p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
-          <span className="text-[11px] text-slate-500 font-bold block">Ticket Médio por Operação</span>
-          <span className="text-2xl font-black text-slate-800 block">
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-blue-500/40 dark:hover:border-blue-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Ticket Médio
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-blue-500/10 text-blue-400 shrink-0">
+              <HandCoins className="w-4 h-4 sm:w-4 sm:h-4" />
+            </div>
+          </div>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
             R$ {averageTicket.toFixed(2).replace('.', ',')}
-          </span>
-          <span className="text-[10px] text-slate-400 font-medium block">
-            Média por pedido de venda
-          </span>
+          </p>
+          <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
+            Média por pedido
+          </p>
         </div>
       </div>
 

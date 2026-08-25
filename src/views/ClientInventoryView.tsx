@@ -152,38 +152,48 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4">
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-            <Boxes className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-xs text-slate-400 font-medium block">Total Consignado</span>
-            <span className="text-xl font-extrabold text-slate-900">{totalProductsConsigned} produtos</span>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4">
-          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
-            <DollarSign className="w-6 h-6" />
-          </div>
-          <div>
-            <span className="text-xs text-slate-400 font-medium block">Valor de Venda Alocado</span>
-            <span className="text-xl font-extrabold text-emerald-600">
-              R$ {totalValuation.toFixed(2)}
+      {/* KPI Cards (Definance Style) */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-indigo-500/40 dark:hover:border-indigo-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Total Consignado
             </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-indigo-500/10 text-indigo-400 shrink-0">
+              <Boxes className="w-4 h-4 sm:w-4 sm:h-4" />
+            </div>
           </div>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
+            {totalProductsConsigned} <span className="text-xs sm:text-sm font-bold text-slate-400">produtos</span>
+          </p>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-4">
-          <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-            <MapPin className="w-6 h-6" />
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-emerald-500/40 dark:hover:border-emerald-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Valor de Venda Alocado
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+              <DollarSign className="w-4 h-4 sm:w-4 sm:h-4" />
+            </div>
           </div>
-          <div>
-            <span className="text-xs text-slate-400 font-medium block">Estabelecimentos Ativos</span>
-            <span className="text-xl font-extrabold text-slate-900">{clients.length} parceiros</span>
+          <p className="text-lg sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2 sm:mt-3 tracking-tight truncate">
+            R$ {totalValuation.toFixed(2).replace('.', ',')}
+          </p>
+        </div>
+
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-purple-500/40 dark:hover:border-purple-500/40 cursor-pointer col-span-2 lg:col-span-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Estabelecimentos Ativos
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-purple-500/10 text-purple-400 shrink-0">
+              <MapPin className="w-4 h-4 sm:w-4 sm:h-4" />
+            </div>
           </div>
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
+            {clients.length} <span className="text-xs sm:text-sm font-bold text-slate-400">parceiros</span>
+          </p>
         </div>
       </div>
 

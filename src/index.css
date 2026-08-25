@@ -2,6 +2,37 @@
 
 @variant dark (&:where(.dark, .dark *));
 
+html {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16.5px;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Definance-style KPI Card Hover Effects */
+.definance-kpi-card {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.definance-kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.1), 0 8px 10px -6px rgba(16, 185, 129, 0.1);
+}
+
+html.dark .definance-kpi-card {
+  background-color: #12151c !important;
+  border-color: #202531 !important;
+}
+
+html.dark .definance-kpi-card:hover {
+  border-color: rgba(52, 211, 153, 0.4) !important;
+  box-shadow: 0 10px 30px -5px rgba(16, 185, 129, 0.15);
+}
+
 /* System Dark Theme Custom Utility Overrides (Estritamente aplicados SOMENTE quando html tem classe .dark) */
 html.dark {
   color-scheme: dark;
