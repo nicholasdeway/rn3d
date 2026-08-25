@@ -213,11 +213,11 @@ export function useVisits(
           id: `PAG-${Math.floor(Math.random() * 90000 + 10000)}`,
           clientName: client.name,
           date: dateStr,
-          type: 'Acerto Consignação (Visita)',
+          type: visitData.visitType === 'entrega_pedido' ? 'Entrega Presencial (Venda à Vista)' : 'Acerto Consignação (Visita)',
           amount: received,
           paymentMethod: method,
           status: 'Recebido',
-          notes: visitData.paymentNotes || `Recebimento presencial de ${visitData.totalSoldUnits || 0} peças vendidas`,
+          notes: visitData.paymentNotes || `Recebimento presencial de R$ ${received.toFixed(2)}`,
         },
         ...prev,
       ]);
