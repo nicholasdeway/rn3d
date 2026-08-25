@@ -371,7 +371,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     <th className="p-4 text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                   {filteredQuotes.map((q) => {
                     const isConverted =
                       q.status === 'Convertido em Pedido' ||
@@ -380,13 +380,13 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
                     const displayStatus = isConverted ? 'Convertido em Pedido' : q.status;
 
-                    let badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200';
-                    if (isConverted) badgeStyle = 'bg-emerald-100 text-emerald-800 border-emerald-300 font-extrabold';
-                    if (q.status === 'Recusado') badgeStyle = 'bg-rose-50 text-rose-700 border-rose-200';
-                    if (q.status === 'Enviado') badgeStyle = 'bg-blue-50 text-blue-700 border-blue-200';
+                    let badgeStyle = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+                    if (isConverted) badgeStyle = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
+                    if (q.status === 'Recusado') badgeStyle = 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900/50';
+                    if (q.status === 'Enviado') badgeStyle = 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900/50';
 
                     return (
-                      <tr key={q.id} className="hover:bg-slate-50/80 transition-colors">
+                      <tr key={q.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
                         <td className="p-4 font-mono font-bold text-indigo-600">{q.id}</td>
                         <td className="p-4 font-bold text-slate-900">{q.clientName}</td>
                         <td className="p-4 text-slate-600">{q.date}</td>

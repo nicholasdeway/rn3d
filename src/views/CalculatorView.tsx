@@ -165,7 +165,7 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({ onSaveAsProduct 
     hardwareCost: 0.0,
     laborPrepCost: 0.0,
     desiredProfitMarginPct: 50, // 50% net profit margin target
-    extraDiscountAffiliatePct: 10, // 10% fixo padrão para descontos/comissões/afiliados
+    extraDiscountAffiliatePct: 0, // Padrão 0% para descontos/comissões/afiliados
   });
 
   // Selected Active Marketplace for Details Tab
@@ -487,25 +487,6 @@ Qualquer dúvida estou à disposição! 🚀`;
               </button>
             )}
           </div>
-        </div>
-
-        {/* Quick Presets Carousel / Badges */}
-        <div className="mt-6 pt-6 border-t border-white/10 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider mr-2 flex items-center gap-1">
-            <Zap className="w-3.5 h-3.5 text-amber-400" /> Presets Rápidos:
-          </span>
-          {QUICK_PRESETS.map((preset, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleApplyPreset(preset)}
-              className="px-3 py-1.5 bg-white/5 hover:bg-indigo-500/30 border border-white/10 hover:border-indigo-400/40 rounded-xl text-xs text-slate-200 hover:text-white transition-all flex items-center gap-1.5"
-            >
-              <span>{preset.name}</span>
-              <span className="text-[10px] text-indigo-300 bg-indigo-950/60 px-1.5 py-0.5 rounded-md font-mono">
-                {preset.weight}g
-              </span>
-            </button>
-          ))}
         </div>
       </div>
 

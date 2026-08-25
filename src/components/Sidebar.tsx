@@ -118,9 +118,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <img
                 src="/logo.png"
                 alt="RN 3D"
-                onClick={onToggleCollapse}
+                onClick={() => {
+                  onSelectView('dashboard');
+                  if (isMobileOpen) onCloseMobile();
+                }}
                 className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200 cursor-pointer hover:scale-105 transition-transform"
-                title="Clique para expandir o menu"
+                title="Ir para o Dashboard"
               />
               <button
                 onClick={onToggleCollapse}
@@ -132,14 +135,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-3 overflow-hidden">
+              <div
+                onClick={() => {
+                  onSelectView('dashboard');
+                  if (isMobileOpen) onCloseMobile();
+                }}
+                className="flex items-center gap-3 overflow-hidden cursor-pointer group hover:opacity-90 transition-opacity"
+                title="Ir para o Dashboard"
+              >
                 <img
                   src="/logo.png"
                   alt="RN 3D"
-                  className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200 shrink-0 cursor-pointer"
+                  className="w-10 h-10 rounded-full object-cover shadow-sm border border-slate-200 shrink-0 cursor-pointer group-hover:scale-105 transition-transform"
                 />
                 <div className="flex flex-col min-w-0">
-                  <span className="font-bold text-slate-900 text-base leading-tight truncate">
+                  <span className="font-bold text-slate-900 text-base leading-tight truncate group-hover:text-indigo-600 transition-colors">
                     RN 3D <span className="text-indigo-600">Sistema</span>
                   </span>
                   <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1">

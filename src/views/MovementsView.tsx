@@ -80,13 +80,15 @@ export const MovementsView: React.FC<MovementsViewProps> = ({ movements }) => {
               {filtered.map((m) => {
                 const isPositive = m.quantityDelta > 0;
                 return (
-                  <tr key={m.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="p-4 font-medium text-slate-500">{m.timestamp}</td>
-                    <td className="p-4 font-bold text-slate-900">{m.productName}</td>
+                  <tr key={m.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                    <td className="p-4 font-medium text-slate-500 dark:text-slate-400">{m.timestamp}</td>
+                    <td className="p-4 font-bold text-slate-900 dark:text-slate-100">{m.productName}</td>
                     <td className="p-4 text-center">
                       <span
                         className={`font-black text-sm px-2.5 py-0.5 rounded-md ${
-                          isPositive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-800'
+                          isPositive
+                            ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
                         }`}
                       >
                         {isPositive ? `+${m.quantityDelta}` : `${m.quantityDelta}`} un

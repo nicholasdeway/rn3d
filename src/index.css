@@ -190,7 +190,11 @@ html.dark .bg-purple-50 {
   color: #c084fc !important;
 }
 
-html.dark .divide-slate-100 > * + * {
+html.dark .divide-y > * + *,
+html.dark .divide-slate-100 > * + *,
+html.dark .divide-slate-200 > * + *,
+html.dark table tbody,
+html.dark table tbody tr {
   border-color: #202531 !important;
 }
 

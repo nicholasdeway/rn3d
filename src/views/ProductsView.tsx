@@ -225,13 +225,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       formData.cashPrice === undefined ||
       formData.cashPrice === null ||
       isNaN(Number(formData.cashPrice)) ||
-      Number(formData.cashPrice) <= 0 ||
+      Number(formData.cashPrice) < 0 ||
       formData.standardPrice === undefined ||
       formData.standardPrice === null ||
       isNaN(Number(formData.standardPrice)) ||
-      Number(formData.standardPrice) <= 0
+      Number(formData.standardPrice) < 0
     ) {
-      alert('Por favor, preencha obrigatoriamente os valores de Preço À Vista e Preço Consignado com valores maiores que zero.');
+      alert('Por favor, preencha obrigatoriamente os valores de Preço À Vista e Preço Consignado com valores válidos.');
       return;
     }
 
@@ -302,13 +302,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       editFormData.cashPrice === undefined ||
       editFormData.cashPrice === null ||
       isNaN(Number(editFormData.cashPrice)) ||
-      Number(editFormData.cashPrice) <= 0 ||
+      Number(editFormData.cashPrice) < 0 ||
       editFormData.standardPrice === undefined ||
       editFormData.standardPrice === null ||
       isNaN(Number(editFormData.standardPrice)) ||
-      Number(editFormData.standardPrice) <= 0
+      Number(editFormData.standardPrice) < 0
     ) {
-      alert('Por favor, preencha obrigatoriamente os valores de Preço À Vista e Preço Consignado com valores maiores que zero.');
+      alert('Por favor, preencha obrigatoriamente os valores de Preço À Vista e Preço Consignado com valores válidos.');
       return;
     }
 
@@ -808,8 +808,9 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   <label className="block font-semibold text-slate-700 mb-1">Estoque Oficina</label>
                   <input
                     type="number"
-                    value={editFormData.currentStock ?? 0}
-                    onChange={(e) => setEditFormData({ ...editFormData, currentStock: Number(e.target.value) })}
+                    value={editFormData.currentStock ?? ''}
+                    onChange={(e) => setEditFormData({ ...editFormData, currentStock: e.target.value === '' ? ('' as any) : Number(e.target.value) })}
+                    placeholder="Ex: 20"
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-900"
                   />
                 </div>
@@ -1003,8 +1004,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   <label className="block font-semibold text-slate-700 mb-1">Estoque Inicial Oficina</label>
                   <input
                     type="number"
-                    value={formData.currentStock ?? 20}
-                    onChange={(e) => setFormData({ ...formData, currentStock: Number(e.target.value) })}
+                    value={formData.currentStock ?? ''}
+                    onChange={(e) => setFormData({ ...formData, currentStock: e.target.value === '' ? ('' as any) : Number(e.target.value) })}
                     placeholder="Ex: 20"
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl font-bold text-slate-900"
                   />
