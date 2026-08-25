@@ -83,7 +83,48 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   // Edit form state
   const [editFormData, setEditFormData] = useState<Partial<Product>>({});
 
-  const categories = ['Todos', 'Case de Munição', 'Fidgets', 'Chaveiro', 'Expositor', 'Decoração', 'Acessórios', 'Organizadores'];
+  // Dynamic categories state with persistence
+  const [customCategories, setCustomCategories] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_custom_categories');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return ['Case de Munição', 'Fidgets', 'Chaveiro', 'Expositor', 'Decoração', 'Acessórios', 'Organizadores'];
+  });
+
+  const [isNewCategoryModalOpen, setIsNewCategoryModalOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+
+  const categories = ['Todos', ...customCategories];
+
+  const handleAddCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newCategoryName.trim();
+    if (!trimmed) return;
+
+    if (customCategories.some((c) => c.toLowerCase() === trimmed.toLowerCase())) {
+      alert('Esta categoria já existe!');
+      return;
+    }
+
+    const updated = [...customCategories, trimmed];
+    setCustomCategories(updated);
+    try {
+      localStorage.setItem('rn3d_custom_categories', JSON.stringify(updated));
+    } catch (e) {}
+
+    setNewCategoryName('');
+    setIsNewCategoryModalOpen(false);
+  };
+
+  const handleToggleProductStatus = (p: Product, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextStatus = p.status === 'Ativo' ? 'Inativo' : 'Ativo';
+    onUpdateProduct({ ...p, status: nextStatus });
+  };
 
   // Default Alphabetical Sorting (A-Z) & Filters
   const filteredProducts = products
@@ -373,17 +414,29 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
               </select>
             </div>
 
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:border-indigo-500 cursor-pointer"
-            >
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  Cat: {c}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1.5">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:border-indigo-500 cursor-pointer"
+              >
+                {categories.map((c) => (
+                  <option key={c} value={c}>
+                    Cat: {c}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="button"
+                onClick={() => setIsNewCategoryModalOpen(true)}
+                className="px-2.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold transition-colors cursor-pointer border border-indigo-100 flex items-center gap-1 shrink-0"
+                title="Cadastrar Nova Categoria de Produto"
+              >
+                <Plus className="w-3.5 h-3.5 text-indigo-600" />
+                <span className="hidden xl:inline">+ Categoria</span>
+              </button>
+            </div>
 
             <select
               value={statusFilter}
@@ -463,12 +516,18 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                       <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
                         {p.category}
                       </span>
-                      <span
-                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${p.status === 'Ativo' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
-                          }`}
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleProductStatus(p, e)}
+                        className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full cursor-pointer transition-colors shadow-2xs ${
+                          p.status === 'Ativo'
+                            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200'
+                        }`}
+                        title="Clique para alternar entre Ativo e Inativo"
                       >
                         {p.status}
-                      </span>
+                      </button>
                     </div>
 
                     <h3
@@ -531,6 +590,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   <th className="p-4">Preço À Vista</th>
                   <th className="p-4">Preço Consignado</th>
                   <th className="p-4">Estoque</th>
+                  <th className="p-4">Status</th>
                   <th className="p-4 text-right">Ação</th>
                 </tr>
               </thead>
@@ -556,6 +616,20 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     <td className="p-4 font-bold text-emerald-600">R$ {(p.cashPrice ?? (p.isKeychain || p.category === 'Chaveiro' ? 4.0 : p.standardPrice)).toFixed(2).replace('.', ',')}</td>
                     <td className="p-4 font-bold text-indigo-600">R$ {p.standardPrice.toFixed(2).replace('.', ',')}</td>
                     <td className="p-4 font-bold text-slate-900">{p.currentStock} un</td>
+                    <td className="p-4">
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleProductStatus(p, e)}
+                        className={`text-[11px] font-bold px-2.5 py-1 rounded-full cursor-pointer transition-colors shadow-2xs ${
+                          p.status === 'Ativo'
+                            ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200'
+                        }`}
+                        title="Clique para alternar entre Ativo e Inativo"
+                      >
+                        {p.status}
+                      </button>
+                    </td>
                     <td className="p-4 text-right space-x-2">
                       <button
                         onClick={() => handleOpenEditModal(p)}
@@ -1001,6 +1075,60 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
             <p className="text-[11px] text-slate-400 font-medium text-center">
               💡 Clique fora ou pressione fechar para retornar ao catálogo.
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para Cadastrar Nova Categoria de Produto */}
+      {isNewCategoryModalOpen && (
+        <div className="fixed inset-0 z-[130] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl border border-slate-300 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <Plus className="w-4 h-4 text-indigo-600" />
+                Cadastrar Nova Categoria
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsNewCategoryModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 text-slate-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCategory} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Nome da Categoria (ex: Cases Especiais, Brindes, Miniaturas)
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Digite o nome da nova categoria..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-semibold"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsNewCategoryModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs cursor-pointer"
+                >
+                  Salvar Categoria
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

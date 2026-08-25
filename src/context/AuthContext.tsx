@@ -21,6 +21,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isDemo, setIsDemo] = useState<boolean>(false);
 
   useEffect(() => {
+    // 48-Hour Login Session Expiration check (48 * 60 * 60 * 1000 ms)
+    const loginTime = localStorage.getItem('rn3d_login_timestamp');
+    const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
+
+    if (loginTime && Date.now() - Number(loginTime) > FORTY_EIGHT_HOURS_MS) {
+      console.warn('[Auth Expiration] Sessão de 48 horas expirada. Efetuando logout automático...');
+      localStorage.removeItem('rn3d_login_timestamp');
+      localStorage.removeItem('rn3d_demo_user');
+      if (isSupabaseConfigured()) {
+        supabase.auth.signOut();
+      }
+      setUser(null);
+      setSession(null);
+      setLoading(false);
+      return;
+    }
+
     // Check local storage for demo session first
     const savedDemoUser = localStorage.getItem('rn3d_demo_user');
     if (savedDemoUser) {
@@ -39,6 +56,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session && !localStorage.getItem('rn3d_login_timestamp')) {
+        localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
+      }
       setLoading(false);
     });
 
@@ -46,6 +66,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session) {
+        if (!localStorage.getItem('rn3d_login_timestamp')) {
+          localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
+        }
+      } else {
+        localStorage.removeItem('rn3d_login_timestamp');
+      }
       setLoading(false);
     });
 
@@ -62,6 +89,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       password,
     });
+    if (!error) {
+      localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
+    }
     return { error };
   };
 
@@ -76,6 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } as unknown as User;
 
     localStorage.setItem('rn3d_demo_user', JSON.stringify(demoUser));
+    localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
     setIsDemo(true);
     setUser(demoUser);
   };

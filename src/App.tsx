@@ -44,6 +44,26 @@ export function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [preselectedClientIdForAction, setPreselectedClientIdForAction] = useState<string | undefined>(undefined);
 
+  // Persistent Theme Mode state ('light' | 'dark')
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('rn3d_theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    return 'light';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('rn3d_theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
   useEffect(() => {
     if (currentView) {
       safeSetLocalStorage('rn3d_current_view', currentView);
@@ -177,6 +197,8 @@ export function App() {
           clients={appData.clients}
           orders={appData.orders}
           quotes={appData.quotes}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
           onSearchChange={(query) => appData.setGlobalSearchQuery(query)}
           onSelectSearchResult={(type, id, item) => {
             appData.setGlobalSearchQuery(id || item?.id || '');
