@@ -338,8 +338,8 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Quick Action Dropdown Button */}
-          <div className="relative">
+          {/* Quick Action Dropdown Button (Oculto no Mobile, visivel apenas no desktop sm:block) */}
+          <div className="relative hidden sm:block">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="flex items-center gap-2 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm shadow-indigo-600/20 transition-all active:scale-[0.98] cursor-pointer"

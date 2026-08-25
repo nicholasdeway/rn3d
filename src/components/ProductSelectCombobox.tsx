@@ -240,10 +240,10 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
             <span className="text-[10px] font-normal text-slate-400">Clique para adicionar ao orçamento</span>
           </div>
 
-          <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+          <div className="max-h-[520px] lg:max-h-[620px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80">
             {filteredProducts.length === 0 ? (
-              <div className="p-6 text-center text-slate-400 space-y-1">
-                <p className="text-xs font-bold text-slate-700">Nenhum produto localizado</p>
+              <div className="p-8 text-center text-slate-400 dark:text-slate-500 space-y-1">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Nenhum produto localizado</p>
                 <p className="text-[11px]">Tente buscar por outro nome ou SKU.</p>
               </div>
             ) : (
@@ -254,7 +254,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                     key={p.id}
                     type="button"
                     onClick={() => handleSelect(p, true)}
-                    className="w-full p-2.5 text-left hover:bg-indigo-50/80 transition-colors flex items-center justify-between gap-3 group cursor-pointer"
+                    className="w-full p-3 text-left hover:bg-indigo-50/80 dark:hover:bg-indigo-950/60 transition-colors flex items-center justify-between gap-3 group cursor-pointer border-b border-slate-100 dark:border-slate-800/60 last:border-0"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div
@@ -264,7 +264,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                             setZoomImage({ url: p.imageUrl, title: p.name });
                           }
                         }}
-                        className={`w-10 h-10 rounded-lg bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 group-hover:border-indigo-300 ${
+                        className={`w-11 h-11 rounded-xl bg-indigo-100/80 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700 group-hover:border-indigo-300 ${
                           p.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
                         }`}
                         title={p.imageUrl ? 'Clique para ampliar a foto' : undefined}
@@ -281,11 +281,11 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                       </div>
 
                       <div className="min-w-0">
-                        <h5 className="font-bold text-slate-900 text-xs truncate group-hover:text-indigo-900">
+                        <h5 className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
                           {p.name}
                         </h5>
-                        <p className="text-[11px] text-slate-500 truncate">
-                          <span className="font-mono text-indigo-600 font-semibold">SKU: {p.sku}</span>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                          <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">SKU: {p.sku}</span>
                           {p.storageCapacity && ` • ${p.storageCapacity}`}
                           {p.category && ` • ${p.category}`}
                         </p>
@@ -294,16 +294,16 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
 
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right">
-                        <span className="text-xs font-extrabold text-emerald-600 block">
+                        <span className="text-xs sm:text-sm font-extrabold text-emerald-600 dark:text-emerald-400 block">
                           R$ {price.toFixed(2).replace('.', ',')}
                         </span>
                         {isCashPayment && (
-                          <span className="text-[9px] font-bold text-amber-600 uppercase bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-200">
+                          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
                             À Vista
                           </span>
                         )}
                       </div>
-                      <span className="p-1.5 bg-indigo-50 group-hover:bg-indigo-600 text-indigo-600 group-hover:text-white rounded-lg transition-colors">
+                      <span className="p-2 bg-indigo-50 dark:bg-indigo-950/80 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-600 text-indigo-600 dark:text-indigo-400 group-hover:text-white rounded-xl transition-colors shadow-2xs">
                         <Plus className="w-4 h-4" />
                       </span>
                     </div>

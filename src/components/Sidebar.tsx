@@ -152,9 +152,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span className="font-bold text-slate-900 text-base leading-tight truncate group-hover:text-indigo-600 transition-colors">
                     RN 3D <span className="text-indigo-600">Sistema</span>
                   </span>
-                  <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                    {isDemo ? 'Modo Demo' : 'Autenticado JWT'}
-                  </span>
                 </div>
               </div>
 
@@ -228,9 +225,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button
             onClick={() => signOut()}
             title="Sair do sistema"
-            className={`w-full flex items-center justify-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer ${
-              isCollapsed ? 'justify-center px-0' : ''
-            }`}
+            className={`w-full flex items-center justify-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer ${isCollapsed ? 'justify-center px-0' : ''
+              }`}
           >
             <LogOut className="w-4 h-4 shrink-0 cursor-pointer" />
             {!isCollapsed && <span className="cursor-pointer">Sair do sistema</span>}

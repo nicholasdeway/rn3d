@@ -183,7 +183,7 @@ export function useAppData() {
 
   const handleSyncProductsToSupabase = async () => {
     try {
-      showToast('Sincronizando todo o sistema com o Supabase (Produtos, Clientes, Pedidos e Orçamentos)...', 'info');
+      showToast('Sincronizando todo o sistema com o Banco de Dados', 'info');
       const [pCount, cCount, oCount, qCount] = await Promise.all([
         syncMissingProductsToSupabase(products),
         syncMissingClientsToSupabase(clients),
