@@ -5,30 +5,42 @@
 
 export function safeSetLocalStorage(key: string, value: string): void {
   try {
-    localStorage.setItem(key, value);
-  } catch (e: any) {
-    console.warn(`[LocalStorage Quota Warning] Exceeded storage quota for ${key}. Clearing secondary caches...`);
-    try {
-      localStorage.removeItem('rn3d_client_logistics');
-      localStorage.removeItem('rn3d_movements');
-      localStorage.removeItem('rn3d_transactions');
-      localStorage.removeItem('rn3d_visits');
-      localStorage.removeItem('rn3d_current_view');
-      localStorage.setItem(key, value);
-    } catch (err) {
+    // Strips huge base64 image payloads before writing to local browser cache (5MB limit)
+    let payloadToSave = value;
+    if (key === 'rn3d_products' && value.includes('data:image/')) {
       try {
         const parsed = JSON.parse(value);
         if (Array.isArray(parsed)) {
           const sanitized = parsed.map((item: any) => {
-            const copy = { ...item };
-            if (typeof copy.imageUrl === 'string' && copy.imageUrl.length > 500000) copy.imageUrl = '';
-            return copy;
+            if (typeof item.imageUrl === 'string' && item.imageUrl.length > 30000) {
+              return { ...item, imageUrl: '' };
+            }
+            return item;
           });
-          localStorage.setItem(key, JSON.stringify(sanitized));
+          payloadToSave = JSON.stringify(sanitized);
         }
-      } catch (finalErr) {
-        console.warn(`[LocalStorage Cache Warning] Storage limit reached for ${key}. State kept in memory.`);
+      } catch (e) {}
+    }
+
+    localStorage.setItem(key, payloadToSave);
+  } catch (e: any) {
+    try {
+      // Clear legacy temporary keys if quota is tight
+      localStorage.removeItem('rn3d_client_logistics');
+      localStorage.removeItem('rn3d_movements');
+      localStorage.removeItem('rn3d_current_view');
+
+      // Strip image URLs if still failing
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        const sanitized = parsed.map((item: any) => ({
+          ...item,
+          imageUrl: typeof item.imageUrl === 'string' && item.imageUrl.length > 1000 ? '' : item.imageUrl,
+        }));
+        localStorage.setItem(key, JSON.stringify(sanitized));
       }
+    } catch (finalErr) {
+      // Silent fallback: state remains 100% active in React memory and Supabase
     }
   }
 }
