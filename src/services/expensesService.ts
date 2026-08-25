@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ExpenseItem, ExpenseCategory, AccountBalances } from '../types';
+import { uploadToSupabaseStorage } from './storageService';
 
 const STANDARD_DB_CATEGORIES = [
   'Combustível & Transporte',
@@ -221,6 +222,11 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
     ? expense.category
     : 'Outros';
 
+  let receiptUrl = expense.receiptUrl || '';
+  if (receiptUrl.startsWith('data:')) {
+    receiptUrl = await uploadToSupabaseStorage(receiptUrl, 'receipts', expense.description || 'receipt');
+  }
+
   const payload: any = {
     description: expense.description,
     category: safeCategory,
@@ -228,7 +234,7 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
     date: expense.date || new Date().toISOString().split('T')[0],
     payment_status: expense.paymentStatus || 'Pago',
     beneficiary: expense.beneficiary || '',
-    receipt_url: expense.receiptUrl || '',
+    receipt_url: receiptUrl,
     receipt_type: expense.receiptType || 'image',
     receipt_name: expense.receiptName || '',
     is_auto_replicated: expense.isAutoReplicated ?? false,
@@ -263,7 +269,13 @@ export async function updateExpense(id: string, updates: Partial<ExpenseItem>): 
   if (updates.date !== undefined) payload.date = updates.date;
   if (updates.paymentStatus !== undefined) payload.payment_status = updates.paymentStatus;
   if (updates.beneficiary !== undefined) payload.beneficiary = updates.beneficiary;
-  if (updates.receiptUrl !== undefined) payload.receipt_url = updates.receiptUrl;
+  if (updates.receiptUrl !== undefined) {
+    let receiptUrl = updates.receiptUrl;
+    if (receiptUrl.startsWith('data:')) {
+      receiptUrl = await uploadToSupabaseStorage(receiptUrl, 'receipts', updates.description || 'receipt');
+    }
+    payload.receipt_url = receiptUrl;
+  }
   if (updates.receiptType !== undefined) payload.receipt_type = updates.receiptType;
   if (updates.receiptName !== undefined) payload.receipt_name = updates.receiptName;
   payload.notes = encodeNotesAndMetadata(updates);
@@ -316,20 +328,28 @@ export async function syncMissingExpensesToSupabase(expenses: ExpenseItem[]): Pr
 
     if (toInsert.length === 0) return 0;
 
-    const rows = toInsert.map((e) => ({
-      description: e.description,
-      category: STANDARD_DB_CATEGORIES.includes(e.category) ? e.category : 'Outros',
-      amount: e.amount,
-      date: e.date,
-      payment_status: e.paymentStatus,
-      beneficiary: e.beneficiary || '',
-      receipt_url: e.receiptUrl || '',
-      receipt_type: e.receiptType || 'image',
-      receipt_name: e.receiptName || '',
-      is_auto_replicated: e.isAutoReplicated ?? false,
-      reference_code: e.referenceCode || '',
-      notes: encodeNotesAndMetadata(e),
-    }));
+    const rows = await Promise.all(
+      toInsert.map(async (e) => {
+        let receiptUrl = e.receiptUrl || '';
+        if (receiptUrl.startsWith('data:')) {
+          receiptUrl = await uploadToSupabaseStorage(receiptUrl, 'receipts', e.description || 'receipt');
+        }
+        return {
+          description: e.description,
+          category: STANDARD_DB_CATEGORIES.includes(e.category) ? e.category : 'Outros',
+          amount: e.amount,
+          date: e.date,
+          payment_status: e.paymentStatus,
+          beneficiary: e.beneficiary || '',
+          receipt_url: receiptUrl,
+          receipt_type: e.receiptType || 'image',
+          receipt_name: e.receiptName || '',
+          is_auto_replicated: e.isAutoReplicated ?? false,
+          reference_code: e.referenceCode || '',
+          notes: encodeNotesAndMetadata(e),
+        };
+      })
+    );
 
     const { error } = await supabase.from('expenses').insert(rows);
     if (error) {

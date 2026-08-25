@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Product } from '../types';
+import { uploadToSupabaseStorage } from './storageService';
 
 export async function fetchProducts(): Promise<Product[]> {
   let localProducts: Product[] = [];
@@ -88,25 +89,33 @@ export async function syncMissingProductsToSupabase(missingProducts: Product[]):
     const toInsert = missingProducts.filter((p) => p.sku && !existingSkus.has(p.sku.toLowerCase()));
     if (toInsert.length === 0) return 0;
 
-    const rows = toInsert.map((p) => ({
-      name: p.name,
-      sku: p.sku,
-      category: p.category || 'Chaveiro',
-      is_keychain: p.isKeychain ?? false,
-      description: p.description || '',
-      image_url: p.imageUrl || '',
-      material: p.material || 'PLA',
-      color: p.color || 'Preto',
-      weight_gram: p.weightGram || 50,
-      standard_price: p.standardPrice || 0,
-      cash_price: p.cashPrice ?? p.standardPrice ?? 0,
-      min_price: p.minPrice || 0,
-      suggested_retail_price: p.suggestedRetailPrice || 0,
-      current_stock: p.currentStock ?? 20,
-      min_stock: p.minStock || 5,
-      allows_customization: p.allowsCustomization ?? true,
-      status: p.status || 'Ativo',
-    }));
+    const rows = await Promise.all(
+      toInsert.map(async (p) => {
+        let imageUrl = p.imageUrl || '';
+        if (imageUrl.startsWith('data:')) {
+          imageUrl = await uploadToSupabaseStorage(imageUrl, 'products', p.sku || p.name || 'product');
+        }
+        return {
+          name: p.name,
+          sku: p.sku,
+          category: p.category || 'Chaveiro',
+          is_keychain: p.isKeychain ?? false,
+          description: p.description || '',
+          image_url: imageUrl,
+          material: p.material || 'PLA',
+          color: p.color || 'Preto',
+          weight_gram: p.weightGram || 50,
+          standard_price: p.standardPrice || 0,
+          cash_price: p.cashPrice ?? p.standardPrice ?? 0,
+          min_price: p.minPrice || 0,
+          suggested_retail_price: p.suggestedRetailPrice || 0,
+          current_stock: p.currentStock ?? 20,
+          min_stock: p.minStock || 5,
+          allows_customization: p.allowsCustomization ?? true,
+          status: p.status || 'Ativo',
+        };
+      })
+    );
 
     let { error } = await supabase.from('products').insert(rows);
 
@@ -135,13 +144,18 @@ export async function createProduct(product: Partial<Product>): Promise<Product 
     return null;
   }
 
+  let imageUrl = product.imageUrl || '';
+  if (imageUrl.startsWith('data:')) {
+    imageUrl = await uploadToSupabaseStorage(imageUrl, 'products', product.sku || product.name || 'product');
+  }
+
   const payload: any = {
     name: product.name,
     sku: product.sku,
     category: product.category || 'Geral',
     is_keychain: product.isKeychain ?? false,
     description: product.description || '',
-    image_url: product.imageUrl || '',
+    image_url: imageUrl,
     material: product.material || 'PLA',
     color: product.color || 'Preto',
     weight_gram: product.weightGram || 0,
@@ -194,13 +208,18 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
     return null;
   }
 
+  let imageUrl = updates.imageUrl;
+  if (imageUrl && imageUrl.startsWith('data:')) {
+    imageUrl = await uploadToSupabaseStorage(imageUrl, 'products', updates.sku || updates.name || id);
+  }
+
   const payload: any = {
     name: updates.name,
     sku: updates.sku,
     category: updates.category,
     is_keychain: updates.isKeychain,
     description: updates.description,
-    image_url: updates.imageUrl,
+    image_url: imageUrl,
     material: updates.material,
     color: updates.color,
     standard_price: updates.standardPrice,

@@ -167,7 +167,7 @@ export function useAppData() {
 
     loadAllData();
 
-    // Rapid 5-second background sync interval for seamless web <-> mobile real-time updates
+    // Re-sincronizar apenas ao focar na janela do navegador ou em intervalo longo (5 minutos)
     const intervalId = setInterval(async () => {
       if (!isMounted) return;
       try {
@@ -186,7 +186,7 @@ export function useAppData() {
       } catch (e) {
         // Silent background sync error
       }
-    }, 5000);
+    }, 300000); // 5 minutos (300.000 ms) em vez de 5 segundos
 
     const handleFocus = () => {
       if (!isMounted) return;
@@ -330,10 +330,13 @@ export function useAppData() {
     });
   }, [orders]);
 
-  // Automatically sync local expenses to Supabase if any exist locally
+  // Automatically sync ONLY unsynced local expenses to Supabase
   useEffect(() => {
-    if (expenses.length > 0) {
-      syncMissingExpensesToSupabase(expenses);
+    const unsynced = expenses.filter(
+      (e) => (e.id && e.id.startsWith('exp-')) || !e.id || e.id.length < 30
+    );
+    if (unsynced.length > 0) {
+      syncMissingExpensesToSupabase(unsynced);
     }
   }, [expenses]);
 

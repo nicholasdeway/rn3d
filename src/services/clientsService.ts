@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Client } from '../types';
+import { uploadToSupabaseStorage } from './storageService';
 
 export async function fetchClients(): Promise<Client[]> {
   let localClients: Client[] = [];
@@ -85,10 +86,15 @@ export async function createClient(client: Partial<Client>): Promise<Client | nu
     return null;
   }
 
+  let avatarUrl = client.avatarUrl || '';
+  if (avatarUrl.startsWith('data:')) {
+    avatarUrl = await uploadToSupabaseStorage(avatarUrl, 'clients', client.name || 'avatar');
+  }
+
   const payload: any = {
     name: client.name,
     fantasy_name: client.fantasyName,
-    avatar_url: client.avatarUrl || '',
+    avatar_url: avatarUrl,
     document: client.document,
     responsible: client.responsible,
     phone: client.phone,
@@ -139,10 +145,15 @@ export async function updateClient(id: string, updates: Partial<Client>): Promis
     return null;
   }
 
+  let avatarUrl = updates.avatarUrl;
+  if (avatarUrl && avatarUrl.startsWith('data:')) {
+    avatarUrl = await uploadToSupabaseStorage(avatarUrl, 'clients', updates.name || id);
+  }
+
   const payload: any = {
     name: updates.name,
     fantasy_name: updates.fantasyName,
-    avatar_url: updates.avatarUrl || '',
+    avatar_url: avatarUrl !== undefined ? avatarUrl : (updates.avatarUrl || ''),
     document: updates.document,
     responsible: updates.responsible,
     phone: updates.phone,

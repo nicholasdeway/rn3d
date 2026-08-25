@@ -299,10 +299,10 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       sourceAccount === 'Shopee'
         ? accountBalances.shopee
         : sourceAccount === 'Mercado Livre'
-        ? accountBalances.mercadoLivre
-        : sourceAccount === 'TikTok Shop'
-        ? accountBalances.tikTokShop
-        : accountBalances.amazon;
+          ? accountBalances.mercadoLivre
+          : sourceAccount === 'TikTok Shop'
+            ? accountBalances.tikTokShop
+            : accountBalances.amazon;
 
     setTransferData({
       source: sourceAccount,
@@ -844,28 +844,26 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     <TrendingDown className="w-4 h-4 text-rose-500 shrink-0" />
                   )}
                   <span
-                    className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                      exp.category === 'Retirada'
-                        ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900'
-                        : exp.category === 'Aporte / Reembolso de Sócio'
+                    className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${exp.category === 'Retirada'
+                      ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900'
+                      : exp.category === 'Aporte / Reembolso de Sócio'
                         ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
                         : exp.category === 'Transferência de Marketplace'
-                        ? 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-900'
-                        : exp.category === 'Entrada de Pedido'
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
-                        : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                    }`}
+                          ? 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-900'
+                          : exp.category === 'Entrada de Pedido'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
+                            : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                      }`}
                   >
                     {exp.category}
                   </span>
                 </div>
 
                 <span
-                  className={`text-base font-black tracking-tight shrink-0 ${
-                    exp.category === 'Entrada de Pedido' || exp.category === 'Transferência de Marketplace' || exp.category === 'Aporte / Reembolso de Sócio'
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-rose-600 dark:text-rose-400'
-                  }`}
+                  className={`text-base font-black tracking-tight shrink-0 ${exp.category === 'Entrada de Pedido' || exp.category === 'Transferência de Marketplace' || exp.category === 'Aporte / Reembolso de Sócio'
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-rose-600 dark:text-rose-400'
+                    }`}
                 >
                   {exp.category === 'Entrada de Pedido' || exp.category === 'Transferência de Marketplace' || exp.category === 'Aporte / Reembolso de Sócio' ? '+' : '-'} R${' '}
                   {exp.amount.toFixed(2).replace('.', ',')}
@@ -999,17 +997,16 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     </td>
                     <td className="p-4">
                       <span
-                        className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${
-                          exp.category === 'Retirada'
-                            ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900'
-                            : exp.category === 'Aporte / Reembolso de Sócio'
+                        className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${exp.category === 'Retirada'
+                          ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900'
+                          : exp.category === 'Aporte / Reembolso de Sócio'
                             ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
                             : exp.category === 'Transferência de Marketplace'
-                            ? 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-900'
-                            : exp.category === 'Entrada de Pedido'
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
-                            : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                        }`}
+                              ? 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-900'
+                              : exp.category === 'Entrada de Pedido'
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
+                                : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                          }`}
                       >
                         {exp.category}
                       </span>
@@ -1034,11 +1031,10 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     </td>
                     <td className="p-4 whitespace-nowrap">
                       <span
-                        className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                          exp.paymentStatus === 'Pago'
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300'
-                            : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300'
-                        }`}
+                        className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${exp.paymentStatus === 'Pago'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300'
+                          }`}
                       >
                         {exp.paymentStatus === 'Pago' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
                         {exp.paymentStatus}
