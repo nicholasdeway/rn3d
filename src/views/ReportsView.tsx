@@ -1,19 +1,28 @@
-import React, { useState } from 'react';
-import { Product, Order, Consignment } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Product, Order, Consignment, SaleTransaction } from '../types';
 import { BarChart3, Calendar, TrendingUp, AlertTriangle, Trophy, Package } from 'lucide-react';
+import { MonthlyComparisonChart } from '../components/charts/MonthlyComparisonChart';
+import { BalanceEvolutionChart } from '../components/charts/BalanceEvolutionChart';
+import { computeMonthlyAnalyticsData } from '../utils/analyticsHelper';
 
 interface ReportsViewProps {
   products: Product[];
   orders: Order[];
   consignments: Consignment[];
+  transactions?: any[];
 }
 
 export const ReportsView: React.FC<ReportsViewProps> = ({
   products,
   orders,
   consignments,
+  transactions = [],
 }) => {
   const [period, setPeriod] = useState('Este Mês');
+
+  const monthlyAnalyticsData = useMemo(() => {
+    return computeMonthlyAnalyticsData(orders, transactions, consignments);
+  }, [orders, transactions, consignments]);
 
   // Compute top products dynamically from real database state
   const productStats = products.map((p) => {
@@ -75,6 +84,12 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Financial Analytics & Trends Charts (Definance Style) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MonthlyComparisonChart data={monthlyAnalyticsData} />
+        <BalanceEvolutionChart data={monthlyAnalyticsData} />
       </div>
 
       {/* Top Metrics Row */}

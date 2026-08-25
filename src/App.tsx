@@ -283,10 +283,11 @@ export function App() {
               {currentView === 'dashboard' && (
                 <DashboardView
                   clients={appData.clients}
-                  visits={appData.visits}
                   products={appData.products}
+                  visits={appData.visits}
                   consignments={appData.consignments}
                   orders={appData.orders}
+                  transactions={appData.transactions}
                   onNavigate={(view) => setCurrentView(view)}
                   onStartVisit={handleStartVisit}
                   onSelectClient={handleSelectClientProfile}
@@ -508,6 +509,7 @@ export function App() {
                   products={appData.products}
                   orders={appData.orders}
                   consignments={appData.consignments}
+                  transactions={appData.transactions}
                 />
               )}
 

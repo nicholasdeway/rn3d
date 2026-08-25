@@ -1,6 +1,9 @@
-import React from 'react';
-import { Client, Product, Visit, ViewMode, Order } from '../types';
+import React, { useMemo } from 'react';
+import { Client, Product, Visit, ViewMode, Order, SaleTransaction } from '../types';
 import { formatDateBR } from '../utils/formatters';
+import { MonthlyComparisonChart } from '../components/charts/MonthlyComparisonChart';
+import { BalanceEvolutionChart } from '../components/charts/BalanceEvolutionChart';
+import { computeMonthlyAnalyticsData } from '../utils/analyticsHelper';
 import {
   TrendingUp,
   DollarSign,
@@ -32,6 +35,7 @@ interface DashboardViewProps {
   visits: Visit[];
   consignments?: any[];
   orders?: Order[];
+  transactions?: any[];
   onSelectClient?: (clientOrId: string | Client) => void;
   onUpdateOrderProgress?: (orderId: string, newProgressPct: number) => void;
   onUpdateOrderStatus?: (orderId: string, newStatus: Order['status']) => void;
@@ -46,6 +50,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   visits,
   consignments = [],
   orders = [],
+  transactions = [],
   onSelectClient,
   onUpdateOrderProgress,
   onUpdateOrderStatus,
@@ -53,6 +58,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Filter pending visits and open orders
   const pendingVisits = visits.filter((v) => v.status !== 'Concluída');
   const openOrders = orders.filter((o) => o.status !== 'Entregue' && o.status !== 'Cancelado');
+
+  // Compute dynamic analytics for charts
+  const monthlyAnalyticsData = useMemo(() => {
+    return computeMonthlyAnalyticsData(orders, transactions, consignments);
+  }, [orders, transactions, consignments]);
 
   // Compute dynamic KPIs
   const totalRevenue = orders.reduce((acc, o) => acc + (Number(o.paidAmount) || 0), 0);
@@ -185,10 +195,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
             {totalItemsSold} <span className="text-xs sm:text-sm font-bold text-slate-400">un</span>
           </p>
-          <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
-            {orders.length} pedidos efetuados
-          </p>
         </div>
+      </div>
+
+      {/* Financial Analytics & Trends Charts (Definance Style) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <MonthlyComparisonChart data={monthlyAnalyticsData} />
+        <BalanceEvolutionChart data={monthlyAnalyticsData} />
       </div>
 
       {/* SEÇÃO NOVO REQUISITO: Pedidos de Venda em Aberto & Produção 3D (Com conversão direta para Entregue) */}
