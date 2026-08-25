@@ -191,9 +191,10 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-[#12151c] text-slate-900 dark:text-slate-100 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xl overflow-hidden max-w-4xl mx-auto space-y-0 my-4 animate-in fade-in duration-200">
-      {/* Top Wizard Header */}
-      <div className="bg-slate-900 dark:bg-[#0c0e12] text-white p-6 flex items-center justify-between border-b border-slate-800 dark:border-[#202531]">
+    <div className="fixed inset-0 z-50 bg-slate-950/90 dark:bg-[#080a0f]/95 backdrop-blur-md overflow-y-auto p-2 sm:p-4 lg:p-6 flex flex-col justify-between animate-in fade-in duration-200">
+      <div className="bg-white dark:bg-[#12151c] text-slate-900 dark:text-slate-100 rounded-2xl sm:rounded-3xl border border-slate-200/80 dark:border-[#202531] shadow-2xl overflow-hidden w-full max-w-7xl mx-auto flex-1 flex flex-col my-auto min-h-[90vh]">
+        {/* Top Wizard Header */}
+        <div className="bg-slate-900 dark:bg-[#0c0e12] text-white p-4 sm:p-6 flex items-center justify-between border-b border-slate-800 dark:border-[#202531]">
         <div>
           <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider block">
             ATENDIMENTO PRESENCIAL — {visitType === 'entrega_pedido' ? 'ENTREGA DE REMESSA' : visitType === 'troca' ? 'TROCA / RECOLHIMENTO' : visitType === 'comercial' ? 'REUNIÃO COMERCIAL' : 'CONSIGNADO'}
@@ -1099,5 +1100,6 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
         )}
       </div>
     </div>
-  );
+  </div>
+);
 };
