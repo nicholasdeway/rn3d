@@ -76,20 +76,17 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       <div className="p-4 bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200 dark:border-[#202531] space-y-3 shadow-xs">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
+            <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs shrink-0">
               <Printer className="w-4 h-4" />
             </div>
             <div>
-              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5">
+              <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                 Progresso de Impressão 3D
-                <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
-                  Passo: 5 em 5%
-                </span>
               </h4>
               <p className="text-[11px] text-slate-500 dark:text-slate-400">Regule o avanço da produção das peças na impressora 3D</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-right shrink-0">
             <span className={`text-sm font-black font-mono px-3 py-1 rounded-xl border transition-colors ${
               o.productionProgressPct === 100
                 ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
@@ -116,7 +113,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           />
         </div>
 
-        {/* 5% Stepper Controls */}
+        {/* 5% Stepper Controls (Fixed duplicate + signs) */}
         <div className="flex items-center gap-3 pt-1" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
@@ -129,7 +126,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             title="Diminuir 5%"
           >
             <Minus className="w-4 h-4 text-rose-500" />
-            <span>-5%</span>
+            <span>5%</span>
           </button>
 
           <div className="flex-1 px-1">
@@ -158,11 +155,11 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             title="Aumentar 5%"
           >
             <Plus className="w-4 h-4 text-emerald-600" />
-            <span>+5%</span>
+            <span>5%</span>
           </button>
         </div>
 
-        {/* Preset Chips */}
+        {/* Preset Chips (Smaller, compact mobile tags) */}
         <div className="flex flex-wrap items-center gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">Atalhos:</span>
           {[0, 25, 50, 75, 100].map((pct) => (
@@ -172,23 +169,23 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               onClick={() => {
                 if (onUpdateOrderProgress) onUpdateOrderProgress(o.id, pct);
               }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${
                 o.productionProgressPct === pct
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
-              {pct === 0 ? '0% (Fila)' : pct === 100 ? '100% (Pronto)' : `${pct}%`}
+              {pct === 0 ? '0% (Fila)' : pct === 100 ? '100%' : `${pct}%`}
             </button>
           ))}
         </div>
 
-        {/* Delivery Toggle Checkbox inside Inline View */}
-        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs" onClick={(e) => e.stopPropagation()}>
+        {/* Delivery Toggle Checkbox inside Inline View (Fixed double checkmark & mobile layout) */}
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs" onClick={(e) => e.stopPropagation()}>
           <span className="text-slate-700 dark:text-slate-300 font-bold flex items-center gap-1.5">
-            <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Situação da Entrega:
+            <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" /> Situação da Entrega:
           </span>
-          <label className="inline-flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs font-bold select-none hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          <label className="inline-flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs font-bold select-none hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors self-start sm:self-auto">
             <input
               type="checkbox"
               checked={o.status === 'Entregue'}
@@ -204,7 +201,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
             />
             <span className={o.status === 'Entregue' ? 'text-emerald-600 dark:text-emerald-400 font-extrabold' : 'text-slate-700 dark:text-slate-300'}>
-              {o.status === 'Entregue' ? '✅ Entregue ao Cliente' : '📦 Marcar como Entregue'}
+              {o.status === 'Entregue' ? 'Entregue ao Cliente' : 'Pendente (Não entregue)'}
             </span>
           </label>
         </div>
@@ -283,13 +280,13 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         </div>
       )}
 
-      {/* Internal Logistics Breakdown */}
+      {/* Internal Logistics Breakdown (Fixed mobile layout stacking) */}
       <div className="p-4 bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] space-y-3 shadow-xs">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-4">
           <span className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5">
-            <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Relatório Interno de Custo de Deslocamento/Frete
+            <Truck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" /> Relatório Interno de Custo de Deslocamento/Frete
           </span>
-          <span className="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-bold rounded-full border border-amber-200 dark:border-amber-900">
+          <span className="self-start sm:self-auto px-2.5 py-0.5 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 text-[10px] font-bold rounded-full border border-amber-200 dark:border-amber-900 shrink-0">
             🔒 Somente Visão da Oficina
           </span>
         </div>
@@ -475,7 +472,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                         className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
                       />
                       <span className={o.status === 'Entregue' ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'}>
-                        {o.status === 'Entregue' ? '✅ Entregue' : '📦 Não entregue'}
+                        {o.status === 'Entregue' ? 'Entregue' : 'Não entregue'}
                       </span>
                     </label>
 
