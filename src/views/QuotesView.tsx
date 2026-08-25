@@ -184,15 +184,90 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
       ? (prod.cashPrice ?? (prod.isKeychain || prod.category === 'Chaveiro' ? 4.0 : prod.standardPrice))
       : prod.standardPrice;
 
-    setQuoteItems([
-      ...quoteItems,
-      {
-        description: `${prod.name} (SKU: ${prod.sku})`,
-        quantity: 1,
-        unitPrice: initialPrice,
-        subtotal: initialPrice,
-      },
-    ]);
+    const itemDescription = `${prod.name} (SKU: ${prod.sku})`;
+
+    // Check if product is already in quoteItems list
+    const existingIndex = quoteItems.findIndex(
+      (item) =>
+        item.productId === prod.id ||
+        item.description === itemDescription ||
+        (prod.sku && item.description.includes(`SKU: ${prod.sku}`))
+    );
+
+    if (existingIndex >= 0) {
+      // Item exists! Increment quantity by 1 on the existing single row
+      const updated = [...quoteItems];
+      const newQty = updated[existingIndex].quantity + 1;
+      updated[existingIndex] = {
+        ...updated[existingIndex],
+        productId: prod.id,
+        quantity: newQty,
+        subtotal: newQty * updated[existingIndex].unitPrice,
+      };
+      setQuoteItems(updated);
+    } else {
+      // New item! Add once with quantity 1
+      setQuoteItems([
+        ...quoteItems,
+        {
+          productId: prod.id,
+          description: itemDescription,
+          quantity: 1,
+          unitPrice: initialPrice,
+          subtotal: initialPrice,
+        },
+      ]);
+    }
+  };
+
+  const handleSetProductQuantityFromCatalog = (prod: Product, newQty: number) => {
+    const isCash =
+      paymentTerms.toLowerCase().includes('à vista') ||
+      paymentTerms.toLowerCase().includes('a vista') ||
+      paymentTerms.toLowerCase().includes('pix') ||
+      paymentTerms.toLowerCase().includes('50%');
+
+    const initialPrice = isCash
+      ? (prod.cashPrice ?? (prod.isKeychain || prod.category === 'Chaveiro' ? 4.0 : prod.standardPrice))
+      : prod.standardPrice;
+
+    const itemDescription = `${prod.name} (SKU: ${prod.sku})`;
+
+    const existingIndex = quoteItems.findIndex(
+      (item) =>
+        item.productId === prod.id ||
+        item.description === itemDescription ||
+        (prod.sku && item.description.includes(`SKU: ${prod.sku}`))
+    );
+
+    if (newQty <= 0) {
+      if (existingIndex >= 0) {
+        setQuoteItems(quoteItems.filter((_, idx) => idx !== existingIndex));
+      }
+      return;
+    }
+
+    if (existingIndex >= 0) {
+      const updated = [...quoteItems];
+      updated[existingIndex] = {
+        ...updated[existingIndex],
+        productId: prod.id,
+        quantity: newQty,
+        subtotal: newQty * updated[existingIndex].unitPrice,
+      };
+      setQuoteItems(updated);
+    } else {
+      setQuoteItems([
+        ...quoteItems,
+        {
+          productId: prod.id,
+          description: itemDescription,
+          quantity: newQty,
+          unitPrice: initialPrice,
+          subtotal: newQty * initialPrice,
+        },
+      ]);
+    }
   };
 
   const handleRemoveItem = (index: number) => {
@@ -799,6 +874,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 <ProductSelectCombobox
                   products={products}
                   onSelectProduct={handleAddProductFromCatalog}
+                  onSetProductQuantity={handleSetProductQuantityFromCatalog}
                   isCashPayment={
                     paymentTerms.toLowerCase().includes('à vista') ||
                     paymentTerms.toLowerCase().includes('a vista') ||

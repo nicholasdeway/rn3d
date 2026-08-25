@@ -6,12 +6,14 @@ import { ImageLightboxModal } from './ImageLightboxModal';
 interface ProductSelectComboboxProps {
   products: Product[];
   onSelectProduct: (product: Product, quantity?: number) => void;
+  onSetProductQuantity?: (product: Product, newQuantity: number) => void;
   isCashPayment?: boolean;
 }
 
 export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
   products,
   onSelectProduct,
+  onSetProductQuantity,
   isCashPayment = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -78,7 +80,11 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
       [product.id]: newQty,
     }));
 
-    onSelectProduct(product);
+    if (onSetProductQuantity) {
+      onSetProductQuantity(product, newQty);
+    } else {
+      onSelectProduct(product);
+    }
     // Web dropdown stays OPEN (do not close!)
     setIsOpen(true);
   };
@@ -92,8 +98,12 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
       [product.id]: newQty,
     }));
 
-    if (newQty > 0) {
-      onSelectProduct(product);
+    if (onSetProductQuantity) {
+      onSetProductQuantity(product, newQty);
+    } else {
+      if (newQty > 0) {
+        onSelectProduct(product);
+      }
     }
     setIsOpen(true);
   };
@@ -104,7 +114,9 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
       ...prev,
       [product.id]: qty,
     }));
-    if (qty > 0) {
+    if (onSetProductQuantity) {
+      onSetProductQuantity(product, qty);
+    } else if (qty > 0) {
       onSelectProduct(product);
     }
   };
