@@ -127,7 +127,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
       const itemsQty = items.reduce((sum, i) => sum + i.quantityOnSite, 0);
       return acc + Math.max(c.productsOnSiteCount || 0, itemsQty);
     }, 0);
-  }, [clients, clientInventories, consignments]);
+  }, [clients, clientInventories, consignments, exchanges]);
 
   const totalValuation = useMemo(() => {
     return clients.reduce((acc, c) => {
@@ -135,7 +135,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
       const itemsVal = items.reduce((sum, i) => sum + i.valuation, 0);
       return acc + Math.max(c.productsValuation || 0, itemsVal);
     }, 0);
-  }, [clients, clientInventories, consignments]);
+  }, [clients, clientInventories, consignments, exchanges]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">

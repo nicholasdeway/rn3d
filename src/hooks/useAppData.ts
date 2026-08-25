@@ -181,6 +181,40 @@ export function useAppData() {
     };
   }, [user, setProducts, setClients, setOrders, setQuotes]);
 
+  // Sync clients' productsOnSiteCount and productsValuation dynamically from consignments
+  useEffect(() => {
+    if (clients.length === 0 || consignments.length === 0) return;
+
+    setClients((prevClients) => {
+      let changed = false;
+      const updated = prevClients.map((cli) => {
+        const matchingConsignments = consignments.filter(
+          (c) =>
+            c.clientId === cli.id ||
+            (c.clientName && c.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())
+        );
+
+        const totalItemsCount = matchingConsignments.reduce((sum, c) => sum + c.itemsCount, 0);
+        const totalValuation = matchingConsignments.reduce((sum, c) => sum + c.totalValue, 0);
+
+        if (
+          cli.productsOnSiteCount !== totalItemsCount ||
+          Math.abs((cli.productsValuation || 0) - totalValuation) > 0.01
+        ) {
+          changed = true;
+          return {
+            ...cli,
+            productsOnSiteCount: totalItemsCount,
+            productsValuation: totalValuation,
+          };
+        }
+        return cli;
+      });
+
+      return changed ? updated : prevClients;
+    });
+  }, [consignments]);
+
   const handleSyncProductsToSupabase = async () => {
     try {
       showToast('Sincronizando todo o sistema com o Banco de Dados', 'info');
