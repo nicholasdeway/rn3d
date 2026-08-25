@@ -306,11 +306,11 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                   const totalRem = ex.itemsRemoved.reduce((acc, i) => acc + i.quantity, 0);
 
                   return (
-                    <tr
-                      key={ex.id}
-                      onClick={() => setSelectedExchange(ex)}
-                      className="hover:bg-slate-50/80 transition-colors cursor-pointer"
-                    >
+                      <tr
+                        key={ex.id}
+                        onClick={() => setSelectedExchange(ex)}
+                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
+                      >
                       <td className="p-4 font-mono font-bold text-indigo-600">{ex.id}</td>
                       <td className="p-4 font-bold text-slate-900">{ex.clientName}</td>
                       <td className="p-4 font-bold text-slate-700">

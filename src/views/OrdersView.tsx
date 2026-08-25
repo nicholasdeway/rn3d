@@ -212,7 +212,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     <tr
                       key={o.id}
                       onClick={() => setSelectedOrder(o)}
-                      className="hover:bg-slate-50/80 transition-colors cursor-pointer"
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
                     >
                       <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
                       <td className="p-4 font-bold text-slate-900">{o.clientName}</td>

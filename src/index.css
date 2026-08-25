@@ -96,7 +96,9 @@ html.dark option {
 }
 
 /* Dark Mode Hovers - Somente aplicados no Modo Escuro */
+html.dark table tbody tr:hover,
 html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-50\/80:hover,
 html.dark .hover\:bg-slate-100:hover,
 html.dark .hover\:bg-slate-200:hover,
 html.dark .hover\:bg-white:hover {

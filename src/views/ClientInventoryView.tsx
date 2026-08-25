@@ -299,7 +299,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                             const sent = item.sentQuantity ?? qty;
                             const sold = item.soldQuantity ?? 0;
                             return (
-                              <tr key={item.productId} className="hover:bg-slate-50">
+                              <tr key={item.productId} className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
                                 <td className="p-3 font-bold text-slate-900">{item.productName}</td>
                                 <td className="p-3 text-center text-slate-600">{sent}</td>
                                 <td className="p-3 text-center font-bold text-emerald-600">{sold}</td>

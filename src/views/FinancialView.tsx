@@ -187,7 +187,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     else if (paid > 0) statusBadge = 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold';
 
                     return (
-                      <tr key={o.id} className="hover:bg-slate-50/80 transition-colors">
+                      <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
                         <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
                         <td className="p-4 font-bold text-slate-900">{o.clientName}</td>
                         <td className="p-4 text-slate-600">{o.date}</td>
@@ -225,7 +225,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
                   {/* Direct Sale Transactions */}
                   {transactions.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-50/80 transition-colors bg-slate-50/40">
+                    <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-slate-50/40 dark:bg-slate-900/40">
                       <td className="p-4 font-mono font-bold text-emerald-600">{t.id}</td>
                       <td className="p-4 font-bold text-slate-900">{t.clientName}</td>
                       <td className="p-4 text-slate-600">{t.date}</td>
@@ -273,7 +273,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                 {orders
                   .filter((o) => (o.paidAmount || 0) > 0)
                   .map((o) => (
-                    <tr key={o.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
                       <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
                       <td className="p-4 font-bold text-slate-900">{o.clientName}</td>
                       <td className="p-4 text-slate-600">{o.date}</td>
@@ -288,7 +288,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     </tr>
                   ))}
                 {transactions.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
                     <td className="p-4 font-mono font-bold text-emerald-600">{t.id}</td>
                     <td className="p-4 font-bold text-slate-900">{t.clientName}</td>
                     <td className="p-4 text-slate-600">{t.date}</td>

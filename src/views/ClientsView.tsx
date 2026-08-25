@@ -383,7 +383,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                     <tr
                       key={c.id}
                       onClick={() => onSelectClient(c)}
-                      className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group"
                     >
                       <td className="p-4 font-bold text-slate-900">
                         <div className="flex items-center gap-3">
