@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { SaleTransaction, Consignment, Order } from '../types';
 import { DollarSign, Wallet, ArrowUpRight, Clock, CheckCircle2, Plus, X, HandCoins, TrendingUp } from 'lucide-react';
+import { formatDateBR } from '../utils/formatters';
 
 interface FinancialViewProps {
   transactions: SaleTransaction[];
@@ -218,7 +219,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                       <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
                         <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
                         <td className="p-4 font-bold text-slate-900">{o.clientName}</td>
-                        <td className="p-4 text-slate-600">{o.date}</td>
+                        <td className="p-4 text-slate-600">{formatDateBR(o.date)}</td>
                         <td className="p-4 text-right font-extrabold text-slate-900">
                           R$ {o.totalValue.toFixed(2).replace('.', ',')}
                         </td>
@@ -256,7 +257,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-slate-50/40 dark:bg-slate-900/40">
                       <td className="p-4 font-mono font-bold text-emerald-600">{t.id}</td>
                       <td className="p-4 font-bold text-slate-900">{t.clientName}</td>
-                      <td className="p-4 text-slate-600">{t.date}</td>
+                      <td className="p-4 text-slate-600">{formatDateBR(t.date)}</td>
                       <td className="p-4 text-right font-extrabold text-slate-900">
                         R$ {t.amount.toFixed(2).replace('.', ',')}
                       </td>
@@ -304,7 +305,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
                       <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
                       <td className="p-4 font-bold text-slate-900">{o.clientName}</td>
-                      <td className="p-4 text-slate-600">{o.date}</td>
+                      <td className="p-4 text-slate-600">{formatDateBR(o.date)}</td>
                       <td className="p-4 text-right font-extrabold text-emerald-600">
                         R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}
                       </td>
@@ -319,7 +320,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
                     <td className="p-4 font-mono font-bold text-emerald-600">{t.id}</td>
                     <td className="p-4 font-bold text-slate-900">{t.clientName}</td>
-                    <td className="p-4 text-slate-600">{t.date}</td>
+                    <td className="p-4 text-slate-600">{formatDateBR(t.date)}</td>
                     <td className="p-4 text-right font-extrabold text-emerald-600">
                       R$ {t.amount.toFixed(2).replace('.', ',')}
                     </td>

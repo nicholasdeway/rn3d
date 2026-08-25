@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatDateBR, getTodayBR } from '../utils/formatters';
 import { Client, Product, Quote, QuoteItem, AttendanceMode } from '../types';
 import { ProductSelectCombobox } from '../components/ProductSelectCombobox';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
@@ -205,7 +206,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
   const handleSubmitQuote = (status: Quote['status']) => {
     if (!selectedClient || quoteItems.length === 0) return;
 
-    const todayDate = new Date().toISOString().slice(0, 10);
+    const todayDate = getTodayBR();
 
     const newQuote: Quote = {
       id: `ORC-${Math.floor(Math.random() * 900000 + 100000)}`,
@@ -320,7 +321,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     <div>
                       <h4 className="font-bold text-slate-900 text-sm">{q.clientName}</h4>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        Data: {q.date} • {q.items ? q.items.length : 0} {q.items && q.items.length === 1 ? 'item' : 'itens'}
+                        Data: {formatDateBR(q.date)} • {q.items ? q.items.length : 0} {q.items && q.items.length === 1 ? 'item' : 'itens'}
                       </p>
                     </div>
                     <div className="text-right">
@@ -389,7 +390,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                       <tr key={q.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
                         <td className="p-4 font-mono font-bold text-indigo-600">{q.id}</td>
                         <td className="p-4 font-bold text-slate-900">{q.clientName}</td>
-                        <td className="p-4 text-slate-600">{q.date}</td>
+                        <td className="p-4 text-slate-600">{formatDateBR(q.date)}</td>
                         <td className="p-4 text-right font-extrabold text-emerald-600">
                           R$ {q.total.toFixed(2).replace('.', ',')}
                         </td>

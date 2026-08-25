@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { InventoryMovement } from '../types';
-import { History, Search, ArrowUpRight, ArrowDownLeft, Filter } from 'lucide-react';
+import { History, Search } from 'lucide-react';
+import { formatDateBR } from '../utils/formatters';
 
 interface MovementsViewProps {
   movements: InventoryMovement[];
@@ -81,7 +82,7 @@ export const MovementsView: React.FC<MovementsViewProps> = ({ movements }) => {
                 const isPositive = m.quantityDelta > 0;
                 return (
                   <tr key={m.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                    <td className="p-4 font-medium text-slate-500 dark:text-slate-400">{m.timestamp}</td>
+                    <td className="p-4 font-medium text-slate-500 dark:text-slate-400">{formatDateBR(m.timestamp)}</td>
                     <td className="p-4 font-bold text-slate-900 dark:text-slate-100">{m.productName}</td>
                     <td className="p-4 text-center">
                       <span

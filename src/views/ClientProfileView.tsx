@@ -3,7 +3,7 @@ import { Client, ClientInventoryItem, Order, Quote } from '../types';
 import { ImageCropperModal } from '../components/ImageCropperModal';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 import { fetchAddressByCep } from '../services/viaCepService';
-import { formatPhone, formatDocument } from '../utils/formatters';
+import { formatPhone, formatDocument, formatDateBR } from '../utils/formatters';
 import {
   Building2,
   Phone,
@@ -359,7 +359,7 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
               </div>
             </div>
             <p className="text-base sm:text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-2 tracking-tight truncate">
-              {currentClientData.nextVisitDate}
+              {formatDateBR(currentClientData.nextVisitDate)}
             </p>
           </div>
         </div>

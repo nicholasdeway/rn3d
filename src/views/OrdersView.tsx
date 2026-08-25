@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Order, Product } from '../types';
 import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
+import { formatDateBR } from '../utils/formatters';
 
 interface OrdersViewProps {
   orders: Order[];
@@ -216,7 +217,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     >
                       <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
                       <td className="p-4 font-bold text-slate-900">{o.clientName}</td>
-                      <td className="p-4 text-slate-600">{o.date}</td>
+                      <td className="p-4 text-slate-600">{formatDateBR(o.date)}</td>
                       <td className="p-4 text-center font-bold text-slate-800">{o.itemsCount} itens</td>
                       <td className="p-4 text-right font-extrabold text-emerald-600">
                         R$ {o.totalValue.toFixed(2).replace('.', ',')}

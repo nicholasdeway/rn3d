@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Client } from '../types';
+import { formatDateBR } from '../utils/formatters';
 import { fetchAddressByCep } from '../services/viaCepService';
 import { formatPhone, formatDocument } from '../utils/formatters';
 import {
@@ -346,7 +347,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                       {c.city ? `${c.city} - ${c.state}` : 'Sem localização'} • {c.productsOnSiteCount} un no local
                     </p>
                     <p className="text-slate-500 text-[11px]">
-                      Próxima visita: <span className="font-semibold text-slate-700">{c.nextVisitDate}</span>
+                      Próxima visita: <span className="font-semibold text-slate-700">{formatDateBR(c.nextVisitDate)}</span>
                     </p>
                   </div>
                   <div className="text-right shrink-0">
@@ -437,8 +438,8 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                       <td className="p-4 text-right font-bold text-emerald-600">
                         R$ {c.receivableBalance.toFixed(2).replace('.', ',')}
                       </td>
-                      <td className="p-4 text-slate-500">{c.lastVisitDate}</td>
-                      <td className="p-4 text-slate-700 font-medium">{c.nextVisitDate}</td>
+                      <td className="p-4 text-slate-500">{formatDateBR(c.lastVisitDate)}</td>
+                      <td className="p-4 text-slate-700 font-medium">{formatDateBR(c.nextVisitDate)}</td>
                       <td className="p-4">
                         {c.visitStatus === 'Hoje' && (
                           <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">

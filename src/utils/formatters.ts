@@ -28,5 +28,38 @@ export function formatDocument(val: string): string {
   if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
   if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
   if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
+export function formatDateBR(dateStr?: string | null): string {
+  if (!dateStr || dateStr === 'N/A' || dateStr === '—' || dateStr === 'A agendar') return dateStr || '';
+
+  const isoMatch = String(dateStr).trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}))?/);
+  if (isoMatch) {
+    const [_, year, month, day, hours, minutes] = isoMatch;
+    if (hours && minutes) {
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
+    }
+    return `${day}/${month}/${year}`;
+  }
+
+  return String(dateStr);
+}
+
+export function getTodayBR(): string {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+export function getNowBR(): string {
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
 }

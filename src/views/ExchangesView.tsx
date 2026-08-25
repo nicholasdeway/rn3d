@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ExchangeNote, Client, ClientInventoryItem, Product, Consignment } from '../types';
+import { formatDateBR } from '../utils/formatters';
 import {
   Repeat,
   Printer,
@@ -316,7 +317,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                       <td className="p-4 font-bold text-slate-700">
                         {ex.destinationClientName || (ex.type === 'recolhimento_oficina' ? 'Estoque Geral (Oficina)' : 'Troca Direta')}
                       </td>
-                      <td className="p-4 text-slate-600">{ex.date}</td>
+                      <td className="p-4 text-slate-600">{formatDateBR(ex.date)}</td>
                       <td className="p-4 text-center">
                         <span className="px-2.5 py-1 text-xs font-extrabold text-indigo-600 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/50 rounded-lg inline-block">
                           {totalRem} un
