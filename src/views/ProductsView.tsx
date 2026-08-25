@@ -18,6 +18,7 @@ import {
   CloudUpload,
   ZoomIn,
   Maximize2,
+  Copy,
 } from 'lucide-react';
 import { ImageCropperModal } from '../components/ImageCropperModal';
 
@@ -356,6 +357,19 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     setEditingProduct(null);
   };
 
+  const handleDuplicateProduct = (original: Product) => {
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const newSku = original.sku ? `${original.sku}-COPY-${randomSuffix}` : `SKU-COPY-${randomSuffix}`;
+    const duplicated: Product = {
+      ...original,
+      id: `prod-${Date.now()}-${randomSuffix}`,
+      name: `${original.name} (Cópia)`,
+      sku: newSku,
+      status: 'Ativo',
+    };
+    onAddProduct(duplicated);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Header */}
@@ -599,6 +613,14 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   <span className="text-slate-500 font-medium">Estoque: <strong className="text-slate-900">{p.currentStock} un</strong></span>
                   <div className="flex items-center gap-1.5">
                     <button
+                      onClick={() => handleDuplicateProduct(p)}
+                      className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 font-bold rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-emerald-200/60 dark:border-emerald-900/50"
+                      title="Duplicar este produto"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Duplicar</span>
+                    </button>
+                    <button
                       onClick={() => handleOpenEditModal(p)}
                       className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                     >
@@ -674,6 +696,14 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleDuplicateProduct(p)}
+                          className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-lg font-bold cursor-pointer transition-colors border border-emerald-200/60 flex items-center gap-1 text-xs"
+                          title="Duplicar produto"
+                        >
+                          <Copy className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Duplicar</span>
+                        </button>
                         <button
                           onClick={() => handleOpenEditModal(p)}
                           className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-semibold cursor-pointer"
