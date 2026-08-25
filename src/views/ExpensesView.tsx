@@ -29,6 +29,7 @@ import {
   ShoppingBag,
   Store,
   UserCheck,
+  ArrowDownLeft,
 } from 'lucide-react';
 import { formatDateBR } from '../utils/formatters';
 
@@ -62,6 +63,7 @@ const CATEGORIES: ExpenseCategory[] = [
   'Álcool & Insumos',
   'Impostos (DAS)',
   'Retirada',
+  'Aporte / Reembolso de Sócio',
   'Transferência de Marketplace',
   'Entrada de Pedido',
   'Outros',
@@ -86,6 +88,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
   // Modals state
   const [isNewExpenseModalOpen, setIsNewExpenseModalOpen] = useState(false);
   const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false);
+  const [isAporteModalOpen, setIsAporteModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<{ url: string; type?: 'image' | 'pdf'; name?: string; title: string } | null>(null);
 
@@ -162,6 +165,29 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     receiptName: '',
   });
 
+  // Form state for Aporte / Reembolso de Sócio
+  const [aporteData, setAporteData] = useState<{
+    description: string;
+    amount: string;
+    responsible: string;
+    date: string;
+    timestamp: string;
+    notes: string;
+    receiptUrl: string;
+    receiptType: 'image' | 'pdf';
+    receiptName: string;
+  }>({
+    description: 'Pagamento / Ressarcimento de Filamento para a Empresa',
+    amount: '262.60',
+    responsible: 'Nicholas',
+    date: new Date().toISOString().split('T')[0],
+    timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    notes: 'Ressarcimento de filamento ou ajuste entre contas',
+    receiptUrl: '',
+    receiptType: 'image',
+    receiptName: '',
+  });
+
   // Filtered expenses
   const filteredExpenses = useMemo(() => {
     return expenses.filter((item) => {
@@ -181,7 +207,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
   // Financial KPI totals
   const totalExpensesAmount = useMemo(() => {
     return expenses
-      .filter((e) => e.paymentStatus === 'Pago' && e.category !== 'Retirada' && e.category !== 'Transferência de Marketplace' && e.category !== 'Entrada de Pedido')
+      .filter((e) => e.paymentStatus === 'Pago' && e.category !== 'Retirada' && e.category !== 'Transferência de Marketplace' && e.category !== 'Entrada de Pedido' && e.category !== 'Aporte / Reembolso de Sócio')
       .reduce((acc, e) => acc + e.amount, 0);
   }, [expenses]);
 
@@ -191,9 +217,9 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       .reduce((acc, e) => acc + e.amount, 0);
   }, [expenses]);
 
-  const totalOrderPaymentsAmount = useMemo(() => {
+  const totalAportesAmount = useMemo(() => {
     return expenses
-      .filter((e) => e.category === 'Entrada de Pedido')
+      .filter((e) => e.category === 'Aporte / Reembolso de Sócio')
       .reduce((acc, e) => acc + e.amount, 0);
   }, [expenses]);
 
@@ -211,7 +237,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
   };
 
   // Handle file uploads (Base64 conversion)
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, targetForm: 'expense' | 'withdrawal' | 'transfer') => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, targetForm: 'expense' | 'withdrawal' | 'transfer' | 'aporte') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -229,6 +255,13 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
         }));
       } else if (targetForm === 'transfer') {
         setTransferData((prev) => ({
+          ...prev,
+          receiptUrl: base64Url,
+          receiptType: isPdf ? 'pdf' : 'image',
+          receiptName: file.name,
+        }));
+      } else if (targetForm === 'aporte') {
+        setAporteData((prev) => ({
           ...prev,
           receiptUrl: base64Url,
           receiptType: isPdf ? 'pdf' : 'image',
@@ -371,6 +404,46 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     });
   };
 
+  // Submit Aporte / Reembolso de Sócio
+  const handleSubmitAporte = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amountVal = parseFloat(aporteData.amount.replace(',', '.'));
+    if (isNaN(amountVal) || amountVal <= 0 || !aporteData.responsible.trim()) return;
+
+    const timeString = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const newExpense: ExpenseItem = {
+      id: `apt-${Date.now()}`,
+      description: aporteData.description.trim() || `Lançamento / Aporte (${aporteData.responsible.trim()})`,
+      category: 'Aporte / Reembolso de Sócio',
+      amount: amountVal,
+      date: aporteData.date,
+      timestamp: timeString,
+      paymentStatus: 'Pago',
+      beneficiary: 'Conta Nubank (Oficina RN 3D)',
+      createdBy: aporteData.responsible.trim(),
+      destinationAccount: 'Nubank',
+      receiptUrl: aporteData.receiptUrl,
+      receiptType: aporteData.receiptType,
+      receiptName: aporteData.receiptName,
+      notes: aporteData.notes.trim(),
+    };
+
+    onCreateExpense(newExpense);
+    setIsAporteModalOpen(false);
+    setAporteData({
+      description: 'Pagamento / Ressarcimento para Empresa',
+      amount: '',
+      responsible: 'Nicholas',
+      date: new Date().toISOString().split('T')[0],
+      timestamp: timeString,
+      notes: '',
+      receiptUrl: '',
+      receiptType: 'image',
+      receiptName: '',
+    });
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Header */}
@@ -381,11 +454,20 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
             Controle de Saídas, Retiradas e Saldos de Marketplaces
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Gestão financeira de custos, retiradas de sócios, resgates de marketplaces e auditoria com horário exato.
+            Gestão financeira de custos, retiradas de sócios, resgates de marketplaces e lançamentos/aportes para a empresa.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setIsAporteModalOpen(true)}
+            className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+            title="Registrar lançamento / pagamento do sócio diretamente para a conta da empresa"
+          >
+            <ArrowDownLeft className="w-4 h-4" />
+            <span>Lançamento / Aporte</span>
+          </button>
+
           <button
             onClick={() => setIsWithdrawalModalOpen(true)}
             className="px-3.5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
@@ -727,7 +809,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     <FileText className="w-10 h-10 text-slate-300 mx-auto" />
                     <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">Nenhuma movimentação encontrada</p>
                     <p className="text-[11px] text-slate-400">
-                      Cadastre despesas, retiradas ou resgates de marketplaces nos botões no topo.
+                      Cadastre despesas, retiradas, lançamentos ou resgates de marketplaces nos botões no topo.
                     </p>
                   </td>
                 </tr>
@@ -744,6 +826,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                       <div className="flex items-center gap-2">
                         {exp.category === 'Retirada' ? (
                           <Users className="w-4 h-4 text-amber-500 shrink-0" />
+                        ) : exp.category === 'Aporte / Reembolso de Sócio' ? (
+                          <ArrowDownLeft className="w-4 h-4 text-emerald-500 shrink-0" />
                         ) : exp.category === 'Transferência de Marketplace' ? (
                           <RefreshCw className="w-4 h-4 text-cyan-500 shrink-0" />
                         ) : exp.category === 'Entrada de Pedido' ? (
@@ -768,6 +852,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                         className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${
                           exp.category === 'Retirada'
                             ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900'
+                            : exp.category === 'Aporte / Reembolso de Sócio'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
                             : exp.category === 'Transferência de Marketplace'
                             ? 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-900'
                             : exp.category === 'Entrada de Pedido'
@@ -787,12 +873,12 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     <td className="p-4 text-right font-black text-sm whitespace-nowrap">
                       <span
                         className={
-                          exp.category === 'Entrada de Pedido' || exp.category === 'Transferência de Marketplace'
+                          exp.category === 'Entrada de Pedido' || exp.category === 'Transferência de Marketplace' || exp.category === 'Aporte / Reembolso de Sócio'
                             ? 'text-emerald-600 dark:text-emerald-400'
                             : 'text-rose-600 dark:text-rose-400'
                         }
                       >
-                        {exp.category === 'Entrada de Pedido' || exp.category === 'Transferência de Marketplace' ? '+' : '-'} R${' '}
+                        {exp.category === 'Entrada de Pedido' || exp.category === 'Transferência de Marketplace' || exp.category === 'Aporte / Reembolso de Sócio' ? '+' : '-'} R${' '}
                         {exp.amount.toFixed(2).replace('.', ',')}
                       </span>
                     </td>
@@ -845,6 +931,112 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
           </table>
         </div>
       </div>
+
+      {/* MODAL: REGISTRAR LANÇAMENTO / APORTE DE SÓCIO */}
+      {isAporteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
+                <ArrowDownLeft className="w-5 h-5 text-emerald-500" />
+                Registrar Lançamento / Aporte para Empresa
+              </h3>
+              <button
+                onClick={() => setIsAporteModalOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitAporte} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Descrição do Lançamento / Ressarcimento
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={aporteData.description}
+                  onChange={(e) => setAporteData({ ...aporteData, description: e.target.value })}
+                  placeholder="Ex: Pagamento de filamentos comprados na conta pessoal..."
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Valor Creditado (R$)</label>
+                  <input
+                    type="text"
+                    required
+                    value={aporteData.amount}
+                    onChange={(e) => setAporteData({ ...aporteData, amount: e.target.value })}
+                    placeholder="0,00"
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-black text-emerald-600 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Quem Efetuou o Lançamento</label>
+                  <select
+                    value={aporteData.responsible}
+                    onChange={(e) => setAporteData({ ...aporteData, responsible: e.target.value })}
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-bold text-slate-900 dark:text-slate-100 focus:outline-none cursor-pointer"
+                  >
+                    {PARTNERS.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">Conta de Destino</label>
+                <input
+                  type="text"
+                  disabled
+                  value="Conta Nubank (Oficina RN 3D)"
+                  className="w-full px-3 py-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-emerald-600 cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Comprovante do PIX / Depósito (PNG/JPG ou PDF)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={(e) => handleFileUpload(e, 'aporte')}
+                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 cursor-pointer"
+                />
+                {aporteData.receiptName && (
+                  <p className="text-[11px] text-emerald-600 font-bold mt-1">✓ Arquivo anexado: {aporteData.receiptName}</p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsAporteModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-xs cursor-pointer"
+                >
+                  Confirmar Lançamento
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: RESGATE / TRANSFERÊNCIA DE MARKETPLACE */}
       {isTransferModalOpen && (

@@ -93,6 +93,12 @@ export function useExpenses(
         nubank: Math.max(0, prev.nubank - formattedItem.amount),
       }));
       showToast(`Retirada (R$ ${formattedItem.amount.toFixed(2)}) por ${formattedItem.createdBy} registrada!`, 'success');
+    } else if (formattedItem.category === 'Aporte / Reembolso de Sócio') {
+      setAccountBalances((prev) => ({
+        ...prev,
+        nubank: prev.nubank + formattedItem.amount,
+      }));
+      showToast(`Lançamento/Aporte de R$ ${formattedItem.amount.toFixed(2)} por ${formattedItem.createdBy} creditado no Nubank!`, 'success');
     } else {
       showToast(`Despesa "${formattedItem.description}" registrada por ${formattedItem.createdBy}!`, 'success');
     }

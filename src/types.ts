@@ -311,6 +311,7 @@ export type ExpenseCategory =
   | 'Álcool & Insumos'
   | 'Impostos (DAS)'
   | 'Retirada'
+  | 'Aporte / Reembolso de Sócio'
   | 'Transferência de Marketplace'
   | 'Entrada de Pedido'
   | 'Outros';
