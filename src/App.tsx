@@ -69,6 +69,9 @@ export function App() {
     if (currentView) {
       safeSetLocalStorage('rn3d_current_view', currentView);
       setActiveVisitClientId(null);
+      if (currentView !== 'products') {
+        setAutoOpenNewProductModal(false);
+      }
     }
   }, [currentView]);
 
@@ -291,6 +294,12 @@ export function App() {
                   onUpdateOrderStatus={appData.handleUpdateOrderStatus}
                   onQuickAction={(action) => {
                     switch (action) {
+                      case 'novo-produto':
+                      case 'cadastrar-produto':
+                      case 'product':
+                        setAutoOpenNewProductModal(true);
+                        setCurrentView('products');
+                        break;
                       case 'calculadora-3d':
                         setCurrentView('calculator');
                         break;

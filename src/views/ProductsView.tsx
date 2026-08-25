@@ -47,6 +47,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       setIsModalOpen(true);
     }
   }, [autoOpenNewModal]);
+
+  React.useEffect(() => {
+    if (isModalOpen && !formData.sku) {
+      generateUniqueSku(false);
+    }
+  }, [isModalOpen]);
+
   const [keychainOnly, setKeychainOnly] = useState<'todos' | 'chaveiro' | 'nao-chaveiro'>('todos');
   const [sortBy, setSortBy] = useState<'name-asc' | 'category' | 'sku' | 'price-asc' | 'price-desc'>('name-asc');
 
@@ -78,10 +85,10 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     avgPrintTimeMinutes: 60,
     batchQuantity: 5,
     estimatedCost: 8.0,
-    standardPrice: undefined,
-    cashPrice: undefined,
-    minPrice: 20.0,
-    suggestedRetailPrice: 80.0,
+    standardPrice: 6.0,
+    cashPrice: 4.0,
+    minPrice: 4.0,
+    suggestedRetailPrice: 15.0,
     currentStock: 20,
     minStock: 5,
     allowsCustomization: true,

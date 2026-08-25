@@ -253,7 +253,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
       console.error('Error saving client logistics memory:', e);
     }
 
-    onCreateQuote(newQuote);
+    onAddQuote(newQuote);
     setIsFormOpen(false);
     setQuoteItems([]);
     setDiscount(0);
