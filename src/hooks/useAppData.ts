@@ -60,6 +60,7 @@ export function useAppData() {
     setExpenses,
     accountBalances,
     accountBalance,
+    reloadExpenses,
     handleCreateExpense,
     handleExecuteTransfer,
     handleUpdateExpense,
@@ -135,7 +136,7 @@ export function useAppData() {
   const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
   const [dataLoading, setDataLoading] = useState<boolean>(false);
 
-  // Global Supabase sync loop (every 12 seconds)
+  // Cross-device & cross-window real-time synchronization effect
   useEffect(() => {
     if (!user) return;
 
@@ -155,6 +156,7 @@ export function useAppData() {
         setClients(dbClients);
         setOrders(dbOrders);
         setQuotes(dbQuotes);
+        if (reloadExpenses) reloadExpenses();
       } catch (err) {
         console.error('Erro ao carregar dados do Supabase:', err);
       } finally {
@@ -164,6 +166,7 @@ export function useAppData() {
 
     loadAllData();
 
+    // Rapid 5-second background sync interval for seamless web <-> mobile real-time updates
     const intervalId = setInterval(async () => {
       if (!isMounted) return;
       try {
@@ -178,10 +181,11 @@ export function useAppData() {
         setClients(dbClients);
         setOrders(dbOrders);
         setQuotes(dbQuotes);
+        if (reloadExpenses) reloadExpenses();
       } catch (e) {
         // Silent background sync error
       }
-    }, 12000);
+    }, 5000);
 
     const handleFocus = () => {
       if (!isMounted) return;

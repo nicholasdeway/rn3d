@@ -61,6 +61,34 @@ export function useExpenses(
   }, [accountBalances]);
 
   useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'rn3d_account_balances' && e.newValue) {
+        try {
+          setAccountBalances(JSON.parse(e.newValue));
+        } catch (err) {}
+      }
+      if (e.key === 'rn3d_expenses' && e.newValue) {
+        try {
+          setExpenses(JSON.parse(e.newValue));
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  const reloadExpenses = async () => {
+    try {
+      const dbExpenses = await fetchExpenses();
+      if (Array.isArray(dbExpenses) && dbExpenses.length > 0) {
+        setExpenses(dbExpenses);
+      }
+    } catch (err) {
+      console.error('Erro ao recarregar despesas:', err);
+    }
+  };
+
+  useEffect(() => {
     if (!user) return;
     let isMounted = true;
 
@@ -225,6 +253,7 @@ export function useExpenses(
     accountBalances,
     accountBalance: accountBalances.nubank, // Fallback property
     setAccountBalances,
+    reloadExpenses,
     handleCreateExpense,
     handleExecuteTransfer,
     handleUpdateExpense,
