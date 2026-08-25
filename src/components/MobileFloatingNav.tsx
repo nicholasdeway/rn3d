@@ -136,8 +136,8 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
         </button>
       </div>
 
-      {/* Main Floating Glass Pill Container */}
-      <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800/90 rounded-full px-3 py-2 shadow-2xl shadow-slate-950/80 flex items-center justify-around relative z-40">
+      {/* Main Floating Glass Pill Container (Perfectly Centered 5-Column Grid) */}
+      <div className="bg-slate-900/95 backdrop-blur-xl border border-slate-800/90 rounded-full p-1.5 shadow-2xl shadow-slate-950/80 grid grid-cols-5 place-items-center relative z-40 w-full">
         {primaryNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id && !isDropdownOpen;
@@ -149,14 +149,14 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
                 setIsDropdownOpen(false);
                 onSelectView(item.id);
               }}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-full transition-all duration-200 cursor-pointer ${
+              className={`w-full flex flex-col items-center justify-center py-1 rounded-full transition-all duration-200 cursor-pointer ${
                 isActive ? 'text-emerald-400 scale-105 font-bold' : 'text-slate-400 hover:text-slate-200 font-medium'
               }`}
             >
               <div className={`p-1 rounded-full ${isActive ? 'bg-emerald-500/15' : ''}`}>
                 <Icon className={`w-5 h-5 ${isActive ? 'text-emerald-400 stroke-[2.5]' : 'text-slate-400'}`} />
               </div>
-              <span className={`text-[10px] tracking-wider mt-0.5 ${isActive ? 'text-emerald-400 font-extrabold' : 'text-slate-400'}`}>
+              <span className={`text-[9px] sm:text-[10px] tracking-wider mt-0.5 ${isActive ? 'text-emerald-400 font-extrabold' : 'text-slate-400'}`}>
                 {item.label}
               </span>
             </button>
@@ -166,7 +166,7 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
         {/* Menu Toggle for Bottom-Up Dropdown */}
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-full transition-all cursor-pointer ${
+          className={`w-full flex flex-col items-center justify-center py-1 rounded-full transition-all cursor-pointer ${
             isDropdownOpen ? 'text-emerald-400 scale-105 font-bold' : 'text-slate-400 hover:text-slate-200 font-medium'
           }`}
         >
@@ -177,7 +177,7 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
               <Menu className="w-5 h-5 text-slate-400" />
             )}
           </div>
-          <span className={`text-[10px] tracking-wider mt-0.5 ${isDropdownOpen ? 'text-emerald-400 font-extrabold' : 'text-slate-400'}`}>
+          <span className={`text-[9px] sm:text-[10px] tracking-wider mt-0.5 ${isDropdownOpen ? 'text-emerald-400 font-extrabold' : 'text-slate-400'}`}>
             MENU
           </span>
         </button>

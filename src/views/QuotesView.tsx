@@ -204,8 +204,20 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
   const subtotal = quoteItems.reduce((acc, i) => acc + i.subtotal, 0);
   const total = Math.max(0, subtotal - discount);
 
+  const [validationMessage, setValidationError] = useState<string | null>(null);
+
   const handleSubmitQuote = (status: Quote['status']) => {
-    if (!selectedClient || quoteItems.length === 0) return;
+    if (!selectedClient) {
+      setValidationError('Por favor, selecione um cliente para o orçamento.');
+      return;
+    }
+
+    if (quoteItems.length === 0) {
+      setValidationError('Adicione pelo menos 1 produto do catálogo ao orçamento antes de salvar.');
+      return;
+    }
+
+    setValidationError(null);
 
     const todayDate = getTodayBR();
 
@@ -223,7 +235,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
       subtotal,
       discount,
       total,
-      paymentTerms,
+      paymentTerms: paymentTerms || 'À vista',
       notes,
       status,
       attendanceMode,
@@ -241,10 +253,11 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
       console.error('Error saving client logistics memory:', e);
     }
 
-    onAddQuote(newQuote);
+    onCreateQuote(newQuote);
     setIsFormOpen(false);
     setQuoteItems([]);
     setDiscount(0);
+    setDiscountPercent(0);
   };
 
   return (
@@ -385,6 +398,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     const displayStatus = isConverted ? 'Convertido em Pedido' : q.status;
 
                     let badgeStyle = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+                    if (q.status === 'Rascunho') badgeStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 font-bold';
                     if (isConverted) badgeStyle = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
                     if (q.status === 'Recusado') badgeStyle = 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900/50';
                     if (q.status === 'Enviado') badgeStyle = 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900/50';
@@ -941,6 +955,13 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               </div>
             </div>
 
+            {/* Validation Error Alert */}
+            {validationMessage && (
+              <div className="p-3.5 bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-900 rounded-xl text-rose-700 dark:text-rose-300 font-bold text-xs animate-in fade-in duration-150">
+                ⚠️ {validationMessage}
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
               <button
@@ -1061,31 +1082,31 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               </button>
             </div>
 
-            {/* A4 Sheet Rendering (Pure white for clean PDF printing, but responsive on mobile screens) */}
-            <div className="print-sheet p-5 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white text-slate-900 font-sans">
+            {/* A4 Sheet Rendering (Dark mode compatible preview, pure white print) */}
+            <div className="print-sheet p-5 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white dark:bg-[#12151c] text-slate-900 dark:text-slate-100 font-sans">
               {/* Header */}
-              <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-5 gap-3">
+              <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 dark:border-slate-700 pb-5 gap-3">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">RN 3D Soluções</h2>
-                  <p className="text-xs font-black text-slate-900 mt-1">CNPJ: 67.570.155/0001-34</p>
-                  <p className="text-[11px] text-slate-700 font-semibold mt-1">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">RN 3D Soluções</h2>
+                  <p className="text-xs font-black text-slate-900 dark:text-slate-200 mt-1">CNPJ: 67.570.155/0001-34</p>
+                  <p className="text-[11px] text-slate-700 dark:text-slate-400 font-semibold mt-1">
                     WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
                   </p>
                 </div>
                 <div className="text-left sm:text-right">
-                  <span className="px-3 py-1 bg-slate-900 text-white font-mono font-bold rounded-md text-xs inline-block whitespace-nowrap shadow-xs">
+                  <span className="px-3 py-1 bg-slate-900 dark:bg-indigo-600 text-white font-mono font-bold rounded-md text-xs inline-block whitespace-nowrap shadow-xs">
                     ORÇAMENTO {previewPdfQuote.id}
                   </span>
-                  <p className="text-slate-500 mt-2 text-xs">Data: {previewPdfQuote.date}</p>
-                  <p className="text-slate-500 text-xs">Validade: {previewPdfQuote.validityDays} dias</p>
+                  <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs">Data: {previewPdfQuote.date}</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs">Validade: {previewPdfQuote.validityDays} dias</p>
                 </div>
               </div>
 
               {/* Client info */}
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <p className="font-bold text-slate-900 text-sm">CLIENTE: {previewPdfQuote.clientName}</p>
+              <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-1">
+                <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">CLIENTE: {previewPdfQuote.clientName}</p>
                 {previewPdfQuote.clientDocument && (
-                  <p className="text-slate-600 font-medium">CPF/CNPJ: {previewPdfQuote.clientDocument}</p>
+                  <p className="text-slate-600 dark:text-slate-400 font-medium">CPF/CNPJ: {previewPdfQuote.clientDocument}</p>
                 )}
               </div>
 
@@ -1093,14 +1114,14 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[320px]">
                   <thead>
-                    <tr className="border-b-2 border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
+                    <tr className="border-b-2 border-slate-200 dark:border-[#202531] text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px]">
                       <th className="py-2.5 px-1.5 sm:px-3">Item / Descrição</th>
                       <th className="py-2.5 px-1.5 sm:px-3 text-center whitespace-nowrap">Qtde</th>
                       <th className="py-2.5 px-1.5 sm:px-3 text-right whitespace-nowrap">Valor Unit.</th>
                       <th className="py-2.5 px-1.5 sm:px-3 text-right whitespace-nowrap">Subtotal</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                     {previewPdfQuote.items.map((item, idx) => {
                       const matchingProduct = products.find(
                         (p) =>
@@ -1117,26 +1138,26 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                                 <img
                                   src={matchingProduct.imageUrl}
                                   alt=""
-                                  className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-lg border border-slate-200 shrink-0"
+                                  className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0"
                                 />
                               ) : (
-                                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-[10px] text-slate-400 shrink-0">
+                                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
                                   3D
                                 </div>
                               )}
                               <div className="min-w-0">
-                                <p className="font-bold text-slate-900 text-xs sm:text-sm">{item.description}</p>
+                                <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">{item.description}</p>
                                 {matchingProduct?.storageCapacity && (
-                                  <p className="text-[10px] text-indigo-600 font-semibold">
+                                  <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
                                     Cap: {matchingProduct.storageCapacity}
                                   </p>
                                 )}
                               </div>
                             </div>
                           </td>
-                          <td className="py-2.5 px-1.5 sm:px-3 text-center font-bold whitespace-nowrap">{item.quantity}</td>
-                          <td className="py-2.5 px-1.5 sm:px-3 text-right text-slate-600 whitespace-nowrap">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
-                          <td className="py-2.5 px-1.5 sm:px-3 text-right font-bold text-slate-900 whitespace-nowrap">
+                          <td className="py-2.5 px-1.5 sm:px-3 text-center font-bold dark:text-slate-200 whitespace-nowrap">{item.quantity}</td>
+                          <td className="py-2.5 px-1.5 sm:px-3 text-right text-slate-600 dark:text-slate-400 whitespace-nowrap">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                          <td className="py-2.5 px-1.5 sm:px-3 text-right font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                             R$ {item.subtotal.toFixed(2).replace('.', ',')}
                           </td>
                         </tr>
@@ -1147,33 +1168,33 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               </div>
 
               {/* Totals */}
-              <div className="border-t-2 border-slate-200 pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+              <div className="border-t-2 border-slate-200 dark:border-[#202531] pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div className="space-y-1 text-[11px] max-w-md">
-                  <p>
-                    <strong>Condições de Pagamento:</strong> {previewPdfQuote.paymentTerms}
+                  <p className="dark:text-slate-300">
+                    <strong className="dark:text-slate-100">Condições de Pagamento:</strong> {previewPdfQuote.paymentTerms}
                   </p>
-                  <p>
-                    <strong>Prazo de Produção:</strong> {previewPdfQuote.productionSlaDays} dias úteis
+                  <p className="dark:text-slate-300">
+                    <strong className="dark:text-slate-100">Prazo de Produção:</strong> {previewPdfQuote.productionSlaDays} dias úteis
                   </p>
                   {previewPdfQuote.notes && (
-                    <p className="text-slate-500 italic">{previewPdfQuote.notes}</p>
+                    <p className="text-slate-500 dark:text-slate-400 italic">{previewPdfQuote.notes}</p>
                   )}
                 </div>
 
-                <div className="text-left sm:text-right space-y-1 w-full sm:w-auto border-t sm:border-t-0 border-slate-100 pt-2 sm:pt-0">
-                  <p className="text-slate-500">Subtotal: R$ {previewPdfQuote.subtotal.toFixed(2).replace('.', ',')}</p>
+                <div className="text-left sm:text-right space-y-1 w-full sm:w-auto border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-2 sm:pt-0">
+                  <p className="text-slate-500 dark:text-slate-400">Subtotal: R$ {previewPdfQuote.subtotal.toFixed(2).replace('.', ',')}</p>
                   {previewPdfQuote.discount > 0 && (
-                    <p className="text-rose-600 font-semibold">Desconto: -R$ {previewPdfQuote.discount.toFixed(2).replace('.', ',')}</p>
+                    <p className="text-rose-600 dark:text-rose-400 font-semibold">Desconto: -R$ {previewPdfQuote.discount.toFixed(2).replace('.', ',')}</p>
                   )}
-                  <p className="text-lg sm:text-xl font-black text-slate-900 pt-1 border-t border-slate-300">
+                  <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 pt-1 border-t border-slate-300 dark:border-slate-700">
                     TOTAL: R$ {previewPdfQuote.total.toFixed(2).replace('.', ',')}
                   </p>
                 </div>
               </div>
 
               {/* Footer */}
-              <div className="pt-6 border-t border-slate-200 text-center text-[10px] text-slate-600 space-y-1">
-                <p className="font-bold text-slate-900">
+              <div className="pt-6 border-t border-slate-200 dark:border-[#202531] text-center text-[10px] text-slate-600 dark:text-slate-400 space-y-1">
+                <p className="font-bold text-slate-900 dark:text-slate-200">
                   RN 3D Soluções • CNPJ: 67.570.155/0001-34 • WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
                 </p>
                 <p>Obrigado pela preferência e confiança em nosso trabalho!</p>

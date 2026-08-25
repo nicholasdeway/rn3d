@@ -26,6 +26,7 @@ interface ProductsViewProps {
   onAddProduct: (product: Product) => void;
   onUpdateProduct: (product: Product) => void;
   onSyncSupabase?: () => Promise<void>;
+  autoOpenNewModal?: boolean;
 }
 
 export const ProductsView: React.FC<ProductsViewProps> = ({
@@ -33,17 +34,24 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   onAddProduct,
   onUpdateProduct,
   onSyncSupabase,
+  autoOpenNewModal,
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('Todos');
   const [statusFilter, setStatusFilter] = useState('Todos');
+  const [isModalOpen, setIsModalOpen] = useState(autoOpenNewModal || false);
+
+  React.useEffect(() => {
+    if (autoOpenNewModal) {
+      setIsModalOpen(true);
+    }
+  }, [autoOpenNewModal]);
   const [keychainOnly, setKeychainOnly] = useState<'todos' | 'chaveiro' | 'nao-chaveiro'>('todos');
   const [sortBy, setSortBy] = useState<'name-asc' | 'category' | 'sku' | 'price-asc' | 'price-desc'>('name-asc');
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Expanded Image Lightbox Modal state
   const [zoomedImage, setZoomedImage] = useState<{ url: string; title: string; sku: string } | null>(null);

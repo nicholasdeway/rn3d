@@ -43,6 +43,7 @@ export function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [preselectedClientIdForAction, setPreselectedClientIdForAction] = useState<string | undefined>(undefined);
+  const [autoOpenNewProductModal, setAutoOpenNewProductModal] = useState(false);
 
   // Persistent Theme Mode state ('light' | 'dark')
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -245,7 +246,10 @@ export function App() {
               case 'inventory':
                 setCurrentView('inventory-general');
                 break;
+              case 'novo-produto':
+              case 'cadastrar-produto':
               case 'product':
+                setAutoOpenNewProductModal(true);
                 setCurrentView('products');
                 break;
               case 'client':
@@ -349,9 +353,13 @@ export function App() {
               {currentView === 'products' && (
                 <ProductsView
                   products={appData.products}
-                  onAddProduct={appData.handleAddProduct}
+                  onAddProduct={(p) => {
+                    appData.handleAddProduct(p);
+                    setAutoOpenNewProductModal(false);
+                  }}
                   onUpdateProduct={appData.handleUpdateProduct}
                   onSyncSupabase={appData.handleSyncProductsToSupabase}
+                  autoOpenNewModal={autoOpenNewProductModal}
                 />
               )}
 
