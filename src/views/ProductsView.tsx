@@ -379,91 +379,102 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       </div>
 
       {/* Filter and View Controls */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-          <div className="relative flex-1 flex items-center gap-3">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por nome do produto ou SKU..."
-                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-              />
-            </div>
-            <span className="text-xs font-bold text-slate-500 bg-slate-100 border border-slate-200 px-3 py-2 rounded-xl whitespace-nowrap shrink-0">
-              Exibindo: <strong>{filteredProducts.length}</strong> de {products.length}
-            </span>
+      <div className="bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs space-y-3">
+        {/* Row 1: Search Input + Exibindo Badge */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Buscar por nome do produto ou SKU..."
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            />
+          </div>
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] px-3.5 py-2.5 rounded-xl whitespace-nowrap text-center shrink-0">
+            Exibindo: <strong className="text-slate-900 dark:text-slate-100 font-bold">{filteredProducts.length}</strong> de {products.length}
+          </span>
+        </div>
+
+        {/* Row 2: Grid Filters (Sort, Category, Status & View Mode) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+          {/* Sort Selector */}
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#181c26] px-3 py-2 rounded-xl border border-slate-200 dark:border-[#202531] text-xs">
+            <ArrowUpDown className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="w-full bg-transparent font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer text-xs"
+            >
+              <option value="name-asc" className="dark:bg-[#181c26]">Ordem: Alfabética (A-Z)</option>
+              <option value="category" className="dark:bg-[#181c26]">Ordem: Categoria</option>
+              <option value="sku" className="dark:bg-[#181c26]">Ordem: Código / SKU</option>
+              <option value="price-asc" className="dark:bg-[#181c26]">Preço: Menor para Maior</option>
+              <option value="price-desc" className="dark:bg-[#181c26]">Preço: Maior para Menor</option>
+            </select>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Sort Selector */}
-            <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs">
-              <ArrowUpDown className="w-3.5 h-3.5 text-indigo-600" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-transparent font-bold text-slate-700 focus:outline-none cursor-pointer"
-              >
-                <option value="name-asc">Ordem: Alfabética (A-Z)</option>
-                <option value="category">Ordem: Categoria</option>
-                <option value="sku">Ordem: Código / SKU</option>
-                <option value="price-asc">Preço: Menor para Maior</option>
-                <option value="price-desc">Preço: Maior para Menor</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:border-indigo-500 cursor-pointer"
-              >
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    Cat: {c}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                type="button"
-                onClick={() => setIsNewCategoryModalOpen(true)}
-                className="px-2.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold transition-colors cursor-pointer border border-indigo-100 flex items-center gap-1 shrink-0"
-                title="Cadastrar Nova Categoria de Produto"
-              >
-                <Plus className="w-3.5 h-3.5 text-indigo-600" />
-                <span className="hidden xl:inline">ategoria</span>
-              </button>
-            </div>
-
+          {/* Category Filter + New Category Button */}
+          <div className="flex items-center gap-1.5">
             <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-medium focus:outline-none focus:border-indigo-500 cursor-pointer"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="flex-1 px-3 py-2 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl text-xs text-slate-700 dark:text-slate-200 font-semibold focus:outline-none focus:border-indigo-500 cursor-pointer"
             >
-              <option value="Todos">Status: Todos</option>
-              <option value="Ativo">Ativos</option>
-              <option value="Inativo">Inativos</option>
+              {categories.map((c) => (
+                <option key={c} value={c} className="dark:bg-[#181c26]">
+                  Cat: {c}
+                </option>
+              ))}
             </select>
 
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shrink-0">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${viewMode === 'grid' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-900'
-                  }`}
-              >
-                <Grid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('table')}
-                className={`p-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${viewMode === 'table' ? 'bg-white text-indigo-600 shadow-xs' : 'text-slate-500 hover:text-slate-900'
-                  }`}
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsNewCategoryModalOpen(true)}
+              className="px-3 py-2 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-xl text-xs font-bold transition-colors cursor-pointer border border-indigo-100 dark:border-indigo-900 flex items-center gap-1 shrink-0"
+              title="Cadastrar Nova Categoria de Produto"
+            >
+              <Plus className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span className="text-[11px] font-bold">+ Cat</span>
+            </button>
+          </div>
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full px-3 py-2 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl text-xs text-slate-700 dark:text-slate-200 font-semibold focus:outline-none focus:border-indigo-500 cursor-pointer"
+          >
+            <option value="Todos" className="dark:bg-[#181c26]">Status: Todos</option>
+            <option value="Ativo" className="dark:bg-[#181c26]">Ativos</option>
+            <option value="Inativo" className="dark:bg-[#181c26]">Inativos</option>
+          </select>
+
+          {/* Grid / Table View Mode Toggle */}
+          <div className="flex items-center justify-between bg-slate-100 dark:bg-[#181c26] p-1 rounded-xl border border-slate-200 dark:border-[#202531]">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <Grid className="w-4 h-4" />
+              <span>Grid</span>
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                viewMode === 'table'
+                  ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              <span>Lista</span>
+            </button>
           </div>
         </div>
       </div>

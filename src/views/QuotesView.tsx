@@ -1047,33 +1047,33 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
             }
           `}</style>
 
-          <div className="print-container bg-white w-full max-w-3xl rounded-2xl border border-slate-300 overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[92vh]">
             {/* Modal Header (Hidden on Print) */}
-            <div className="no-print p-4 bg-slate-800 text-white flex items-center justify-between">
+            <div className="no-print p-4 bg-slate-800 dark:bg-[#181c26] text-white flex items-center justify-between border-b border-slate-700 dark:border-[#202531]">
               <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
                 <Printer className="w-4 h-4 text-emerald-400" /> Preview do Documento PDF (Formato A4)
               </span>
               <button
                 onClick={() => setPreviewPdfQuote(null)}
-                className="p-1 hover:bg-slate-700 rounded-lg text-slate-300 cursor-pointer"
+                className="p-1 hover:bg-slate-700 dark:hover:bg-slate-800 rounded-lg text-slate-300 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* A4 Sheet Rendering */}
-            <div className="print-sheet p-8 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white text-slate-900 font-sans">
+            {/* A4 Sheet Rendering (Pure white for clean PDF printing, but responsive on mobile screens) */}
+            <div className="print-sheet p-5 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white text-slate-900 font-sans">
               {/* Header */}
-              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5">
+              <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 pb-5 gap-3">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">RN 3D Soluções</h2>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">RN 3D Soluções</h2>
                   <p className="text-xs font-black text-slate-900 mt-1">CNPJ: 67.570.155/0001-34</p>
                   <p className="text-[11px] text-slate-700 font-semibold mt-1">
                     WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
                   </p>
                 </div>
-                <div className="text-right">
-                  <span className="px-3 py-1 bg-slate-900 text-white font-mono font-bold rounded-md text-xs">
+                <div className="text-left sm:text-right">
+                  <span className="px-3 py-1 bg-slate-900 text-white font-mono font-bold rounded-md text-xs inline-block whitespace-nowrap shadow-xs">
                     ORÇAMENTO {previewPdfQuote.id}
                   </span>
                   <p className="text-slate-500 mt-2 text-xs">Data: {previewPdfQuote.date}</p>
@@ -1090,60 +1090,64 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               </div>
 
               {/* Table with Image Thumbnails */}
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b-2 border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
-                    <th className="py-2">Item / Descrição</th>
-                    <th className="py-2 text-center">Qtde</th>
-                    <th className="py-2 text-right">Valor Unit.</th>
-                    <th className="py-2 text-right">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {previewPdfQuote.items.map((item, idx) => {
-                    const matchingProduct = products.find(
-                      (p) =>
-                        p.id === item.productId ||
-                        p.name.toLowerCase() === item.description.toLowerCase() ||
-                        item.description.toLowerCase().includes(p.name.toLowerCase())
-                    );
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[320px]">
+                  <thead>
+                    <tr className="border-b-2 border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
+                      <th className="py-2.5 px-1.5 sm:px-3">Item / Descrição</th>
+                      <th className="py-2.5 px-1.5 sm:px-3 text-center whitespace-nowrap">Qtde</th>
+                      <th className="py-2.5 px-1.5 sm:px-3 text-right whitespace-nowrap">Valor Unit.</th>
+                      <th className="py-2.5 px-1.5 sm:px-3 text-right whitespace-nowrap">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {previewPdfQuote.items.map((item, idx) => {
+                      const matchingProduct = products.find(
+                        (p) =>
+                          p.id === item.productId ||
+                          p.name.toLowerCase() === item.description.toLowerCase() ||
+                          item.description.toLowerCase().includes(p.name.toLowerCase())
+                      );
 
-                    return (
-                      <tr key={idx}>
-                        <td className="py-2.5 font-medium flex items-center gap-3">
-                          {matchingProduct?.imageUrl ? (
-                            <img
-                              src={matchingProduct.imageUrl}
-                              alt=""
-                              className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-[10px] text-slate-400 shrink-0">
-                              3D
+                      return (
+                        <tr key={idx}>
+                          <td className="py-2.5 px-1.5 sm:px-3 font-medium">
+                            <div className="flex items-center gap-2.5">
+                              {matchingProduct?.imageUrl ? (
+                                <img
+                                  src={matchingProduct.imageUrl}
+                                  alt=""
+                                  className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-lg border border-slate-200 shrink-0"
+                                />
+                              ) : (
+                                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center font-bold text-[10px] text-slate-400 shrink-0">
+                                  3D
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="font-bold text-slate-900 text-xs sm:text-sm">{item.description}</p>
+                                {matchingProduct?.storageCapacity && (
+                                  <p className="text-[10px] text-indigo-600 font-semibold">
+                                    Cap: {matchingProduct.storageCapacity}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          )}
-                          <div>
-                            <p className="font-bold text-slate-900">{item.description}</p>
-                            {matchingProduct?.storageCapacity && (
-                              <p className="text-[10px] text-indigo-600 font-semibold">
-                                Cap: {matchingProduct.storageCapacity}
-                              </p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-2.5 text-center font-bold">{item.quantity}</td>
-                        <td className="py-2.5 text-right text-slate-600">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
-                        <td className="py-2.5 text-right font-bold text-slate-900">
-                          R$ {item.subtotal.toFixed(2).replace('.', ',')}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="py-2.5 px-1.5 sm:px-3 text-center font-bold whitespace-nowrap">{item.quantity}</td>
+                          <td className="py-2.5 px-1.5 sm:px-3 text-right text-slate-600 whitespace-nowrap">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                          <td className="py-2.5 px-1.5 sm:px-3 text-right font-bold text-slate-900 whitespace-nowrap">
+                            R$ {item.subtotal.toFixed(2).replace('.', ',')}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
               {/* Totals */}
-              <div className="border-t-2 border-slate-200 pt-4 flex justify-between items-end">
+              <div className="border-t-2 border-slate-200 pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div className="space-y-1 text-[11px] max-w-md">
                   <p>
                     <strong>Condições de Pagamento:</strong> {previewPdfQuote.paymentTerms}
@@ -1151,15 +1155,17 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   <p>
                     <strong>Prazo de Produção:</strong> {previewPdfQuote.productionSlaDays} dias úteis
                   </p>
-                  <p className="text-slate-500 italic">{previewPdfQuote.notes}</p>
+                  {previewPdfQuote.notes && (
+                    <p className="text-slate-500 italic">{previewPdfQuote.notes}</p>
+                  )}
                 </div>
 
-                <div className="text-right space-y-1">
+                <div className="text-left sm:text-right space-y-1 w-full sm:w-auto border-t sm:border-t-0 border-slate-100 pt-2 sm:pt-0">
                   <p className="text-slate-500">Subtotal: R$ {previewPdfQuote.subtotal.toFixed(2).replace('.', ',')}</p>
                   {previewPdfQuote.discount > 0 && (
-                    <p className="text-rose-600">Desconto: -R$ {previewPdfQuote.discount.toFixed(2).replace('.', ',')}</p>
+                    <p className="text-rose-600 font-semibold">Desconto: -R$ {previewPdfQuote.discount.toFixed(2).replace('.', ',')}</p>
                   )}
-                  <p className="text-xl font-black text-slate-900 pt-1 border-t border-slate-300">
+                  <p className="text-lg sm:text-xl font-black text-slate-900 pt-1 border-t border-slate-300">
                     TOTAL: R$ {previewPdfQuote.total.toFixed(2).replace('.', ',')}
                   </p>
                 </div>
@@ -1175,16 +1181,16 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
             </div>
 
             {/* Modal Bottom Actions (Hidden on Print) */}
-            <div className="no-print p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+            <div className="no-print p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-100 dark:border-[#202531] flex items-center justify-end gap-3">
               <button
                 onClick={() => setPreviewPdfQuote(null)}
-                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold cursor-pointer text-xs"
+                className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs cursor-pointer transition-colors"
               >
                 Fechar
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs cursor-pointer shadow-xs"
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs inline-flex items-center gap-1.5 transition-all"
               >
                 <Printer className="w-4 h-4" /> Baixar / Imprimir PDF
               </button>
