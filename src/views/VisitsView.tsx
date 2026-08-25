@@ -201,32 +201,32 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
         </div>
       )}
 
-      {/* Modal 1: Agendar Nova Visita */}
+      {/* Modal 1: Agendar Nova Visita (Full Screen Overlay) */}
       {isScheduleModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#12151c] w-full max-w-lg rounded-2xl border border-slate-200 dark:border-[#202531] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-5 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
-              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
-                <CalendarPlus className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+        <div className="fixed inset-0 z-[150] bg-white dark:bg-[#0c0e12] text-slate-900 dark:text-slate-100 w-full h-full min-h-screen overflow-y-auto flex flex-col p-4 sm:p-8 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-4xl mx-auto my-auto rounded-3xl border border-slate-200 dark:border-[#202531] overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg flex items-center gap-2">
+                <CalendarPlus className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                 Agendar Nova Visita ao Cliente
               </h3>
               <button
                 onClick={() => setIsScheduleModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 cursor-pointer"
+                className="p-2 rounded-xl text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 cursor-pointer transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <form onSubmit={handleConfirmSchedule} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleConfirmSchedule} className="p-6 sm:p-8 space-y-5 text-xs sm:text-sm">
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Cliente / Ponto de Venda *
                 </label>
                 <select
                   value={scheduleClientId}
                   onChange={(e) => setScheduleClientId(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                  className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 text-sm"
                   required
                 >
                   {clients.map((cli) => (
@@ -237,58 +237,58 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                     Data da Visita *
                   </label>
                   <input
                     type="date"
                     value={scheduleDate}
                     onChange={(e) => setScheduleDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                    className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 text-sm"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                     Horário Estimado
                   </label>
                   <input
                     type="time"
                     value={scheduleTime}
                     onChange={(e) => setScheduleTime(e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                    className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
                   Motivo / Observação Comercial
                 </label>
                 <input
                   type="text"
                   value={scheduleReason}
                   onChange={(e) => setScheduleReason(e.target.value)}
-                  placeholder="Ex: Reposição de expositor, novos modelos 3D..."
-                  className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"
+                  placeholder="Ex: Reposição de expositor, novos modelos 3D, entrega..."
+                  className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800 text-sm"
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-100 dark:border-[#202531] flex justify-end gap-2">
+              <div className="pt-4 border-t border-slate-100 dark:border-[#202531] flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsScheduleModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold cursor-pointer"
+                  className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-xs sm:text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-xs cursor-pointer inline-flex items-center gap-2 text-xs sm:text-sm"
                 >
-                  <CalendarPlus className="w-4 h-4" />
+                  <CalendarPlus className="w-5 h-5" />
                   Salvar Agendamento
                 </button>
               </div>
@@ -297,24 +297,24 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
         </div>
       )}
 
-      {/* Modal 2: Selecionar Cliente para Iniciar Visita */}
+      {/* Modal 2: Selecionar Cliente para Iniciar Visita (Full Screen Overlay) */}
       {isSelectClientModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#12151c] w-full max-w-md rounded-2xl border border-slate-200 dark:border-[#202531] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-5 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
-              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+        <div className="fixed inset-0 z-[150] bg-white dark:bg-[#0c0e12] text-slate-900 dark:text-slate-100 w-full h-full min-h-screen overflow-y-auto flex flex-col p-4 sm:p-8 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-3xl mx-auto my-auto rounded-3xl border border-slate-200 dark:border-[#202531] overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-lg flex items-center gap-2">
+                <MapPin className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
                 Iniciar Visita — Escolha o Cliente
               </h3>
               <button
                 onClick={() => setIsSelectClientModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 cursor-pointer"
+                className="p-2 rounded-xl text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 cursor-pointer transition-colors"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="p-6 space-y-3 max-h-[60vh] overflow-y-auto">
+            <div className="p-6 sm:p-8 space-y-3 max-h-[70vh] overflow-y-auto">
               {clients.map((cli) => (
                 <button
                   key={cli.id}
@@ -322,17 +322,17 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
                     setIsSelectClientModalOpen(false);
                     onStartVisit(cli.id);
                   }}
-                  className="w-full p-3.5 bg-slate-50 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 border border-slate-200 dark:border-slate-700/80 rounded-xl text-left flex items-center justify-between cursor-pointer transition-colors group"
+                  className="w-full p-4 bg-slate-50 dark:bg-slate-800/80 hover:bg-indigo-50 dark:hover:bg-indigo-950/60 border border-slate-200 dark:border-slate-700/80 rounded-2xl text-left flex items-center justify-between cursor-pointer transition-colors group"
                 >
                   <div>
-                    <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                    <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
                       {cli.name}
                     </h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       {cli.city} - {cli.state} • {cli.productsOnSiteCount} peças no local
                     </p>
                   </div>
-                  <MapPin className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform shrink-0" />
+                  <MapPin className="w-5 h-5 text-emerald-600 group-hover:scale-110 transition-transform shrink-0" />
                 </button>
               ))}
             </div>
