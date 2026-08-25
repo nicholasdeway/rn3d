@@ -74,7 +74,7 @@ const PARTNERS = ['Nicholas', 'Rafael'];
 
 export const ExpensesView: React.FC<ExpensesViewProps> = ({
   expenses = [],
-  accountBalances = { nubank: 3500.0, shopee: 100.0, mercadoLivre: 0.0, tikTokShop: 0.0, amazon: 0.0 },
+  accountBalances = { nubank: 0, shopee: 0, mercadoLivre: 0, tikTokShop: 0, amazon: 0 },
   autoOpenModal = null,
   onCreateExpense,
   onExecuteTransfer,
@@ -115,7 +115,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     receiptName: string;
   }>({
     source: 'Shopee',
-    amount: '100.00',
+    amount: '',
     responsible: 'Nicholas',
     notes: '',
     receiptUrl: '',
@@ -237,8 +237,9 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
   // Handle balance edit submission
   const handleSaveBalance = (accountKey: keyof AccountBalances) => {
-    const val = parseFloat(balanceInputValue.replace(',', '.'));
-    if (!isNaN(val)) {
+    const cleanStr = balanceInputValue.replace(/\./g, '').replace(',', '.');
+    const val = parseFloat(cleanStr);
+    if (!isNaN(val) && val >= 0) {
       if (onUpdateSingleBalance) {
         onUpdateSingleBalance(accountKey, val);
       } else if (accountKey === 'nubank' && onUpdateAccountBalance) {
@@ -510,7 +511,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setBalanceInputValue(accountBalances.nubank.toString());
+                  setBalanceInputValue(accountBalances.nubank ? accountBalances.nubank.toFixed(2).replace('.', ',') : '0,00');
                   setEditingAccountKey('nubank');
                 }}
                 className="p-1 text-slate-400 hover:text-emerald-400 cursor-pointer transition-colors"
@@ -524,9 +525,11 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               <div className="flex items-center gap-1 mt-2">
                 <input
                   type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
                   autoFocus
                   value={balanceInputValue}
-                  onChange={(e) => setBalanceInputValue(e.target.value)}
+                  onChange={(e) => setBalanceInputValue(e.target.value.replace(/[^0-9.,]/g, ''))}
                   className="w-full px-2 py-1 bg-slate-800 border border-emerald-500 rounded-lg text-xs font-bold text-white"
                 />
                 <button
@@ -557,7 +560,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setBalanceInputValue(accountBalances.shopee.toString());
+                  setBalanceInputValue(accountBalances.shopee ? accountBalances.shopee.toFixed(2).replace('.', ',') : '0,00');
                   setEditingAccountKey('shopee');
                 }}
                 className="p-1 text-slate-400 hover:text-amber-500 cursor-pointer transition-colors"
@@ -571,9 +574,11 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               <div className="flex items-center gap-1 mt-2">
                 <input
                   type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
                   autoFocus
                   value={balanceInputValue}
-                  onChange={(e) => setBalanceInputValue(e.target.value)}
+                  onChange={(e) => setBalanceInputValue(e.target.value.replace(/[^0-9.,]/g, ''))}
                   className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-amber-500 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100"
                 />
                 <button
@@ -609,7 +614,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setBalanceInputValue(accountBalances.mercadoLivre.toString());
+                  setBalanceInputValue(accountBalances.mercadoLivre ? accountBalances.mercadoLivre.toFixed(2).replace('.', ',') : '0,00');
                   setEditingAccountKey('mercadoLivre');
                 }}
                 className="p-1 text-slate-400 hover:text-yellow-500 cursor-pointer transition-colors"
@@ -623,9 +628,11 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               <div className="flex items-center gap-1 mt-2">
                 <input
                   type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
                   autoFocus
                   value={balanceInputValue}
-                  onChange={(e) => setBalanceInputValue(e.target.value)}
+                  onChange={(e) => setBalanceInputValue(e.target.value.replace(/[^0-9.,]/g, ''))}
                   className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-yellow-500 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100"
                 />
                 <button
@@ -661,7 +668,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setBalanceInputValue(accountBalances.tikTokShop.toString());
+                  setBalanceInputValue(accountBalances.tikTokShop ? accountBalances.tikTokShop.toFixed(2).replace('.', ',') : '0,00');
                   setEditingAccountKey('tikTokShop');
                 }}
                 className="p-1 text-slate-400 hover:text-cyan-500 cursor-pointer transition-colors"
@@ -675,9 +682,11 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               <div className="flex items-center gap-1 mt-2">
                 <input
                   type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
                   autoFocus
                   value={balanceInputValue}
-                  onChange={(e) => setBalanceInputValue(e.target.value)}
+                  onChange={(e) => setBalanceInputValue(e.target.value.replace(/[^0-9.,]/g, ''))}
                   className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-cyan-500 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100"
                 />
                 <button
@@ -713,7 +722,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  setBalanceInputValue(accountBalances.amazon.toString());
+                  setBalanceInputValue(accountBalances.amazon ? accountBalances.amazon.toFixed(2).replace('.', ',') : '0,00');
                   setEditingAccountKey('amazon');
                 }}
                 className="p-1 text-slate-400 hover:text-indigo-500 cursor-pointer transition-colors"
@@ -727,9 +736,11 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               <div className="flex items-center gap-1 mt-2">
                 <input
                   type="text"
+                  inputMode="decimal"
+                  placeholder="0,00"
                   autoFocus
                   value={balanceInputValue}
-                  onChange={(e) => setBalanceInputValue(e.target.value)}
+                  onChange={(e) => setBalanceInputValue(e.target.value.replace(/[^0-9.,]/g, ''))}
                   className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-indigo-500 rounded-lg text-xs font-bold text-slate-900 dark:text-slate-100"
                 />
                 <button

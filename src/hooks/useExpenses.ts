@@ -10,11 +10,11 @@ import {
 } from '../services/expensesService';
 
 const DEFAULT_BALANCES: AccountBalances = {
-  nubank: 3500.0,
-  shopee: 100.0,
-  mercadoLivre: 0.0,
-  tikTokShop: 0.0,
-  amazon: 0.0,
+  nubank: 0,
+  shopee: 0,
+  mercadoLivre: 0,
+  tikTokShop: 0,
+  amazon: 0,
 };
 
 export function useExpenses(
@@ -31,11 +31,11 @@ export function useExpenses(
       try {
         const parsed = JSON.parse(saved);
         return {
-          nubank: typeof parsed.nubank === 'number' ? parsed.nubank : DEFAULT_BALANCES.nubank,
-          shopee: typeof parsed.shopee === 'number' ? parsed.shopee : DEFAULT_BALANCES.shopee,
-          mercadoLivre: typeof parsed.mercadoLivre === 'number' ? parsed.mercadoLivre : DEFAULT_BALANCES.mercadoLivre,
-          tikTokShop: typeof parsed.tikTokShop === 'number' ? parsed.tikTokShop : DEFAULT_BALANCES.tikTokShop,
-          amazon: typeof parsed.amazon === 'number' ? parsed.amazon : DEFAULT_BALANCES.amazon,
+          nubank: typeof parsed.nubank === 'number' ? parsed.nubank : 0,
+          shopee: typeof parsed.shopee === 'number' ? parsed.shopee : 0,
+          mercadoLivre: typeof parsed.mercadoLivre === 'number' ? parsed.mercadoLivre : 0,
+          tikTokShop: typeof parsed.tikTokShop === 'number' ? parsed.tikTokShop : 0,
+          amazon: typeof parsed.amazon === 'number' ? parsed.amazon : 0,
         };
       } catch (e) {}
     }
@@ -59,7 +59,6 @@ export function useExpenses(
   useEffect(() => {
     localStorage.setItem('rn3d_account_balances', JSON.stringify(accountBalances));
     localStorage.setItem('rn3d_account_balance', accountBalances.nubank.toString());
-    saveAccountBalancesToSupabase(accountBalances);
   }, [accountBalances]);
 
   useEffect(() => {
@@ -105,8 +104,6 @@ export function useExpenses(
         }
         if (dbBalances) {
           setAccountBalances(dbBalances);
-        } else {
-          saveAccountBalancesToSupabase(accountBalances);
         }
       })
       .catch((err) => console.error('Erro ao carregar despesas do Supabase:', err));
@@ -192,11 +189,13 @@ export function useExpenses(
           ? 'amazon'
           : 'nubank';
 
-      return {
+      const updated = {
         ...prev,
         [sourceKey]: Math.max(0, (prev[sourceKey as keyof AccountBalances] || 0) - amount),
         [destKey]: (prev[destKey as keyof AccountBalances] || 0) + amount,
       };
+      saveAccountBalancesToSupabase(updated);
+      return updated;
     });
 
     // Create Audit Log Transaction
@@ -251,10 +250,14 @@ export function useExpenses(
   };
 
   const handleUpdateSingleBalance = (accountKey: keyof AccountBalances, newBalance: number) => {
-    setAccountBalances((prev) => ({
-      ...prev,
-      [accountKey]: newBalance,
-    }));
+    setAccountBalances((prev) => {
+      const updated = {
+        ...prev,
+        [accountKey]: newBalance,
+      };
+      saveAccountBalancesToSupabase(updated);
+      return updated;
+    });
     showToast(`Saldo ${accountKey.toUpperCase()} atualizado para R$ ${newBalance.toFixed(2).replace('.', ',')}!`, 'success');
   };
 
