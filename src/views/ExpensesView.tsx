@@ -177,12 +177,12 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     receiptType: 'image' | 'pdf';
     receiptName: string;
   }>({
-    description: 'Pagamento / Ressarcimento de Filamento para a Empresa',
-    amount: '262.60',
+    description: '',
+    amount: '',
     responsible: 'Nicholas',
     date: new Date().toISOString().split('T')[0],
     timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-    notes: 'Ressarcimento de filamento ou ajuste entre contas',
+    notes: '',
     receiptUrl: '',
     receiptType: 'image',
     receiptName: '',
@@ -293,7 +293,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
     setTransferData({
       source: sourceAccount,
-      amount: currentBalance.toFixed(2),
+      amount: currentBalance.toFixed(2).replace('.', ','),
       responsible: 'Nicholas',
       notes: '',
       receiptUrl: '',
@@ -432,7 +432,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     onCreateExpense(newExpense);
     setIsAporteModalOpen(false);
     setAporteData({
-      description: 'Pagamento / Ressarcimento para Empresa',
+      description: '',
       amount: '',
       responsible: 'Nicholas',
       date: new Date().toISOString().split('T')[0],
