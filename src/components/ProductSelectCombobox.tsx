@@ -230,21 +230,22 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
 
       {/* 💻 DESKTOP FLOATING DROPDOWN MENU (Visible on screens >= 640px when open) */}
       {isOpen && (
-        <div className="hidden sm:block absolute z-[9999] left-0 right-0 mt-1 bg-white dark:bg-[#181c26] text-slate-900 dark:text-slate-100 rounded-2xl border border-slate-200 dark:border-[#202531] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="p-2.5 bg-slate-50 dark:bg-[#12151c] border-b border-slate-100 dark:border-[#202531] flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
-            <span>
+        <div className="hidden sm:block absolute z-[9999] left-0 right-0 mt-1.5 bg-white dark:bg-[#181c26] text-slate-900 dark:text-slate-100 rounded-2xl border border-slate-200/90 dark:border-[#202531] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="px-4 py-3 bg-slate-50 dark:bg-[#12151c] border-b border-slate-100 dark:border-[#202531] flex items-center justify-between text-xs font-bold text-slate-600 dark:text-slate-300">
+            <span className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
               {searchQuery
                 ? `${filteredProducts.length} ${filteredProducts.length === 1 ? 'produto encontrado' : 'produtos encontrados'}`
-                : `Mostrando catálogo completo (${products.length} itens)`}
+                : `Catálogo Completo (${products.length} itens disponíveis)`}
             </span>
-            <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500">Clique para adicionar ao orçamento</span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">Clique para adicionar instantaneamente</span>
           </div>
 
-          <div className="max-h-[580px] lg:max-h-[680px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80">
+          <div className="max-h-[650px] lg:max-h-[750px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80">
             {filteredProducts.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 dark:text-slate-500 space-y-1">
-                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">Nenhum produto localizado</p>
-                <p className="text-[11px]">Tente buscar por outro nome ou SKU.</p>
+              <div className="p-10 text-center text-slate-400 dark:text-slate-500 space-y-1.5">
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Nenhum produto localizado</p>
+                <p className="text-xs">Tente buscar por outro termo ou SKU.</p>
               </div>
             ) : (
               filteredProducts.map((p) => {
@@ -254,9 +255,9 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                     key={p.id}
                     type="button"
                     onClick={() => handleSelect(p, true)}
-                    className="w-full p-3 text-left hover:bg-indigo-50/80 dark:hover:bg-indigo-950/60 transition-colors flex items-center justify-between gap-3 group cursor-pointer border-b border-slate-100 dark:border-slate-800/60 last:border-0"
+                    className="w-full p-3.5 sm:p-4 text-left hover:bg-indigo-50/80 dark:hover:bg-[#202636] transition-colors flex items-center justify-between gap-4 group cursor-pointer border-b border-slate-100 dark:border-slate-800/60 last:border-0"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-3.5 min-w-0">
                       <div
                         onClick={(e) => {
                           if (p.imageUrl) {
@@ -264,7 +265,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                             setZoomImage({ url: p.imageUrl, title: p.name });
                           }
                         }}
-                        className={`w-11 h-11 rounded-xl bg-indigo-100/80 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700 group-hover:border-indigo-300 ${
+                        className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-indigo-100/80 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700 group-hover:border-indigo-400 ${
                           p.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
                         }`}
                         title={p.imageUrl ? 'Clique para ampliar a foto' : undefined}
@@ -276,35 +277,35 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <span>3D</span>
+                          <span className="text-xs">3D</span>
                         )}
                       </div>
 
                       <div className="min-w-0">
-                        <h5 className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400">
+                        <h5 className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                           {p.name}
                         </h5>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                          <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">SKU: {p.sku}</span>
+                        <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate mt-1">
+                          <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-950/80 px-1.5 py-0.5 rounded-md">SKU: {p.sku}</span>
                           {p.storageCapacity && ` • ${p.storageCapacity}`}
                           {p.category && ` • ${p.category}`}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0">
+                    <div className="flex items-center gap-3.5 shrink-0">
                       <div className="text-right">
-                        <span className="text-xs sm:text-sm font-extrabold text-emerald-600 dark:text-emerald-400 block">
+                        <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 block">
                           R$ {price.toFixed(2).replace('.', ',')}
                         </span>
                         {isCashPayment && (
-                          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
+                          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase bg-amber-50 dark:bg-amber-950/80 px-1.5 py-0.5 rounded-md border border-amber-200 dark:border-amber-800 inline-block mt-0.5">
                             À Vista
                           </span>
                         )}
                       </div>
-                      <span className="p-2 bg-indigo-50 dark:bg-indigo-950/80 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-600 text-indigo-600 dark:text-indigo-400 group-hover:text-white rounded-xl transition-colors shadow-2xs">
-                        <Plus className="w-4 h-4" />
+                      <span className="p-2 sm:p-2.5 bg-indigo-50 dark:bg-indigo-950/80 group-hover:bg-indigo-600 dark:group-hover:bg-indigo-600 text-indigo-600 dark:text-indigo-400 group-hover:text-white rounded-xl transition-colors shadow-2xs">
+                        <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                       </span>
                     </div>
                   </button>

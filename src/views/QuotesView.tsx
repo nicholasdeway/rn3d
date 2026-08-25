@@ -248,30 +248,32 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <FileText className="w-6 h-6 text-indigo-600" />
-            Orçamentos Comerciais
-          </h2>
-          <p className="text-xs text-slate-500 mt-1">
-            Gere propostas profissionais de impressão 3D em PDF para clientes e revendedores.
-          </p>
-        </div>
+      {!isFormOpen ? (
+        <>
+          {/* Top Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+                Orçamentos Comerciais
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Gere propostas profissionais de impressão 3D em PDF para clientes e revendedores.
+              </p>
+            </div>
 
-        <button
-          onClick={() => setIsFormOpen(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Orçamento
-        </button>
-      </div>
+            <button
+              onClick={() => setIsFormOpen(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Orçamento
+            </button>
+          </div>
 
-      {/* Quotes Table or Clean Empty State */}
-      {quotes.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center shadow-xs space-y-3">
+          {/* Quotes Table or Clean Empty State */}
+          {quotes.length === 0 ? (
+            <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] p-12 text-center shadow-xs space-y-3">
           <FileText className="w-12 h-12 text-slate-300 mx-auto" />
           <h3 className="font-bold text-slate-800 text-base">Nenhum orçamento cadastrado</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -429,10 +431,10 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
           </div>
         </>
       )}
-
-      {/* Cadastrar Orçamento — Inline Page View (Sem modal) */}
-      {isFormOpen && (
-        <div className="w-full space-y-6 animate-in fade-in duration-200">
+    </>
+  ) : (
+    /* Cadastrar Orçamento — Inline Page View (Sem modal) */
+    <div className="w-full space-y-6 animate-in fade-in duration-200">
           {/* Top Page Header Card */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
             <div>
