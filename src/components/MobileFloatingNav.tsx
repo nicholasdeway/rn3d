@@ -22,6 +22,8 @@ import {
   Sparkles,
   TrendingDown,
   ArrowDownLeft,
+  History,
+  Store,
 } from 'lucide-react';
 
 interface MobileFloatingNavProps {
@@ -55,6 +57,8 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
     { id: 'exchanges' as ViewMode, label: 'Trocas de Produtos', icon: Repeat, color: 'text-amber-400' },
     { id: 'clients' as ViewMode, label: 'Gestão de Clientes', icon: Users, color: 'text-blue-400' },
     { id: 'inventory-general' as ViewMode, label: 'Estoque Geral', icon: Warehouse, color: 'text-sky-400' },
+    { id: 'inventory-movements' as ViewMode, label: 'Movimentações de Estoque', icon: History, color: 'text-orange-400' },
+    { id: 'inventory-clients' as ViewMode, label: 'Estoque em Clientes', icon: Store, color: 'text-teal-400' },
     { id: 'reports' as ViewMode, label: 'Relatórios e Métricas', icon: BarChart3, color: 'text-indigo-400' },
     { id: 'settings' as ViewMode, label: 'Configurações', icon: Settings, color: 'text-slate-400' },
   ];
