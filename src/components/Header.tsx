@@ -24,6 +24,7 @@ interface HeaderProps {
   onOpenMobileSidebar: () => void;
   onQuickAction: (actionType: string) => void;
   onSearchChange?: (query: string) => void;
+  onNavigate?: (view: ViewMode) => void;
   products?: Product[];
   clients?: Client[];
   orders?: Order[];
@@ -38,6 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMobileSidebar,
   onQuickAction,
   onSearchChange,
+  onNavigate,
   products = [],
   clients = [],
   orders = [],
@@ -51,39 +53,6 @@ export const Header: React.FC<HeaderProps> = ({
   const [searchVal, setSearchVal] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
-
-  const getViewTitle = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return 'Visão Geral & Dashboard';
-      case 'clients':
-        return 'Gestão de Clientes';
-      case 'client-profile':
-        return 'Perfil do Cliente';
-      case 'products':
-        return 'Catálogo de Produtos RN 3D';
-      case 'orders':
-        return 'Gerenciamento de Pedidos';
-      case 'quotes':
-        return 'Orçamentos & Cotações';
-      case 'consignments':
-        return 'Remessas & Consignações';
-      case 'exchanges':
-        return 'Trocas & Devoluções';
-      case 'visits':
-        return 'Rotas de Visita';
-      case 'inventory-movements':
-        return 'Movimentações de Estoque';
-      case 'inventory-clients':
-        return 'Estoque Alocado em Clientes';
-      case 'financial':
-        return 'Financeiro & Lançamentos';
-      case 'settings':
-        return 'Configurações do Sistema';
-      default:
-        return 'Sistema RN 3D';
-    }
-  };
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -146,27 +115,32 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="h-16 bg-white border-b border-slate-200/80 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-30 shadow-xs">
-        {/* Left side: Page title (Mobile sidebar removed in favor of floating nav) */}
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-base font-bold text-slate-900 tracking-tight">{getViewTitle()}</h1>
-            <p className="text-xs text-slate-400 hidden sm:block">Operação Local RN 3D</p>
-          </div>
-        </div>
+      <header className="h-16 bg-white dark:bg-[#12151c] border-b border-slate-200/80 dark:border-[#202531] px-3 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30 shadow-xs gap-3">
+        {/* Left Side: Clickable Round Logo + Long Expanded Search Bar */}
+        <div className="flex items-center gap-3 flex-1 max-w-3xl">
+          {/* Circular Logo Container (Clicking navigates to Dashboard/Home) */}
+          <button
+            onClick={() => onNavigate && onNavigate('dashboard')}
+            className="flex items-center justify-center p-0.5 rounded-full border-2 border-indigo-500/40 hover:border-indigo-600 dark:border-indigo-400/50 dark:hover:border-indigo-400 transition-all cursor-pointer group shrink-0"
+            title="Ir para a Página Inicial (Dashboard)"
+          >
+            <img
+              src="/logo.png"
+              alt="RN 3D"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover group-hover:scale-105 transition-transform"
+            />
+          </button>
 
-        {/* Middle/Right: Global Search + Quick Action Button + User Profile */}
-        <div className="flex items-center gap-3">
-          {/* Search Input Container */}
-          <div className="relative hidden md:block w-64 lg:w-80">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          {/* Long Web Search Input */}
+          <div className="relative flex-1 max-w-xl lg:max-w-2xl">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
               value={searchVal}
               onChange={handleSearch}
               onFocus={() => setIsSearchOpen(true)}
               placeholder="Buscar pedido, orçamento, produto ou cliente..."
-              className="w-full pl-9 pr-8 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
+              className="w-full pl-10 pr-8 py-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium"
             />
             {searchVal && (
               <button
@@ -175,7 +149,7 @@ export const Header: React.FC<HeaderProps> = ({
                   setIsSearchOpen(false);
                   if (onSearchChange) onSearchChange('');
                 }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>

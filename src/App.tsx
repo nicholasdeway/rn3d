@@ -193,6 +193,10 @@ export function App() {
         <Header
           currentView={currentView}
           onOpenMobileSidebar={() => setIsMobileMenuOpen(true)}
+          onNavigate={(view) => {
+            setCurrentView(view);
+            setActiveClientIdForProfile(null);
+          }}
           products={appData.products}
           clients={appData.clients}
           orders={appData.orders}
