@@ -158,7 +158,7 @@ export function App() {
     appData.clients.find((c) => c.id === activeClientIdForProfile) || appData.clients[0];
 
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-900 font-sans flex antialiased selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-slate-100 dark:bg-[#0c0e12] text-slate-900 dark:text-slate-100 font-sans flex antialiased selection:bg-indigo-500 selection:text-white transition-colors duration-200">
       {/* Toast Notification */}
       {appData.toast && (
         <Toast

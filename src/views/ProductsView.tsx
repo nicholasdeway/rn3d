@@ -506,7 +506,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     ) : (
                       <Printer className="w-12 h-12 text-indigo-300 group-hover:scale-110 transition-transform duration-200" />
                     )}
-                    <span className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-white/95 text-slate-800 shadow-sm border border-slate-200/60 z-10">
+                    <span className="absolute top-2.5 right-2.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold bg-white/95 dark:bg-slate-900/90 text-slate-800 dark:text-slate-100 shadow-sm border border-slate-200/60 dark:border-slate-700/80 z-10">
                       {p.sku}
                     </span>
                   </div>

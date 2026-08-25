@@ -1,22 +1,26 @@
 @import "tailwindcss";
 
-/* System Dark Theme Overrides (Cinza escuro elegante puxado para o preto) */
+/* Comprehensive System Dark Theme Overrides (Cinza escuro elegante puxado para o preto) */
 html.dark {
   color-scheme: dark;
   background-color: #0c0e12 !important;
   color: #f1f5f9 !important;
 }
 
-html.dark body {
+html.dark body,
+html.dark #root,
+html.dark .min-h-screen {
   background-color: #0c0e12 !important;
   color: #f1f5f9 !important;
 }
 
+/* Header, Sidebar, Nav, Main Container & Card Backgrounds */
 html.dark header,
 html.dark nav,
 html.dark aside,
-html.dark footer {
-  background-color: #12151c !important;
+html.dark footer,
+html.dark main {
+  background-color: #0c0e12 !important;
   border-color: #202531 !important;
   color: #f1f5f9 !important;
 }
@@ -27,24 +31,39 @@ html.dark .bg-white {
   color: #f1f5f9 !important;
 }
 
-html.dark .bg-slate-50 {
+html.dark .bg-slate-50,
+html.dark .bg-slate-50\/80,
+html.dark .bg-slate-900\/5 {
   background-color: #171b24 !important;
   border-color: #262c3a !important;
   color: #e2e8f0 !important;
 }
 
-html.dark .bg-slate-100 {
-  background-color: #1d222e !important;
-  border-color: #2d3447 !important;
+html.dark .bg-slate-100,
+html.dark .bg-slate-100\/70,
+html.dark .bg-slate-100\/80 {
+  background-color: #1c212c !important;
+  border-color: #2a3142 !important;
   color: #e2e8f0 !important;
 }
 
+/* SKU Badge & White floating overlays in Dark Mode */
+html.dark .bg-white\/95 {
+  background-color: #1e2432 !important;
+  color: #f1f5f9 !important;
+  border-color: #2e374d !important;
+}
+
+/* Borders */
 html.dark .border-slate-200,
 html.dark .border-slate-200\/80,
+html.dark .border-slate-200\/60,
+html.dark .border-slate-200\/90,
 html.dark .border-slate-100 {
   border-color: #202531 !important;
 }
 
+/* Typography Colors */
 html.dark .text-slate-900,
 html.dark .text-slate-800,
 html.dark .text-slate-700 {
@@ -57,6 +76,7 @@ html.dark .text-slate-400 {
   color: #94a3b8 !important;
 }
 
+/* Inputs, Selects & Textareas */
 html.dark input,
 html.dark select,
 html.dark textarea {
@@ -73,6 +93,89 @@ html.dark textarea::placeholder {
 html.dark option {
   background-color: #12151c !important;
   color: #f8fafc !important;
+}
+
+/* Alert Boxes & Status Banners in Dark Mode (Amber, Rose, Emerald, Indigo, Purple) */
+html.dark .bg-amber-50,
+html.dark .bg-amber-50\/80,
+html.dark .bg-amber-500\/10 {
+  background-color: #261c10 !important;
+  border-color: #4a3418 !important;
+  color: #fcd34d !important;
+}
+
+html.dark .border-amber-200,
+html.dark .border-amber-200\/80 {
+  border-color: #4a3418 !important;
+}
+
+html.dark .text-amber-700,
+html.dark .text-amber-800 {
+  color: #fbbf24 !important;
+}
+
+html.dark .bg-rose-50,
+html.dark .bg-rose-50\/20,
+html.dark .bg-rose-50\/30,
+html.dark .bg-rose-100 {
+  background-color: #2a151b !important;
+  border-color: #4e202a !important;
+  color: #fca5a5 !important;
+}
+
+html.dark .border-rose-200 {
+  border-color: #4e202a !important;
+}
+
+html.dark .text-rose-600,
+html.dark .text-rose-700,
+html.dark .text-rose-800 {
+  color: #f87171 !important;
+}
+
+html.dark .bg-emerald-50,
+html.dark .bg-emerald-100 {
+  background-color: #10261f !important;
+  border-color: #1b4b3c !important;
+  color: #6ee7b7 !important;
+}
+
+html.dark .border-emerald-200,
+html.dark .border-emerald-200\/80 {
+  border-color: #1b4b3c !important;
+}
+
+html.dark .text-emerald-600,
+html.dark .text-emerald-700 {
+  color: #34d399 !important;
+}
+
+html.dark .bg-indigo-50,
+html.dark .bg-indigo-100,
+html.dark .bg-indigo-100\/80 {
+  background-color: #15182e !important;
+  border-color: #283057 !important;
+  color: #a5b4fc !important;
+}
+
+html.dark .border-indigo-100,
+html.dark .border-indigo-200 {
+  border-color: #283057 !important;
+}
+
+html.dark .text-indigo-600,
+html.dark .text-indigo-700 {
+  color: #818cf8 !important;
+}
+
+html.dark .bg-purple-50 {
+  background-color: #1d152a !important;
+  border-color: #382454 !important;
+  color: #c084fc !important;
+}
+
+html.dark .divide-slate-100 > * + * {
+  border-color: #202531 !important;
 }
 
 @media print {

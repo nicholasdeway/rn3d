@@ -123,7 +123,9 @@ export const GeneralInventoryView: React.FC<GeneralInventoryViewProps> = ({
                 <div
                   key={p.id}
                   className={`p-4 rounded-2xl border shadow-xs space-y-3 transition-colors ${
-                    isLow ? 'bg-rose-50/30 border-rose-200' : 'bg-white border-slate-200/90'
+                    isLow
+                      ? 'bg-rose-50/30 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40'
+                      : 'bg-white dark:bg-slate-900 border-slate-200/90 dark:border-slate-800'
                   }`}
                 >
                   {/* Top Row: Thumbnail, Name, SKU & Status */}
@@ -227,8 +229,8 @@ export const GeneralInventoryView: React.FC<GeneralInventoryViewProps> = ({
                     return (
                       <tr
                         key={p.id}
-                        className={`hover:bg-slate-50/80 transition-colors ${
-                          isLow ? 'bg-rose-50/20' : ''
+                        className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors ${
+                          isLow ? 'bg-rose-50/20 dark:bg-rose-950/30' : ''
                         }`}
                       >
                         <td className="p-4">
