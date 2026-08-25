@@ -424,7 +424,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={() => signOut()}
               title="Sair do sistema"
-              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ml-1 cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors ml-1 cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
             </button>

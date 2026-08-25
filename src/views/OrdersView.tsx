@@ -340,29 +340,29 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
 
             <div className="p-6 overflow-y-auto space-y-6 text-xs">
               {/* Interactive 3D Print Progress Regulator (5% increments) */}
-              <div className="p-4 bg-gradient-to-r from-indigo-50/80 via-slate-50 to-cyan-50/60 rounded-2xl border border-indigo-100/90 space-y-3">
+              <div className="p-4 bg-gradient-to-r from-indigo-50/80 via-slate-50 to-cyan-50/60 dark:from-indigo-950/60 dark:via-slate-900 dark:to-cyan-950/40 rounded-2xl border border-indigo-100/90 dark:border-indigo-900/50 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
                       <Printer className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                      <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5">
                         Progresso de Impressão 3D
-                        <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-100 px-2 py-0.5 rounded-md">
+                        <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-950 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
                           Passo: 5 em 5%
                         </span>
                       </h4>
-                      <p className="text-[11px] text-slate-500">Regule o avanço da produção das peças na impressora 3D</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Regule o avanço da produção das peças na impressora 3D</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <span className={`text-sm font-black font-mono px-3 py-1 rounded-xl border transition-colors ${
                       selectedOrder.productionProgressPct === 100
-                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
                         : selectedOrder.productionProgressPct > 0
-                          ? 'bg-indigo-100 text-indigo-800 border-indigo-300'
-                          : 'bg-slate-100 text-slate-700 border-slate-300'
+                          ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
                     }`}>
                       {selectedOrder.productionProgressPct}%
                     </span>
@@ -617,10 +617,10 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               </div>
             </div>
 
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+            <div className="p-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
               <button
                 onClick={() => setSelectedOrder(null)}
-                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-xl font-bold cursor-pointer"
+                className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold cursor-pointer transition-colors"
               >
                 Fechar
               </button>

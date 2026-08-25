@@ -337,10 +337,10 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
               {/* 2. Full Product Catalog Search Combobox */}
               {products.length > 0 && (
-                <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-2 relative z-30">
-                  <label className="block font-bold text-slate-900 text-xs flex items-center justify-between">
+                <div className="p-4 bg-indigo-50/50 dark:bg-indigo-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 space-y-2 relative z-30">
+                  <label className="block font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center justify-between">
                     <span>Adicionar Produtos do Catálogo ({products.length} itens disponíveis):</span>
-                    <span className="text-[10px] text-indigo-600 font-bold">Pesquisa Instantânea</span>
+                    <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">Pesquisa Instantânea</span>
                   </label>
                   <ProductSelectCombobox
                     products={products}

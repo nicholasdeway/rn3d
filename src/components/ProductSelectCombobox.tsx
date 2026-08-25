@@ -102,9 +102,9 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
 
       {/* 📱 MOBILE FULL-SCREEN VIEW (Visible on screens < 640px when open) */}
       {isOpen && (
-        <div className="fixed inset-0 z-[99999] bg-white flex flex-col sm:hidden animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[99999] bg-white dark:bg-slate-950 flex flex-col sm:hidden animate-in fade-in duration-150">
           {/* Mobile Top Header */}
-          <div className="p-3.5 bg-slate-900 text-white flex items-center justify-between shadow-md shrink-0">
+          <div className="p-3.5 bg-slate-900 dark:bg-slate-900 text-white flex items-center justify-between shadow-md shrink-0 border-b border-slate-800">
             <div className="flex items-center gap-2">
               <Search className="w-4 h-4 text-indigo-400" />
               <span className="font-bold text-xs uppercase tracking-wider">Catálogo de Produtos</span>
@@ -119,7 +119,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
           </div>
 
           {/* Mobile Sticky Search Field */}
-          <div className="p-3 bg-slate-50 border-b border-slate-200 shrink-0 space-y-2">
+          <div className="p-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 space-y-2">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-600 pointer-events-none" />
               <input
@@ -128,7 +128,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Digite nome, SKU ou modelo..."
-                className="w-full pl-10 pr-10 py-3 bg-white border border-indigo-200 focus:border-indigo-500 rounded-xl text-xs font-bold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-xs"
+                className="w-full pl-10 pr-10 py-3 bg-white dark:bg-slate-950 border border-indigo-200 dark:border-slate-800 focus:border-indigo-500 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-xs"
               />
               {searchQuery && (
                 <button
@@ -140,17 +140,17 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                 </button>
               )}
             </div>
-            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 px-1">
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 px-1">
               <span>{filteredProducts.length} produtos encontrados</span>
-              <span className="text-indigo-600">Toque em + para adicionar</span>
+              <span className="text-indigo-600 dark:text-indigo-400">Toque em + para adicionar</span>
             </div>
           </div>
 
           {/* Mobile Scrollable Product List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 p-2">
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 p-2">
             {filteredProducts.length === 0 ? (
               <div className="p-10 text-center text-slate-400 space-y-2">
-                <p className="text-sm font-bold text-slate-700">Nenhum produto localizado</p>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Nenhum produto localizado</p>
                 <p className="text-xs">Tente buscar por outro termo.</p>
               </div>
             ) : (
@@ -161,12 +161,12 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                   <div
                     key={p.id}
                     onClick={() => handleSelect(p)}
-                    className={`p-3 rounded-xl transition-all flex items-center justify-between gap-3 active:bg-indigo-50 ${
-                      isJustAdded ? 'bg-emerald-50 border border-emerald-300' : 'hover:bg-slate-50'
+                    className={`p-3 rounded-xl transition-all flex items-center justify-between gap-3 active:bg-indigo-50 dark:active:bg-indigo-950 ${
+                      isJustAdded ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800' : 'hover:bg-slate-50 dark:hover:bg-slate-900'
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-12 h-12 rounded-xl bg-indigo-100/80 text-indigo-700 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-100/80 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700">
                         {p.imageUrl ? (
                           <img
                             src={p.imageUrl}
@@ -178,9 +178,9 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                         )}
                       </div>
                       <div className="min-w-0">
-                        <h5 className="font-bold text-slate-900 text-xs truncate">{p.name}</h5>
-                        <p className="text-[11px] text-slate-500 truncate mt-0.5">
-                          <span className="font-mono text-indigo-600 font-bold">SKU: {p.sku}</span>
+                        <h5 className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">{p.name}</h5>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                          <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">SKU: {p.sku}</span>
                           {p.storageCapacity && ` • ${p.storageCapacity}`}
                         </p>
                       </div>
@@ -188,11 +188,11 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
 
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right">
-                        <span className="text-xs font-black text-emerald-600 block">
+                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block">
                           R$ {price.toFixed(2).replace('.', ',')}
                         </span>
                         {isCashPayment && (
-                          <span className="text-[9px] font-bold text-amber-600 uppercase bg-amber-50 px-1 py-0.5 rounded-md border border-amber-200">
+                          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase bg-amber-50 dark:bg-amber-950 px-1 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
                             À Vista
                           </span>
                         )}
@@ -230,8 +230,8 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
 
       {/* 💻 DESKTOP FLOATING DROPDOWN MENU (Visible on screens >= 640px when open) */}
       {isOpen && (
-        <div className="hidden sm:block absolute z-[9999] left-0 right-0 mt-1 bg-white rounded-2xl border border-slate-200 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="p-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-500">
+        <div className="hidden sm:block absolute z-[9999] left-0 right-0 mt-1 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="p-2.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400">
             <span>
               {searchQuery
                 ? `${filteredProducts.length} ${filteredProducts.length === 1 ? 'produto encontrado' : 'produtos encontrados'}`
