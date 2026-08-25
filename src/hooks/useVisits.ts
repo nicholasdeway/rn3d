@@ -20,34 +20,6 @@ export function useVisits(
     safeSetLocalStorage('rn3d_visits', JSON.stringify(visits));
   }, [visits]);
 
-  // Auto-gerar visitas pendentes caso a lista esteja vazia ou faltem visitas para os clientes
-  useEffect(() => {
-    if (clients.length > 0 && visits.filter((v) => v.status !== 'Concluída').length === 0) {
-      const generated: Visit[] = clients.map((cli, idx) => {
-        const today = new Date();
-        const scheduledDate = new Date(today.getTime() + (idx + 1) * 3 * 86400000);
-        const day = String(scheduledDate.getDate()).padStart(2, '0');
-        const month = String(scheduledDate.getMonth() + 1).padStart(2, '0');
-        const year = scheduledDate.getFullYear();
-        const dateFormatted = `${day}/${month}/${year}`;
-
-        return {
-          id: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
-          clientId: cli.id,
-          clientName: cli.name,
-          scheduledDate: cli.nextVisitDate && cli.nextVisitDate !== 'A agendar' ? cli.nextVisitDate : dateFormatted,
-          timeSlot: '14:00',
-          reason: 'Conferência quinzenal de estoque e reposição de lançamentos 3D',
-          productsOnSite: cli.productsOnSiteCount || 0,
-          lastVisitText: cli.lastVisitDate || 'N/A',
-          status: idx === 0 ? 'Hoje' : 'Em breve',
-        };
-      });
-
-      setVisits((prev) => [...prev, ...generated]);
-    }
-  }, [clients]);
-
   const handleScheduleVisit = (newVisitData: {
     clientId: string;
     scheduledDate: string;
