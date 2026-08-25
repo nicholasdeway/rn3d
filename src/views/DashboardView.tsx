@@ -1,5 +1,6 @@
 import React from 'react';
 import { Client, Product, Visit, ViewMode, Order } from '../types';
+import { formatDateBR } from '../utils/formatters';
 import {
   TrendingUp,
   DollarSign,
@@ -363,7 +364,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <div className="flex items-start justify-between">
                     <div>
                       <h4 className="font-bold text-slate-900 text-sm">{v.clientName}</h4>
-                      <p className="text-xs text-slate-500 mt-0.5">Última visita: {v.lastVisitText}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Última visita: {formatDateBR(v.lastVisitText)}</p>
                     </div>
                   </div>
 

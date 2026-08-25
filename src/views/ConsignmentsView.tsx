@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Client, Consignment, ConsignmentItem, Product, ExchangeNote } from '../types';
 import { ProductSelectCombobox } from '../components/ProductSelectCombobox';
+import { formatDateBR, getTodayBR } from '../utils/formatters';
 import {
   Boxes,
   Plus,
@@ -190,10 +191,10 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                   <div>
                     <h4 className="font-bold text-slate-900 text-sm">{c.clientName}</h4>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Data: {c.date} • {c.itemsCount} {c.itemsCount === 1 ? 'item' : 'itens'}
+                      Data: {formatDateBR(c.date)} • {c.itemsCount} {c.itemsCount === 1 ? 'item' : 'itens'}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Última conferência: <span className="font-semibold text-slate-700">{c.lastAuditDate}</span>
+                      Última conferência: <span className="font-semibold text-slate-700">{formatDateBR(c.lastAuditDate)}</span>
                     </p>
                   </div>
                   <div className="text-right">
@@ -244,7 +245,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                     >
                       <td className="p-4 font-mono font-bold text-indigo-600">{c.id}</td>
                       <td className="p-4 font-bold text-slate-900">{c.clientName}</td>
-                      <td className="p-4 text-slate-600">{c.date}</td>
+                      <td className="p-4 text-slate-600">{formatDateBR(c.date)}</td>
                       <td className="p-4 text-center font-bold text-slate-800">{c.itemsCount} itens</td>
                       <td className="p-4 text-right font-extrabold text-emerald-600 text-sm">
                         R$ {c.totalValue.toFixed(2).replace('.', ',')}
@@ -254,7 +255,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                           {c.status}
                         </span>
                       </td>
-                      <td className="p-4 text-slate-500">{c.lastAuditDate}</td>
+                      <td className="p-4 text-slate-500">{formatDateBR(c.lastAuditDate)}</td>
                       <td className="p-4 text-right">
                         <button
                           onClick={(e) => {

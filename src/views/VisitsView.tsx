@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Visit } from '../types';
+import { formatDateBR } from '../utils/formatters';
 import {
   MapPin,
   Calendar,
@@ -140,7 +141,7 @@ export const VisitsView: React.FC<VisitsViewProps> = ({ visits, onStartVisit }) 
                   <p>
                     <strong>Produtos no local:</strong> {v.productsOnSite} unidades
                   </p>
-                  <p className="text-slate-400">Última visita: {v.lastVisitText}</p>
+                  <p className="text-slate-400">Última visita: {formatDateBR(v.lastVisitText)}</p>
                 </div>
               </div>
 

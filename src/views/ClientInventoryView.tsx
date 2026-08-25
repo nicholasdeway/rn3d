@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Client, ClientInventoryItem, Consignment } from '../types';
+import { formatDateBR } from '../utils/formatters';
 import { Store, ChevronDown, ChevronUp, Boxes, DollarSign, MapPin, Repeat, ChevronsDown, ChevronsUp } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 
@@ -236,7 +237,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                   <div>
                     <h3 className="font-bold text-slate-900 text-sm">{cli.name}</h3>
                     <p className="text-xs text-slate-500">
-                      {cli.city} • Última conferência: {cli.lastVisitDate}
+                      {cli.city} • Última conferência: {formatDateBR(cli.lastVisitDate)}
                     </p>
                   </div>
                 </div>

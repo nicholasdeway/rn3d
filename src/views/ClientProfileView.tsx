@@ -582,7 +582,7 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
 
                     <div className="flex items-center justify-between gap-2 text-xs">
                       <div>
-                        <p className="text-slate-500 text-[11px]">Data: {o.date}</p>
+                        <p className="text-slate-500 text-[11px]">Data: {formatDateBR(o.date)}</p>
                         <p className="font-bold text-slate-800 mt-0.5">{o.itemsCount} itens</p>
                       </div>
                       <div className="text-right">
@@ -637,7 +637,7 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                     {clientOrders.map((o) => (
                       <tr key={o.id} className="hover:bg-slate-50">
                         <td className="p-4 font-mono font-bold text-indigo-600">{o.id}</td>
-                        <td className="p-4 text-slate-600">{o.date}</td>
+                        <td className="p-4 text-slate-600">{formatDateBR(o.date)}</td>
                         <td className="p-4 text-center font-bold">{o.itemsCount} itens</td>
                         <td className="p-4 text-right font-extrabold text-emerald-600">
                           R$ {o.totalValue.toFixed(2).replace('.', ',')}
@@ -742,7 +742,7 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                     </div>
 
                     <div className="flex items-center justify-between gap-2 text-xs">
-                      <p className="text-slate-500 text-[11px]">Data: {q.date}</p>
+                      <p className="text-slate-500 text-[11px]">Data: {formatDateBR(q.date)}</p>
                       <div className="text-right">
                         <span className="text-[10px] text-slate-400 font-medium block">Valor Total</span>
                         <span className="font-black text-emerald-600 text-sm">
@@ -769,7 +769,7 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                     {clientQuotes.map((q) => (
                       <tr key={q.id} className="hover:bg-slate-50">
                         <td className="p-4 font-mono font-bold text-indigo-600">{q.id}</td>
-                        <td className="p-4 text-slate-600">{q.date}</td>
+                        <td className="p-4 text-slate-600">{formatDateBR(q.date)}</td>
                         <td className="p-4 text-right font-extrabold text-emerald-600">
                           R$ {q.total.toFixed(2).replace('.', ',')}
                         </td>
@@ -894,7 +894,7 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                       <td className="p-4 text-right font-bold text-slate-900">
                         R$ {totalVal.toFixed(2).replace('.', ',')}
                       </td>
-                      <td className="p-4 text-slate-500">{item.lastMovementDate}</td>
+                      <td className="p-4 text-slate-500">{formatDateBR(item.lastMovementDate)}</td>
                     </tr>
                   );
                 })}
