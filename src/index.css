@@ -63,6 +63,30 @@ html.dark .border-slate-100 {
   border-color: #202531 !important;
 }
 
+/* Universal Dark Mode Hover Styles (Tom sutil de brilho transparente em vez de branco) */
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-slate-200:hover,
+html.dark .hover\:bg-white:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+html.dark .hover\:bg-slate-50\/80:hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+html.dark .hover\:border-slate-300:hover {
+  border-color: #3b4458 !important;
+}
+
+html.dark .hover\:text-slate-900:hover,
+html.dark .hover\:text-slate-800:hover,
+html.dark .hover\:text-slate-700:hover,
+html.dark .hover\:text-slate-600:hover {
+  color: #ffffff !important;
+}
+
 /* Typography Colors */
 html.dark .text-slate-900,
 html.dark .text-slate-800,

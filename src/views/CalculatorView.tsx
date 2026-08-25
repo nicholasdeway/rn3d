@@ -833,13 +833,13 @@ Qualquer dúvida estou à disposição! 🚀`;
             </div>
 
             {/* Profit Margin Slider */}
-            <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 space-y-2">
+            <div className="bg-emerald-50/50 dark:bg-emerald-950/40 p-4 rounded-xl border border-emerald-100 dark:border-emerald-900/50 space-y-2">
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-emerald-950 flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <span className="text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
+                  <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Margem de Lucro Desejada (Líquida):
                 </span>
-                <span className="text-emerald-700 bg-white px-2.5 py-1 rounded-lg border border-emerald-200 font-mono text-sm">
+                <span className="text-emerald-700 dark:text-emerald-300 bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 font-mono text-sm">
                   {inputs.desiredProfitMarginPct}%
                 </span>
               </div>
@@ -850,9 +850,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                 step="5"
                 value={inputs.desiredProfitMarginPct}
                 onChange={(e) => handleInputChange('desiredProfitMarginPct', parseInt(e.target.value) || 0)}
-                className="w-full accent-emerald-600 h-2 bg-emerald-200/60 rounded-lg appearance-none cursor-pointer"
+                className="w-full accent-emerald-600 h-2 bg-emerald-200/60 dark:bg-emerald-900/40 rounded-lg appearance-none cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] text-emerald-700 font-medium">
+              <div className="flex justify-between text-[10px] text-emerald-700 dark:text-emerald-300/80 font-medium">
                 <span>10% (Baixa)</span>
                 <span>30% (Padrão)</span>
                 <span>50% (Recomendada)</span>
@@ -862,7 +862,7 @@ Qualquer dúvida estou à disposição! 🚀`;
 
             {/* Marketplace Preset Selector Tabs */}
             <div className="space-y-2">
-              <label className="block text-xs font-medium text-slate-700">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
                 Selecione o Marketplace para análise detalhada:
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -874,17 +874,17 @@ Qualquer dúvida estou à disposição! 🚀`;
                       type="button"
                       onClick={() => setSelectedMarketplaceId(mkt.id)}
                       className={`p-3 rounded-xl border text-left transition-all ${isSelected
-                          ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500/20'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                          ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/50 dark:bg-indigo-950/60 ring-2 ring-indigo-500/20'
+                          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/60'
                         }`}
                     >
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-bold text-slate-900 truncate">{mkt.name}</span>
+                        <span className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{mkt.name}</span>
                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${mkt.badgeColor}`}>
                           {mkt.commissionPct}%
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 font-mono">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                         Taxa Fixa: R$ {mkt.fixedFee.toFixed(2)}
                       </p>
                     </button>
@@ -1087,23 +1087,23 @@ Qualquer dúvida estou à disposição! 🚀`;
             </div>
 
             {/* Big Recommended Price Display */}
-            <div className="text-center py-3 bg-gradient-to-b from-indigo-50/70 via-slate-50 to-cyan-50/30 rounded-2xl border border-indigo-100 p-4 space-y-1">
-              <span className="text-xs font-bold text-indigo-950 uppercase tracking-wide">
+            <div className="text-center py-3 bg-gradient-to-b from-indigo-50/70 via-slate-50 to-cyan-50/30 dark:from-indigo-950/60 dark:via-slate-900 dark:to-cyan-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/60 p-4 space-y-1">
+              <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200 uppercase tracking-wide">
                 Preço Recomendado de Venda
               </span>
-              <div className="text-4xl font-extrabold text-indigo-600 my-1 font-mono tracking-tight">
+              <div className="text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 my-1 font-mono tracking-tight">
                 R$ {selectedMetrics.recommendedPrice.toFixed(2)}
               </div>
-              <p className="text-[11px] text-slate-500 font-medium">
-                Garante <span className="font-bold text-emerald-600">{inputs.desiredProfitMarginPct}%</span> de lucro líquido real (R$ {selectedMetrics.netProfit.toFixed(2)})
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                Garante <span className="font-bold text-emerald-600 dark:text-emerald-400">{inputs.desiredProfitMarginPct}%</span> de lucro líquido real (R$ {selectedMetrics.netProfit.toFixed(2)})
               </p>
 
               {inputs.extraDiscountAffiliatePct > 0 && (
-                <div className="mt-2 pt-2 border-t border-indigo-100/80 flex items-center justify-center gap-2 text-xs">
-                  <span className="px-2 py-0.5 rounded-md bg-cyan-100 text-cyan-800 font-bold border border-cyan-200">
+                <div className="mt-2 pt-2 border-t border-indigo-100/80 dark:border-indigo-900/40 flex items-center justify-center gap-2 text-xs">
+                  <span className="px-2 py-0.5 rounded-md bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-300 font-bold border border-cyan-200 dark:border-cyan-800">
                     +{inputs.extraDiscountAffiliatePct}% Comissão Repassada
                   </span>
-                  <span className="text-slate-500 text-[11px]">
+                  <span className="text-slate-500 dark:text-slate-400 text-[11px]">
                     (Sem comissão: <b>R$ {priceWithoutExtra.toFixed(2)}</b>)
                   </span>
                 </div>
@@ -1112,62 +1112,62 @@ Qualquer dúvida estou à disposição! 🚀`;
 
             {/* Cost, Profit, Commission & Margin Breakdown Cards */}
             <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200/60">
-                <span className="text-[11px] font-medium text-slate-500 block mb-0.5">Custo Direto (COGS)</span>
-                <span className="text-base font-bold text-slate-900 font-mono">
+              <div className="p-3 bg-slate-50 dark:bg-slate-900/80 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block mb-0.5">Custo Direto (COGS)</span>
+                <span className="text-base font-bold text-slate-900 dark:text-slate-100 font-mono">
                   R$ {totalDirectCost.toFixed(2)}
                 </span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">Material + Energia + Insumos</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 block mt-0.5">Material + Energia + Insumos</span>
               </div>
 
-              <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200/60">
-                <span className="text-[11px] font-medium text-emerald-800 block mb-0.5">Lucro Líquido Real</span>
-                <span className="text-base font-bold text-emerald-600 font-mono">
+              <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-2xl border border-emerald-200/60 dark:border-emerald-900/50">
+                <span className="text-[11px] font-medium text-emerald-800 dark:text-emerald-300 block mb-0.5">Lucro Líquido Real</span>
+                <span className="text-base font-bold text-emerald-600 dark:text-emerald-400 font-mono">
                   R$ {selectedMetrics.netProfit.toFixed(2)}
                 </span>
-                <span className="text-[10px] text-emerald-700 block mt-0.5">
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400/80 block mt-0.5">
                   Bolso limpo pós-taxas
                 </span>
               </div>
 
               {/* CARD DEDICADO: Comissões e Afiliados Extras */}
-              <div className={`p-3 rounded-2xl border transition-all ${inputs.extraDiscountAffiliatePct > 0 ? 'bg-cyan-50/90 border-cyan-200 ring-2 ring-cyan-500/20' : 'bg-slate-50/60 border-slate-200/60'}`}>
-                <span className="text-[11px] font-bold text-cyan-900 flex items-center justify-between">
+              <div className={`p-3 rounded-2xl border transition-all ${inputs.extraDiscountAffiliatePct > 0 ? 'bg-cyan-50/90 dark:bg-cyan-950/50 border-cyan-200 dark:border-cyan-900/60 ring-2 ring-cyan-500/20' : 'bg-slate-50/60 dark:bg-slate-900/60 border-slate-200/60 dark:border-slate-800'}`}>
+                <span className="text-[11px] font-bold text-cyan-900 dark:text-cyan-200 flex items-center justify-between">
                   Comissão / Afiliados
-                  <Gift className="w-3.5 h-3.5 text-cyan-600" />
+                  <Gift className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                 </span>
-                <span className="text-base font-bold text-cyan-700 font-mono block mt-0.5">
+                <span className="text-base font-bold text-cyan-700 dark:text-cyan-400 font-mono block mt-0.5">
                   R$ {selectedMetrics.extraDiscountAffiliateAmount.toFixed(2)}
                 </span>
-                <span className="text-[10px] text-cyan-800 font-medium block mt-0.5">
+                <span className="text-[10px] text-cyan-800 dark:text-cyan-300/80 font-medium block mt-0.5">
                   {inputs.extraDiscountAffiliatePct > 0 ? `${inputs.extraDiscountAffiliatePct}% adicionados ao preço` : '0% (sem comissão)'}
                 </span>
               </div>
 
               {/* Margem Líquida (% sobre a Venda) */}
-              <div className="p-3 bg-indigo-50/60 rounded-2xl border border-indigo-100">
-                <span className="text-[11px] font-semibold text-indigo-900 flex items-center justify-between">
+              <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/50">
+                <span className="text-[11px] font-semibold text-indigo-900 dark:text-indigo-200 flex items-center justify-between">
                   Margem Líquida
-                  <Percent className="w-3 h-3 text-indigo-500" />
+                  <Percent className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />
                 </span>
-                <span className="text-base font-bold text-indigo-700 font-mono block mt-0.5">
+                <span className="text-base font-bold text-indigo-700 dark:text-indigo-400 font-mono block mt-0.5">
                   {selectedMetrics.realProfitMarginPct.toFixed(1)}%
                 </span>
-                <span className="text-[10px] text-indigo-600/80 block mt-0.5">
+                <span className="text-[10px] text-indigo-600/80 dark:text-indigo-300/80 block mt-0.5">
                   % sobre o Preço de Venda
                 </span>
               </div>
 
               {/* Markup (% sobre o Custo Direto) */}
-              <div className="p-3 bg-purple-50/60 rounded-2xl border border-purple-100 col-span-2">
-                <span className="text-[11px] font-semibold text-purple-900 flex items-center justify-between">
+              <div className="p-3 bg-purple-50/60 dark:bg-purple-950/40 rounded-2xl border border-purple-100 dark:border-purple-900/50 col-span-2">
+                <span className="text-[11px] font-semibold text-purple-900 dark:text-purple-200 flex items-center justify-between">
                   Markup no Custo
-                  <TrendingUp className="w-3 h-3 text-purple-500" />
+                  <TrendingUp className="w-3 h-3 text-purple-500 dark:text-purple-400" />
                 </span>
-                <span className="text-base font-bold text-purple-700 font-mono block mt-0.5">
-                  +{selectedMetrics.markupPct.toFixed(0)}% <span className="text-[11px] font-normal text-purple-600">({selectedMetrics.markupMultiplier.toFixed(2)}x sobre R$ {totalDirectCost.toFixed(2)})</span>
+                <span className="text-base font-bold text-purple-700 dark:text-purple-400 font-mono block mt-0.5">
+                  +{selectedMetrics.markupPct.toFixed(0)}% <span className="text-[11px] font-normal text-purple-600 dark:text-purple-300">({selectedMetrics.markupMultiplier.toFixed(2)}x sobre R$ {totalDirectCost.toFixed(2)})</span>
                 </span>
-                <span className="text-[10px] text-purple-600/80 block mt-0.5">
+                <span className="text-[10px] text-purple-600/80 dark:text-purple-300/80 block mt-0.5">
                   Multiplicador total de custo para definir a venda
                 </span>
               </div>

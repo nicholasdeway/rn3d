@@ -529,35 +529,35 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
               </div>
 
               {/* Step 4: Reasons & Summary */}
-              <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200/80 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+              <div className="p-5 bg-slate-50 dark:bg-slate-900/80 rounded-2xl border border-slate-200/80 dark:border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
                 <div className="md:col-span-2 space-y-3">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Motivo do Remanejamento / Troca</label>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Motivo do Remanejamento / Troca</label>
                     <input
                       type="text"
                       value={exchangeReason}
                       onChange={(e) => setExchangeReason(e.target.value)}
                       placeholder="Ex: Peças encalhadas no expositor da Loja A migrando para ponto de alto fluxo..."
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-xl bg-white text-xs text-slate-900 font-medium"
+                      className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-slate-100 font-medium"
                     />
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Responsável pela Operação</label>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Responsável pela Operação</label>
                     <input
                       type="text"
                       value={responsibleName}
                       onChange={(e) => setResponsibleName(e.target.value)}
-                      className="w-full px-3.5 py-2 border border-slate-200 rounded-xl bg-white text-xs text-slate-900 font-medium"
+                      className="w-full px-3.5 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-950 text-xs text-slate-900 dark:text-slate-100 font-medium"
                     />
                   </div>
                 </div>
 
-                <div className="p-4 bg-white rounded-xl border border-slate-200 space-y-2 text-right">
-                  <span className="text-xs text-slate-400 font-semibold block">Total de Peças em Troca:</span>
-                  <span className="text-2xl font-black text-indigo-600 block">
+                <div className="p-4 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 text-right">
+                  <span className="text-xs text-slate-400 dark:text-slate-500 font-semibold block">Total de Peças em Troca:</span>
+                  <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 block">
                     {(Object.values(selectedItems) as number[]).reduce((acc: number, qty: number) => acc + qty, 0)} unidades
                   </span>
-                  <span className="text-[11px] text-slate-500 font-medium block">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium block">
                     {destinationType === 'migracao_lojas' ? 'Destino: Loja Parceira' : 'Destino: Oficina Central'}
                   </span>
                 </div>
