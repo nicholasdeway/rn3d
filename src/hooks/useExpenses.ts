@@ -3,6 +3,7 @@ import { ExpenseItem, AccountBalances, MarketplaceAccount } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import {
   fetchExpenses,
+  saveAccountBalancesToSupabase,
   createExpense,
   updateExpense,
   deleteExpense,
@@ -58,6 +59,7 @@ export function useExpenses(
   useEffect(() => {
     localStorage.setItem('rn3d_account_balances', JSON.stringify(accountBalances));
     localStorage.setItem('rn3d_account_balance', accountBalances.nubank.toString());
+    saveAccountBalancesToSupabase(accountBalances);
   }, [accountBalances]);
 
   useEffect(() => {
@@ -79,9 +81,12 @@ export function useExpenses(
 
   const reloadExpenses = async () => {
     try {
-      const dbExpenses = await fetchExpenses();
+      const { expenses: dbExpenses, balances: dbBalances } = await fetchExpenses();
       if (Array.isArray(dbExpenses) && dbExpenses.length > 0) {
         setExpenses(dbExpenses);
+      }
+      if (dbBalances) {
+        setAccountBalances(dbBalances);
       }
     } catch (err) {
       console.error('Erro ao recarregar despesas:', err);
@@ -93,9 +98,13 @@ export function useExpenses(
     let isMounted = true;
 
     fetchExpenses()
-      .then((dbExpenses) => {
-        if (isMounted && Array.isArray(dbExpenses) && dbExpenses.length > 0) {
+      .then(({ expenses: dbExpenses, balances: dbBalances }) => {
+        if (!isMounted) return;
+        if (Array.isArray(dbExpenses) && dbExpenses.length > 0) {
           setExpenses(dbExpenses);
+        }
+        if (dbBalances) {
+          setAccountBalances(dbBalances);
         }
       })
       .catch((err) => console.error('Erro ao carregar despesas do Supabase:', err));

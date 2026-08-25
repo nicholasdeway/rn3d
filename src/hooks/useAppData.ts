@@ -19,6 +19,7 @@ import { syncMissingProductsToSupabase } from '../services/productsService';
 import { syncMissingClientsToSupabase } from '../services/clientsService';
 import { syncMissingOrdersToSupabase } from '../services/ordersService';
 import { syncMissingQuotesToSupabase } from '../services/quotesService';
+import { syncMissingExpensesToSupabase } from '../services/expensesService';
 
 export function useAppData() {
   const { user } = useAuth();
@@ -329,14 +330,22 @@ export function useAppData() {
     });
   }, [orders]);
 
+  // Automatically sync local expenses to Supabase if any exist locally
+  useEffect(() => {
+    if (expenses.length > 0) {
+      syncMissingExpensesToSupabase(expenses);
+    }
+  }, [expenses]);
+
   const handleSyncProductsToSupabase = async () => {
     try {
       showToast('Sincronizando todo o sistema com o Banco de Dados', 'info');
-      const [pCount, cCount, oCount, qCount] = await Promise.all([
+      const [pCount, cCount, oCount, qCount, eCount] = await Promise.all([
         syncMissingProductsToSupabase(products),
         syncMissingClientsToSupabase(clients),
         syncMissingOrdersToSupabase(orders),
         syncMissingQuotesToSupabase(quotes),
+        syncMissingExpensesToSupabase(expenses),
       ]);
 
       const [dbProds, dbClients, dbOrders, dbQuotes] = await Promise.all([
@@ -350,10 +359,11 @@ export function useAppData() {
       setClients(dbClients);
       setOrders(dbOrders);
       setQuotes(dbQuotes);
+      if (reloadExpenses) reloadExpenses();
 
-      const totalNew = pCount + cCount + oCount + qCount;
+      const totalNew = pCount + cCount + oCount + qCount + eCount;
       if (totalNew > 0) {
-        showToast(`✅ Sincronização concluída! (${pCount} prods, ${cCount} clientes, ${oCount} pedidos, ${qCount} orçamentos)`, 'success');
+        showToast(`✅ Sincronização concluída! (${pCount} prods, ${cCount} clientes, ${oCount} pedidos, ${qCount} orçamentos, ${eCount} despesas)`, 'success');
       } else {
         showToast('✅ Sistema 100% sincronizado com o Supabase!', 'success');
       }

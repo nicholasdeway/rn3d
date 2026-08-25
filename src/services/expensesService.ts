@@ -1,22 +1,28 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { ExpenseItem } from '../types';
+import { ExpenseItem, AccountBalances } from '../types';
 
-export async function fetchExpenses(): Promise<ExpenseItem[]> {
+export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balances?: AccountBalances }> {
   let localExpenses: ExpenseItem[] = [];
+  let localBalances: AccountBalances | undefined;
+
   try {
-    const saved = localStorage.getItem('rn3d_expenses');
-    if (saved) {
-      const parsed = JSON.parse(saved);
+    const savedExp = localStorage.getItem('rn3d_expenses');
+    if (savedExp) {
+      const parsed = JSON.parse(savedExp);
       if (Array.isArray(parsed) && parsed.length > 0) {
         localExpenses = parsed;
       }
     }
+    const savedBal = localStorage.getItem('rn3d_account_balances');
+    if (savedBal) {
+      localBalances = JSON.parse(savedBal);
+    }
   } catch (e) {
-    console.error('Erro ao ler despesas locais:', e);
+    console.error('Erro ao ler dados locais:', e);
   }
 
   if (!isSupabaseConfigured()) {
-    return localExpenses;
+    return { expenses: localExpenses, balances: localBalances };
   }
 
   const { data, error } = await supabase
@@ -26,34 +32,84 @@ export async function fetchExpenses(): Promise<ExpenseItem[]> {
 
   if (error || !data) {
     console.error('Erro ao buscar despesas no Supabase:', error?.message);
-    return localExpenses;
+    return { expenses: localExpenses, balances: localBalances };
   }
 
-  const dbExpenses: ExpenseItem[] = data.map((row) => ({
-    id: row.id,
-    description: row.description,
-    category: row.category,
-    amount: Number(row.amount) || 0,
-    date: row.date,
-    timestamp: row.timestamp || row.created_at || new Date().toLocaleTimeString('pt-BR'),
-    paymentStatus: row.payment_status || 'Pago',
-    beneficiary: row.beneficiary || '',
-    createdBy: row.created_by || 'Nicholas',
-    sourceAccount: row.source_account || undefined,
-    destinationAccount: row.destination_account || undefined,
-    receiptUrl: row.receipt_url || '',
-    receiptType: row.receipt_type || (row.receipt_url?.startsWith('data:application/pdf') ? 'pdf' : 'image'),
-    receiptName: row.receipt_name || '',
-    isAutoReplicated: row.is_auto_replicated ?? false,
-    referenceCode: row.reference_code || '',
-    notes: row.notes || '',
-  }));
+  // Extract system account balances row if present
+  const sysBalanceRow = data.find((row) => row.reference_code === 'SYS_ACCOUNT_BALANCES');
+  if (sysBalanceRow && sysBalanceRow.notes) {
+    try {
+      const parsedBalances = JSON.parse(sysBalanceRow.notes);
+      if (parsedBalances && typeof parsedBalances === 'object') {
+        localBalances = parsedBalances;
+        localStorage.setItem('rn3d_account_balances', JSON.stringify(parsedBalances));
+        localStorage.setItem('rn3d_account_balance', (parsedBalances.nubank || 0).toString());
+      }
+    } catch (e) {}
+  }
+
+  const dbExpenses: ExpenseItem[] = data
+    .filter((row) => row.reference_code !== 'SYS_ACCOUNT_BALANCES')
+    .map((row) => ({
+      id: row.id,
+      description: row.description,
+      category: row.category,
+      amount: Number(row.amount) || 0,
+      date: row.date,
+      timestamp: row.timestamp || row.created_at || new Date().toLocaleTimeString('pt-BR'),
+      paymentStatus: row.payment_status || 'Pago',
+      beneficiary: row.beneficiary || '',
+      createdBy: row.created_by || 'Nicholas',
+      sourceAccount: row.source_account || undefined,
+      destinationAccount: row.destination_account || undefined,
+      receiptUrl: row.receipt_url || '',
+      receiptType: row.receipt_type || (row.receipt_url?.startsWith('data:application/pdf') ? 'pdf' : 'image'),
+      receiptName: row.receipt_name || '',
+      isAutoReplicated: row.is_auto_replicated ?? false,
+      referenceCode: row.reference_code || '',
+      notes: row.notes || '',
+    }));
 
   try {
     localStorage.setItem('rn3d_expenses', JSON.stringify(dbExpenses));
   } catch (e) {}
 
-  return dbExpenses;
+  return { expenses: dbExpenses, balances: localBalances };
+}
+
+export async function saveAccountBalancesToSupabase(balances: AccountBalances): Promise<boolean> {
+  try {
+    localStorage.setItem('rn3d_account_balances', JSON.stringify(balances));
+    localStorage.setItem('rn3d_account_balance', balances.nubank.toString());
+
+    if (!isSupabaseConfigured()) return true;
+
+    const payload = {
+      description: 'Saldos de Contas e Marketplaces',
+      category: 'Outros',
+      amount: 0,
+      date: new Date().toISOString().split('T')[0],
+      payment_status: 'Pago',
+      reference_code: 'SYS_ACCOUNT_BALANCES',
+      notes: JSON.stringify(balances),
+    };
+
+    const { data: existing } = await supabase
+      .from('expenses')
+      .select('id')
+      .eq('reference_code', 'SYS_ACCOUNT_BALANCES')
+      .maybeSingle();
+
+    if (existing && existing.id) {
+      await supabase.from('expenses').update({ notes: JSON.stringify(balances) }).eq('id', existing.id);
+    } else {
+      await supabase.from('expenses').insert([payload]);
+    }
+    return true;
+  } catch (err) {
+    console.error('Erro ao salvar saldos no Supabase:', err);
+    return false;
+  }
 }
 
 export async function createExpense(expense: Partial<ExpenseItem>): Promise<ExpenseItem | null> {
@@ -84,7 +140,6 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
 
   if (error) {
     console.error('Erro ao cadastrar despesa no Supabase:', error.message);
-    // Silent fallback if table does not exist in Supabase DB schema yet
     return null;
   }
 
@@ -151,7 +206,7 @@ export async function syncMissingExpensesToSupabase(expenses: ExpenseItem[]): Pr
     const existingRefCodes = new Set((dbData || []).map((row) => row.reference_code).filter(Boolean));
 
     const toInsert = expenses.filter(
-      (e) => !existingIds.has(e.id) && (!e.referenceCode || !existingRefCodes.has(e.referenceCode))
+      (e) => !existingIds.has(e.id) && (!e.referenceCode || !existingRefCodes.has(e.referenceCode)) && e.referenceCode !== 'SYS_ACCOUNT_BALANCES'
     );
 
     if (toInsert.length === 0) return 0;
