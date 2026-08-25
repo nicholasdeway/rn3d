@@ -279,52 +279,94 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
           </div>
         </div>
 
-        {/* Key Metrics Row (Including Logistics Default Memory Card) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 pt-4 border-t border-slate-100">
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-[11px] text-slate-400 font-medium block">Produtos no local</span>
-            <span className="text-lg font-extrabold text-slate-900">{currentClientData.productsOnSiteCount} un</span>
+        {/* Key Metrics Row (Definance KPI Cards Style) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+          {/* Card 1: Produtos no local */}
+          <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-purple-500/40 dark:hover:border-purple-500/40 cursor-pointer">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+                Produtos no local
+              </span>
+              <div className="p-1.5 rounded-xl bg-purple-500/10 text-purple-400 shrink-0">
+                <Boxes className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 tracking-tight truncate">
+              {currentClientData.productsOnSiteCount} <span className="text-xs font-bold text-slate-400">un</span>
+            </p>
           </div>
 
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-            <span className="text-[11px] text-slate-400 font-medium block">Valor das mercadorias</span>
-            <span className="text-lg font-extrabold text-slate-900">
+          {/* Card 2: Valor das mercadorias */}
+          <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-indigo-500/40 dark:hover:border-indigo-500/40 cursor-pointer">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+                Valor Mercadorias
+              </span>
+              <div className="p-1.5 rounded-xl bg-indigo-500/10 text-indigo-400 shrink-0">
+                <DollarSign className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 tracking-tight truncate">
               R$ {currentClientData.productsValuation.toFixed(2).replace('.', ',')}
-            </span>
+            </p>
           </div>
 
-          <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-100">
-            <span className="text-[11px] text-emerald-700 font-medium block">Valor a receber</span>
-            <span className="text-lg font-extrabold text-emerald-700">
+          {/* Card 3: Valor a receber */}
+          <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-emerald-500/40 dark:hover:border-emerald-500/40 cursor-pointer">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+                Valor a Receber
+              </span>
+              <div className="p-1.5 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-lg sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2 tracking-tight truncate">
               R$ {currentClientData.receivableBalance.toFixed(2).replace('.', ',')}
-            </span>
+            </p>
           </div>
 
-          <div className="p-3 bg-rose-50/70 rounded-xl border border-rose-100">
-            <span className="text-[11px] text-rose-700 font-bold block flex items-center gap-1">
-              <Truck className="w-3.5 h-3.5" /> Custo Transporte Padrão
-            </span>
-            <span className="text-lg font-black text-rose-600">
+          {/* Card 4: Custo Transporte Padrão */}
+          <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-rose-500/40 dark:hover:border-rose-500/40 cursor-pointer">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+                Transporte Padrão
+              </span>
+              <div className="p-1.5 rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
+                <Truck className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-lg sm:text-2xl font-black text-rose-600 dark:text-rose-400 mt-2 tracking-tight truncate">
               R$ {logisticsMemory.cost.toFixed(2).replace('.', ',')}
-            </span>
-            <span className="text-[10px] text-slate-500 block capitalize">
+            </p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5 truncate">
               {logisticsMemory.type === 'frete'
                 ? '🚚 Frete / Motoboy'
                 : logisticsMemory.type === 'retirada'
                 ? '🚗 Retirada'
                 : '⛽ Combustível'}
-            </span>
+            </p>
           </div>
 
-          <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-100">
-            <span className="text-[11px] text-indigo-700 font-medium block">Próxima visita</span>
-            <span className="text-sm font-bold text-indigo-800">{currentClientData.nextVisitDate}</span>
+          {/* Card 5: Próxima visita */}
+          <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-amber-500/40 dark:hover:border-amber-500/40 cursor-pointer col-span-2 sm:col-span-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+                Próxima Visita
+              </span>
+              <div className="p-1.5 rounded-xl bg-amber-500/10 text-amber-400 shrink-0">
+                <MapPin className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-base sm:text-xl font-extrabold text-amber-600 dark:text-amber-400 mt-2 tracking-tight truncate">
+              {currentClientData.nextVisitDate}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Profile Tabs Bar (No Horizontal Scroll on Mobile) */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-xs">
+      {/* Profile Tabs Bar (No Horizontal Scroll on Mobile, Full Dark Mode Support) */}
+      <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] p-1.5 shadow-xs">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:flex md:flex-wrap items-center gap-1.5">
           {[
             { id: 'overview', label: 'Visão Geral', icon: Building2 },
@@ -340,10 +382,10 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   isActive
                     ? 'bg-indigo-600 text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 bg-slate-50/60'
+                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white bg-slate-50/60 dark:bg-slate-800/40 border border-transparent dark:border-slate-700/50'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5 shrink-0" />
