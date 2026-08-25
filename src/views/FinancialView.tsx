@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SaleTransaction, Consignment, Order } from '../types';
-import { DollarSign, Wallet, ArrowUpRight, Clock, CheckCircle2, Plus, X, HandCoins } from 'lucide-react';
+import { DollarSign, Wallet, ArrowUpRight, Clock, CheckCircle2, Plus, X, HandCoins, TrendingUp } from 'lucide-react';
 
 interface FinancialViewProps {
   transactions: SaleTransaction[];
