@@ -154,48 +154,48 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
           {filteredVisits.map((v) => (
             <div
               key={v.id}
-              className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
+              className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] p-5 shadow-xs hover:shadow-md transition-shadow flex flex-col justify-between"
             >
               <div className="space-y-3">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="text-[10px] font-mono font-bold text-slate-400 block">{v.id}</span>
-                    <h3 className="font-bold text-slate-900 text-base">{v.clientName}</h3>
+                    <span className="text-[10px] font-mono font-bold text-slate-400 dark:text-slate-500 block">{v.id}</span>
+                    <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">{v.clientName}</h3>
                   </div>
                   {v.status === 'Hoje' && (
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80 shrink-0">
                       Hoje às {v.timeSlot || '14:00'}
                     </span>
                   )}
                   {v.status === 'Atrasada' && (
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800/80 shrink-0">
                       Atrasada
                     </span>
                   )}
                   {v.status === 'Em breve' && (
-                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                    <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/80 shrink-0">
                       Em breve
                     </span>
                   )}
                 </div>
 
-                <div className="p-3 bg-slate-50 rounded-xl space-y-1.5 text-xs text-slate-600">
+                <div className="p-3 bg-slate-50 dark:bg-[#181c26] rounded-xl space-y-1.5 text-xs text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-[#202531]">
                   <p>
                     <strong>Motivo:</strong> {v.reason}
                   </p>
                   <p>
                     <strong>Produtos no local:</strong> {v.productsOnSite} unidades
                   </p>
-                  <p className="text-slate-400">Última visita: {formatDateBR(v.lastVisitText)}</p>
+                  <p className="text-slate-400 dark:text-slate-500">Última visita: {formatDateBR(v.lastVisitText)}</p>
                 </div>
               </div>
 
-              <div className="pt-4 mt-3 border-t border-slate-100 flex items-center justify-end">
+              <div className="pt-4 mt-3 border-t border-slate-100 dark:border-[#202531] flex items-center justify-end">
                 <button
                   onClick={() => onStartVisit(v.clientId)}
-                  className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  Iniciar Visita
+                  <MapPin className="w-4 h-4" /> Iniciar Visita
                 </button>
               </div>
             </div>

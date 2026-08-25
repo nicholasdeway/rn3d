@@ -399,7 +399,79 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
                 </div>
 
                 <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-                  <table className="w-full text-left">
+                  {/* Mobile View: Item Cards with Steppers */}
+                  <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {auditCalculations.map((item) => {
+                      const diff = item.sold;
+                      const currentVal = counts[item.productId] ?? item.currentQuantity;
+
+                      return (
+                        <div key={item.productId} className="p-4 space-y-3 bg-white dark:bg-[#181c26]">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">{item.productName}</span>
+                            <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-[11px] font-semibold whitespace-nowrap shrink-0">
+                              Esperado: {item.currentQuantity} un
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCounts({
+                                    ...counts,
+                                    [item.productId]: Math.max(0, currentVal - 1),
+                                  })
+                                }
+                                className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-black text-sm flex items-center justify-center cursor-pointer active:scale-95"
+                              >
+                                -
+                              </button>
+                              <input
+                                type="number"
+                                min="0"
+                                max={item.currentQuantity}
+                                value={currentVal}
+                                onChange={(e) =>
+                                  setCounts({
+                                    ...counts,
+                                    [item.productId]: Number(e.target.value),
+                                  })
+                                }
+                                className="w-16 text-center py-1.5 px-1 border-2 border-indigo-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl font-extrabold text-slate-900 dark:text-slate-100 text-sm focus:border-indigo-600 focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setCounts({
+                                    ...counts,
+                                    [item.productId]: Math.min(item.currentQuantity, currentVal + 1),
+                                  })
+                                }
+                                className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 font-black text-sm flex items-center justify-center cursor-pointer active:scale-95 border border-indigo-100 dark:border-indigo-900/50"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            <span
+                              className={`font-extrabold px-3 py-1 rounded-full text-xs ${
+                                diff > 0
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                              }`}
+                            >
+                              {diff > 0 ? `-${diff} vendidas` : '0 vendidas'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop View: Table */}
+                  <table className="hidden sm:table w-full text-left">
                     <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase">
                       <tr>
                         <th className="p-3.5">Produto</th>
@@ -472,7 +544,30 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
                 </div>
 
                 <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-                  <table className="w-full text-left">
+                  {/* Mobile View: Item Cards */}
+                  <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {auditCalculations
+                      .filter((i) => i.sold > 0)
+                      .map((item) => (
+                        <div key={item.productId} className="p-4 space-y-2 bg-white dark:bg-[#181c26]">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">{item.productName}</span>
+                            <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-extrabold text-xs rounded-lg">
+                              {item.sold} vendidas
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-1">
+                            <span>Preço Unit.: R$ {item.unitPrice.toFixed(2)}</span>
+                            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">
+                              R$ {item.totalSalesValue.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* Desktop View: Table */}
+                  <table className="hidden sm:table w-full text-left">
                     <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase">
                       <tr>
                         <th className="p-3.5">Produto</th>
@@ -574,7 +669,75 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
                 </div>
 
                 <div className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden">
-                  <table className="w-full text-left">
+                  {/* Mobile View: Restock Cards */}
+                  <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {auditCalculations.map((item) => {
+                      const rem = removals[item.productId] || 0;
+                      const addEx = additionsInExchange.find((a) => a.productId === item.productId)?.quantity || 0;
+                      const base = item.counted - rem + addEx;
+                      const addRestock = restocks[item.productId] || 0;
+                      const finalStock = base + addRestock;
+
+                      return (
+                        <div key={item.productId} className="p-4 space-y-3 bg-white dark:bg-[#181c26]">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">{item.productName}</span>
+                            <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-[11px] font-bold shrink-0">
+                              Atual: {base} un
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setRestocks({
+                                    ...restocks,
+                                    [item.productId]: Math.max(0, addRestock - 1),
+                                  })
+                                }
+                                className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-black text-sm flex items-center justify-center cursor-pointer active:scale-95"
+                              >
+                                -
+                              </button>
+                              <input
+                                type="number"
+                                min="0"
+                                value={addRestock}
+                                onChange={(e) =>
+                                  setRestocks({
+                                    ...restocks,
+                                    [item.productId]: Number(e.target.value),
+                                  })
+                                }
+                                className="w-16 text-center py-1.5 px-1 border-2 border-indigo-200 dark:border-slate-700 bg-white dark:bg-slate-900 rounded-xl font-extrabold text-slate-900 dark:text-slate-100 text-sm focus:border-indigo-600 focus:outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setRestocks({
+                                    ...restocks,
+                                    [item.productId]: addRestock + 1,
+                                  })
+                                }
+                                className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 font-black text-sm flex items-center justify-center cursor-pointer active:scale-95 border border-indigo-100 dark:border-indigo-900/50"
+                              >
+                                +
+                              </button>
+                            </div>
+
+                            <span className="font-extrabold text-indigo-600 dark:text-indigo-400 text-xs">
+                              Final: {finalStock} un
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop View: Table */}
+                  <table className="hidden sm:table w-full text-left">
                     <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase">
                       <tr>
                         <th className="p-3.5">Produto</th>
@@ -1053,17 +1216,17 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
       </div>
 
       {/* Navigation Buttons Footer */}
-      <div className="p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] flex items-center justify-between">
+      <div className="p-3.5 sm:p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] flex items-center justify-between gap-2">
         <button
           disabled={currentStep === 0}
           onClick={() => setCurrentStep((prev) => (prev > 0 ? prev - 1 : 0))}
-          className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-40 rounded-xl font-bold flex items-center gap-1.5 cursor-pointer"
+          className="px-3.5 sm:px-4 py-2.5 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 disabled:opacity-40 rounded-xl font-bold flex items-center gap-1 text-xs cursor-pointer transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Anterior
+          <ArrowLeft className="w-4 h-4" /> <span>Anterior</span>
         </button>
 
         {currentStep === 0 ? (
-          <span className="text-xs text-slate-400 font-semibold">Selecione uma das opções acima para continuar</span>
+          <span className="text-[11px] sm:text-xs text-slate-400 font-semibold text-center">Selecione uma opção para continuar</span>
         ) : currentStep < maxStep ? (
           <button
             onClick={() => {
@@ -1075,9 +1238,9 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
               }
               setCurrentStep((prev) => (prev < maxStep ? prev + 1 : prev));
             }}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 shadow-xs cursor-pointer"
+            className="px-5 sm:px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
           >
-            Avançar <ArrowRight className="w-4 h-4" />
+            <span>Avançar</span> <ArrowRight className="w-4 h-4" />
           </button>
         ) : (
           <button
@@ -1100,9 +1263,10 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
                 finalEstimatedStock: visitType === 'consignado' ? finalEstimatedStock : client.productsOnSiteCount + totalDeliveryItemsCount,
               })
             }
-            className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-extrabold flex items-center gap-2 shadow-sm cursor-pointer"
+            className="px-4 sm:px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-extrabold text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
           >
-            <CheckCircle2 className="w-5 h-5" /> Finalizar Visita & Gravar Histórico
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span>Finalizar Visita</span>
           </button>
         )}
       </div>
