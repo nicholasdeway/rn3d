@@ -45,6 +45,7 @@ export function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [preselectedClientIdForAction, setPreselectedClientIdForAction] = useState<string | undefined>(undefined);
   const [autoOpenNewProductModal, setAutoOpenNewProductModal] = useState(false);
+  const [autoOpenExpenseModal, setAutoOpenExpenseModal] = useState<'aporte' | 'withdrawal' | 'expense' | null>(null);
 
   // Persistent Theme Mode state ('light' | 'dark')
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -512,6 +513,7 @@ export function App() {
                   expenses={appData.expenses}
                   accountBalances={appData.accountBalances}
                   accountBalance={appData.accountBalance}
+                  autoOpenModal={autoOpenExpenseModal}
                   onCreateExpense={appData.handleCreateExpense}
                   onExecuteTransfer={appData.handleExecuteTransfer}
                   onUpdateExpense={appData.handleUpdateExpense}
@@ -541,10 +543,19 @@ export function App() {
       <MobileFloatingNav
         currentView={currentView}
         onSelectView={(mode) => {
+          setAutoOpenExpenseModal(null);
           setCurrentView(mode);
           setActiveClientIdForProfile(null);
         }}
-        onQuickAction={() => setCurrentView('quotes')}
+        onQuickAction={(actionType) => {
+          if (actionType === 'quote') {
+            setAutoOpenExpenseModal(null);
+            setCurrentView('quotes');
+          } else {
+            setAutoOpenExpenseModal(actionType);
+            setCurrentView('expenses');
+          }
+        }}
       />
     </div>
   );

@@ -37,6 +37,7 @@ interface ExpensesViewProps {
   expenses: ExpenseItem[];
   accountBalances?: AccountBalances;
   accountBalance?: number;
+  autoOpenModal?: 'aporte' | 'withdrawal' | 'expense' | null;
   onCreateExpense: (expense: ExpenseItem) => void;
   onExecuteTransfer?: (
     source: MarketplaceAccount,
@@ -74,6 +75,7 @@ const PARTNERS = ['Nicholas', 'Rafael'];
 export const ExpensesView: React.FC<ExpensesViewProps> = ({
   expenses = [],
   accountBalances = { nubank: 3500.0, shopee: 100.0, mercadoLivre: 0.0, tikTokShop: 0.0, amazon: 0.0 },
+  autoOpenModal = null,
   onCreateExpense,
   onExecuteTransfer,
   onUpdateExpense,
@@ -91,6 +93,16 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
   const [isAporteModalOpen, setIsAporteModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<{ url: string; type?: 'image' | 'pdf'; name?: string; title: string } | null>(null);
+
+  React.useEffect(() => {
+    if (autoOpenModal === 'aporte') {
+      setIsAporteModalOpen(true);
+    } else if (autoOpenModal === 'withdrawal') {
+      setIsWithdrawalModalOpen(true);
+    } else if (autoOpenModal === 'expense') {
+      setIsNewExpenseModalOpen(true);
+    }
+  }, [autoOpenModal]);
 
   // Transfer Modal State
   const [transferData, setTransferData] = useState<{
