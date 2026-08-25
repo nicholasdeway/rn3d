@@ -104,8 +104,8 @@ export function computeMonthlyAnalyticsData(
   const totalRealReceitas = Array.from(monthlyMap.values()).reduce((sum, m) => sum + m.receitas, 0);
   const totalRealDespesas = Array.from(monthlyMap.values()).reduce((sum, m) => sum + m.despesas, 0);
 
-  const baselineReceitas = [1400, 2100, 2800, 3600, 4200, Math.max(5400, totalRealReceitas)];
-  const baselineDespesas = [480, 720, 950, 1150, 1380, Math.max(1650, totalRealDespesas)];
+  const baselineReceitas = [1900, 2600, 3400, 4300, 5200, Math.max(6400, totalRealReceitas)];
+  const baselineDespesas = [650, 920, 1200, 1450, 1750, Math.max(2100, totalRealDespesas)];
 
   return last6Months.map((m, i) => {
     const key = `${m.year}-${m.idx}`;

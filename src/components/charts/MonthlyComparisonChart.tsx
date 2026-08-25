@@ -32,20 +32,20 @@ export const MonthlyComparisonChart: React.FC<MonthlyComparisonChartProps> = ({ 
   };
 
   return (
-    <div className="bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs flex flex-col justify-between space-y-4">
+    <div className="bg-white dark:bg-[#12151c] p-4 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs flex flex-col justify-between space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-          Receitas vs Despesas
+        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <BarChart3 className="w-5 h-5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+          <span>Receitas vs Despesas</span>
         </h3>
-        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg">
+        <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-100 dark:bg-slate-800 px-2 sm:px-2.5 py-1 rounded-lg shrink-0">
           Comparativo Mensal
         </span>
       </div>
 
-      <div className="h-[280px] w-full">
+      <div className="h-[320px] sm:h-[340px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 10, right: 10, left: 5, bottom: 0 }}>
+          <BarChart data={data} margin={{ top: 10, right: 5, left: -22, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-slate-100 dark:stroke-slate-800/70" />
             <XAxis
               dataKey="month"
@@ -55,7 +55,7 @@ export const MonthlyComparisonChart: React.FC<MonthlyComparisonChartProps> = ({ 
               dy={8}
             />
             <YAxis
-              width={65}
+              width={48}
               tick={{ fill: '#64748b', fontSize: 10, fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
