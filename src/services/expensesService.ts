@@ -213,6 +213,22 @@ export async function saveAccountBalancesToSupabase(balances: AccountBalances): 
   }
 }
 
+function normalizeToIsoDate(dateStr?: string): string {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  if (dateStr.includes('/')) {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      const [p1, p2, p3] = parts;
+      if (p3.length === 4) {
+        return `${p3}-${p2.padStart(2, '0')}-${p1.padStart(2, '0')}`;
+      } else if (p1.length === 4) {
+        return `${p1}-${p2.padStart(2, '0')}-${p3.padStart(2, '0')}`;
+      }
+    }
+  }
+  return dateStr;
+}
+
 export async function createExpense(expense: Partial<ExpenseItem>): Promise<ExpenseItem | null> {
   if (!isSupabaseConfigured()) {
     return null;
@@ -231,7 +247,7 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
     description: expense.description,
     category: safeCategory,
     amount: expense.amount || 0,
-    date: expense.date || new Date().toISOString().split('T')[0],
+    date: normalizeToIsoDate(expense.date),
     payment_status: expense.paymentStatus || 'Pago',
     beneficiary: expense.beneficiary || '',
     receipt_url: receiptUrl,

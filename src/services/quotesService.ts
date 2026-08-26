@@ -57,17 +57,36 @@ export async function fetchQuotes(): Promise<Quote[]> {
   return dbQuotes;
 }
 
+function normalizeToIsoDate(dateStr?: string): string {
+  if (!dateStr) return new Date().toISOString().split('T')[0];
+  if (dateStr.includes('/')) {
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      const [p1, p2, p3] = parts;
+      if (p3.length === 4) {
+        // DD/MM/YYYY -> YYYY-MM-DD
+        return `${p3}-${p2.padStart(2, '0')}-${p1.padStart(2, '0')}`;
+      } else if (p1.length === 4) {
+        // YYYY/MM/DD -> YYYY-MM-DD
+        return `${p1}-${p2.padStart(2, '0')}-${p3.padStart(2, '0')}`;
+      }
+    }
+  }
+  return dateStr;
+}
+
 export async function createQuote(quoteData: Partial<Quote>): Promise<Quote | null> {
   if (!isSupabaseConfigured()) {
     return null;
   }
 
   const quoteCode = quoteData.id || `ORC-${Math.floor(100000 + Math.random() * 900000)}`;
+  const formattedDate = normalizeToIsoDate(quoteData.date);
 
   const payload: any = {
     quote_code: quoteCode,
     client_name: quoteData.clientName || 'Cliente Padrão',
-    date: quoteData.date || new Date().toISOString().split('T')[0],
+    date: formattedDate,
     validity_days: quoteData.validityDays || 15,
     production_sla_days: quoteData.productionSlaDays || 7,
     subtotal: quoteData.subtotal || quoteData.total || 0,
