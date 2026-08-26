@@ -1,23 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Quote } from '../types';
-import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import {
   fetchQuotes,
   createQuote,
   updateQuote,
-  updateQuoteStatus,
 } from '../services/quotesService';
 
 export function useQuotes(user: any, showToast: (msg: string, type?: 'success' | 'error' | 'info') => void) {
-  const [quotes, setQuotes] = useState<Quote[]>(() =>
-    getStorageParsed<Quote[]>('rn3d_quotes', [], true)
-  );
+  const [quotes, setQuotes] = useState<Quote[]>([]);
 
-  useEffect(() => {
-    safeSetLocalStorage('rn3d_quotes', JSON.stringify(quotes));
-  }, [quotes]);
-
-  // Load from Supabase on mount
+  // Load directly from Supabase on mount
   useEffect(() => {
     if (!user) return;
     let isMounted = true;
@@ -35,9 +27,9 @@ export function useQuotes(user: any, showToast: (msg: string, type?: 'success' |
     };
   }, [user]);
 
-  const handleCreateQuote = async (newQuote: Quote) => {
+  const handleAddQuote = async (newQuote: Quote) => {
     setQuotes((prev) => [newQuote, ...prev]);
-    showToast(`Orçamento ${newQuote.id} criado com sucesso!`, 'success');
+    showToast(`Orçamento #${newQuote.id} gerado com sucesso!`, 'success');
     try {
       await createQuote(newQuote);
     } catch (err) {
@@ -46,10 +38,8 @@ export function useQuotes(user: any, showToast: (msg: string, type?: 'success' |
   };
 
   const handleUpdateQuote = async (updatedQuote: Quote) => {
-    setQuotes((prev) =>
-      prev.map((q) => (q.id === updatedQuote.id ? updatedQuote : q))
-    );
-    showToast(`Orçamento ${updatedQuote.id} atualizado com sucesso!`, 'success');
+    setQuotes((prev) => prev.map((q) => (q.id === updatedQuote.id ? updatedQuote : q)));
+    showToast(`Orçamento #${updatedQuote.id} atualizado com sucesso!`, 'success');
     try {
       await updateQuote(updatedQuote.id, updatedQuote);
     } catch (err) {
@@ -57,13 +47,13 @@ export function useQuotes(user: any, showToast: (msg: string, type?: 'success' |
     }
   };
 
-  const handleUpdateQuoteStatus = async (quoteId: string, newStatus: string) => {
+  const handleUpdateQuoteStatus = async (quoteId: string, newStatus: Quote['status']) => {
     setQuotes((prev) =>
-      prev.map((q) => (q.id === quoteId ? { ...q, status: newStatus as any } : q))
+      prev.map((q) => (q.id === quoteId ? { ...q, status: newStatus } : q))
     );
-    showToast(`Status do orçamento ${quoteId} atualizado para "${newStatus}"!`, 'info');
+    showToast(`Status do orçamento #${quoteId} alterado para "${newStatus}"!`, 'success');
     try {
-      await updateQuoteStatus(quoteId, newStatus);
+      await updateQuote(quoteId, { status: newStatus });
     } catch (err) {
       console.error('Erro ao atualizar status do orçamento no Supabase:', err);
     }
@@ -72,7 +62,8 @@ export function useQuotes(user: any, showToast: (msg: string, type?: 'success' |
   return {
     quotes,
     setQuotes,
-    handleCreateQuote,
+    handleAddQuote,
+    handleCreateQuote: handleAddQuote,
     handleUpdateQuote,
     handleUpdateQuoteStatus,
   };

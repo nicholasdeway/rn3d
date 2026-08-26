@@ -1,19 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Consignment, Client } from '../types';
-import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 
 export function useConsignments(
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void,
   setClientInventories: React.Dispatch<React.SetStateAction<Record<string, any>>>,
   setClients: React.Dispatch<React.SetStateAction<Client[]>>
 ) {
-  const [consignments, setConsignments] = useState<Consignment[]>(() =>
-    getStorageParsed<Consignment[]>('rn3d_consignments', [], true)
-  );
-
-  useEffect(() => {
-    safeSetLocalStorage('rn3d_consignments', JSON.stringify(consignments));
-  }, [consignments]);
+  const [consignments, setConsignments] = useState<Consignment[]>([]);
 
   const handleAddConsignment = (newConsignment: Consignment) => {
     setConsignments((prev) => [newConsignment, ...prev]);

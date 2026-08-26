@@ -323,20 +323,10 @@ export function useAppData() {
         );
 
         let cost = 0;
-        if (typeof o.internalLogisticsCost === 'number') {
+        if (typeof o.internalLogisticsCost === 'number' && o.internalLogisticsCost > 0) {
           cost = o.internalLogisticsCost;
         } else if (matchedCli && typeof matchedCli.defaultLogisticsCost === 'number') {
           cost = matchedCli.defaultLogisticsCost;
-        } else {
-          try {
-            const saved = localStorage.getItem('rn3d_client_logistics');
-            if (saved) {
-              const parsed = JSON.parse(saved);
-              if (o.clientId && parsed[o.clientId] && parsed[o.clientId].cost !== undefined) {
-                cost = Number(parsed[o.clientId].cost) || 0;
-              }
-            }
-          } catch (e) {}
         }
 
         if (cost > 0) {

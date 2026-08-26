@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Visit, Client, Product, Consignment, ExchangeNote } from '../types';
-import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 
 export function useVisits(
   clients: Client[],
@@ -12,13 +11,7 @@ export function useVisits(
   setExchanges: React.Dispatch<React.SetStateAction<ExchangeNote[]>>,
   setTransactions: React.Dispatch<React.SetStateAction<any[]>>
 ) {
-  const [visits, setVisits] = useState<Visit[]>(() =>
-    getStorageParsed<Visit[]>('rn3d_visits', [], true)
-  );
-
-  useEffect(() => {
-    safeSetLocalStorage('rn3d_visits', JSON.stringify(visits));
-  }, [visits]);
+  const [visits, setVisits] = useState<Visit[]>([]);
 
   const handleScheduleVisit = (newVisitData: {
     clientId: string;
@@ -67,7 +60,6 @@ export function useVisits(
     const dateStr = new Date().toLocaleDateString('pt-BR');
     const timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-    // Calcular proxima visita em +15 dias
     const nextVisit = new Date(Date.now() + 15 * 86400000);
     const nextVisitDay = String(nextVisit.getDate()).padStart(2, '0');
     const nextVisitMonth = String(nextVisit.getMonth() + 1).padStart(2, '0');
@@ -254,7 +246,6 @@ export function useVisits(
         });
       }
 
-      // Criar o proximo lembrete na agenda para a data da proxima visita (+15 dias)
       const nextPendingVisit: Visit = {
         id: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
         clientId: clientId,

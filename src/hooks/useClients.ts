@@ -1,23 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Client } from '../types';
-import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import {
   fetchClients,
   createClient,
   updateClient,
-  syncMissingClientsToSupabase,
 } from '../services/clientsService';
 
 export function useClients(user: any, showToast: (msg: string, type?: 'success' | 'error' | 'info') => void) {
-  const [clients, setClients] = useState<Client[]>(() =>
-    getStorageParsed<Client[]>('rn3d_clients', [], true)
-  );
+  const [clients, setClients] = useState<Client[]>([]);
 
-  useEffect(() => {
-    safeSetLocalStorage('rn3d_clients', JSON.stringify(clients));
-  }, [clients]);
-
-  // Load from Supabase on mount
+  // Load directly from Supabase on mount
   useEffect(() => {
     if (!user) return;
     let isMounted = true;

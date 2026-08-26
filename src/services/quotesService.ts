@@ -1,22 +1,12 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Quote } from '../types';
 
+/**
+ * 100% Direct Supabase Postgres Fetch — Zero LocalStorage Caching
+ */
 export async function fetchQuotes(): Promise<Quote[]> {
-  let localQuotes: Quote[] = [];
-  try {
-    const saved = localStorage.getItem('rn3d_quotes');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        localQuotes = parsed;
-      }
-    }
-  } catch (e) {
-    console.error('Error reading local quotes:', e);
-  }
-
   if (!isSupabaseConfigured()) {
-    return localQuotes;
+    return [];
   }
 
   const { data, error } = await supabase
@@ -26,7 +16,7 @@ export async function fetchQuotes(): Promise<Quote[]> {
 
   if (error || !data) {
     console.error('Erro ao buscar orçamentos no Supabase:', error?.message);
-    return localQuotes;
+    return [];
   }
 
   const dbQuotes: Quote[] = data.map((row) => ({
@@ -50,10 +40,6 @@ export async function fetchQuotes(): Promise<Quote[]> {
     status: row.status as Quote['status'],
   }));
 
-  try {
-    localStorage.setItem('rn3d_quotes', JSON.stringify(dbQuotes));
-  } catch (e) {}
-
   return dbQuotes;
 }
 
@@ -63,189 +49,125 @@ function normalizeToIsoDate(dateStr?: string): string {
     const parts = dateStr.split('/');
     if (parts.length === 3) {
       const [p1, p2, p3] = parts;
-      if (p3.length === 4) {
-        // DD/MM/YYYY -> YYYY-MM-DD
-        return `${p3}-${p2.padStart(2, '0')}-${p1.padStart(2, '0')}`;
-      } else if (p1.length === 4) {
-        // YYYY/MM/DD -> YYYY-MM-DD
-        return `${p1}-${p2.padStart(2, '0')}-${p3.padStart(2, '0')}`;
-      }
+      if (p1.length === 4) return `${p1}-${p2.padStart(2, '0')}-${p3.padStart(2, '0')}`;
+      return `${p3}-${p2.padStart(2, '0')}-${p1.padStart(2, '0')}`;
     }
   }
   return dateStr;
 }
 
-export async function createQuote(quoteData: Partial<Quote>): Promise<Quote | null> {
+export async function syncMissingQuotesToSupabase(missingQuotes: Quote[]): Promise<number> {
+  if (!isSupabaseConfigured() || missingQuotes.length === 0) return 0;
+
+  try {
+    const { data: dbData } = await supabase.from('quotes').select('quote_code');
+    const existingCodes = new Set((dbData || []).map((row) => (row.quote_code || '').toLowerCase().trim()));
+
+    const toInsert = missingQuotes.filter((q) => q.id && !existingCodes.has(q.id.toLowerCase().trim()));
+    if (toInsert.length === 0) return 0;
+
+    const rows = toInsert.map((q) => ({
+      quote_code: q.id,
+      client_id: q.clientId || null,
+      client_name: q.clientName,
+      date: normalizeToIsoDate(q.date),
+      validity_days: q.validityDays || 15,
+      production_sla_days: q.productionSlaDays || 7,
+      subtotal: q.subtotal,
+      discount: q.discount || 0,
+      total: q.total,
+      payment_terms: q.paymentTerms || '',
+      notes: q.notes || '',
+      status: q.status || 'Rascunho',
+    }));
+
+    const { error } = await supabase.from('quotes').insert(rows);
+
+    if (error) {
+      console.warn('Aviso na sincronização de orçamentos com Supabase:', error.message);
+      throw error;
+    } else {
+      return rows.length;
+    }
+  } catch (err) {
+    console.error('Erro ao sincronizar lote de orçamentos:', err);
+    throw err;
+  }
+}
+
+export async function createQuote(quote: Partial<Quote>): Promise<Quote | null> {
   if (!isSupabaseConfigured()) {
     return null;
   }
 
-  const quoteCode = quoteData.id || `ORC-${Math.floor(100000 + Math.random() * 900000)}`;
-  const formattedDate = normalizeToIsoDate(quoteData.date);
-
   const payload: any = {
-    quote_code: quoteCode,
-    client_name: quoteData.clientName || 'Cliente Padrão',
-    date: formattedDate,
-    validity_days: quoteData.validityDays || 15,
-    production_sla_days: quoteData.productionSlaDays || 7,
-    subtotal: quoteData.subtotal || quoteData.total || 0,
-    discount: quoteData.discount || 0,
-    total: quoteData.total || 0,
-    payment_terms: quoteData.paymentTerms || '',
-    notes: quoteData.notes || '',
-    status: quoteData.status || 'Enviado',
+    quote_code: quote.id,
+    client_id: quote.clientId || null,
+    client_name: quote.clientName,
+    date: normalizeToIsoDate(quote.date),
+    validity_days: quote.validityDays || 15,
+    production_sla_days: quote.productionSlaDays || 7,
+    subtotal: quote.subtotal || 0,
+    discount: quote.discount || 0,
+    total: quote.total || 0,
+    payment_terms: quote.paymentTerms || '',
+    notes: quote.notes || '',
+    status: quote.status || 'Rascunho',
   };
 
-  if (quoteData.clientId && !quoteData.clientId.startsWith('cli-')) {
-    payload.client_id = quoteData.clientId;
-  }
-
-  let { data: newQuote, error: quoteError } = await supabase
+  const { data, error } = await supabase
     .from('quotes')
     .insert([payload])
     .select()
     .single();
 
-  if (quoteError && quoteError.message.includes('client_id')) {
-    delete payload.client_id;
-    const retry = await supabase.from('quotes').insert([payload]).select().single();
-    newQuote = retry.data;
-    quoteError = retry.error;
+  if (error) {
+    console.error('Erro ao cadastrar orçamento no Supabase:', error.message);
+    throw error;
   }
 
-  if (quoteError || !newQuote) {
-    console.error('Erro ao salvar orçamento no Supabase:', quoteError?.message);
-    throw quoteError;
-  }
-
-  if (quoteData.items && quoteData.items.length > 0) {
-    const formattedItems = quoteData.items.map((item) => ({
-      quote_id: newQuote.id,
+  if (quote.items && quote.items.length > 0 && data?.id) {
+    const itemRows = quote.items.map((item) => ({
+      quote_id: data.id,
       description: item.description,
       quantity: item.quantity,
       unit_price: item.unitPrice,
       subtotal: item.subtotal,
     }));
-
-    const { error: itemsError } = await supabase.from('quote_items').insert(formattedItems);
-    if (itemsError) {
-      console.error('Erro ao salvar itens do orçamento:', itemsError.message);
-    }
+    await supabase.from('quote_items').insert(itemRows);
   }
 
-  return newQuote as any;
+  return data as any;
 }
 
-export async function updateQuote(quoteCode: string, quoteData: Partial<Quote>): Promise<Quote | null> {
+export async function updateQuote(id: string, updates: Partial<Quote>): Promise<Quote | null> {
   if (!isSupabaseConfigured()) {
     return null;
   }
 
-  const formattedDate = normalizeToIsoDate(quoteData.date);
-
   const payload: any = {};
-  if (quoteData.clientName !== undefined) payload.client_name = quoteData.clientName;
-  if (quoteData.date !== undefined) payload.date = formattedDate;
-  if (quoteData.validityDays !== undefined) payload.validity_days = quoteData.validityDays;
-  if (quoteData.productionSlaDays !== undefined) payload.production_sla_days = quoteData.productionSlaDays;
-  if (quoteData.subtotal !== undefined) payload.subtotal = quoteData.subtotal;
-  if (quoteData.discount !== undefined) payload.discount = quoteData.discount;
-  if (quoteData.total !== undefined) payload.total = quoteData.total;
-  if (quoteData.paymentTerms !== undefined) payload.payment_terms = quoteData.paymentTerms;
-  if (quoteData.notes !== undefined) payload.notes = quoteData.notes;
-  if (quoteData.status !== undefined) payload.status = quoteData.status;
+  if (updates.clientName !== undefined) payload.client_name = updates.clientName;
+  if (updates.status !== undefined) payload.status = updates.status;
+  if (updates.total !== undefined) payload.total = updates.total;
+  if (updates.subtotal !== undefined) payload.subtotal = updates.subtotal;
+  if (updates.discount !== undefined) payload.discount = updates.discount;
+  if (updates.notes !== undefined) payload.notes = updates.notes;
 
-  if (quoteData.clientId && !quoteData.clientId.startsWith('cli-')) {
-    payload.client_id = quoteData.clientId;
+  const isLocalId = !id || id.startsWith('ORC-') || id.length < 30;
+
+  let query = supabase.from('quotes').update(payload);
+  if (!isLocalId) {
+    query = query.eq('id', id);
+  } else {
+    query = query.eq('quote_code', id);
   }
 
-  let { data: updatedQuote, error } = await supabase
-    .from('quotes')
-    .update(payload)
-    .eq('quote_code', quoteCode)
-    .select()
-    .single();
-
-  if (error && error.message.includes('client_id')) {
-    delete payload.client_id;
-    const retry = await supabase
-      .from('quotes')
-      .update(payload)
-      .eq('quote_code', quoteCode)
-      .select()
-      .single();
-    updatedQuote = retry.data;
-    error = retry.error;
-  }
+  const { data, error } = await query.select();
 
   if (error) {
     console.error('Erro ao atualizar orçamento no Supabase:', error.message);
+    throw error;
   }
 
-  if (updatedQuote && quoteData.items) {
-    await supabase.from('quote_items').delete().eq('quote_id', updatedQuote.id);
-
-    const formattedItems = quoteData.items.map((item) => ({
-      quote_id: updatedQuote.id,
-      description: item.description,
-      quantity: item.quantity,
-      unit_price: item.unitPrice,
-      subtotal: item.subtotal,
-    }));
-
-    await supabase.from('quote_items').insert(formattedItems);
-  }
-
-  return updatedQuote as any;
-}
-
-export async function updateQuoteStatus(quoteCode: string, newStatus: string): Promise<boolean> {
-  if (!isSupabaseConfigured()) return false;
-
-  const { error } = await supabase
-    .from('quotes')
-    .update({ status: newStatus })
-    .eq('quote_code', quoteCode);
-
-  if (error) {
-    console.error('Erro ao atualizar status do orçamento:', error.message);
-    return false;
-  }
-  return true;
-}
-
-export async function deleteQuote(quoteCode: string): Promise<boolean> {
-  if (!isSupabaseConfigured()) return true;
-
-  let { error } = await supabase
-    .from('quotes')
-    .delete()
-    .eq('quote_code', quoteCode);
-
-  if (error) {
-    const retry = await supabase.from('quotes').delete().eq('id', quoteCode);
-    error = retry.error;
-  }
-
-  if (error) {
-    console.error('Erro ao excluir orçamento no Supabase:', error.message);
-    return false;
-  }
-  return true;
-}
-
-export async function syncMissingQuotesToSupabase(missingQuotes: Quote[]): Promise<number> {
-  if (!isSupabaseConfigured() || missingQuotes.length === 0) return 0;
-
-  let syncedCount = 0;
-  for (const q of missingQuotes) {
-    try {
-      await createQuote(q);
-      syncedCount++;
-    } catch (err) {
-      console.error(`Erro ao sincronizar orçamento ${q.id}:`, err);
-    }
-  }
-  return syncedCount;
+  return (data && data[0]) ? (data[0] as any) : null;
 }

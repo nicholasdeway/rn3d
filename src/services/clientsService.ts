@@ -2,22 +2,12 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Client } from '../types';
 import { uploadToSupabaseStorage } from './storageService';
 
+/**
+ * 100% Direct Supabase Postgres Fetch — Zero LocalStorage Caching
+ */
 export async function fetchClients(): Promise<Client[]> {
-  let localClients: Client[] = [];
-  try {
-    const saved = localStorage.getItem('rn3d_clients');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        localClients = parsed;
-      }
-    }
-  } catch (e) {
-    console.error('Error reading local clients:', e);
-  }
-
   if (!isSupabaseConfigured()) {
-    return localClients;
+    return [];
   }
 
   const { data, error } = await supabase
@@ -27,26 +17,14 @@ export async function fetchClients(): Promise<Client[]> {
 
   if (error || !data) {
     console.error('Erro ao buscar clientes no Supabase:', error?.message);
-    return localClients;
+    return [];
   }
-
-  try {
-    localStorage.removeItem('rn3d_client_logistics');
-  } catch (e) {}
-
-  const localAvatarMap = new Map<string, string>();
-  localClients.forEach((lc) => {
-    if (lc.avatarUrl) {
-      localAvatarMap.set(lc.id, lc.avatarUrl);
-      if (lc.name) localAvatarMap.set(lc.name.toLowerCase().trim(), lc.avatarUrl);
-    }
-  });
 
   const dbClients: Client[] = data.map((row) => ({
     id: row.id,
     name: row.name,
     fantasyName: row.fantasy_name,
-    avatarUrl: row.avatar_url || localAvatarMap.get(row.id) || localAvatarMap.get((row.name || '').toLowerCase().trim()) || '',
+    avatarUrl: row.avatar_url || '',
     document: row.document,
     responsible: row.responsible,
     phone: row.phone,
@@ -74,11 +52,64 @@ export async function fetchClients(): Promise<Client[]> {
     visitStatus: 'Em breve',
   }));
 
-  try {
-    localStorage.setItem('rn3d_clients', JSON.stringify(dbClients));
-  } catch (e) {}
-
   return dbClients;
+}
+
+export async function syncMissingClientsToSupabase(missingClients: Client[]): Promise<number> {
+  if (!isSupabaseConfigured() || missingClients.length === 0) return 0;
+
+  try {
+    const { data: dbData } = await supabase.from('clients').select('name, document');
+    const existingNames = new Set((dbData || []).map((row) => (row.name || '').toLowerCase().trim()));
+
+    const toInsert = missingClients.filter((c) => c.name && !existingNames.has(c.name.toLowerCase().trim()));
+    if (toInsert.length === 0) return 0;
+
+    const rows = await Promise.all(
+      toInsert.map(async (c) => {
+        let avatarUrl = c.avatarUrl || '';
+        if (avatarUrl.startsWith('data:')) {
+          avatarUrl = await uploadToSupabaseStorage(avatarUrl, 'clients', c.name || 'client');
+        }
+
+        return {
+          name: c.name,
+          fantasy_name: c.fantasyName || '',
+          avatar_url: avatarUrl,
+          document: c.document || '',
+          responsible: c.responsible || '',
+          phone: c.phone || '',
+          whatsapp: c.whatsapp || c.phone || '',
+          email: c.email || '',
+          cep: c.cep || '',
+          street: c.street || '',
+          number: c.number || '',
+          complement: c.complement || '',
+          neighborhood: c.neighborhood || '',
+          city: c.city || '',
+          state: c.state || '',
+          type: c.type || 'Cliente direto',
+          agreed_price_level: c.agreedPriceLevel || 'Padrão',
+          visit_frequency: c.visitFrequency || '15 dias',
+          default_logistics_type: c.defaultLogisticsType || 'combustivel',
+          default_logistics_cost: c.defaultLogisticsCost || 0,
+          notes: c.notes || '',
+          status: c.status || 'Ativo',
+        };
+      })
+    );
+
+    const { error } = await supabase.from('clients').insert(rows);
+    if (error) {
+      console.warn('Aviso na sincronização de clientes com Supabase:', error.message);
+      throw error;
+    } else {
+      return rows.length;
+    }
+  } catch (err) {
+    console.error('Erro ao sincronizar lote de clientes:', err);
+    throw err;
+  }
 }
 
 export async function createClient(client: Partial<Client>): Promise<Client | null> {
@@ -88,52 +119,42 @@ export async function createClient(client: Partial<Client>): Promise<Client | nu
 
   let avatarUrl = client.avatarUrl || '';
   if (avatarUrl.startsWith('data:')) {
-    avatarUrl = await uploadToSupabaseStorage(avatarUrl, 'clients', client.name || 'avatar');
+    avatarUrl = await uploadToSupabaseStorage(avatarUrl, 'clients', client.name || 'client');
   }
 
   const payload: any = {
     name: client.name,
-    fantasy_name: client.fantasyName,
+    fantasy_name: client.fantasyName || '',
     avatar_url: avatarUrl,
-    document: client.document,
-    responsible: client.responsible,
-    phone: client.phone,
-    whatsapp: client.whatsapp,
-    email: client.email,
-    cep: client.cep,
-    street: client.street,
-    number: client.number,
-    complement: client.complement,
-    neighborhood: client.neighborhood,
-    city: client.city,
-    state: client.state,
-    type: client.type,
+    document: client.document || '',
+    responsible: client.responsible || '',
+    phone: client.phone || '',
+    whatsapp: client.whatsapp || client.phone || '',
+    email: client.email || '',
+    cep: client.cep || '',
+    street: client.street || '',
+    number: client.number || '',
+    complement: client.complement || '',
+    neighborhood: client.neighborhood || '',
+    city: client.city || '',
+    state: client.state || '',
+    type: client.type || 'Cliente direto',
+    agreed_price_level: client.agreedPriceLevel || 'Padrão',
+    visit_frequency: client.visitFrequency || '15 dias',
     default_logistics_type: client.defaultLogisticsType || 'combustivel',
-    default_logistics_cost: client.defaultLogisticsCost ?? 0,
+    default_logistics_cost: client.defaultLogisticsCost || 0,
+    notes: client.notes || '',
     status: client.status || 'Ativo',
   };
 
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from('clients')
     .insert([payload])
     .select()
     .single();
 
-  if (error && (error.message.includes('column') || error.code === 'PGRST204')) {
-    delete payload.avatar_url;
-    delete payload.default_logistics_type;
-    delete payload.default_logistics_cost;
-    const retry = await supabase
-      .from('clients')
-      .insert([payload])
-      .select()
-      .single();
-    data = retry.data;
-    error = retry.error;
-  }
-
   if (error) {
-    console.error('Erro ao cadastrar cliente:', error.message);
+    console.error('Erro ao cadastrar cliente no Supabase:', error.message);
     throw error;
   }
 
@@ -150,27 +171,29 @@ export async function updateClient(id: string, updates: Partial<Client>): Promis
     avatarUrl = await uploadToSupabaseStorage(avatarUrl, 'clients', updates.name || id);
   }
 
-  const payload: any = {
-    name: updates.name,
-    fantasy_name: updates.fantasyName,
-    avatar_url: avatarUrl !== undefined ? avatarUrl : (updates.avatarUrl || ''),
-    document: updates.document,
-    responsible: updates.responsible,
-    phone: updates.phone,
-    whatsapp: updates.whatsapp,
-    email: updates.email,
-    cep: updates.cep,
-    street: updates.street,
-    number: updates.number,
-    complement: updates.complement,
-    neighborhood: updates.neighborhood,
-    city: updates.city,
-    state: updates.state,
-    type: updates.type,
-    default_logistics_type: updates.defaultLogisticsType,
-    default_logistics_cost: updates.defaultLogisticsCost,
-    status: updates.status,
-  };
+  const payload: any = {};
+  if (updates.name !== undefined) payload.name = updates.name;
+  if (updates.fantasyName !== undefined) payload.fantasy_name = updates.fantasyName;
+  if (avatarUrl !== undefined) payload.avatar_url = avatarUrl;
+  if (updates.document !== undefined) payload.document = updates.document;
+  if (updates.responsible !== undefined) payload.responsible = updates.responsible;
+  if (updates.phone !== undefined) payload.phone = updates.phone;
+  if (updates.whatsapp !== undefined) payload.whatsapp = updates.whatsapp;
+  if (updates.email !== undefined) payload.email = updates.email;
+  if (updates.cep !== undefined) payload.cep = updates.cep;
+  if (updates.street !== undefined) payload.street = updates.street;
+  if (updates.number !== undefined) payload.number = updates.number;
+  if (updates.complement !== undefined) payload.complement = updates.complement;
+  if (updates.neighborhood !== undefined) payload.neighborhood = updates.neighborhood;
+  if (updates.city !== undefined) payload.city = updates.city;
+  if (updates.state !== undefined) payload.state = updates.state;
+  if (updates.type !== undefined) payload.type = updates.type;
+  if (updates.agreedPriceLevel !== undefined) payload.agreed_price_level = updates.agreedPriceLevel;
+  if (updates.visitFrequency !== undefined) payload.visit_frequency = updates.visitFrequency;
+  if (updates.defaultLogisticsType !== undefined) payload.default_logistics_type = updates.defaultLogisticsType;
+  if (updates.defaultLogisticsCost !== undefined) payload.default_logistics_cost = updates.defaultLogisticsCost;
+  if (updates.notes !== undefined) payload.notes = updates.notes;
+  if (updates.status !== undefined) payload.status = updates.status;
 
   const isLocalId = !id || id.startsWith('cli-') || id.length < 30;
 
@@ -178,25 +201,10 @@ export async function updateClient(id: string, updates: Partial<Client>): Promis
   if (!isLocalId) {
     query = query.eq('id', id);
   } else if (updates.name) {
-    query = query.ilike('name', updates.name.trim());
+    query = query.eq('name', updates.name);
   }
 
-  let { data, error } = await query.select();
-
-  if (error && (error.message.includes('column') || error.code === 'PGRST204')) {
-    delete payload.avatar_url;
-    delete payload.default_logistics_type;
-    delete payload.default_logistics_cost;
-    let retryQuery = supabase.from('clients').update(payload);
-    if (!isLocalId) {
-      retryQuery = retryQuery.eq('id', id);
-    } else if (updates.name) {
-      retryQuery = retryQuery.ilike('name', updates.name.trim());
-    }
-    const retry = await retryQuery.select();
-    data = retry.data;
-    error = retry.error;
-  }
+  const { data, error } = await query.select();
 
   if (error) {
     console.error('Erro ao atualizar cliente no Supabase:', error.message);
@@ -204,35 +212,4 @@ export async function updateClient(id: string, updates: Partial<Client>): Promis
   }
 
   return (data && data[0]) ? (data[0] as any) : null;
-}
-
-export async function syncMissingClientsToSupabase(missingClients: Client[]): Promise<number> {
-  if (!isSupabaseConfigured() || missingClients.length === 0) return 0;
-
-  let syncedCount = 0;
-
-  try {
-    const { data: dbData } = await supabase.from('clients').select('id, name');
-    const dbNamesMap = new Map((dbData || []).map((c) => [(c.name || '').toLowerCase().trim(), c]));
-
-    for (const c of missingClients) {
-      try {
-        const normName = (c.name || '').toLowerCase().trim();
-        const existingInDb = dbNamesMap.get(normName);
-
-        // ONLY insert if client does NOT exist in Supabase DB at all!
-        // Never overwrite existing DB records with browser state!
-        if (!existingInDb) {
-          await createClient(c);
-          syncedCount++;
-        }
-      } catch (err) {
-        console.error(`Erro ao sincronizar cliente ${c.name}:`, err);
-      }
-    }
-  } catch (err) {
-    console.error('Erro na sincronização de clientes com Supabase:', err);
-  }
-
-  return syncedCount;
 }

@@ -2,22 +2,12 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Product } from '../types';
 import { uploadToSupabaseStorage } from './storageService';
 
+/**
+ * 100% Direct Supabase Postgres Fetch — Zero LocalStorage Caching
+ */
 export async function fetchProducts(): Promise<Product[]> {
-  let localProducts: Product[] = [];
-  try {
-    const saved = localStorage.getItem('rn3d_products');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        localProducts = parsed;
-      }
-    }
-  } catch (e) {
-    console.error('Error reading local products:', e);
-  }
-
   if (!isSupabaseConfigured()) {
-    return localProducts;
+    return [];
   }
 
   const { data, error } = await supabase
@@ -27,15 +17,10 @@ export async function fetchProducts(): Promise<Product[]> {
 
   if (error || !data) {
     console.error('Erro ao buscar produtos no Supabase:', error?.message);
-    return localProducts;
+    return [];
   }
 
   const dbProducts: Product[] = data.map((row) => {
-    const localMatch = localProducts.find(
-      (lp) => (lp.sku && row.sku && lp.sku.toLowerCase() === row.sku.toLowerCase()) || lp.id === row.id
-    );
-    const resolvedImageUrl = (row.image_url && row.image_url.trim().length > 0) ? row.image_url : (localMatch?.imageUrl || '');
-
     return {
       id: row.id,
       name: row.name,
@@ -44,7 +29,7 @@ export async function fetchProducts(): Promise<Product[]> {
       isKeychain: row.is_keychain ?? false,
       description: row.description || '',
       storageCapacity: row.storage_capacity || '',
-      imageUrl: resolvedImageUrl,
+      imageUrl: row.image_url || '',
       material: row.material || 'PLA',
       color: row.color || 'Preto',
       weightGram: Number(row.weight_gram) || 0,
@@ -71,10 +56,6 @@ export async function fetchProducts(): Promise<Product[]> {
       status: row.status as 'Ativo' | 'Inativo',
     };
   });
-
-  try {
-    localStorage.setItem('rn3d_products', JSON.stringify(dbProducts));
-  } catch (e) {}
 
   return dbProducts;
 }
@@ -120,7 +101,6 @@ export async function syncMissingProductsToSupabase(missingProducts: Product[]):
     let { error } = await supabase.from('products').insert(rows);
 
     if (error && (error.message.includes('column') || error.code === 'PGRST204')) {
-      // Retry without cash_price column if it does not exist in Supabase schema
       const strippedRows = rows.map(({ cash_price, ...rest }: any) => rest);
       const retry = await supabase.from('products').insert(strippedRows);
       error = retry.error;
@@ -130,7 +110,6 @@ export async function syncMissingProductsToSupabase(missingProducts: Product[]):
       console.warn('Aviso na sincronização de lote com Supabase:', error.message);
       throw error;
     } else {
-      console.log(`✅ Sincronizados ${rows.length} produtos adicionais no Supabase!`);
       return rows.length;
     }
   } catch (err) {
@@ -179,9 +158,7 @@ export async function createProduct(product: Partial<Product>): Promise<Product 
     .select()
     .single();
 
-  // Retry stripped payload if custom columns (like cash_price or storage_capacity) don't exist in Supabase DB schema yet
   if (error && (error.message.includes('column') || error.code === 'PGRST204')) {
-    console.warn('Tentando salvar produto com colunas padrão devido à estrutura do Supabase:', error.message);
     delete payload.storage_capacity;
     delete payload.cash_price;
 
@@ -261,9 +238,6 @@ export async function updateProduct(id: string, updates: Partial<Product>): Prom
 
   if (error) {
     console.error('Erro ao atualizar produto no Supabase:', error.message);
-    if (error.message.includes('row-level security')) {
-      throw new Error('Política RLS no Supabase bloqueou a edição. Execute o SQL de permissão pública no SQL Editor do Supabase.');
-    }
     throw error;
   }
 
@@ -289,9 +263,6 @@ export async function deleteProduct(id: string, sku?: string): Promise<boolean> 
   const { error } = await query;
   if (error) {
     console.error('Erro ao deletar produto no Supabase:', error.message);
-    if (error.message.includes('row-level security')) {
-      throw new Error('Política RLS no Supabase bloqueou a exclusão. Verifique as permissões de DELETE no Supabase.');
-    }
     throw error;
   }
 

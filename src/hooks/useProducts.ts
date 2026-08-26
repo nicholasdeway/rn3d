@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Product } from '../types';
-import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import {
   fetchProducts,
   createProduct,
@@ -12,23 +11,9 @@ import {
 import { compressImage } from '../utils/imageCompressor';
 
 export function useProducts(user: any, showToast: (msg: string, type?: 'success' | 'error' | 'info') => void) {
-  const [products, setProducts] = useState<Product[]>(() =>
-    getStorageParsed<Product[]>('rn3d_products', [])
-  );
+  const [products, setProducts] = useState<Product[]>([]);
 
-  useEffect(() => {
-    if (products) {
-      const sanitizedProducts = products.map((p) => {
-        if (p.imageUrl && p.imageUrl.length > 100000) {
-          return { ...p, imageUrl: '' };
-        }
-        return p;
-      });
-      safeSetLocalStorage('rn3d_products', JSON.stringify(sanitizedProducts));
-    }
-  }, [products]);
-
-  // Load from Supabase on mount
+  // Load directly from Supabase on mount
   useEffect(() => {
     if (!user) return;
     let isMounted = true;
