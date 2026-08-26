@@ -97,6 +97,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
   const [selectedReceipt, setSelectedReceipt] = useState<{ url: string; type?: 'image' | 'pdf'; name?: string; title: string } | null>(null);
   const [editingReceiptExpense, setEditingReceiptExpense] = useState<ExpenseItem | null>(null);
   const [expenseReceiptFile, setExpenseReceiptFile] = useState<{ url: string; type: 'image' | 'pdf'; name: string } | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
 
   React.useEffect(() => {
     if (autoOpenModal === 'aporte') {
@@ -1639,32 +1640,55 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
               <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {editingReceiptExpense.receiptUrl || expenseReceiptFile?.url ? 'Substituir por Novo Comprovante' : 'Selecionar Comprovante'}
+                  {editingReceiptExpense.receiptUrl || expenseReceiptFile?.url ? 'Substituir por Novo Comprovante' : 'Selecionar Comprovante (PNG/JPG ou PDF)'}
                 </label>
                 <input
                   type="file"
                   accept="image/*,.pdf"
+                  disabled={isUploadingReceipt}
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
+                    setIsUploadingReceipt(true);
                     const isPdf = file.type === 'application/pdf';
                     const reader = new FileReader();
                     reader.onloadend = async () => {
-                      const base64 = reader.result as string;
-                      let uploadedUrl = base64;
-                      if (base64.startsWith('data:')) {
-                        uploadedUrl = await uploadToSupabaseStorage(base64, 'receipts', `exp_${editingReceiptExpense.id}`);
+                      try {
+                        const base64 = reader.result as string;
+                        let uploadedUrl = base64;
+                        if (base64 && base64.startsWith('data:')) {
+                          uploadedUrl = await uploadToSupabaseStorage(base64, 'receipts', `exp_${editingReceiptExpense.id}`);
+                        }
+                        const finalUrl = uploadedUrl || base64;
+                        const receiptObj = {
+                          url: finalUrl,
+                          type: isPdf ? ('pdf' as const) : ('image' as const),
+                          name: file.name,
+                        };
+                        setExpenseReceiptFile(receiptObj);
+
+                        // Atualiza direto no Supabase Postgres
+                        onUpdateExpense({
+                          ...editingReceiptExpense,
+                          receiptUrl: finalUrl,
+                          receiptType: receiptObj.type,
+                          receiptName: receiptObj.name,
+                        });
+                      } catch (err) {
+                        console.error('Erro ao enviar comprovante:', err);
+                      } finally {
+                        setIsUploadingReceipt(false);
                       }
-                      setExpenseReceiptFile({
-                        url: uploadedUrl,
-                        type: isPdf ? 'pdf' : 'image',
-                        name: file.name,
-                      });
                     };
                     reader.readAsDataURL(file);
                   }}
-                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-950 dark:file:text-indigo-300 hover:file:bg-indigo-100 cursor-pointer"
+                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-950 dark:file:text-indigo-300 hover:file:bg-indigo-100 cursor-pointer disabled:opacity-50"
                 />
+                {isUploadingReceipt && (
+                  <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold mt-1.5 flex items-center gap-1 animate-pulse">
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Enviando e salvando comprovante no Supabase...
+                  </p>
+                )}
               </div>
             </div>
 
@@ -1695,28 +1719,9 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     setEditingReceiptExpense(null);
                     setExpenseReceiptFile(null);
                   }}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (expenseReceiptFile) {
-                      onUpdateExpense({
-                        ...editingReceiptExpense,
-                        receiptUrl: expenseReceiptFile.url,
-                        receiptType: expenseReceiptFile.type,
-                        receiptName: expenseReceiptFile.name,
-                      });
-                    }
-                    setEditingReceiptExpense(null);
-                    setExpenseReceiptFile(null);
-                  }}
-                  disabled={!expenseReceiptFile}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
-                >
-                  Salvar Comprovante
+                  Concluído
                 </button>
               </div>
             </div>

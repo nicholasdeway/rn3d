@@ -69,8 +69,7 @@ export async function uploadToSupabaseStorage(
   }
 
   if (!isSupabaseConfigured()) {
-    // Se o Supabase não está configurado, não envia para o storage
-    return preparedBase64.length > 50000 ? '' : preparedBase64;
+    return preparedBase64;
   }
 
   try {
@@ -88,14 +87,14 @@ export async function uploadToSupabaseStorage(
 
     if (uploadError) {
       console.warn(`[Storage] Não foi possível enviar para o bucket '${BUCKET_NAME}':`, uploadError.message);
-      // Se o upload falhou (ex: bucket não existe), retorna a versão compactada ultraleve
-      return preparedBase64.length > 50000 ? '' : preparedBase64;
+      // Fallback seguro: Retorna o DataURL diretamente para salvar no Postgres no campo receipt_url
+      return preparedBase64;
     }
 
     const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
-    return publicUrlData.publicUrl;
+    return publicUrlData.publicUrl || preparedBase64;
   } catch (err: any) {
     console.error('[Storage] Erro ao processar upload:', err?.message || err);
-    return preparedBase64.length > 50000 ? '' : preparedBase64;
+    return preparedBase64;
   }
 }

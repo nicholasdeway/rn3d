@@ -1060,16 +1060,32 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     const isPdf = file.type === 'application/pdf';
                     const reader = new FileReader();
                     reader.onloadend = async () => {
-                      const base64 = reader.result as string;
-                      let uploadedUrl = base64;
-                      if (base64.startsWith('data:')) {
-                        uploadedUrl = await uploadToSupabaseStorage(base64, 'receipts', `order_pay_${editingReceiptOrder.id}`);
+                      try {
+                        const base64 = reader.result as string;
+                        let uploadedUrl = base64;
+                        if (base64 && base64.startsWith('data:')) {
+                          uploadedUrl = await uploadToSupabaseStorage(base64, 'receipts', `order_pay_${editingReceiptOrder.id}`);
+                        }
+                        const finalUrl = uploadedUrl || base64;
+                        const receiptObj = {
+                          url: finalUrl,
+                          type: isPdf ? ('pdf' as const) : ('image' as const),
+                          name: file.name,
+                        };
+                        setReceiptFile(receiptObj);
+
+                        if (onUpdateOrderPayment) {
+                          onUpdateOrderPayment(
+                            editingReceiptOrder.id,
+                            0,
+                            finalUrl,
+                            receiptObj.type,
+                            receiptObj.name
+                          );
+                        }
+                      } catch (err) {
+                        console.error('Erro ao enviar comprovante do pedido:', err);
                       }
-                      setReceiptFile({
-                        url: uploadedUrl,
-                        type: isPdf ? 'pdf' : 'image',
-                        name: file.name,
-                      });
                     };
                     reader.readAsDataURL(file);
                   }}
@@ -1103,29 +1119,9 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     setEditingReceiptOrder(null);
                     setReceiptFile(null);
                   }}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (receiptFile && onUpdateOrderPayment) {
-                      onUpdateOrderPayment(
-                        editingReceiptOrder.id,
-                        0,
-                        receiptFile.url,
-                        receiptFile.type,
-                        receiptFile.name
-                      );
-                    }
-                    setEditingReceiptOrder(null);
-                    setReceiptFile(null);
-                  }}
-                  disabled={!receiptFile}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
-                >
-                  Salvar Comprovante
+                  Concluído
                 </button>
               </div>
             </div>
