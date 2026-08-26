@@ -98,6 +98,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
   const [editingReceiptExpense, setEditingReceiptExpense] = useState<ExpenseItem | null>(null);
   const [expenseReceiptFile, setExpenseReceiptFile] = useState<{ url: string; type: 'image' | 'pdf'; name: string } | null>(null);
   const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [deletingExpense, setDeletingExpense] = useState<ExpenseItem | null>(null);
 
   React.useEffect(() => {
     if (autoOpenModal === 'aporte') {
@@ -966,7 +967,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </div>
 
                 <button
-                  onClick={() => onDeleteExpense(exp.id)}
+                  onClick={() => setDeletingExpense(exp)}
                   className="p-1.5 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-lg font-bold transition-colors cursor-pointer"
                   title="Excluir movimentação"
                 >
@@ -1132,7 +1133,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     </td>
                     <td className="p-4 text-right">
                       <button
-                        onClick={() => onDeleteExpense(exp.id)}
+                        onClick={() => setDeletingExpense(exp)}
                         className="p-1.5 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-lg font-bold transition-colors cursor-pointer"
                         title="Excluir movimentação"
                       >
@@ -1724,6 +1725,61 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                   Concluído
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE TRANSAÇÃO */}
+      {deletingExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-500">
+              <div className="p-3 bg-rose-100 dark:bg-rose-950/80 rounded-2xl">
+                <Trash2 className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                  Confirmar Exclusão de Transação
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Esta ação excluirá permanentemente o lançamento do sistema.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl text-xs space-y-1.5">
+              <p className="font-bold text-slate-900 dark:text-slate-100">
+                {deletingExpense.description}
+              </p>
+              <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 font-semibold">
+                <span>Data: {formatDateBR(deletingExpense.date)}</span>
+                <span className="font-bold text-slate-900 dark:text-slate-100">
+                  R$ {deletingExpense.amount.toFixed(2).replace('.', ',')}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeletingExpense(null)}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (deletingExpense) {
+                    onDeleteExpense(deletingExpense.id);
+                  }
+                  setDeletingExpense(null);
+                }}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-colors"
+              >
+                Sim, Excluir Transação
+              </button>
             </div>
           </div>
         </div>

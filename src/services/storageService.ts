@@ -7,32 +7,35 @@ const BUCKET_NAME = 'rn3d_attachments';
  * Converte uma string Base64 em Blob para upload no Supabase Storage
  */
 function base64ToBlob(base64Data: string): { blob: Blob; contentType: string; extension: string } {
-  const parts = base64Data.split(';base64,');
-  const contentType = parts[0].replace('data:', '') || 'image/jpeg';
-  const byteCharacters = atob(parts[1]);
-  const byteArrays: Uint8Array[] = [];
-
-  for (let offset = 0; offset < byteCharacters.length; offset += 1024) {
-    const slice = byteCharacters.slice(offset, offset + 1024);
-    const byteNumbers = new Array(slice.length);
-    for (let i = 0; i < slice.length; i++) {
-      byteNumbers[i] = slice.charCodeAt(i);
+  try {
+    const parts = base64Data.split(';base64,');
+    if (parts.length < 2) {
+      return { blob: new Blob([]), contentType: 'image/jpeg', extension: 'jpg' };
     }
-    byteArrays.push(new Uint8Array(byteNumbers));
+    const contentType = parts[0].replace('data:', '').trim() || 'image/jpeg';
+    const cleanBase64 = parts[1].replace(/\s/g, '');
+    const byteCharacters = atob(cleanBase64);
+    const byteNumbers = new Uint8Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+
+    const blob = new Blob([byteNumbers], { type: contentType });
+    let extension = 'jpg';
+    if (contentType.includes('png')) extension = 'png';
+    else if (contentType.includes('pdf')) extension = 'pdf';
+    else if (contentType.includes('webp')) extension = 'webp';
+    else if (contentType.includes('svg')) extension = 'svg';
+
+    return { blob, contentType, extension };
+  } catch (e) {
+    return { blob: new Blob([]), contentType: 'image/jpeg', extension: 'jpg' };
   }
-
-  const blob = new Blob(byteArrays, { type: contentType });
-  let extension = 'jpg';
-  if (contentType.includes('png')) extension = 'png';
-  else if (contentType.includes('pdf')) extension = 'pdf';
-  else if (contentType.includes('webp')) extension = 'webp';
-
-  return { blob, contentType, extension };
 }
 
 /**
  * Envia um arquivo ou string Base64 para o Supabase Storage e retorna a URL pública.
- * Se o Supabase não estiver configurado ou o upload falhar, retorna uma versão compactada.
+ * Se o Supabase não estiver configurado ou o upload falhar, retorna a imagem tratada.
  */
 export async function uploadToSupabaseStorage(
   fileOrBase64: string,
@@ -74,6 +77,10 @@ export async function uploadToSupabaseStorage(
 
   try {
     const { blob, contentType, extension } = base64ToBlob(preparedBase64);
+    if (blob.size === 0) {
+      return preparedBase64;
+    }
+
     const sanitizedPrefix = fileNamePrefix.replace(/[^a-zA-Z0-9_-]/g, '_');
     const path = `${folder}/${sanitizedPrefix}_${Date.now()}.${extension}`;
 
@@ -92,7 +99,7 @@ export async function uploadToSupabaseStorage(
     }
 
     const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
-    return publicUrlData.publicUrl || preparedBase64;
+    return publicUrlData?.publicUrl || preparedBase64;
   } catch (err: any) {
     console.error('[Storage] Erro ao processar upload:', err?.message || err);
     return preparedBase64;
