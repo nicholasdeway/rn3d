@@ -4,6 +4,7 @@ import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import {
   fetchQuotes,
   createQuote,
+  updateQuote,
   updateQuoteStatus,
 } from '../services/quotesService';
 
@@ -44,6 +45,18 @@ export function useQuotes(user: any, showToast: (msg: string, type?: 'success' |
     }
   };
 
+  const handleUpdateQuote = async (updatedQuote: Quote) => {
+    setQuotes((prev) =>
+      prev.map((q) => (q.id === updatedQuote.id ? updatedQuote : q))
+    );
+    showToast(`Orçamento ${updatedQuote.id} atualizado com sucesso!`, 'success');
+    try {
+      await updateQuote(updatedQuote.id, updatedQuote);
+    } catch (err) {
+      console.error('Erro ao atualizar orçamento no Supabase:', err);
+    }
+  };
+
   const handleUpdateQuoteStatus = async (quoteId: string, newStatus: string) => {
     setQuotes((prev) =>
       prev.map((q) => (q.id === quoteId ? { ...q, status: newStatus as any } : q))
@@ -60,6 +73,7 @@ export function useQuotes(user: any, showToast: (msg: string, type?: 'success' |
     quotes,
     setQuotes,
     handleCreateQuote,
+    handleUpdateQuote,
     handleUpdateQuoteStatus,
   };
 }

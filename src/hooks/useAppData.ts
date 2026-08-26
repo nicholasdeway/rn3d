@@ -87,6 +87,7 @@ export function useAppData() {
     quotes,
     setQuotes,
     handleCreateQuote,
+    handleUpdateQuote,
     handleUpdateQuoteStatus,
   } = useQuotes(user, showToast);
 
@@ -404,6 +405,7 @@ export function useAppData() {
     handleUpdateClient,
     handleAddConsignment,
     handleCreateQuote,
+    handleUpdateQuote,
     handleUpdateQuoteStatus,
     handleCreateExpense,
     handleExecuteTransfer,

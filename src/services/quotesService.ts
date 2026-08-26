@@ -137,6 +137,69 @@ export async function createQuote(quoteData: Partial<Quote>): Promise<Quote | nu
   return newQuote as any;
 }
 
+export async function updateQuote(quoteCode: string, quoteData: Partial<Quote>): Promise<Quote | null> {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  const formattedDate = normalizeToIsoDate(quoteData.date);
+
+  const payload: any = {};
+  if (quoteData.clientName !== undefined) payload.client_name = quoteData.clientName;
+  if (quoteData.date !== undefined) payload.date = formattedDate;
+  if (quoteData.validityDays !== undefined) payload.validity_days = quoteData.validityDays;
+  if (quoteData.productionSlaDays !== undefined) payload.production_sla_days = quoteData.productionSlaDays;
+  if (quoteData.subtotal !== undefined) payload.subtotal = quoteData.subtotal;
+  if (quoteData.discount !== undefined) payload.discount = quoteData.discount;
+  if (quoteData.total !== undefined) payload.total = quoteData.total;
+  if (quoteData.paymentTerms !== undefined) payload.payment_terms = quoteData.paymentTerms;
+  if (quoteData.notes !== undefined) payload.notes = quoteData.notes;
+  if (quoteData.status !== undefined) payload.status = quoteData.status;
+
+  if (quoteData.clientId && !quoteData.clientId.startsWith('cli-')) {
+    payload.client_id = quoteData.clientId;
+  }
+
+  let { data: updatedQuote, error } = await supabase
+    .from('quotes')
+    .update(payload)
+    .eq('quote_code', quoteCode)
+    .select()
+    .single();
+
+  if (error && error.message.includes('client_id')) {
+    delete payload.client_id;
+    const retry = await supabase
+      .from('quotes')
+      .update(payload)
+      .eq('quote_code', quoteCode)
+      .select()
+      .single();
+    updatedQuote = retry.data;
+    error = retry.error;
+  }
+
+  if (error) {
+    console.error('Erro ao atualizar orçamento no Supabase:', error.message);
+  }
+
+  if (updatedQuote && quoteData.items) {
+    await supabase.from('quote_items').delete().eq('quote_id', updatedQuote.id);
+
+    const formattedItems = quoteData.items.map((item) => ({
+      quote_id: updatedQuote.id,
+      description: item.description,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+      subtotal: item.subtotal,
+    }));
+
+    await supabase.from('quote_items').insert(formattedItems);
+  }
+
+  return updatedQuote as any;
+}
+
 export async function updateQuoteStatus(quoteCode: string, newStatus: string): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
 

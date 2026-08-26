@@ -21,6 +21,7 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
+  Edit2,
 } from 'lucide-react';
 
 interface QuotesViewProps {
@@ -28,6 +29,7 @@ interface QuotesViewProps {
   clients: Client[];
   products: Product[];
   onAddQuote: (quote: Quote) => void;
+  onUpdateQuote?: (quote: Quote) => void;
   onUpdateQuoteStatus?: (quoteId: string, newStatus: string) => void;
   onConvertQuoteToOrder: (quote: Quote) => void;
   preselectedClientId?: string;
@@ -39,15 +41,41 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
   clients,
   products,
   onAddQuote,
+  onUpdateQuote,
   onUpdateQuoteStatus,
   onConvertQuoteToOrder,
   preselectedClientId,
   searchQuery = '',
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(!!preselectedClientId);
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [previewPdfQuote, setPreviewPdfQuote] = useState<Quote | null>(null);
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
   const [expandedQuoteId, setExpandedQuoteId] = useState<string | null>(null);
+
+  const handleEditQuote = (q: Quote) => {
+    const isConverted =
+      q.status === 'Convertido em Pedido' ||
+      q.status === 'Convertido' ||
+      q.status === 'Aprovado';
+
+    if (isConverted) return;
+
+    setEditingQuoteId(q.id);
+    setSelectedClientId(q.clientId || fallbackDefaultClient.id);
+    setValidityDays(q.validityDays || 7);
+    setProductionSlaDays(q.productionSlaDays || 5);
+    setDiscount(q.discount || 0);
+    setDiscountPercent(0);
+    setPaymentTerms(q.paymentTerms || '');
+    setNotes(q.notes || '');
+    setQuoteItems(q.items || []);
+    if (q.attendanceMode) setAttendanceMode(q.attendanceMode);
+    if (q.internalLogisticsType) setInternalLogisticsType(q.internalLogisticsType);
+    if (typeof q.internalLogisticsCost === 'number') setInternalLogisticsCost(q.internalLogisticsCost);
+
+    setIsFormOpen(true);
+  };
 
   const toggleExpandQuote = (quoteId: string) => {
     setExpandedQuoteId((prev) => (prev === quoteId ? null : quoteId));
@@ -417,7 +445,21 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
       console.error('Error saving client logistics memory:', e);
     }
 
-    onAddQuote(newQuote);
+    if (editingQuoteId) {
+      const updatedQuoteObj: Quote = {
+        ...newQuote,
+        id: editingQuoteId,
+      };
+      if (onUpdateQuote) {
+        onUpdateQuote(updatedQuoteObj);
+      } else {
+        onAddQuote(updatedQuoteObj);
+      }
+      setEditingQuoteId(null);
+    } else {
+      onAddQuote(newQuote);
+    }
+
     try {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
     } catch (e) {}
@@ -591,7 +633,15 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
             </div>
 
             <button
-              onClick={() => setIsFormOpen(true)}
+              onClick={() => {
+                setEditingQuoteId(null);
+                setQuoteItems([]);
+                setDiscount(0);
+                setDiscountPercent(0);
+                setPaymentTerms('');
+                setNotes('');
+                setIsFormOpen(true);
+              }}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
@@ -608,7 +658,11 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
             Crie propostas comerciais completas em PDF para apresentar aos seus clientes.
           </p>
           <button
-            onClick={() => setIsFormOpen(true)}
+            onClick={() => {
+              setEditingQuoteId(null);
+              setQuoteItems([]);
+              setIsFormOpen(true);
+            }}
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
           >
             Criar Primeiro Orçamento
@@ -694,6 +748,16 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     >
                       <Printer className="w-3.5 h-3.5" /> PDF
                     </button>
+
+                    {!isConverted && (
+                      <button
+                        onClick={() => handleEditQuote(q)}
+                        className="flex-1 py-2 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                        title="Editar orçamento em aberto"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" /> Editar
+                      </button>
+                    )}
 
                     {isConverted ? (
                       <span className="flex-1 py-2 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 border border-emerald-300 dark:border-emerald-800/80 text-xs text-center">
@@ -808,6 +872,19 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                                 <Printer className="w-3.5 h-3.5" /> PDF
                               </button>
 
+                              {!isConverted && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditQuote(q);
+                                  }}
+                                  className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50 rounded-lg font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
+                                  title="Editar este orçamento em aberto"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" /> Editar
+                                </button>
+                              )}
+
                               {isConverted ? (
                                 <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-lg font-bold inline-flex items-center gap-1.5 border border-emerald-300 dark:border-emerald-800/80 text-xs shadow-2xs shrink-0 whitespace-nowrap">
                                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -876,11 +953,14 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               </span>
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 mt-1">
                 <FileText className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                Criar Novo Orçamento Comercial
+                {editingQuoteId ? `Editar Orçamento #${editingQuoteId}` : 'Criar Novo Orçamento Comercial'}
               </h2>
             </div>
             <button
-              onClick={() => setIsFormOpen(false)}
+              onClick={() => {
+                setEditingQuoteId(null);
+                setIsFormOpen(false);
+              }}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold shadow-xs transition-colors shrink-0 cursor-pointer"
             >
               <X className="w-4 h-4" />
