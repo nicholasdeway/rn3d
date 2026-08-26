@@ -161,18 +161,7 @@ export function useAppData() {
         setClients(dbClients);
         setOrders(dbOrders);
         setQuotes(dbQuotes);
-        if (dbConsignments && dbConsignments.length > 0) {
-          setConsignments((prev) => {
-            const map = new Map<string, any>();
-            dbConsignments.forEach((c) => map.set(c.id.toLowerCase().trim(), c));
-            (prev || []).forEach((c) => {
-              if (!map.has(c.id.toLowerCase().trim())) {
-                map.set(c.id.toLowerCase().trim(), c);
-              }
-            });
-            return Array.from(map.values());
-          });
-        }
+        setConsignments(dbConsignments);
         if (reloadExpenses) reloadExpenses();
       } catch (err) {
         console.error('Erro ao carregar dados do Supabase:', err);
@@ -199,18 +188,7 @@ export function useAppData() {
         setClients(dbClients);
         setOrders(dbOrders);
         setQuotes(dbQuotes);
-        if (dbConsignments && dbConsignments.length > 0) {
-          setConsignments((prev) => {
-            const map = new Map<string, any>();
-            dbConsignments.forEach((c) => map.set(c.id.toLowerCase().trim(), c));
-            (prev || []).forEach((c) => {
-              if (!map.has(c.id.toLowerCase().trim())) {
-                map.set(c.id.toLowerCase().trim(), c);
-              }
-            });
-            return Array.from(map.values());
-          });
-        }
+        setConsignments(dbConsignments);
         if (reloadExpenses) reloadExpenses();
       } catch (e) {
         // Silent background sync error
