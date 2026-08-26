@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Consignment, Client } from '../types';
-import { fetchConsignments, createConsignment, deleteAllConsignments } from '../services/consignmentsService';
+import {
+  fetchConsignments,
+  createConsignment,
+  updateConsignment,
+  deleteSingleConsignment,
+  deleteAllConsignments,
+} from '../services/consignmentsService';
 
 export function useConsignments(
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void,
@@ -15,7 +21,6 @@ export function useConsignments(
 
     async function loadCloudConsignments() {
       try {
-        // Clear old local storage partitioning
         try {
           localStorage.removeItem('rn3d_consignments');
         } catch (_) {}
@@ -108,6 +113,32 @@ export function useConsignments(
     }
   };
 
+  const handleUpdateConsignment = async (updated: Consignment) => {
+    setConsignments((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    showToast(`Remessa ${updated.id} atualizada com sucesso!`, 'success');
+
+    try {
+      await updateConsignment(updated);
+      const refreshed = await fetchConsignments();
+      setConsignments(refreshed);
+    } catch (err) {
+      console.error('Erro ao atualizar consignação no Supabase:', err);
+    }
+  };
+
+  const handleDeleteConsignment = async (id: string) => {
+    setConsignments((prev) => prev.filter((c) => c.id !== id));
+    showToast(`Remessa ${id} excluída do sistema!`, 'info');
+
+    try {
+      await deleteSingleConsignment(id);
+      const refreshed = await fetchConsignments();
+      setConsignments(refreshed);
+    } catch (err) {
+      console.error('Erro ao excluir consignação do Supabase:', err);
+    }
+  };
+
   const handleClearConsignments = async () => {
     setConsignments([]);
     showToast('Limpando consignações do Supabase...', 'info');
@@ -119,6 +150,8 @@ export function useConsignments(
     consignments,
     setConsignments,
     handleAddConsignment,
+    handleUpdateConsignment,
+    handleDeleteConsignment,
     handleClearConsignments,
   };
 }

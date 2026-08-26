@@ -427,6 +427,8 @@ export function App() {
                   products={appData.products}
                   exchanges={appData.exchanges}
                   onAddConsignment={appData.handleAddConsignment}
+                  onUpdateConsignment={appData.handleUpdateConsignment}
+                  onDeleteConsignment={appData.handleDeleteConsignment}
                   onClearConsignments={appData.handleClearConsignments}
                   preselectedClientId={preselectedClientIdForAction}
                 />

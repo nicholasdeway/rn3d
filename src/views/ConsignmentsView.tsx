@@ -24,6 +24,8 @@ interface ConsignmentsViewProps {
   products: Product[];
   exchanges?: ExchangeNote[];
   onAddConsignment: (consignment: Consignment) => void;
+  onUpdateConsignment?: (consignment: Consignment) => void;
+  onDeleteConsignment?: (id: string) => void;
   onClearConsignments?: () => void;
   preselectedClientId?: string;
 }
@@ -34,6 +36,8 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   products,
   exchanges = [],
   onAddConsignment,
+  onUpdateConsignment,
+  onDeleteConsignment,
   onClearConsignments,
   preselectedClientId,
 }) => {
@@ -264,16 +268,30 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 dark:border-[#202531] flex justify-end">
+                  <div className="pt-2 border-t border-slate-100 dark:border-[#202531] flex items-center justify-between gap-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedConsignment(c);
                       }}
-                      className="w-full py-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                      className="flex-1 py-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                     >
-                      <Printer className="w-3.5 h-3.5" /> Ver Comprovante PDF
+                      <Printer className="w-3.5 h-3.5" /> Ver PDF
                     </button>
+                    {onDeleteConsignment && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Tem certeza que deseja excluir a remessa ${c.id} de todo o sistema?`)) {
+                            onDeleteConsignment(c.id);
+                          }
+                        }}
+                        className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                        title="Excluir Remessa"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -329,6 +347,20 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                             >
                               <Printer className="w-3.5 h-3.5" /> Ver PDF
                             </button>
+                            {onDeleteConsignment && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm(`Tem certeza que deseja excluir a remessa ${c.id} de todo o sistema?`)) {
+                                    onDeleteConsignment(c.id);
+                                  }
+                                }}
+                                className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 dark:text-rose-400 rounded-lg font-semibold flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0 whitespace-nowrap"
+                                title="Excluir Remessa"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" /> Excluir
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -618,7 +650,20 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 <Printer className="w-4 h-4 text-indigo-400" />
                 Comprovante de Remessa em Consignação ({selectedConsignment.id})
               </span>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
+                {onDeleteConsignment && (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Tem certeza que deseja excluir a remessa ${selectedConsignment.id} de todo o sistema?`)) {
+                        onDeleteConsignment(selectedConsignment.id);
+                        setSelectedConsignment(null);
+                      }
+                    }}
+                    className="px-3 py-2 bg-rose-600/80 hover:bg-rose-700 text-white rounded-xl font-bold flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" /> Excluir
+                  </button>
+                )}
                 <button
                   onClick={() => window.print()}
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs transition-colors cursor-pointer shadow-sm"

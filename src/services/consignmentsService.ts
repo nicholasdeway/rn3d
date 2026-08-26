@@ -104,6 +104,95 @@ export async function createConsignment(consignment: Consignment): Promise<boole
   }
 }
 
+export async function updateConsignment(consignment: Consignment): Promise<boolean> {
+  if (!isSupabaseConfigured() || !consignment.id) return false;
+
+  try {
+    const orderPayload: any = {
+      order_code: consignment.id,
+      client_name: consignment.clientName || 'Cliente Consignado',
+      date: consignment.date || new Date().toISOString().split('T')[0],
+      items_count: consignment.itemsCount || 0,
+      total_value: consignment.totalValue || 0,
+      paid_amount: 0,
+      payment_status_text: 'Consignação',
+      status: consignment.status === 'Finalizada' ? 'Concluído' : 'Em produção',
+    };
+
+    if (consignment.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(consignment.clientId)) {
+      orderPayload.client_id = consignment.clientId;
+    }
+
+    // Locate existing order row
+    const { data: existing } = await supabase
+      .from('orders')
+      .select('id')
+      .or(`order_code.eq.${consignment.id},id.eq.${consignment.id}`)
+      .limit(1);
+
+    let oData: any = null;
+
+    if (existing && existing.length > 0) {
+      const { data: updated } = await supabase
+        .from('orders')
+        .update(orderPayload)
+        .eq('id', existing[0].id)
+        .select();
+      oData = updated && updated.length > 0 ? updated[0] : null;
+    } else {
+      const { data: inserted } = await supabase
+        .from('orders')
+        .insert([orderPayload])
+        .select();
+      oData = inserted && inserted.length > 0 ? inserted[0] : null;
+    }
+
+    if (oData?.id && consignment.items && consignment.items.length > 0) {
+      await supabase.from('order_items').delete().eq('order_id', oData.id);
+
+      const itemRows = consignment.items.map((item) => ({
+        order_id: oData.id,
+        product_name: item.productName,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        subtotal: item.subtotal,
+      }));
+      await supabase.from('order_items').insert(itemRows);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Erro ao atualizar consignação no Supabase:', err);
+    return false;
+  }
+}
+
+export async function deleteSingleConsignment(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured() || !id) return false;
+
+  try {
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('id')
+      .or(`order_code.eq.${id},id.eq.${id}`);
+
+    if (orders && orders.length > 0) {
+      const orderIds = orders.map((o) => o.id);
+      await supabase.from('order_items').delete().in('order_id', orderIds);
+      await supabase.from('orders').delete().in('id', orderIds);
+    }
+
+    try {
+      await supabase.from('consignments').delete().or(`code.eq.${id},id.eq.${id}`);
+    } catch (_) {}
+
+    return true;
+  } catch (err) {
+    console.error('Erro ao excluir consignação do Supabase:', err);
+    return false;
+  }
+}
+
 /**
  * Completely wipe out all consignment records from local storage and Supabase Postgres
  */

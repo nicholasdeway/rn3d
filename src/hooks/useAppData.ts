@@ -82,6 +82,8 @@ export function useAppData() {
     consignments,
     setConsignments,
     handleAddConsignment,
+    handleUpdateConsignment,
+    handleDeleteConsignment,
     handleClearConsignments,
   } = useConsignments(showToast, setClientInventories, setClients);
 
@@ -449,6 +451,8 @@ export function useAppData() {
     handleAddClient,
     handleUpdateClient,
     handleAddConsignment,
+    handleUpdateConsignment,
+    handleDeleteConsignment,
     handleClearConsignments,
     handleCreateQuote,
     handleUpdateQuote,
