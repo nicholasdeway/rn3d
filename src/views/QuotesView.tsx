@@ -772,8 +772,8 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     )}
 
                     {isConverted ? (
-                      <span className="col-span-2 py-2 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-xl font-extrabold inline-flex items-center justify-center gap-1.5 border border-emerald-300 dark:border-emerald-800/80 text-xs text-center shadow-xs">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Pedido Gerado Oficialmente
+                      <span className="col-span-2 py-2 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 border border-emerald-300 dark:border-emerald-800/80 text-xs text-center shadow-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Pedido Gerado
                       </span>
                     ) : (
                       <button
