@@ -14,6 +14,11 @@ const STANDARD_DB_CATEGORIES = [
   'Outros',
 ];
 
+export async function syncMissingExpensesToSupabase(expenses: ExpenseItem[]): Promise<number> {
+  // Direct Supabase mode: zero LocalStorage sync required
+  return 0;
+}
+
 function encodeNotesAndMetadata(item: Partial<ExpenseItem>): string {
   const userNotes = item.notes || '';
   const meta = {
@@ -61,35 +66,17 @@ function decodeNotesAndMetadata(row: any): {
   return { notes, category, createdBy, timestamp, sourceAccount, destinationAccount };
 }
 
+/**
+  100% Direct Supabase Postgres Fetch — Zero LocalStorage Caching
+ */
 export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balances?: AccountBalances }> {
-  let localExpenses: ExpenseItem[] = [];
-  let localBalances: AccountBalances | undefined;
-
-  try {
-    const savedExp = localStorage.getItem('rn3d_expenses');
-    if (savedExp) {
-      const parsed = JSON.parse(savedExp);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        localExpenses = parsed.filter(
-          (e) =>
-            !e.referenceCode?.includes('VIS-VIS-') &&
-            !(e.amount === 25 && e.description?.includes('Deslocamento / Combustível Visita'))
-        );
-      }
-    }
-    const savedBal = localStorage.getItem('rn3d_account_balances');
-    if (savedBal) {
-      localBalances = JSON.parse(savedBal);
-    }
-  } catch (e) {
-    console.error('Erro ao ler dados locais:', e);
-  }
-
   if (!isSupabaseConfigured()) {
-    return { expenses: localExpenses, balances: localBalances };
+    return { expenses: [], balances: undefined };
   }
 
-  // Attempt to read balances from orders table as guaranteed fallback
+  let dbBalances: AccountBalances | undefined;
+
+  // 1. Fetch balances directly from Supabase (orders table or expenses table)
   try {
     const { data: orderSys } = await supabase
       .from('orders')
@@ -100,25 +87,23 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
     if (orderSys && orderSys.payment_status_text) {
       const parsed = JSON.parse(orderSys.payment_status_text);
       if (parsed && typeof parsed === 'object' && typeof parsed.nubank === 'number') {
-        localBalances = parsed;
-        localStorage.setItem('rn3d_account_balances', JSON.stringify(parsed));
-        localStorage.setItem('rn3d_account_balance', (parsed.nubank || 0).toString());
+        dbBalances = parsed;
       }
     }
   } catch (e) {}
 
+  // 2. Fetch expenses directly from Supabase expenses table
   const { data, error } = await supabase
     .from('expenses')
     .select('*')
     .order('date', { ascending: false });
 
   if (error || !data) {
-    // If expenses table not created in Supabase yet, return local + order fallback balances quietly
-    return { expenses: localExpenses, balances: localBalances };
+    return { expenses: [], balances: dbBalances };
   }
 
-  // Extract system account balances row if present in expenses (only if localBalances not already stored locally)
-  if (!localBalances) {
+  // Extract balances from expenses table if not found in orders
+  if (!dbBalances) {
     const sysBalanceRow = data.find((row) => row.reference_code === 'SYS_ACCOUNT_BALANCES');
     if (sysBalanceRow && sysBalanceRow.notes) {
       try {
@@ -132,9 +117,7 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
         }
         const parsedBalances = JSON.parse(rawJson);
         if (parsedBalances && typeof parsedBalances === 'object' && typeof parsedBalances.nubank === 'number') {
-          localBalances = parsedBalances;
-          localStorage.setItem('rn3d_account_balances', JSON.stringify(parsedBalances));
-          localStorage.setItem('rn3d_account_balance', (parsedBalances.nubank || 0).toString());
+          dbBalances = parsedBalances;
         }
       } catch (e) {}
     }
@@ -148,14 +131,6 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
 
   const filteredData = data.filter((row) => {
     if (row.reference_code === 'SYS_ACCOUNT_BALANCES') return false;
-    if (row.reference_code && row.reference_code.includes('VIS-VIS-')) {
-      duplicateIdsToDelete.push(row.id);
-      return false;
-    }
-    if (Number(row.amount) === 25 && row.description && row.description.includes('Deslocamento / Combustível Visita')) {
-      duplicateIdsToDelete.push(row.id);
-      return false;
-    }
 
     if (seenIds.has(row.id)) {
       duplicateIdsToDelete.push(row.id);
@@ -163,18 +138,15 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
     }
     seenIds.add(row.id);
 
-    // Deduplicate auto-replicated reference codes (e.g. PED-888048 or PED-PAY-PED-881795)
-    if (row.reference_code && row.reference_code.trim() !== '') {
-      const refKey = row.reference_code.trim();
-      if (seenRefCodes.has(refKey)) {
+    if (row.reference_code && row.reference_code.length > 0) {
+      if (seenRefCodes.has(row.reference_code)) {
         duplicateIdsToDelete.push(row.id);
         return false;
       }
-      seenRefCodes.add(refKey);
+      seenRefCodes.add(row.reference_code);
     }
 
-    // Deduplicate manual duplicate entries (identical description, amount, date)
-    const signature = `${(row.description || '').toLowerCase().trim()}_${Number(row.amount)}_${row.date}`;
+    const signature = `${row.description}_${row.amount}_${row.date}_${row.receipt_url || ''}`;
     if (seenSignatures.has(signature)) {
       duplicateIdsToDelete.push(row.id);
       return false;
@@ -187,7 +159,6 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
   if (duplicateIdsToDelete.length > 0) {
     supabase.from('expenses').delete().in('id', duplicateIdsToDelete).then(({ error }) => {
       if (error) console.error('Erro ao expurgar despesas duplicadas do Supabase:', error.message);
-      else console.log(`[expensesService] Expurgadas ${duplicateIdsToDelete.length} despesas duplicadas do Supabase com sucesso.`);
     });
   }
 
@@ -214,34 +185,28 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
     };
   });
 
-  try {
-    localStorage.setItem('rn3d_expenses', JSON.stringify(dbExpenses));
-  } catch (e) {}
-
-  return { expenses: dbExpenses, balances: localBalances };
+  return { expenses: dbExpenses, balances: dbBalances };
 }
 
+/**
+ * Persiste saldos de contas diretamente no Supabase
+ */
 export async function saveAccountBalancesToSupabase(balances: AccountBalances): Promise<boolean> {
+  if (!isSupabaseConfigured()) return true;
+
   try {
-    localStorage.setItem('rn3d_account_balances', JSON.stringify(balances));
-    localStorage.setItem('rn3d_account_balance', balances.nubank.toString());
+    const orderPayload = {
+      order_code: 'SYS_ACCOUNT_BALANCES',
+      client_name: 'SISTEMA_BALANCES',
+      total_value: 0,
+      paid_amount: 0,
+      payment_status_text: JSON.stringify(balances),
+      status: 'Novo',
+    };
+    await supabase.from('orders').upsert(orderPayload, { onConflict: 'order_code' });
+  } catch (e) {}
 
-    if (!isSupabaseConfigured()) return true;
-
-    // Guaranteed fallback: Save to orders table (order_code = 'SYS_ACCOUNT_BALANCES')
-    try {
-      const orderPayload = {
-        order_code: 'SYS_ACCOUNT_BALANCES',
-        client_name: 'SISTEMA_BALANCES',
-        total_value: 0,
-        paid_amount: 0,
-        payment_status_text: JSON.stringify(balances),
-        status: 'Novo',
-      };
-      await supabase.from('orders').upsert(orderPayload, { onConflict: 'order_code' });
-    } catch (e) {}
-
-    // Primary: Save to expenses table if created
+  try {
     const payload = {
       description: 'Saldos de Contas e Marketplaces',
       category: 'Outros',
@@ -269,22 +234,9 @@ export async function saveAccountBalancesToSupabase(balances: AccountBalances): 
   }
 }
 
-function normalizeToIsoDate(dateStr?: string): string {
-  if (!dateStr) return new Date().toISOString().split('T')[0];
-  if (dateStr.includes('/')) {
-    const parts = dateStr.split('/');
-    if (parts.length === 3) {
-      const [p1, p2, p3] = parts;
-      if (p3.length === 4) {
-        return `${p3}-${p2.padStart(2, '0')}-${p1.padStart(2, '0')}`;
-      } else if (p1.length === 4) {
-        return `${p1}-${p2.padStart(2, '0')}-${p3.padStart(2, '0')}`;
-      }
-    }
-  }
-  return dateStr;
-}
-
+/**
+ * Cria um novo lançamento de despesa/saída/aporte diretamente no Supabase
+ */
 export async function createExpense(expense: Partial<ExpenseItem>): Promise<ExpenseItem | null> {
   if (!isSupabaseConfigured()) {
     return null;
@@ -300,14 +252,15 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
   }
 
   const payload: any = {
-    description: expense.description,
+    description: expense.description || 'Despesa sem descrição',
     category: safeCategory,
     amount: expense.amount || 0,
-    date: normalizeToIsoDate(expense.date),
+    date: expense.date || new Date().toISOString().split('T')[0],
     payment_status: expense.paymentStatus || 'Pago',
     beneficiary: expense.beneficiary || '',
+    created_by: expense.createdBy || 'Nicholas',
     receipt_url: receiptUrl,
-    receipt_type: expense.receiptType || 'image',
+    receipt_type: expense.receiptType || (receiptUrl.startsWith('data:application/pdf') ? 'pdf' : 'image'),
     receipt_name: expense.receiptName || '',
     is_auto_replicated: expense.isAutoReplicated ?? false,
     reference_code: expense.referenceCode || '',
@@ -321,28 +274,36 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
     .single();
 
   if (error) {
+    console.error('Erro ao criar despesa no Supabase:', error.message);
     return null;
   }
 
-  return (data as any) || null;
+  const decoded = decodeNotesAndMetadata(data);
+  return {
+    id: data.id,
+    description: data.description,
+    category: decoded.category,
+    amount: Number(data.amount) || 0,
+    date: data.date,
+    timestamp: decoded.timestamp,
+    paymentStatus: data.payment_status || 'Pago',
+    beneficiary: data.beneficiary || '',
+    createdBy: decoded.createdBy,
+    sourceAccount: decoded.sourceAccount,
+    destinationAccount: decoded.destinationAccount,
+    receiptUrl: data.receipt_url || '',
+    receiptType: data.receipt_type || 'image',
+    receiptName: data.receipt_name || '',
+    isAutoReplicated: data.is_auto_replicated ?? false,
+    referenceCode: data.reference_code || '',
+    notes: decoded.notes,
+  };
 }
 
+/**
+ * Atualiza um lançamento de despesa/saída/aporte diretamente no Supabase Postgres
+ */
 export async function updateExpense(id: string, updates: Partial<ExpenseItem>): Promise<boolean> {
-  // 1. Salva a atualização imediatamente no localStorage para garantir persistência após F5
-  try {
-    const saved = localStorage.getItem('rn3d_expenses');
-    if (saved) {
-      const list: ExpenseItem[] = JSON.parse(saved);
-      const updatedList = list.map((e) => {
-        if (e.id === id || (e.referenceCode && e.referenceCode === updates.referenceCode) || (e.description === updates.description && e.date === updates.date)) {
-          return { ...e, ...updates };
-        }
-        return e;
-      });
-      localStorage.setItem('rn3d_expenses', JSON.stringify(updatedList));
-    }
-  } catch (e) {}
-
   if (!isSupabaseConfigured()) {
     return true;
   }
@@ -367,19 +328,19 @@ export async function updateExpense(id: string, updates: Partial<ExpenseItem>): 
   if (updates.receiptName !== undefined) payload.receipt_name = updates.receiptName;
   payload.notes = encodeNotesAndMetadata(updates);
 
-  // Tentativa 1: Atualiza pelo ID exato se for UUID real do Supabase
+  // 1. Tenta atualizar pelo ID de UUID real do Supabase
   if (id && !id.startsWith('exp-') && !id.startsWith('apt-') && !id.startsWith('trf-') && id.length > 20) {
     const { error } = await supabase.from('expenses').update(payload).eq('id', id);
     if (!error) return true;
   }
 
-  // Fallback 1: Atualiza pelo código de referência (pedidos ou transferências)
+  // 2. Fallback: Tenta atualizar pelo código de referência
   if (updates.referenceCode) {
     const { error } = await supabase.from('expenses').update(payload).eq('reference_code', updates.referenceCode);
     if (!error) return true;
   }
 
-  // Fallback 2: Atualiza por descrição e data se for um lançamento manual
+  // 3. Fallback: Tenta atualizar por descrição e data se for um lançamento manual
   if (updates.description && updates.date) {
     const { error } = await supabase
       .from('expenses')
@@ -392,66 +353,16 @@ export async function updateExpense(id: string, updates: Partial<ExpenseItem>): 
   return true;
 }
 
+/**
+ * Exclui uma despesa diretamente do Supabase Postgres
+ */
 export async function deleteExpense(id: string): Promise<boolean> {
-  if (!isSupabaseConfigured()) {
-    return true;
-  }
-
-  const isLocalId = !id || id.startsWith('exp-') || id.length < 30;
-  if (isLocalId) return true;
+  if (!isSupabaseConfigured()) return true;
 
   const { error } = await supabase.from('expenses').delete().eq('id', id);
   if (error) {
+    console.error('Erro ao excluir despesa no Supabase:', error.message);
     return false;
   }
   return true;
-}
-
-export async function syncMissingExpensesToSupabase(expenses: ExpenseItem[]): Promise<number> {
-  if (!isSupabaseConfigured() || expenses.length === 0) return 0;
-
-  try {
-    const { data: dbData } = await supabase.from('expenses').select('id, reference_code');
-    if (!dbData) return 0;
-
-    const existingIds = new Set((dbData || []).map((row) => row.id));
-    const existingRefCodes = new Set((dbData || []).map((row) => row.reference_code).filter(Boolean));
-
-    const toInsert = expenses.filter(
-      (e) => !existingIds.has(e.id) && (!e.referenceCode || !existingRefCodes.has(e.referenceCode)) && e.referenceCode !== 'SYS_ACCOUNT_BALANCES'
-    );
-
-    if (toInsert.length === 0) return 0;
-
-    const rows = await Promise.all(
-      toInsert.map(async (e) => {
-        let receiptUrl = e.receiptUrl || '';
-        if (receiptUrl.startsWith('data:')) {
-          receiptUrl = await uploadToSupabaseStorage(receiptUrl, 'receipts', e.description || 'receipt');
-        }
-        return {
-          description: e.description,
-          category: STANDARD_DB_CATEGORIES.includes(e.category) ? e.category : 'Outros',
-          amount: e.amount,
-          date: e.date,
-          payment_status: e.paymentStatus,
-          beneficiary: e.beneficiary || '',
-          receipt_url: receiptUrl,
-          receipt_type: e.receiptType || 'image',
-          receipt_name: e.receiptName || '',
-          is_auto_replicated: e.isAutoReplicated ?? false,
-          reference_code: e.referenceCode || '',
-          notes: encodeNotesAndMetadata(e),
-        };
-      })
-    );
-
-    const { error } = await supabase.from('expenses').insert(rows);
-    if (error) {
-      return 0;
-    }
-    return rows.length;
-  } catch (err) {
-    return 0;
-  }
 }

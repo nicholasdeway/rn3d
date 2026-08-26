@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { ExpenseItem, AccountBalances, MarketplaceAccount } from '../types';
-import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import {
   fetchExpenses,
   saveAccountBalancesToSupabase,
@@ -21,97 +20,27 @@ export function useExpenses(
   user: any,
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void
 ) {
-  const [expenses, setExpenses] = useState<ExpenseItem[]>(() =>
-    getStorageParsed<ExpenseItem[]>('rn3d_expenses', [])
-  );
-
-  const [accountBalances, setAccountBalances] = useState<AccountBalances>(() => {
-    const saved = localStorage.getItem('rn3d_account_balances');
-    if (saved !== null) {
-      try {
-        const parsed = JSON.parse(saved);
-        return {
-          nubank: typeof parsed.nubank === 'number' ? parsed.nubank : 0,
-          shopee: typeof parsed.shopee === 'number' ? parsed.shopee : 0,
-          mercadoLivre: typeof parsed.mercadoLivre === 'number' ? parsed.mercadoLivre : 0,
-          tikTokShop: typeof parsed.tikTokShop === 'number' ? parsed.tikTokShop : 0,
-          amazon: typeof parsed.amazon === 'number' ? parsed.amazon : 0,
-        };
-      } catch (e) {}
-    }
-    // Backward compatibility with single rn3d_account_balance
-    const legacySingle = localStorage.getItem('rn3d_account_balance');
-    if (legacySingle !== null) {
-      const val = parseFloat(legacySingle);
-      if (!isNaN(val)) {
-        return { ...DEFAULT_BALANCES, nubank: val };
-      }
-    }
-    return DEFAULT_BALANCES;
-  });
-
-  useEffect(() => {
-    if (expenses) {
-      safeSetLocalStorage('rn3d_expenses', JSON.stringify(expenses));
-    }
-  }, [expenses]);
-
-  useEffect(() => {
-    localStorage.setItem('rn3d_account_balances', JSON.stringify(accountBalances));
-    localStorage.setItem('rn3d_account_balance', accountBalances.nubank.toString());
-    saveAccountBalancesToSupabase(accountBalances);
-  }, [accountBalances]);
-
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'rn3d_account_balances' && e.newValue) {
-        try {
-          setAccountBalances(JSON.parse(e.newValue));
-        } catch (err) {}
-      }
-      if (e.key === 'rn3d_expenses' && e.newValue) {
-        try {
-          setExpenses(JSON.parse(e.newValue));
-        } catch (err) {}
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
+  const [accountBalances, setAccountBalances] = useState<AccountBalances>(DEFAULT_BALANCES);
 
   const reloadExpenses = async () => {
     try {
-      const { expenses: dbExpenses, balances: dbBalances } = await fetchExpenses();
-      if (Array.isArray(dbExpenses) && dbExpenses.length > 0) {
-        setExpenses(dbExpenses);
+      const res = await fetchExpenses();
+      if (res && res.expenses) {
+        setExpenses(res.expenses);
       }
-      if (dbBalances) {
-        setAccountBalances(dbBalances);
+      if (res && res.balances) {
+        setAccountBalances(res.balances);
       }
     } catch (err) {
-      console.error('Erro ao recarregar despesas:', err);
+      console.error('Erro ao recarregar despesas do Supabase:', err);
     }
   };
 
   useEffect(() => {
-    if (!user) return;
-    let isMounted = true;
-
-    fetchExpenses()
-      .then(({ expenses: dbExpenses, balances: dbBalances }) => {
-        if (!isMounted) return;
-        if (Array.isArray(dbExpenses) && dbExpenses.length > 0) {
-          setExpenses(dbExpenses);
-        }
-        if (dbBalances) {
-          setAccountBalances(dbBalances);
-        }
-      })
-      .catch((err) => console.error('Erro ao carregar despesas do Supabase:', err));
-
-    return () => {
-      isMounted = false;
-    };
+    if (user) {
+      reloadExpenses();
+    }
   }, [user]);
 
   const handleCreateExpense = async (newExpense: ExpenseItem) => {
@@ -125,16 +54,20 @@ export function useExpenses(
 
     // If it's a Retirada, deduct from Nubank balance automatically
     if (formattedItem.category === 'Retirada') {
-      setAccountBalances((prev) => ({
-        ...prev,
-        nubank: Math.max(0, prev.nubank - formattedItem.amount),
-      }));
+      const updated = {
+        ...accountBalances,
+        nubank: Math.max(0, accountBalances.nubank - formattedItem.amount),
+      };
+      setAccountBalances(updated);
+      await saveAccountBalancesToSupabase(updated);
       showToast(`Retirada (R$ ${formattedItem.amount.toFixed(2)}) por ${formattedItem.createdBy} registrada!`, 'success');
     } else if (formattedItem.category === 'Aporte / Reembolso de Sócio') {
-      setAccountBalances((prev) => ({
-        ...prev,
-        nubank: prev.nubank + formattedItem.amount,
-      }));
+      const updated = {
+        ...accountBalances,
+        nubank: accountBalances.nubank + formattedItem.amount,
+      };
+      setAccountBalances(updated);
+      await saveAccountBalancesToSupabase(updated);
       showToast(`Lançamento/Aporte de R$ ${formattedItem.amount.toFixed(2)} por ${formattedItem.createdBy} creditado no Nubank!`, 'success');
     } else {
       showToast(`Despesa "${formattedItem.description}" registrada por ${formattedItem.createdBy}!`, 'success');
@@ -166,38 +99,36 @@ export function useExpenses(
     const dateStr = now.toISOString().split('T')[0];
     const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-    // Update balances
-    setAccountBalances((prev) => {
-      const sourceKey =
-        source === 'Shopee'
-          ? 'shopee'
-          : source === 'Mercado Livre'
-          ? 'mercadoLivre'
-          : source === 'TikTok Shop'
-          ? 'tikTokShop'
-          : source === 'Amazon'
-          ? 'amazon'
-          : 'nubank';
+    const sourceKey =
+      source === 'Shopee'
+        ? 'shopee'
+        : source === 'Mercado Livre'
+        ? 'mercadoLivre'
+        : source === 'TikTok Shop'
+        ? 'tikTokShop'
+        : source === 'Amazon'
+        ? 'amazon'
+        : 'nubank';
 
-      const destKey =
-        destination === 'Shopee'
-          ? 'shopee'
-          : destination === 'Mercado Livre'
-          ? 'mercadoLivre'
-          : destination === 'TikTok Shop'
-          ? 'tikTokShop'
-          : destination === 'Amazon'
-          ? 'amazon'
-          : 'nubank';
+    const destKey =
+      destination === 'Shopee'
+        ? 'shopee'
+        : destination === 'Mercado Livre'
+        ? 'mercadoLivre'
+        : destination === 'TikTok Shop'
+        ? 'tikTokShop'
+        : destination === 'Amazon'
+        ? 'amazon'
+        : 'nubank';
 
-      const updated = {
-        ...prev,
-        [sourceKey]: Math.max(0, (prev[sourceKey as keyof AccountBalances] || 0) - amount),
-        [destKey]: (prev[destKey as keyof AccountBalances] || 0) + amount,
-      };
-      saveAccountBalancesToSupabase(updated);
-      return updated;
-    });
+    const updatedBalances = {
+      ...accountBalances,
+      [sourceKey]: Math.max(0, (accountBalances[sourceKey as keyof AccountBalances] || 0) - amount),
+      [destKey]: (accountBalances[destKey as keyof AccountBalances] || 0) + amount,
+    };
+
+    setAccountBalances(updatedBalances);
+    await saveAccountBalancesToSupabase(updatedBalances);
 
     // Create Audit Log Transaction
     const transferExpense: ExpenseItem = {
@@ -222,21 +153,20 @@ export function useExpenses(
     showToast(`Resgate de R$ ${amount.toFixed(2).replace('.', ',')} (${source} ➔ ${destination}) efetuado por ${responsible}!`, 'success');
 
     try {
-      await createExpense(transferExpense);
+      const savedInDb = await createExpense(transferExpense);
+      if (savedInDb && savedInDb.id) {
+        setExpenses((prev) =>
+          prev.map((e) => (e.id === transferExpense.id ? { ...e, id: savedInDb.id } : e))
+        );
+      }
     } catch (err) {
       console.error('Erro ao registrar transferência no Supabase:', err);
     }
   };
 
   const handleUpdateExpense = async (updatedExpense: ExpenseItem) => {
-    setExpenses((prev) => {
-      const next = prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e));
-      try {
-        safeSetLocalStorage('rn3d_expenses', JSON.stringify(next));
-      } catch (err) {}
-      return next;
-    });
-    showToast(`Comprovante de "${updatedExpense.description}" salvo com sucesso!`, 'success');
+    setExpenses((prev) => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
+    showToast(`Comprovante de "${updatedExpense.description}" salvo no Supabase com sucesso!`, 'success');
     try {
       await updateExpense(updatedExpense.id, updatedExpense);
     } catch (err) {
@@ -256,15 +186,13 @@ export function useExpenses(
     }
   };
 
-  const handleUpdateSingleBalance = (accountKey: keyof AccountBalances, newBalance: number) => {
-    setAccountBalances((prev) => {
-      const updated = {
-        ...prev,
-        [accountKey]: newBalance,
-      };
-      saveAccountBalancesToSupabase(updated);
-      return updated;
-    });
+  const handleUpdateSingleBalance = async (accountKey: keyof AccountBalances, newBalance: number) => {
+    const updated = {
+      ...accountBalances,
+      [accountKey]: newBalance,
+    };
+    setAccountBalances(updated);
+    await saveAccountBalancesToSupabase(updated);
     showToast(`Saldo ${accountKey.toUpperCase()} atualizado para R$ ${newBalance.toFixed(2).replace('.', ',')}!`, 'success');
   };
 
@@ -272,7 +200,7 @@ export function useExpenses(
     expenses,
     setExpenses,
     accountBalances,
-    accountBalance: accountBalances.nubank, // Fallback property
+    accountBalance: accountBalances.nubank,
     setAccountBalances,
     reloadExpenses,
     handleCreateExpense,
