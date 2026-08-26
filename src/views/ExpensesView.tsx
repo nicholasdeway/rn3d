@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { ExpenseItem, ExpenseCategory, AccountBalances, MarketplaceAccount } from '../types';
 import { ReceiptViewerModal } from '../components/ReceiptViewerModal';
+import { uploadToSupabaseStorage } from '../services/storageService';
 import {
   TrendingDown,
   Plus,
@@ -94,6 +95,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
   const [isAporteModalOpen, setIsAporteModalOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<{ url: string; type?: 'image' | 'pdf'; name?: string; title: string } | null>(null);
+  const [editingReceiptExpense, setEditingReceiptExpense] = useState<ExpenseItem | null>(null);
+  const [expenseReceiptFile, setExpenseReceiptFile] = useState<{ url: string; type: 'image' | 'pdf'; name: string } | null>(null);
 
   React.useEffect(() => {
     if (autoOpenModal === 'aporte') {
@@ -916,25 +919,48 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
               {/* Footer Actions: Receipt + Delete */}
               <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/60">
-                <div>
+                <div className="flex items-center gap-1.5">
                   {exp.receiptUrl ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedReceipt({
+                            url: exp.receiptUrl!,
+                            type: exp.receiptType,
+                            name: exp.receiptName,
+                            title: exp.description,
+                          })
+                        }
+                        className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900"
+                      >
+                        <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>Ver Comprovante</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingReceiptExpense(exp);
+                          setExpenseReceiptFile(null);
+                        }}
+                        className="p-1 text-slate-400 hover:text-indigo-500 rounded-lg cursor-pointer"
+                        title="Substituir comprovante"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  ) : (
                     <button
                       type="button"
-                      onClick={() =>
-                        setSelectedReceipt({
-                          url: exp.receiptUrl!,
-                          type: exp.receiptType,
-                          name: exp.receiptName,
-                          title: exp.description,
-                        })
-                      }
-                      className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900"
+                      onClick={() => {
+                        setEditingReceiptExpense(exp);
+                        setExpenseReceiptFile(null);
+                      }}
+                      className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                     >
                       <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>Ver Comprovante</span>
+                      <span>Anexar Comprovante</span>
                     </button>
-                  ) : (
-                    <span className="text-[11px] text-slate-400 font-normal">Sem anexo</span>
                   )}
                 </div>
 
@@ -1058,25 +1084,50 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                       </span>
                     </td>
                     <td className="p-4 text-center">
-                      {exp.receiptUrl ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSelectedReceipt({
-                              url: exp.receiptUrl!,
-                              type: exp.receiptType,
-                              name: exp.receiptName,
-                              title: exp.description,
-                            })
-                          }
-                          className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 mx-auto transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900"
-                        >
-                          <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
-                          <span>Ver Comprovante</span>
-                        </button>
-                      ) : (
-                        <span className="text-[11px] text-slate-400 font-normal">Sem anexo</span>
-                      )}
+                      <div className="flex items-center justify-center gap-1">
+                        {exp.receiptUrl ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setSelectedReceipt({
+                                  url: exp.receiptUrl!,
+                                  type: exp.receiptType,
+                                  name: exp.receiptName,
+                                  title: exp.description,
+                                })
+                              }
+                              className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900"
+                            >
+                              <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
+                              <span>Ver Comprovante</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingReceiptExpense(exp);
+                                setExpenseReceiptFile(null);
+                              }}
+                              className="p-1 text-slate-400 hover:text-indigo-500 rounded-lg cursor-pointer"
+                              title="Substituir comprovante"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingReceiptExpense(exp);
+                              setExpenseReceiptFile(null);
+                            }}
+                            className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
+                            <span>Anexar Comprovante</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4 text-right">
                       <button
@@ -1520,6 +1571,155 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: GERENCIAR / ANEXAR COMPROVANTE DE DESPESA */}
+      {editingReceiptExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Paperclip className="w-5 h-5 text-indigo-500" />
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                    Comprovante — {editingReceiptExpense.description}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Valor: R$ {editingReceiptExpense.amount.toFixed(2).replace('.', ',')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingReceiptExpense(null);
+                  setExpenseReceiptFile(null);
+                }}
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              {editingReceiptExpense.receiptUrl || expenseReceiptFile?.url ? (
+                <div className="p-3.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Comprovante Anexado
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedReceipt({
+                          url: expenseReceiptFile?.url || editingReceiptExpense.receiptUrl!,
+                          type: expenseReceiptFile?.type || editingReceiptExpense.receiptType,
+                          name: expenseReceiptFile?.name || editingReceiptExpense.receiptName,
+                          title: editingReceiptExpense.description,
+                        })
+                      }
+                      className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> Visualizar / Zoom
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    Arquivo: <strong>{expenseReceiptFile?.name || editingReceiptExpense.receiptName || 'Comprovante'}</strong>
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-50 dark:bg-[#181c26] border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-center space-y-2">
+                  <Paperclip className="w-8 h-8 text-slate-400 mx-auto" />
+                  <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">Nenhum comprovante anexado a este lançamento</p>
+                  <p className="text-[11px] text-slate-400">Selecione uma imagem (PNG/JPG) ou PDF do comprovante.</p>
+                </div>
+              )}
+
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {editingReceiptExpense.receiptUrl || expenseReceiptFile?.url ? 'Substituir por Novo Comprovante' : 'Selecionar Comprovante'}
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const isPdf = file.type === 'application/pdf';
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                      const base64 = reader.result as string;
+                      let uploadedUrl = base64;
+                      if (base64.startsWith('data:')) {
+                        uploadedUrl = await uploadToSupabaseStorage(base64, 'receipts', `exp_${editingReceiptExpense.id}`);
+                      }
+                      setExpenseReceiptFile({
+                        url: uploadedUrl,
+                        type: isPdf ? 'pdf' : 'image',
+                        name: file.name,
+                      });
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-950 dark:file:text-indigo-300 hover:file:bg-indigo-100 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 gap-2">
+              {editingReceiptExpense.receiptUrl || expenseReceiptFile?.url ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onUpdateExpense({
+                      ...editingReceiptExpense,
+                      receiptUrl: '',
+                      receiptType: 'image',
+                      receiptName: '',
+                    });
+                    setEditingReceiptExpense(null);
+                    setExpenseReceiptFile(null);
+                  }}
+                  className="px-3 py-2 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-xl font-bold text-xs cursor-pointer"
+                >
+                  Remover
+                </button>
+              ) : <div />}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingReceiptExpense(null);
+                    setExpenseReceiptFile(null);
+                  }}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (expenseReceiptFile) {
+                      onUpdateExpense({
+                        ...editingReceiptExpense,
+                        receiptUrl: expenseReceiptFile.url,
+                        receiptType: expenseReceiptFile.type,
+                        receiptName: expenseReceiptFile.name,
+                      });
+                    }
+                    setEditingReceiptExpense(null);
+                    setExpenseReceiptFile(null);
+                  }}
+                  disabled={!expenseReceiptFile}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
+                >
+                  Salvar Comprovante
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

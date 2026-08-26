@@ -59,6 +59,7 @@ export function useExpenses(
   useEffect(() => {
     localStorage.setItem('rn3d_account_balances', JSON.stringify(accountBalances));
     localStorage.setItem('rn3d_account_balance', accountBalances.nubank.toString());
+    saveAccountBalancesToSupabase(accountBalances);
   }, [accountBalances]);
 
   useEffect(() => {
