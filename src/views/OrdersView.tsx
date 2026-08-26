@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Order, Product } from '../types';
+import { Order, Product, Client } from '../types';
 import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 import { formatDateBR } from '../utils/formatters';
@@ -7,6 +7,7 @@ import { formatDateBR } from '../utils/formatters';
 interface OrdersViewProps {
   orders: Order[];
   products?: Product[];
+  clients?: Client[];
   searchQuery?: string;
   onUpdateOrderProgress?: (orderId: string, newProgressPct: number) => void;
   onUpdateOrderStatus?: (orderId: string, newStatus: Order['status']) => void;
@@ -15,6 +16,7 @@ interface OrdersViewProps {
 export const OrdersView: React.FC<OrdersViewProps> = ({
   orders,
   products = [],
+  clients = [],
   searchQuery = '',
   onUpdateOrderProgress,
   onUpdateOrderStatus,
@@ -663,7 +665,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       {/* Printable PDF Modal Overlay for Order */}
       {previewPdfOrder && (
         <div className="printable-quote-modal fixed inset-0 z-[100] bg-slate-900/60 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-          {/* Print CSS Rules - Ensures ONLY the selected order PDF is printed */}
+          {/* Print CSS Rules - Ensures ONLY the selected order PDF is printed on a single page */}
           <style>{`
             @media print {
               @page {
@@ -679,25 +681,21 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                 overflow: visible !important;
               }
 
-              /* Hide all background app elements, headers, sidebars & other order cards */
               body * {
                 visibility: hidden !important;
               }
 
-              /* Display ONLY the active PDF document sheet */
               .printable-quote-modal,
               .printable-quote-modal * {
                 visibility: visible !important;
               }
 
               .printable-quote-modal {
-                position: fixed !important;
+                position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                width: 100vw !important;
-                height: 100vh !important;
+                width: 100% !important;
+                height: auto !important;
                 background: white !important;
                 padding: 0 !important;
                 margin: 0 !important;
@@ -707,28 +705,32 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               }
 
               .print-container {
-                position: absolute !important;
+                position: relative !important;
                 top: 0 !important;
                 left: 0 !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                max-width: 100% !important;
                 width: 100% !important;
+                max-width: 100% !important;
                 border: none !important;
                 border-radius: 0 !important;
                 box-shadow: none !important;
                 max-height: none !important;
                 overflow: visible !important;
                 display: block !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
               }
 
               .print-sheet {
-                padding: 12mm 16mm !important;
+                padding: 10mm 14mm !important;
                 margin: 0 !important;
                 max-height: none !important;
                 overflow: visible !important;
                 background: white !important;
                 color: black !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
               }
 
               .no-print {
@@ -738,7 +740,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           `}</style>
 
           <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[92vh]">
-            {/* Modal Header (Hidden on Print) */}
+            {/* Modal Top Header (Hidden on Print) */}
             <div className="no-print p-4 bg-slate-800 dark:bg-[#181c26] text-white flex items-center justify-between border-b border-slate-700 dark:border-[#202531]">
               <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
                 <Printer className="w-4 h-4 text-emerald-400" /> Preview do Documento PDF do Pedido (Formato A4)
@@ -752,113 +754,160 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             </div>
 
             {/* A4 Sheet Rendering */}
-            <div className="print-sheet p-6 sm:p-8 overflow-y-auto space-y-6 text-slate-900 dark:text-slate-100 bg-white dark:bg-[#12151c]">
-              {/* PDF Header */}
-              <div className="flex justify-between items-start pb-6 border-b border-slate-200 dark:border-slate-800">
+            <div className="print-sheet p-5 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white dark:bg-[#12151c] text-slate-900 dark:text-slate-100 font-sans">
+              {/* PDF Header with Company Info & CNPJ */}
+              <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 dark:border-slate-700 pb-5 gap-3">
                 <div>
-                  <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-extrabold text-xl">
-                    <ShoppingCart className="w-6 h-6" /> RN 3D Sistema
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Soluções em Impressão 3D & Manufatura Aditiva</p>
-                  <p className="text-[11px] text-slate-400 dark:text-slate-500">Atendimento Comercial & Logística Integrada</p>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">RN 3D Soluções</h2>
+                  <p className="text-xs font-black text-slate-900 dark:text-slate-200 mt-1">CNPJ: 67.570.155/0001-34</p>
+                  <p className="text-[11px] text-slate-700 dark:text-slate-400 font-semibold mt-1">
+                    WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
+                  </p>
                 </div>
-                <div className="text-right">
-                  <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-mono font-bold block">
+                <div className="text-left sm:text-right">
+                  <span className="px-3 py-1 bg-slate-900 dark:bg-indigo-600 text-white font-mono font-bold rounded-md text-xs inline-block whitespace-nowrap shadow-xs">
                     PEDIDO DE VENDA #{previewPdfOrder.id}
                   </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 block mt-1">Data: {formatDateBR(previewPdfOrder.date)}</span>
-                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold block mt-0.5">
+                  <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs">Data: {formatDateBR(previewPdfOrder.date)}</p>
+                  <p className="text-emerald-600 dark:text-emerald-400 font-bold text-xs mt-0.5">
                     Status: {previewPdfOrder.status} ({previewPdfOrder.productionProgressPct}%)
-                  </span>
+                  </p>
                 </div>
               </div>
 
-              {/* Client Info Card */}
-              <div className="bg-slate-50 dark:bg-[#181c26] p-4 rounded-xl border border-slate-200 dark:border-[#202531] flex justify-between items-center text-xs">
-                <div>
+              {/* Client & Payment Info Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-1">
                   <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Cliente Destinatário</span>
-                  <strong className="text-slate-900 dark:text-slate-100 text-sm block">{previewPdfOrder.clientName}</strong>
-                  <span className="text-slate-500 dark:text-slate-400 block">Modalidade: {previewPdfOrder.attendanceMode === 'online' ? 'Atendimento Online / WhatsApp' : 'Visita Presencial'}</span>
+                  <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">{previewPdfOrder.clientName}</p>
+                  {(() => {
+                    const matchedCli = clients.find((c) => c.id === previewPdfOrder.clientId || c.name === previewPdfOrder.clientName);
+                    return matchedCli?.documentNumber ? (
+                      <p className="text-slate-600 dark:text-slate-400 font-medium">CPF/CNPJ: {matchedCli.documentNumber}</p>
+                    ) : null;
+                  })()}
+                  <p className="text-slate-500 dark:text-slate-400">
+                    Modalidade: {previewPdfOrder.attendanceMode === 'online' ? 'Atendimento Online / WhatsApp' : 'Visita Presencial'}
+                  </p>
                 </div>
-                <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Condição de Pagamento</span>
-                  <span className="font-bold text-indigo-700 dark:text-indigo-400 text-xs block">{previewPdfOrder.paymentStatusText}</span>
+
+                <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Informações de Pagamento</span>
+                  <p className="text-slate-900 dark:text-slate-100 font-bold text-xs">
+                    Forma de Pagamento: {previewPdfOrder.paymentTerms || previewPdfOrder.paymentMethod || 'PIX / Cartão / A combinar'}
+                  </p>
+                  <p className="text-indigo-600 dark:text-indigo-400 font-bold text-xs">
+                    Situação Financeira: {previewPdfOrder.paymentStatusText}
+                  </p>
+                  {(previewPdfOrder.productionSlaDate || previewPdfOrder.estimatedDeliveryDate) && (
+                    <p className="text-slate-500 dark:text-slate-400">
+                      Previsão de Entrega: {formatDateBR(previewPdfOrder.productionSlaDate || previewPdfOrder.estimatedDeliveryDate)}
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Table of Products in PDF */}
-              <table className="w-full text-xs text-left border border-slate-200 dark:border-[#202531] rounded-xl overflow-hidden">
-                <thead className="bg-slate-100 dark:bg-[#181c26] text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-[#202531]">
-                  <tr>
-                    <th className="p-3">Item / Descrição do Produto</th>
-                    <th className="p-3 text-center">Qtd</th>
-                    <th className="p-3 text-right">Preço Un.</th>
-                    <th className="p-3 text-right">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                  {previewPdfOrder.items.map((it, idx) => {
-                    const matchingProduct = products.find(
-                      (p) =>
-                        p.name.toLowerCase() === it.productName.toLowerCase() ||
-                        it.productName.toLowerCase().includes(p.name.toLowerCase()) ||
-                        p.name.toLowerCase().includes(it.productName.toLowerCase()) ||
-                        (p.id && (it as any).productId && p.id === (it as any).productId)
-                    );
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[320px]">
+                  <thead>
+                    <tr className="border-b-2 border-slate-200 dark:border-[#202531] text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px]">
+                      <th className="py-2.5 px-1.5 sm:px-3">Item / Descrição do Produto</th>
+                      <th className="py-2.5 px-1.5 sm:px-3 text-center whitespace-nowrap">Qtd</th>
+                      <th className="py-2.5 px-1.5 sm:px-3 text-right whitespace-nowrap">Preço Un.</th>
+                      <th className="py-2.5 px-1.5 sm:px-3 text-right whitespace-nowrap">Subtotal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    {previewPdfOrder.items.map((it, idx) => {
+                      const matchingProduct = products.find(
+                        (p) =>
+                          p.name.toLowerCase() === it.productName.toLowerCase() ||
+                          it.productName.toLowerCase().includes(p.name.toLowerCase()) ||
+                          p.name.toLowerCase().includes(it.productName.toLowerCase()) ||
+                          (p.id && (it as any).productId && p.id === (it as any).productId)
+                      );
 
-                    return (
-                      <tr key={idx}>
-                        <td className="p-3 font-medium text-slate-900 dark:text-slate-100">
-                          <div className="flex items-center gap-2.5">
-                            {matchingProduct?.imageUrl ? (
-                              <img
-                                src={matchingProduct.imageUrl}
-                                alt=""
-                                className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0"
-                              />
-                            ) : (
-                              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
-                                3D
-                              </div>
-                            )}
-                            <div className="min-w-0">
-                              <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">{it.productName}</p>
-                              {matchingProduct?.storageCapacity && (
-                                <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
-                                  Cap: {matchingProduct.storageCapacity}
-                                </p>
+                      return (
+                        <tr key={idx}>
+                          <td className="py-2.5 px-1.5 sm:px-3 font-medium">
+                            <div className="flex items-center gap-2.5">
+                              {matchingProduct?.imageUrl ? (
+                                <img
+                                  src={matchingProduct.imageUrl}
+                                  alt=""
+                                  className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0"
+                                />
+                              ) : (
+                                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
+                                  3D
+                                </div>
                               )}
+                              <div className="min-w-0">
+                                <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">{it.productName}</p>
+                                {matchingProduct?.storageCapacity && (
+                                  <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
+                                    Cap: {matchingProduct.storageCapacity}
+                                  </p>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="p-3 text-center font-semibold text-slate-700 dark:text-slate-400 whitespace-nowrap">{it.quantity}</td>
-                        <td className="p-3 text-right text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                          R$ {(it.unitPrice ?? (it.subtotal / it.quantity)).toFixed(2).replace('.', ',')}
-                        </td>
-                        <td className="p-3 text-right font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                          R$ {it.subtotal.toFixed(2).replace('.', ',')}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="py-2.5 px-1.5 sm:px-3 text-center font-semibold text-slate-700 dark:text-slate-400 whitespace-nowrap">{it.quantity}</td>
+                          <td className="py-2.5 px-1.5 sm:px-3 text-right text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                            R$ {(it.unitPrice ?? (it.subtotal / it.quantity)).toFixed(2).replace('.', ',')}
+                          </td>
+                          <td className="py-2.5 px-1.5 sm:px-3 text-right font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                            R$ {it.subtotal.toFixed(2).replace('.', ',')}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
-              {/* PDF Totals */}
-              <div className="flex justify-end pt-2">
-                <div className="w-64 bg-slate-50 dark:bg-[#181c26] p-4 rounded-xl border border-slate-200 dark:border-[#202531] space-y-2 text-xs">
-                  <div className="flex justify-between font-black text-sm text-slate-900 dark:text-slate-100 border-t border-slate-200 dark:border-slate-800 pt-2">
-                    <span>VALOR TOTAL:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400">R$ {previewPdfOrder.totalValue.toFixed(2).replace('.', ',')}</span>
-                  </div>
+              {/* PDF Totals & Notes */}
+              <div className="border-t-2 border-slate-200 dark:border-[#202531] pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                <div className="space-y-1 text-[11px] max-w-md">
+                  {previewPdfOrder.notes && (
+                    <p className="text-slate-500 dark:text-slate-400 italic font-medium">Observações: {previewPdfOrder.notes}</p>
+                  )}
+                  <p className="text-slate-500 dark:text-slate-400">
+                    SLA de Fabricação: {previewPdfOrder.productionProgressPct === 100 ? 'Produção Concluída (100%)' : `Em andamento (${previewPdfOrder.productionProgressPct}%)`}
+                  </p>
                 </div>
+
+                <div className="text-left sm:text-right space-y-1 w-full sm:w-auto border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-2 sm:pt-0">
+                  {previewPdfOrder.paidAmount > 0 && (
+                    <p className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                      Valor Pago: R$ {previewPdfOrder.paidAmount.toFixed(2).replace('.', ',')}
+                    </p>
+                  )}
+                  {previewPdfOrder.totalValue - previewPdfOrder.paidAmount > 0 && (
+                    <p className="text-rose-600 dark:text-rose-400 font-semibold">
+                      Saldo Restante: R$ {(previewPdfOrder.totalValue - previewPdfOrder.paidAmount).toFixed(2).replace('.', ',')}
+                    </p>
+                  )}
+                  <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 pt-1 border-t border-slate-300 dark:border-slate-700">
+                    TOTAL: R$ {previewPdfOrder.totalValue.toFixed(2).replace('.', ',')}
+                  </p>
+                </div>
+              </div>
+
+              {/* Professional Footer */}
+              <div className="pt-6 border-t border-slate-200 dark:border-[#202531] text-center text-[10px] text-slate-600 dark:text-slate-400 space-y-1">
+                <p className="font-bold text-slate-900 dark:text-slate-200">
+                  RN 3D Soluções • CNPJ: 67.570.155/0001-34 • WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
+                </p>
+                <p>Obrigado pela preferência e confiança em nosso trabalho!</p>
               </div>
             </div>
 
-            {/* Print Trigger Footer */}
-            <div className="no-print p-4 bg-slate-100 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] flex justify-between items-center">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Imprima ou salve em PDF usando Ctrl + P no seu navegador.</span>
-              <div className="flex gap-2">
+            {/* Modal Bottom Actions (Hidden on Print) */}
+            <div className="no-print p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-100 dark:border-[#202531] flex items-center justify-between">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Formato A4 Profissional • Pronto para Impressão ou Salvar PDF</span>
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPreviewPdfOrder(null)}
                   className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs cursor-pointer transition-colors"
@@ -869,7 +918,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                   onClick={() => window.print()}
                   className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs inline-flex items-center gap-1.5 transition-all"
                 >
-                  <Printer className="w-4 h-4" /> Imprimir Documento
+                  <Printer className="w-4 h-4" /> Baixar / Imprimir PDF
                 </button>
               </div>
             </div>
