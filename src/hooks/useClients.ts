@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Client } from '../types';
+import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import {
   fetchClients,
   createClient,
@@ -7,17 +8,35 @@ import {
 } from '../services/clientsService';
 
 export function useClients(user: any, showToast: (msg: string, type?: 'success' | 'error' | 'info') => void) {
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<Client[]>(() =>
+    getStorageParsed<Client[]>('rn3d_clients', [], true)
+  );
 
-  // Load directly from Supabase on mount
+  useEffect(() => {
+    if (clients && clients.length > 0) {
+      safeSetLocalStorage('rn3d_clients', JSON.stringify(clients));
+    }
+  }, [clients]);
+
+  // Load directly from Supabase on mount and merge cleanly
   useEffect(() => {
     if (!user) return;
     let isMounted = true;
 
     fetchClients()
       .then((dbClients) => {
-        if (isMounted && Array.isArray(dbClients)) {
-          setClients(dbClients);
+        if (isMounted && Array.isArray(dbClients) && dbClients.length > 0) {
+          setClients((prev) => {
+            // Merge dbClients with any local client not yet in Supabase
+            const dbIds = new Set(dbClients.map((c) => c.id));
+            const dbNames = new Set(dbClients.map((c) => (c.name || '').toLowerCase().trim()));
+
+            const extraLocal = prev.filter(
+              (c) => !dbIds.has(c.id) && !dbNames.has((c.name || '').toLowerCase().trim())
+            );
+
+            return [...dbClients, ...extraLocal];
+          });
         }
       })
       .catch((err) => console.error('Erro ao carregar clientes do Supabase:', err));

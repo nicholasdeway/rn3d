@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Order, OrderStatus } from '../types';
+import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import {
   fetchOrders,
   createOrder,
@@ -13,19 +14,31 @@ export function useOrders(
   setVisits?: any,
   setTransactions?: any
 ) {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>(() =>
+    getStorageParsed<Order[]>('rn3d_orders', [], true)
+  );
 
   const toast = typeof showToastOrQuotes === 'function' ? showToastOrQuotes : showToast || (() => {});
 
-  // Load directly from Supabase on mount
+  useEffect(() => {
+    if (orders && orders.length > 0) {
+      safeSetLocalStorage('rn3d_orders', JSON.stringify(orders));
+    }
+  }, [orders]);
+
+  // Load directly from Supabase on mount and merge cleanly
   useEffect(() => {
     if (!user) return;
     let isMounted = true;
 
     fetchOrders()
       .then((dbOrders) => {
-        if (isMounted && Array.isArray(dbOrders)) {
-          setOrders(dbOrders);
+        if (isMounted && Array.isArray(dbOrders) && dbOrders.length > 0) {
+          setOrders((prev) => {
+            const dbIds = new Set(dbOrders.map((o) => o.id));
+            const extraLocal = prev.filter((o) => !dbIds.has(o.id));
+            return [...dbOrders, ...extraLocal];
+          });
         }
       })
       .catch((err) => console.error('Erro ao carregar pedidos do Supabase:', err));

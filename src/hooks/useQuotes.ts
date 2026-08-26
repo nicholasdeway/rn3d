@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Quote } from '../types';
+import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import {
   fetchQuotes,
   createQuote,
@@ -7,17 +8,29 @@ import {
 } from '../services/quotesService';
 
 export function useQuotes(user: any, showToast: (msg: string, type?: 'success' | 'error' | 'info') => void) {
-  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [quotes, setQuotes] = useState<Quote[]>(() =>
+    getStorageParsed<Quote[]>('rn3d_quotes', [], true)
+  );
 
-  // Load directly from Supabase on mount
+  useEffect(() => {
+    if (quotes && quotes.length > 0) {
+      safeSetLocalStorage('rn3d_quotes', JSON.stringify(quotes));
+    }
+  }, [quotes]);
+
+  // Load directly from Supabase on mount and merge cleanly
   useEffect(() => {
     if (!user) return;
     let isMounted = true;
 
     fetchQuotes()
       .then((dbQuotes) => {
-        if (isMounted && Array.isArray(dbQuotes)) {
-          setQuotes(dbQuotes);
+        if (isMounted && Array.isArray(dbQuotes) && dbQuotes.length > 0) {
+          setQuotes((prev) => {
+            const dbIds = new Set(dbQuotes.map((q) => q.id));
+            const extraLocal = prev.filter((q) => !dbIds.has(q.id));
+            return [...dbQuotes, ...extraLocal];
+          });
         }
       })
       .catch((err) => console.error('Erro ao carregar orçamentos do Supabase:', err));

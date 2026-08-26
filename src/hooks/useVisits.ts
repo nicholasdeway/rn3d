@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Visit, Client, Product, Consignment, ExchangeNote } from '../types';
+import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 
 export function useVisits(
   clients: Client[],
@@ -11,7 +12,15 @@ export function useVisits(
   setExchanges: React.Dispatch<React.SetStateAction<ExchangeNote[]>>,
   setTransactions: React.Dispatch<React.SetStateAction<any[]>>
 ) {
-  const [visits, setVisits] = useState<Visit[]>([]);
+  const [visits, setVisits] = useState<Visit[]>(() =>
+    getStorageParsed<Visit[]>('rn3d_visits', [], true)
+  );
+
+  useEffect(() => {
+    if (visits) {
+      safeSetLocalStorage('rn3d_visits', JSON.stringify(visits));
+    }
+  }, [visits]);
 
   const handleScheduleVisit = (newVisitData: {
     clientId: string;

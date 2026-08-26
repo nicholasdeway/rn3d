@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Product } from '../types';
+import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import {
   fetchProducts,
   createProduct,
@@ -11,17 +12,29 @@ import {
 import { compressImage } from '../utils/imageCompressor';
 
 export function useProducts(user: any, showToast: (msg: string, type?: 'success' | 'error' | 'info') => void) {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(() =>
+    getStorageParsed<Product[]>('rn3d_products', [], true)
+  );
 
-  // Load directly from Supabase on mount
+  useEffect(() => {
+    if (products && products.length > 0) {
+      safeSetLocalStorage('rn3d_products', JSON.stringify(products));
+    }
+  }, [products]);
+
+  // Load directly from Supabase on mount and merge cleanly
   useEffect(() => {
     if (!user) return;
     let isMounted = true;
 
     fetchProducts()
       .then((dbProducts) => {
-        if (isMounted && Array.isArray(dbProducts)) {
-          setProducts(dbProducts);
+        if (isMounted && Array.isArray(dbProducts) && dbProducts.length > 0) {
+          setProducts((prev) => {
+            const dbIds = new Set(dbProducts.map((p) => p.id));
+            const extraLocal = prev.filter((p) => !dbIds.has(p.id));
+            return [...dbProducts, ...extraLocal];
+          });
         }
       })
       .catch((err) => console.error('Erro ao carregar produtos do Supabase:', err));
