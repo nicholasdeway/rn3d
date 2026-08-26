@@ -55,12 +55,14 @@ export function useOrders(
         statusStr === 'Aprovado';
 
       if (isApprovedOrConverted) {
+        const cleanQuoteCode = q.id ? q.id.replace('ORC-', '') : '';
+        const orderIdCandidate = cleanQuoteCode ? `PED-${cleanQuoteCode}` : q.id;
+
         setOrders((prevOrders) => {
-          const cleanQuoteCode = q.id ? q.id.replace('ORC-', '') : '';
           const exists = prevOrders.some(
             (o) =>
               o.id === q.id ||
-              o.id === `PED-${cleanQuoteCode}` ||
+              o.id === orderIdCandidate ||
               (cleanQuoteCode && (o.id.includes(cleanQuoteCode) || o.id.includes(q.id))) ||
               o.timeline.some((t) => t.description?.includes(q.id) || t.title?.includes(q.id)) ||
               (o.clientName.toLowerCase().trim() === q.clientName.toLowerCase().trim() && Math.abs(o.totalValue - q.total) < 0.01)
@@ -68,7 +70,7 @@ export function useOrders(
 
           if (!exists) {
             const newOrder: Order = {
-              id: `PED-${Math.floor(Math.random() * 900000 + 100000)}`,
+              id: orderIdCandidate,
               clientId: q.clientId,
               clientName: q.clientName,
               date: q.date || new Date().toISOString().split('T')[0],
@@ -102,6 +104,12 @@ export function useOrders(
                 },
               ],
             };
+
+            // Immediately persist new order to Supabase
+            createOrder(newOrder).catch((err) =>
+              console.error('Erro ao persisitir pedido convertido no Supabase:', err)
+            );
+
             return [newOrder, ...prevOrders];
           }
           return prevOrders;

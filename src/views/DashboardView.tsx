@@ -319,13 +319,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       type="checkbox"
                       checked={o.status === 'Entregue'}
                       onChange={(e) => {
-                        if (e.target.checked && onUpdateOrderStatus) {
-                          onUpdateOrderStatus(o.id, 'Entregue');
+                        const isChecked = e.target.checked;
+                        if (isChecked) {
+                          if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, 'Entregue');
+                        } else {
+                          const fallbackStatus = o.productionProgressPct === 100 ? 'Pronto' : o.productionProgressPct > 0 ? 'Em produção' : 'Novo';
+                          if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, fallbackStatus);
                         }
                       }}
                       className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
                     />
-                    <span>📦 Marcar como Entregue</span>
+                    <span>{o.status === 'Entregue' ? '✅ Entregue' : '📦 Marcar como Entregue'}</span>
                   </label>
                 </div>
               </div>

@@ -233,7 +233,7 @@ export interface Quote {
   internalLogisticsCost?: number;
 }
 
-export type OrderStatus = 'Novo' | 'Aguardando pagamento' | 'Em produção' | 'Pronto' | 'Entregue' | 'Cancelado';
+export type OrderStatus = 'Novo' | 'Aguardando pagamento' | 'Em produção' | 'Pronto' | 'Concluído' | 'Entregue' | 'Cancelado';
 
 export interface Order {
   id: string; // e.g. PED-000081
