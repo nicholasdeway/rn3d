@@ -95,6 +95,7 @@ export function useAppData() {
     visits,
     setVisits,
     handleScheduleVisit,
+    handleDeleteVisit,
     handleCompleteVisit,
   } = useVisits(
     clients,
@@ -376,6 +377,7 @@ export function useAppData() {
     handleUpdateOrderPayment,
     handleExecuteExchange,
     handleScheduleVisit,
+    handleDeleteVisit,
     handleCompleteVisit,
   };
 }

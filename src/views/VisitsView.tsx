@@ -13,6 +13,7 @@ import {
   Grid,
   X,
   CalendarPlus,
+  Trash2,
 } from 'lucide-react';
 
 interface VisitsViewProps {
@@ -20,6 +21,7 @@ interface VisitsViewProps {
   clients?: Client[];
   onStartVisit: (clientId: string) => void;
   onScheduleVisit?: (data: { clientId: string; scheduledDate: string; timeSlot?: string; reason?: string }) => void;
+  onDeleteVisit?: (visitId: string) => void;
 }
 
 export const VisitsView: React.FC<VisitsViewProps> = ({
@@ -27,8 +29,10 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
   clients = [],
   onStartVisit,
   onScheduleVisit,
+  onDeleteVisit,
 }) => {
   const [filter, setFilter] = useState<'Todas' | 'Hoje' | 'Atrasadas' | 'Próximas' | 'Concluídas'>('Todas');
+  const [deletingVisit, setDeletingVisit] = useState<Visit | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'calendar'>(() => {
     const saved = localStorage.getItem('rn3d_visits_view_mode');
     if (saved === 'grid' || saved === 'list' || saved === 'calendar') return saved;
@@ -216,13 +220,22 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
                 </div>
               </div>
 
-              <div className="pt-4 mt-3 border-t border-slate-100 dark:border-[#202531] flex items-center justify-end">
+              <div className="pt-4 mt-3 border-t border-slate-100 dark:border-[#202531] flex items-center justify-between gap-2">
                 <button
                   onClick={() => onStartVisit(v.clientId)}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <MapPin className="w-4 h-4" /> Iniciar Visita
                 </button>
+                {onDeleteVisit && (
+                  <button
+                    onClick={() => setDeletingVisit(v)}
+                    className="p-2.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl cursor-pointer transition-colors border border-transparent hover:border-rose-200 dark:hover:border-rose-900/40"
+                    title="Excluir Visita"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -275,13 +288,22 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
                         </span>
                       )}
                     </td>
-                    <td className="p-4 text-right whitespace-nowrap">
+                    <td className="p-4 text-right whitespace-nowrap space-x-1.5">
                       <button
                         onClick={() => onStartVisit(v.clientId)}
                         className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs inline-flex items-center gap-1.5 cursor-pointer transition-colors"
                       >
                         <MapPin className="w-3.5 h-3.5" /> Iniciar
                       </button>
+                      {onDeleteVisit && (
+                        <button
+                          onClick={() => setDeletingVisit(v)}
+                          className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg cursor-pointer transition-colors inline-flex items-center"
+                          title="Excluir Visita"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -320,7 +342,7 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200/60 dark:border-[#202531]">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200/60 dark:border-[#202531]">
                   <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
                     🕒 {v.timeSlot || '14:00'}
                   </span>
@@ -330,6 +352,15 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
                   >
                     <MapPin className="w-3.5 h-3.5" /> Iniciar
                   </button>
+                  {onDeleteVisit && (
+                    <button
+                      onClick={() => setDeletingVisit(v)}
+                      className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg cursor-pointer transition-colors"
+                      title="Excluir Visita"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -471,6 +502,58 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
                   <MapPin className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform shrink-0" />
                 </button>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 3: Confirmar Exclusão de Visita */}
+      {deletingVisit && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-md rounded-2xl border border-slate-200 dark:border-[#202531] overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-rose-50 dark:bg-rose-950/50">
+              <h3 className="font-bold text-rose-700 dark:text-rose-300 text-sm flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0" />
+                Excluir Visita ({deletingVisit.id})
+              </h3>
+              <button
+                onClick={() => setDeletingVisit(null)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              <p className="text-slate-700 dark:text-slate-300 font-medium">
+                Tem certeza que deseja excluir a visita <strong className="text-slate-900 dark:text-white font-mono">{deletingVisit.id}</strong> do cliente <strong>{deletingVisit.clientName}</strong>?
+              </p>
+              <div className="p-3 bg-slate-50 dark:bg-[#181c26] rounded-xl text-[11px] space-y-1 text-slate-500 border border-slate-200/70 dark:border-[#202531]">
+                <p><strong>Motivo:</strong> {deletingVisit.reason}</p>
+                <p><strong>Status:</strong> {deletingVisit.status}</p>
+                <p><strong>Data:</strong> {deletingVisit.scheduledDate || deletingVisit.lastVisitText}</p>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDeletingVisit(null)}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onDeleteVisit) onDeleteVisit(deletingVisit.id);
+                    setDeletingVisit(null);
+                  }}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Sim, Excluir Visita
+                </button>
+              </div>
             </div>
           </div>
         </div>

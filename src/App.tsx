@@ -437,6 +437,7 @@ export function App() {
                   clients={appData.clients}
                   onStartVisit={handleStartVisit}
                   onScheduleVisit={appData.handleScheduleVisit}
+                  onDeleteVisit={appData.handleDeleteVisit}
                 />
               )}
 

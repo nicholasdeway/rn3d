@@ -56,6 +56,15 @@ export function useVisits(
     showToast(`🗓️ Visita agendada para ${client.name} em ${formattedDate}!`, 'success');
   };
 
+  const handleDeleteVisit = (visitId: string) => {
+    setVisits((prev) => {
+      const next = prev.filter((v) => v.id !== visitId);
+      safeSetLocalStorage('rn3d_visits', JSON.stringify(next));
+      return next;
+    });
+    showToast(`Visita #${visitId} removida com sucesso!`, 'success');
+  };
+
   const handleCompleteVisit = (visitData: any) => {
     const client = visitData.client || clients.find((c) => c.id === visitData.clientId);
     if (!client) return;
@@ -282,6 +291,7 @@ export function useVisits(
     visits,
     setVisits,
     handleScheduleVisit,
+    handleDeleteVisit,
     handleCompleteVisit,
   };
 }
