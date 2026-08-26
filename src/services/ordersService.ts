@@ -48,10 +48,6 @@ export async function fetchOrders(): Promise<Order[]> {
         } catch (e) {}
       }
 
-      if (!clientCost && clientType === 'combustivel') {
-        clientCost = 20.0;
-      }
-
       return {
         id: row.order_code || row.id,
         clientId: row.client_id || '',

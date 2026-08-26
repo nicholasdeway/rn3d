@@ -170,10 +170,6 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
       } catch (e) {}
     }
 
-    if (!cost && type === 'combustivel') {
-      cost = 20.0;
-    }
-
     setInternalLogisticsType(type);
     setInternalLogisticsCost(cost);
   }, [selectedClient, selectedClientId, isFormOpen]);

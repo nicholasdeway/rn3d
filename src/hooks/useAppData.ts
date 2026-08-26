@@ -244,7 +244,7 @@ export function useAppData() {
       let changed = false;
       const newAutoExpenses: ExpenseItem[] = [];
 
-      // Clean up legacy duplicated 25.00 auto-expenses or duplicate VIS-VIS- entries
+      // Clean up legacy duplicated 25.00 auto-expenses or duplicate VIS-VIS- entries or zero-cost order expenses
       const cleanedPrev = prevExpenses.filter((e) => {
         if (!e.isAutoReplicated) return true;
         // Remove legacy duplicated R$ 25,00 visit expenses
@@ -252,31 +252,34 @@ export function useAppData() {
           changed = true;
           return false;
         }
+        // Remove erroneous auto-expense for PED-615350 (Depósito Barra Delivery)
+        if (e.referenceCode && e.referenceCode.includes('PED-615350')) {
+          changed = true;
+          return false;
+        }
         return true;
       });
 
       orders.forEach((o) => {
-        let cost = Number(o.internalLogisticsCost) || 0;
-        if (!cost || cost === 0) {
-          const matchedCli = clients.find(
-            (c) => c.id === o.clientId || (c.name && c.name.toLowerCase().trim() === o.clientName.toLowerCase().trim())
-          );
-          if (matchedCli && typeof matchedCli.defaultLogisticsCost === 'number' && matchedCli.defaultLogisticsCost > 0) {
-            cost = matchedCli.defaultLogisticsCost;
-          } else {
-            try {
-              const saved = localStorage.getItem('rn3d_client_logistics');
-              if (saved) {
-                const parsed = JSON.parse(saved);
-                if (o.clientId && parsed[o.clientId] && parsed[o.clientId].cost) {
-                  cost = Number(parsed[o.clientId].cost) || 20.0;
-                }
+        const matchedCli = clients.find(
+          (c) => c.id === o.clientId || (c.name && c.name.toLowerCase().trim() === o.clientName.toLowerCase().trim())
+        );
+
+        let cost = 0;
+        if (typeof o.internalLogisticsCost === 'number' && o.internalLogisticsCost > 0) {
+          cost = o.internalLogisticsCost;
+        } else if (matchedCli && typeof matchedCli.defaultLogisticsCost === 'number' && matchedCli.defaultLogisticsCost > 0) {
+          cost = matchedCli.defaultLogisticsCost;
+        } else {
+          try {
+            const saved = localStorage.getItem('rn3d_client_logistics');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              if (o.clientId && parsed[o.clientId] && parsed[o.clientId].cost) {
+                cost = Number(parsed[o.clientId].cost) || 0;
               }
-            } catch (e) {}
-          }
-          if (!cost && (!o.internalLogisticsType || o.internalLogisticsType === 'combustivel')) {
-            cost = 20.0;
-          }
+            }
+          } catch (e) {}
         }
 
         if (cost > 0) {
