@@ -31,7 +31,7 @@ import {
   UserCheck,
   ArrowDownLeft,
 } from 'lucide-react';
-import { formatDateBR } from '../utils/formatters';
+import { formatDateBR, formatTimeOnly } from '../utils/formatters';
 
 interface ExpensesViewProps {
   expenses: ExpenseItem[];
@@ -888,7 +888,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-semibold text-[11px]">
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
                   <span>{formatDateBR(exp.date)}</span>
-                  <span className="text-slate-400 font-mono text-[10px]">({exp.timestamp || '18:00:00'})</span>
+                  <span className="text-slate-400 font-mono text-[10px]">({formatTimeOnly(exp.timestamp)})</span>
                 </div>
 
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 rounded-lg text-[11px] font-bold border border-indigo-100 dark:border-indigo-900/50">
@@ -967,7 +967,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                     <td className="p-4 font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                       <div>
                         <p className="font-bold text-slate-900 dark:text-slate-100">{formatDateBR(exp.date)}</p>
-                        <p className="text-[10px] text-slate-400 font-mono">{exp.timestamp || '18:00:00'}</p>
+                        <p className="text-[10px] text-slate-400 font-mono">{formatTimeOnly(exp.timestamp)}</p>
                       </div>
                     </td>
                     <td className="p-4 font-bold text-slate-900 dark:text-slate-100">

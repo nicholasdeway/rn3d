@@ -1,6 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ExpenseItem, ExpenseCategory, AccountBalances } from '../types';
 import { uploadToSupabaseStorage } from './storageService';
+import { formatTimeOnly } from '../utils/formatters';
 
 const STANDARD_DB_CATEGORIES = [
   'Combustível & Transporte',
@@ -37,7 +38,7 @@ function decodeNotesAndMetadata(row: any): {
   let notes = row.notes || '';
   let category = row.category as ExpenseCategory;
   let createdBy = row.created_by || 'Nicholas';
-  let timestamp = row.timestamp || row.created_at || new Date().toLocaleTimeString('pt-BR');
+  let timestamp = formatTimeOnly(row.timestamp || row.created_at || new Date().toLocaleTimeString('pt-BR'));
   let sourceAccount = row.source_account;
   let destinationAccount = row.destination_account;
 
@@ -49,7 +50,7 @@ function decodeNotesAndMetadata(row: any): {
         const meta = JSON.parse(jsonStr);
         if (meta.realCategory) category = meta.realCategory;
         if (meta.createdBy) createdBy = meta.createdBy;
-        if (meta.timestamp) timestamp = meta.timestamp;
+        if (meta.timestamp) timestamp = formatTimeOnly(meta.timestamp);
         if (meta.sourceAccount) sourceAccount = meta.sourceAccount;
         if (meta.destinationAccount) destinationAccount = meta.destinationAccount;
         notes = meta.userNotes !== undefined ? meta.userNotes : notes.substring(endIdx + 1);

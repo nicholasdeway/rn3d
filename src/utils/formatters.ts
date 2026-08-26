@@ -63,3 +63,26 @@ export function getNowBR(): string {
   const minutes = String(now.getMinutes()).padStart(2, '0');
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 }
+
+export function formatTimeOnly(timeOrIso?: string | null): string {
+  if (!timeOrIso) return '00:00';
+  const str = String(timeOrIso).trim();
+
+  if (str.includes('T') || str.includes('+') || (str.includes('-') && str.length > 10)) {
+    try {
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      }
+    } catch (e) {}
+  }
+
+  if (str.includes(':')) {
+    const parts = str.split(':');
+    if (parts.length >= 2) {
+      return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+    }
+  }
+
+  return str;
+}
