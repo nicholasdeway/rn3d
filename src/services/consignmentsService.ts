@@ -1,11 +1,56 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Consignment, ConsignmentItem } from '../types';
 
+const DEFAULT_SEED_CONSIGNMENTS: Consignment[] = [
+  {
+    id: 'REM-391304',
+    clientId: 'cli-master',
+    clientName: 'Master Informática',
+    date: '25/08/2026',
+    itemsCount: 1,
+    totalValue: 6.00,
+    status: 'Em andamento',
+    lastAuditDate: '25/08/2026',
+    items: [
+      {
+        productId: 'prod-suporte-fone',
+        productName: 'Suporte de Headset / Fone RGB 3D',
+        sku: 'SUP-HEADSET-01',
+        quantity: 1,
+        unitPrice: 6.00,
+        subtotal: 6.00,
+      },
+    ],
+    notes: 'Remessa de teste / reposição de expositor',
+  },
+  {
+    id: 'REM-708768',
+    clientId: 'cli-master',
+    clientName: 'Master Informática',
+    date: '10/08/2026',
+    itemsCount: 39,
+    totalValue: 234.00,
+    status: 'Em andamento',
+    lastAuditDate: '25/08/2026',
+    items: [
+      {
+        productId: 'prod-organizador-cabos',
+        productName: 'Organizador de Cabos de Mesa 3D',
+        sku: 'ORG-CABO-3D',
+        quantity: 39,
+        unitPrice: 6.00,
+        subtotal: 234.00,
+      },
+    ],
+    notes: 'Alocação inicial de produtos em consignação',
+  },
+];
+
 /**
  * Direct Supabase Persistence for Consignments using standard Postgres tables
  */
 export async function fetchConsignments(): Promise<Consignment[]> {
-  if (!isSupabaseConfigured()) return [];
+  if (!isSupabaseConfigured()) return DEFAULT_SEED_CONSIGNMENTS;
 
   try {
     // 1. Try dedicated 'consignments' table first (if exists)
@@ -68,11 +113,17 @@ export async function fetchConsignments(): Promise<Consignment[]> {
         };
       });
     }
+
+    // 3. Auto-seed default consignments to Supabase DB if DB is empty
+    for (const seed of DEFAULT_SEED_CONSIGNMENTS) {
+      await createConsignment(seed);
+    }
+    return DEFAULT_SEED_CONSIGNMENTS;
   } catch (err) {
     console.error('Erro ao buscar consignações no Supabase:', err);
   }
 
-  return [];
+  return DEFAULT_SEED_CONSIGNMENTS;
 }
 
 export async function createConsignment(consignment: Consignment): Promise<boolean> {
@@ -83,7 +134,7 @@ export async function createConsignment(consignment: Consignment): Promise<boole
     const orderPayload = {
       order_code: consignment.id,
       client_id: consignment.clientId || null,
-      client_name: consignment.clientName || 'Cliente Consignado',
+      client_name: consignment.clientName || 'Master Informática',
       date: consignment.date || new Date().toISOString().split('T')[0],
       items_count: consignment.itemsCount || 0,
       total_value: consignment.totalValue || 0,

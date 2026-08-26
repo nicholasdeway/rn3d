@@ -43,7 +43,7 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
 
   const primaryNavItems = [
     { id: 'dashboard' as ViewMode, label: 'INÍCIO', icon: LayoutDashboard },
-    { id: 'consignments' as ViewMode, label: 'CONSIGNAÇÃO', icon: Boxes },
+    { id: 'quotes' as ViewMode, label: 'ORÇAMENTO', icon: FileText },
     { id: 'orders' as ViewMode, label: 'PEDIDOS', icon: ShoppingCart },
     { id: 'products' as ViewMode, label: 'PRODUTOS', icon: Package },
   ];
