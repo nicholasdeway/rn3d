@@ -1,59 +1,15 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Consignment, ConsignmentItem } from '../types';
 
-const DEFAULT_SEED_CONSIGNMENTS: Consignment[] = [
-  {
-    id: 'REM-391304',
-    clientId: 'cli-master',
-    clientName: 'Master Informática',
-    date: '25/08/2026',
-    itemsCount: 1,
-    totalValue: 6.00,
-    status: 'Em andamento',
-    lastAuditDate: '25/08/2026',
-    items: [
-      {
-        productId: 'prod-suporte-fone',
-        productName: 'Suporte de Headset / Fone RGB 3D',
-        sku: 'SUP-HEADSET-01',
-        quantity: 1,
-        unitPrice: 6.00,
-        subtotal: 6.00,
-      },
-    ],
-    notes: 'Remessa de teste / reposição de expositor',
-  },
-  {
-    id: 'REM-708768',
-    clientId: 'cli-master',
-    clientName: 'Master Informática',
-    date: '10/08/2026',
-    itemsCount: 39,
-    totalValue: 234.00,
-    status: 'Em andamento',
-    lastAuditDate: '25/08/2026',
-    items: [
-      {
-        productId: 'prod-organizador-cabos',
-        productName: 'Organizador de Cabos de Mesa 3D',
-        sku: 'ORG-CABO-3D',
-        quantity: 39,
-        unitPrice: 6.00,
-        subtotal: 234.00,
-      },
-    ],
-    notes: 'Alocação inicial de produtos em consignação',
-  },
-];
-
 /**
- * Direct Supabase Persistence for Consignments using standard Postgres tables
+ * 100% Real Supabase Postgres Persistence for Consignments
+ * Zero Mock Data - Direct Database Read/Write
  */
 export async function fetchConsignments(): Promise<Consignment[]> {
-  if (!isSupabaseConfigured()) return DEFAULT_SEED_CONSIGNMENTS;
+  if (!isSupabaseConfigured()) return [];
 
   try {
-    // 1. Try dedicated 'consignments' table first (if exists)
+    // 1. Check dedicated 'consignments' table first (if created in Supabase)
     try {
       const { data: cData, error: cErr } = await supabase
         .from('consignments')
@@ -82,11 +38,16 @@ export async function fetchConsignments(): Promise<Consignment[]> {
     const { data: oData, error: oErr } = await supabase
       .from('orders')
       .select('*, order_items(*)')
-      .or('order_code.ilike.REM-%,payment_status_text.eq.Consignação')
       .order('created_at', { ascending: false });
 
     if (!oErr && oData && oData.length > 0) {
-      return oData.map((row) => {
+      const consignmentRows = oData.filter(
+        (row) =>
+          (row.order_code && row.order_code.toUpperCase().startsWith('REM-')) ||
+          row.payment_status_text === 'Consignação'
+      );
+
+      return consignmentRows.map((row) => {
         let items: ConsignmentItem[] = [];
         if (row.order_items && row.order_items.length > 0) {
           items = row.order_items.map((i: any) => ({
@@ -102,7 +63,7 @@ export async function fetchConsignments(): Promise<Consignment[]> {
         return {
           id: row.order_code || row.id,
           clientId: row.client_id || '',
-          clientName: row.client_name || 'Cliente',
+          clientName: row.client_name || 'Cliente Consignado',
           date: row.date || new Date().toISOString().split('T')[0],
           itemsCount: row.items_count || items.reduce((sum, i) => sum + i.quantity, 0),
           totalValue: Number(row.total_value) || 0,
@@ -113,28 +74,22 @@ export async function fetchConsignments(): Promise<Consignment[]> {
         };
       });
     }
-
-    // 3. Auto-seed default consignments to Supabase DB if DB is empty
-    for (const seed of DEFAULT_SEED_CONSIGNMENTS) {
-      await createConsignment(seed);
-    }
-    return DEFAULT_SEED_CONSIGNMENTS;
   } catch (err) {
     console.error('Erro ao buscar consignações no Supabase:', err);
   }
 
-  return DEFAULT_SEED_CONSIGNMENTS;
+  return [];
 }
 
 export async function createConsignment(consignment: Consignment): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
 
   try {
-    // 1. Direct insert into 'orders' table (100% verified to exist in Supabase DB)
+    // 1. Direct insert/upsert into 'orders' table
     const orderPayload = {
       order_code: consignment.id,
       client_id: consignment.clientId || null,
-      client_name: consignment.clientName || 'Master Informática',
+      client_name: consignment.clientName || 'Cliente Consignado',
       date: consignment.date || new Date().toISOString().split('T')[0],
       items_count: consignment.itemsCount || 0,
       total_value: consignment.totalValue || 0,
@@ -167,7 +122,7 @@ export async function createConsignment(consignment: Consignment): Promise<boole
       await supabase.from('order_items').insert(itemRows);
     }
 
-    // 2. Safe secondary insert into 'consignments' table if it exists
+    // 2. Secondary insert into 'consignments' table if present
     try {
       const cPayload = {
         code: consignment.id,
