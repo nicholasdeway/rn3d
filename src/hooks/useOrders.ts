@@ -56,10 +56,14 @@ export function useOrders(
 
       if (isApprovedOrConverted) {
         setOrders((prevOrders) => {
+          const cleanQuoteCode = q.id ? q.id.replace('ORC-', '') : '';
           const exists = prevOrders.some(
             (o) =>
+              o.id === q.id ||
+              o.id === `PED-${cleanQuoteCode}` ||
+              (cleanQuoteCode && (o.id.includes(cleanQuoteCode) || o.id.includes(q.id))) ||
               o.timeline.some((t) => t.description?.includes(q.id) || t.title?.includes(q.id)) ||
-              (o.clientName === q.clientName && Math.abs(o.totalValue - q.total) < 0.01)
+              (o.clientName.toLowerCase().trim() === q.clientName.toLowerCase().trim() && Math.abs(o.totalValue - q.total) < 0.01)
           );
 
           if (!exists) {
@@ -131,7 +135,12 @@ export function useOrders(
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id === orderId) {
-          const autoStatus = newProgress >= 100 ? 'Concluído' : 'Em produção';
+          let autoStatus = o.status;
+          if (newProgress >= 100) {
+            autoStatus = o.status === 'Entregue' ? 'Entregue' : 'Concluído';
+          } else {
+            autoStatus = o.status === 'Entregue' ? 'Entregue' : 'Em produção';
+          }
           finalStatus = autoStatus;
           return {
             ...o,
@@ -152,13 +161,20 @@ export function useOrders(
 
   const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
     let targetOrder: Order | undefined;
+    let targetProgress = 0;
 
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id === orderId) {
+          const isCompletedStatus =
+            newStatus === 'Entregue' || newStatus === 'Concluído' || newStatus === 'Pronto';
+          const newProgress = isCompletedStatus ? 100 : o.productionProgressPct;
+          targetProgress = newProgress;
+
           const updated = {
             ...o,
-            status: newStatus,
+            status: newStatus as any,
+            productionProgressPct: newProgress,
             timeline: [
               {
                 date: `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
@@ -209,7 +225,7 @@ export function useOrders(
     }
 
     try {
-      await updateOrderStatus(orderId, newStatus);
+      await updateOrderStatus(orderId, newStatus, targetProgress);
     } catch (err) {
       console.error('Erro ao atualizar status no Supabase:', err);
     }

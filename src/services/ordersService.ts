@@ -138,16 +138,32 @@ export async function createOrder(orderData: Partial<Order>): Promise<Order | nu
   return newOrder as any;
 }
 
-export async function updateOrderStatus(orderCode: string, newStatus: string): Promise<boolean> {
+export async function updateOrderStatus(
+  orderCode: string,
+  newStatus: string,
+  progressPct?: number
+): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
 
-  const { error } = await supabase
+  const payload: Record<string, any> = { status: newStatus };
+  if (typeof progressPct === 'number') {
+    payload.production_progress_pct = progressPct;
+  } else if (newStatus === 'Entregue' || newStatus === 'Concluído' || newStatus === 'Pronto') {
+    payload.production_progress_pct = 100;
+  }
+
+  let { error } = await supabase
     .from('orders')
-    .update({ status: newStatus })
+    .update(payload)
     .eq('order_code', orderCode);
 
   if (error) {
-    console.error('Erro ao atualizar status do pedido:', error.message);
+    const retry = await supabase.from('orders').update(payload).eq('id', orderCode);
+    error = retry.error;
+  }
+
+  if (error) {
+    console.error('Erro ao atualizar status do pedido no Supabase:', error.message);
     return false;
   }
   return true;
@@ -167,13 +183,18 @@ export async function updateOrderProgress(
     updates.status = newStatus;
   }
 
-  const { error } = await supabase
+  let { error } = await supabase
     .from('orders')
     .update(updates)
     .eq('order_code', orderCode);
 
   if (error) {
-    console.error('Erro ao atualizar progresso de impressão 3D:', error.message);
+    const retry = await supabase.from('orders').update(updates).eq('id', orderCode);
+    error = retry.error;
+  }
+
+  if (error) {
+    console.error('Erro ao atualizar progresso de impressão 3D no Supabase:', error.message);
     return false;
   }
   return true;
