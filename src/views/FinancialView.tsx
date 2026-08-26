@@ -8,6 +8,7 @@ interface FinancialViewProps {
   consignments?: Consignment[];
   orders?: Order[];
   onUpdateOrderPayment?: (orderId: string, additionalAmount: number) => void;
+  onRecordPayment?: (orderId: string, additionalAmount: number) => void;
 }
 
 export const FinancialView: React.FC<FinancialViewProps> = ({
@@ -15,7 +16,10 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   consignments = [],
   orders = [],
   onUpdateOrderPayment,
+  onRecordPayment,
 }) => {
+  const handlePayment = onUpdateOrderPayment || onRecordPayment;
+
   const [tab, setTab] = useState<'extrato' | 'entradas' | 'receber'>('extrato');
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<Order | null>(null);
   const [paymentAmountInput, setPaymentAmountInput] = useState<string>('');
@@ -50,11 +54,12 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
   const handleConfirmPayment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedOrderForPayment || !onUpdateOrderPayment) return;
-    const val = parseFloat(paymentAmountInput.replace(',', '.'));
+    if (!selectedOrderForPayment || !handlePayment) return;
+    const cleanStr = paymentAmountInput.replace(/\./g, '').replace(',', '.');
+    const val = parseFloat(cleanStr);
     if (isNaN(val) || val <= 0) return;
 
-    onUpdateOrderPayment(selectedOrderForPayment.id, val);
+    handlePayment(selectedOrderForPayment.id, val);
     setSelectedOrderForPayment(null);
   };
 
