@@ -108,20 +108,27 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
+            <button
+              onClick={() => onNavigate('consignments')}
+              className="flex items-center gap-2 px-3.5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
+            >
+              <Boxes className="w-4 h-4" />
+              <span>Consignações</span>
+            </button>
             <button
               onClick={() => onQuickAction('novo-produto')}
-              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
+              className="flex items-center gap-2 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
             >
               <PackagePlus className="w-4 h-4" />
-              Cadastrar Produto
+              <span>Cadastrar Produto</span>
             </button>
             <button
               onClick={() => onQuickAction('novo-pedido')}
-              className="flex items-center gap-2 px-4 py-2.5 bg-white text-slate-900 hover:bg-indigo-50 rounded-xl text-xs font-semibold transition-all shadow-sm"
+              className="flex items-center gap-2 px-3.5 py-2.5 bg-white text-slate-900 hover:bg-indigo-50 rounded-xl text-xs font-semibold transition-all shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4 text-indigo-600" />
-              Novo Pedido
+              <span>Novo Pedido</span>
             </button>
           </div>
         </div>

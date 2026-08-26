@@ -29,7 +29,7 @@ import {
 interface MobileFloatingNavProps {
   currentView: ViewMode;
   onSelectView: (view: ViewMode) => void;
-  onQuickAction: (actionType: 'aporte' | 'withdrawal' | 'expense' | 'quote') => void;
+  onQuickAction: (actionType: 'aporte' | 'withdrawal' | 'expense' | 'quote' | 'nova-consignacao') => void;
 }
 
 export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
@@ -43,16 +43,17 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
 
   const primaryNavItems = [
     { id: 'dashboard' as ViewMode, label: 'INÍCIO', icon: LayoutDashboard },
-    { id: 'quotes' as ViewMode, label: 'ORÇAMENTO', icon: FileText },
+    { id: 'consignments' as ViewMode, label: 'CONSIGNAÇÃO', icon: Boxes },
     { id: 'orders' as ViewMode, label: 'PEDIDOS', icon: ShoppingCart },
     { id: 'products' as ViewMode, label: 'PRODUTOS', icon: Package },
   ];
 
   const dropdownMenuItems = [
+    { id: 'consignments' as ViewMode, label: 'Remessas de Consignação', icon: Boxes, color: 'text-purple-400' },
+    { id: 'quotes' as ViewMode, label: 'Orçamentos', icon: FileText, color: 'text-indigo-400' },
     { id: 'expenses' as ViewMode, label: 'Despesas & Saídas', icon: TrendingDown, color: 'text-rose-400' },
     { id: 'financial' as ViewMode, label: 'Financeiro e Vendas', icon: DollarSign, color: 'text-emerald-400' },
     { id: 'calculator' as ViewMode, label: 'Calculadora de Custos 3D', icon: Calculator, color: 'text-amber-400' },
-    { id: 'consignments' as ViewMode, label: 'Consignações', icon: Boxes, color: 'text-purple-400' },
     { id: 'visits' as ViewMode, label: 'Visitas e Rotas', icon: MapPin, color: 'text-emerald-400' },
     { id: 'exchanges' as ViewMode, label: 'Trocas de Produtos', icon: Repeat, color: 'text-amber-400' },
     { id: 'clients' as ViewMode, label: 'Gestão de Clientes', icon: Users, color: 'text-blue-400' },
@@ -69,7 +70,7 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
     onSelectView(view);
   };
 
-  const handleTriggerFabAction = (action: 'aporte' | 'withdrawal' | 'expense' | 'quote') => {
+  const handleTriggerFabAction = (action: 'aporte' | 'withdrawal' | 'expense' | 'quote' | 'nova-consignacao') => {
     setIsFabOpen(false);
     setIsDropdownOpen(false);
     onQuickAction(action);
@@ -105,6 +106,17 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
           </div>
 
           <div className="space-y-1 text-xs">
+            <button
+              onClick={() => handleTriggerFabAction('nova-consignacao')}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl font-bold bg-purple-500/10 text-purple-300 hover:bg-purple-500/20 border border-purple-500/30 transition-all text-left"
+            >
+              <Boxes className="w-4 h-4 shrink-0 text-purple-400" />
+              <div>
+                <p className="text-xs font-bold">📦 Nova Consignação</p>
+                <p className="text-[10px] text-purple-200/80 font-normal">Enviar produtos consignados para cliente</p>
+              </div>
+            </button>
+
             <button
               onClick={() => handleTriggerFabAction('aporte')}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl font-bold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all text-left"
