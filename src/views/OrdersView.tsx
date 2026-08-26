@@ -665,7 +665,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       {/* Printable PDF Modal Overlay for Order */}
       {previewPdfOrder && (
         <div className="printable-quote-modal fixed inset-0 z-[100] bg-slate-900/60 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-          {/* Print CSS Rules - Ensures ONLY the selected order PDF is printed on a single page */}
+          {/* Print CSS Rules - Ensures ONLY the selected order PDF is printed on single Page 1 */}
           <style>{`
             @media print {
               @page {
@@ -677,8 +677,9 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                 margin: 0 !important;
                 padding: 0 !important;
                 background: white !important;
+                width: 100% !important;
                 height: 100% !important;
-                overflow: visible !important;
+                overflow: hidden !important;
               }
 
               body * {
@@ -691,35 +692,35 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               }
 
               .printable-quote-modal {
-                position: absolute !important;
+                position: fixed !important;
                 left: 0 !important;
                 top: 0 !important;
-                width: 100% !important;
-                height: auto !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 100vw !important;
+                height: 100vh !important;
                 background: white !important;
                 padding: 0 !important;
                 margin: 0 !important;
-                overflow: visible !important;
+                overflow: hidden !important;
                 display: block !important;
                 z-index: 999999 !important;
               }
 
               .print-container {
-                position: relative !important;
+                position: absolute !important;
                 top: 0 !important;
                 left: 0 !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                width: 100% !important;
                 max-width: 100% !important;
+                width: 100% !important;
                 border: none !important;
                 border-radius: 0 !important;
                 box-shadow: none !important;
-                max-height: none !important;
-                overflow: visible !important;
+                max-height: 100vh !important;
+                overflow: hidden !important;
                 display: block !important;
-                page-break-after: avoid !important;
-                break-after: avoid !important;
               }
 
               .print-sheet {
@@ -729,8 +730,6 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                 overflow: visible !important;
                 background: white !important;
                 color: black !important;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
               }
 
               .no-print {

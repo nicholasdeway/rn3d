@@ -1519,16 +1519,15 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 margin: 0 !important;
                 padding: 0 !important;
                 background: white !important;
+                width: 100% !important;
                 height: 100% !important;
-                overflow: visible !important;
+                overflow: hidden !important;
               }
 
-              /* Hide all background app elements, headers, sidebars, mobile navs & toasts */
               body * {
                 visibility: hidden !important;
               }
 
-              /* Display ONLY the PDF document sheet */
               .printable-quote-modal,
               .printable-quote-modal * {
                 visibility: visible !important;
@@ -1545,7 +1544,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 background: white !important;
                 padding: 0 !important;
                 margin: 0 !important;
-                overflow: visible !important;
+                overflow: hidden !important;
                 display: block !important;
                 z-index: 999999 !important;
               }
@@ -1561,16 +1560,18 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 border: none !important;
                 border-radius: 0 !important;
                 box-shadow: none !important;
-                max-height: none !important;
-                overflow: visible !important;
+                max-height: 100vh !important;
+                overflow: hidden !important;
                 display: block !important;
               }
 
               .print-sheet {
-                padding: 12mm 16mm !important;
+                padding: 10mm 14mm !important;
                 margin: 0 !important;
                 max-height: none !important;
                 overflow: visible !important;
+                background: white !important;
+                color: black !important;
               }
 
               .no-print {
