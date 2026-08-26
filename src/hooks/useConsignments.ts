@@ -24,6 +24,13 @@ export function useConsignments(
 
     async function initSupabaseConsignments() {
       try {
+        // 1. Sync local consignments first so web items reach Supabase DB
+        const local = getStorageParsed<Consignment[]>('rn3d_consignments', [], true);
+        if (local && local.length > 0) {
+          await syncMissingConsignmentsToSupabase(local);
+        }
+
+        // 2. Fetch all consignments from Supabase DB
         const dbItems = await fetchConsignments();
         if (!isMounted) return;
 
@@ -39,11 +46,6 @@ export function useConsignments(
             });
             return Array.from(mergedMap.values());
           });
-        }
-
-        // Auto-sync any local consignments up to Supabase
-        if (consignments && consignments.length > 0) {
-          syncMissingConsignmentsToSupabase(consignments);
         }
       } catch (err) {
         console.error('Erro ao inicializar consignações do Supabase:', err);
