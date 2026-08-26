@@ -603,7 +603,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                                 className="w-3.5 h-3.5 accent-emerald-600 rounded cursor-pointer"
                               />
                               <span className={o.status === 'Entregue' ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'}>
-                                {o.status === 'Entregue' ? '✅ Entregue' : '📦 Não entregue'}
+                                {o.status === 'Entregue' ? 'Entregue' : 'Não entregue'}
                               </span>
                             </label>
                           </td>

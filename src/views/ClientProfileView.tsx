@@ -611,7 +611,7 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                           className="w-3.5 h-3.5 accent-emerald-600 rounded cursor-pointer"
                         />
                         <span className={o.status === 'Entregue' ? 'text-emerald-700 font-bold' : 'text-slate-600'}>
-                          {o.status === 'Entregue' ? '✅ Entregue' : '📦 Não entregue'}
+                          {o.status === 'Entregue' ? 'Entregue' : 'Não entregue'}
                         </span>
                       </label>
                     </div>
@@ -697,7 +697,7 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                               className="w-3.5 h-3.5 accent-emerald-600 rounded cursor-pointer"
                             />
                             <span className={o.status === 'Entregue' ? 'text-emerald-700 font-bold' : 'text-slate-600'}>
-                              {o.status === 'Entregue' ? '✅ Entregue' : '📦 Não entregue'}
+                              {o.status === 'Entregue' ? 'Entregue' : 'Não entregue'}
                             </span>
                           </label>
                         </td>

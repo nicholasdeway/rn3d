@@ -329,7 +329,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       }}
                       className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
                     />
-                    <span>{o.status === 'Entregue' ? '✅ Entregue' : '📦 Marcar como Entregue'}</span>
+                    <span>{o.status === 'Entregue' ? 'Entregue' : 'Marcar como Entregue'}</span>
                   </label>
                 </div>
               </div>
