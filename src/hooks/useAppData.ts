@@ -244,8 +244,27 @@ export function useAppData() {
       let changed = false;
       const newAutoExpenses: ExpenseItem[] = [];
 
+      const seenRefCodes = new Set<string>();
+      const seenSignatures = new Set<string>();
+
       // Architectural Rule: Auto-replicated logistics expenses exist ONLY IF target order/visit active logistics cost > 0
       const cleanedPrev = prevExpenses.filter((e) => {
+        if (e.referenceCode && e.referenceCode.trim() !== '') {
+          const refKey = e.referenceCode.trim();
+          if (seenRefCodes.has(refKey)) {
+            changed = true;
+            return false;
+          }
+          seenRefCodes.add(refKey);
+        }
+
+        const signature = `${(e.description || '').toLowerCase().trim()}_${Number(e.amount)}_${e.date}`;
+        if (seenSignatures.has(signature)) {
+          changed = true;
+          return false;
+        }
+        seenSignatures.add(signature);
+
         if (!e.isAutoReplicated) return true;
 
         // 1. Order Logistics Expenses
@@ -450,15 +469,6 @@ export function useAppData() {
     });
   }, [orders]);
 
-  // Automatically sync ONLY unsynced local expenses to Supabase
-  useEffect(() => {
-    const unsynced = expenses.filter(
-      (e) => (e.id && e.id.startsWith('exp-')) || !e.id || e.id.length < 30
-    );
-    if (unsynced.length > 0) {
-      syncMissingExpensesToSupabase(unsynced);
-    }
-  }, [expenses]);
 
   const handleSyncProductsToSupabase = async () => {
     try {

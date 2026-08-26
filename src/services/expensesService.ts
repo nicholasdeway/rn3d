@@ -138,51 +138,79 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
     } catch (e) {}
   }
 
-  // Purge legacy duplicated R$ 25,00 visit expenses permanently from Supabase
-  const badRowIds = data
-    .filter(
-      (row) =>
-        (row.reference_code && row.reference_code.includes('VIS-VIS-')) ||
-        (Number(row.amount) === 25 && row.description && row.description.includes('Deslocamento / Combustível Visita'))
-    )
-    .map((row) => row.id);
+  // Purge legacy & duplicate expenses permanently from Supabase
+  const duplicateIdsToDelete: string[] = [];
+  const seenIds = new Set<string>();
+  const seenRefCodes = new Set<string>();
+  const seenSignatures = new Set<string>();
 
-  if (badRowIds.length > 0) {
-    supabase.from('expenses').delete().in('id', badRowIds).then(({ error }) => {
-      if (error) console.error('Erro ao expurgar despesas legadas do Supabase:', error.message);
-      else console.log(`[expensesService] Expurgadas ${badRowIds.length} despesas duplicadas do Supabase com sucesso.`);
+  const filteredData = data.filter((row) => {
+    if (row.reference_code === 'SYS_ACCOUNT_BALANCES') return false;
+    if (row.reference_code && row.reference_code.includes('VIS-VIS-')) {
+      duplicateIdsToDelete.push(row.id);
+      return false;
+    }
+    if (Number(row.amount) === 25 && row.description && row.description.includes('Deslocamento / Combustível Visita')) {
+      duplicateIdsToDelete.push(row.id);
+      return false;
+    }
+
+    if (seenIds.has(row.id)) {
+      duplicateIdsToDelete.push(row.id);
+      return false;
+    }
+    seenIds.add(row.id);
+
+    // Deduplicate auto-replicated reference codes (e.g. PED-888048 or PED-PAY-PED-881795)
+    if (row.reference_code && row.reference_code.trim() !== '') {
+      const refKey = row.reference_code.trim();
+      if (seenRefCodes.has(refKey)) {
+        duplicateIdsToDelete.push(row.id);
+        return false;
+      }
+      seenRefCodes.add(refKey);
+    }
+
+    // Deduplicate manual duplicate entries (identical description, amount, date)
+    const signature = `${(row.description || '').toLowerCase().trim()}_${Number(row.amount)}_${row.date}`;
+    if (seenSignatures.has(signature)) {
+      duplicateIdsToDelete.push(row.id);
+      return false;
+    }
+    seenSignatures.add(signature);
+
+    return true;
+  });
+
+  if (duplicateIdsToDelete.length > 0) {
+    supabase.from('expenses').delete().in('id', duplicateIdsToDelete).then(({ error }) => {
+      if (error) console.error('Erro ao expurgar despesas duplicadas do Supabase:', error.message);
+      else console.log(`[expensesService] Expurgadas ${duplicateIdsToDelete.length} despesas duplicadas do Supabase com sucesso.`);
     });
   }
 
-  const dbExpenses: ExpenseItem[] = data
-    .filter((row) => {
-      if (row.reference_code === 'SYS_ACCOUNT_BALANCES') return false;
-      if (row.reference_code && row.reference_code.includes('VIS-VIS-')) return false;
-      if (Number(row.amount) === 25 && row.description && row.description.includes('Deslocamento / Combustível Visita')) return false;
-      return true;
-    })
-    .map((row) => {
-      const decoded = decodeNotesAndMetadata(row);
-      return {
-        id: row.id,
-        description: row.description,
-        category: decoded.category,
-        amount: Number(row.amount) || 0,
-        date: row.date,
-        timestamp: decoded.timestamp,
-        paymentStatus: row.payment_status || 'Pago',
-        beneficiary: row.beneficiary || '',
-        createdBy: decoded.createdBy,
-        sourceAccount: decoded.sourceAccount,
-        destinationAccount: decoded.destinationAccount,
-        receiptUrl: row.receipt_url || '',
-        receiptType: row.receipt_type || (row.receipt_url?.startsWith('data:application/pdf') ? 'pdf' : 'image'),
-        receiptName: row.receipt_name || '',
-        isAutoReplicated: row.is_auto_replicated ?? false,
-        referenceCode: row.reference_code || '',
-        notes: decoded.notes,
-      };
-    });
+  const dbExpenses: ExpenseItem[] = filteredData.map((row) => {
+    const decoded = decodeNotesAndMetadata(row);
+    return {
+      id: row.id,
+      description: row.description,
+      category: decoded.category,
+      amount: Number(row.amount) || 0,
+      date: row.date,
+      timestamp: decoded.timestamp,
+      paymentStatus: row.payment_status || 'Pago',
+      beneficiary: row.beneficiary || '',
+      createdBy: decoded.createdBy,
+      sourceAccount: decoded.sourceAccount,
+      destinationAccount: decoded.destinationAccount,
+      receiptUrl: row.receipt_url || '',
+      receiptType: row.receipt_type || (row.receipt_url?.startsWith('data:application/pdf') ? 'pdf' : 'image'),
+      receiptName: row.receipt_name || '',
+      isAutoReplicated: row.is_auto_replicated ?? false,
+      referenceCode: row.reference_code || '',
+      notes: decoded.notes,
+    };
+  });
 
   try {
     localStorage.setItem('rn3d_expenses', JSON.stringify(dbExpenses));
