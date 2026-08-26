@@ -24,6 +24,7 @@ interface ConsignmentsViewProps {
   products: Product[];
   exchanges?: ExchangeNote[];
   onAddConsignment: (consignment: Consignment) => void;
+  onClearConsignments?: () => void;
   preselectedClientId?: string;
 }
 
@@ -33,6 +34,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   products,
   exchanges = [],
   onAddConsignment,
+  onClearConsignments,
   preselectedClientId,
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
@@ -197,12 +199,28 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
             Registre envios e alocações de mercadorias para seus estabelecimentos parceiros.
           </p>
-          <button
-            onClick={() => setIsWizardOpen(true)}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
-          >
-            Registrar Primeira Consignação
-          </button>
+          <div className="flex gap-2 justify-center mt-4">
+            {onClearConsignments && consignments.length > 0 && (
+              <button
+                onClick={() => {
+                  if (window.confirm('Tem certeza que deseja apagar TODOS os registros de consignação?')) {
+                    onClearConsignments();
+                  }
+                }}
+                className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold text-xs cursor-pointer flex items-center justify-center gap-2 transition-colors border border-rose-100"
+              >
+                <Trash2 className="w-4 h-4" />
+                Limpar Consignações
+              </button>
+            )}
+            <button
+              onClick={() => setIsWizardOpen(true)}
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer flex items-center justify-center gap-2 transition-colors shadow-xs"
+            >
+              <Plus className="w-4 h-4" />
+              Registrar Primeira Consignação
+            </button>
+          </div>
         </div>
       ) : (
         <>

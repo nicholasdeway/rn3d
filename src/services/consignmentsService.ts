@@ -2,8 +2,8 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Consignment, ConsignmentItem } from '../types';
 
 /**
- * 100% Real Supabase Postgres Persistence for Consignments
- * Reads and writes directly to 'orders' and 'order_items' table with 'REM-' prefix
+ * 100% Cloud-Native Supabase Persistence for Consignments
+ * Pure Supabase DB Read/Write — Zero LocalStorage Partitioning
  */
 export async function fetchConsignments(): Promise<Consignment[]> {
   if (!isSupabaseConfigured()) return [];
@@ -77,16 +77,18 @@ export async function createConsignment(consignment: Consignment): Promise<boole
     const { data: oData, error: oErr } = await supabase
       .from('orders')
       .insert([orderPayload])
-      .select()
-      .single();
+      .select();
 
     if (oErr) {
       console.error('Erro ao salvar consignação em orders no Supabase:', oErr.message);
+      return false;
     }
 
-    if (oData?.id && consignment.items && consignment.items.length > 0) {
+    const insertedRow = oData && oData.length > 0 ? oData[0] : null;
+
+    if (insertedRow?.id && consignment.items && consignment.items.length > 0) {
       const itemRows = consignment.items.map((item) => ({
-        order_id: oData.id,
+        order_id: insertedRow.id,
         product_name: item.productName,
         quantity: item.quantity,
         unit_price: item.unitPrice,
@@ -98,6 +100,33 @@ export async function createConsignment(consignment: Consignment): Promise<boole
     return true;
   } catch (err) {
     console.error('Erro ao criar consignação no Supabase:', err);
+    return false;
+  }
+}
+
+/**
+ * Completely wipe out all consignment records from local storage and Supabase Postgres
+ */
+export async function deleteAllConsignments(): Promise<boolean> {
+  try {
+    localStorage.removeItem('rn3d_consignments');
+  } catch (_) {}
+
+  if (!isSupabaseConfigured()) return true;
+
+  try {
+    // Delete from orders table where order_code starts with 'REM-' or payment_status_text = 'Consignação'
+    await supabase.from('orders').delete().ilike('order_code', 'REM-%');
+    await supabase.from('orders').delete().eq('payment_status_text', 'Consignação');
+
+    // Delete from consignments table if present
+    try {
+      await supabase.from('consignments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    } catch (_) {}
+
+    return true;
+  } catch (err) {
+    console.error('Erro ao deletar todas as consignações do Supabase:', err);
     return false;
   }
 }

@@ -1,58 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Consignment, Client } from '../types';
-import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
-import { fetchConsignments, createConsignment, syncMissingConsignmentsToSupabase } from '../services/consignmentsService';
+import { fetchConsignments, createConsignment, deleteAllConsignments } from '../services/consignmentsService';
 
 export function useConsignments(
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void,
   setClientInventories: React.Dispatch<React.SetStateAction<Record<string, any>>>,
   setClients: React.Dispatch<React.SetStateAction<Client[]>>
 ) {
-  const [consignments, setConsignments] = useState<Consignment[]>(() =>
-    getStorageParsed<Consignment[]>('rn3d_consignments', [], true)
-  );
+  const [consignments, setConsignments] = useState<Consignment[]>([]);
 
-  useEffect(() => {
-    if (consignments) {
-      safeSetLocalStorage('rn3d_consignments', JSON.stringify(consignments));
-    }
-  }, [consignments]);
-
-  // Dual Hydration and auto-sync to Supabase Postgres
+  // 100% Cloud-Native Fetch on Mount from Supabase Postgres
   useEffect(() => {
     let isMounted = true;
 
-    async function initSupabaseConsignments() {
+    async function loadCloudConsignments() {
       try {
-        // 1. Sync local consignments first so web items reach Supabase DB
-        const local = getStorageParsed<Consignment[]>('rn3d_consignments', [], true);
-        if (local && local.length > 0) {
-          await syncMissingConsignmentsToSupabase(local);
-        }
+        // Clear old local storage partitioning
+        try {
+          localStorage.removeItem('rn3d_consignments');
+        } catch (_) {}
 
-        // 2. Fetch all consignments from Supabase DB
         const dbItems = await fetchConsignments();
-        if (!isMounted) return;
-
-        if (dbItems && dbItems.length > 0) {
-          setConsignments((prevLocal) => {
-            const mergedMap = new Map<string, Consignment>();
-            dbItems.forEach((item) => mergedMap.set(item.id.toLowerCase().trim(), item));
-            (prevLocal || []).forEach((item) => {
-              const key = item.id.toLowerCase().trim();
-              if (!mergedMap.has(key)) {
-                mergedMap.set(key, item);
-              }
-            });
-            return Array.from(mergedMap.values());
-          });
+        if (isMounted) {
+          setConsignments(dbItems);
         }
       } catch (err) {
-        console.error('Erro ao inicializar consignações do Supabase:', err);
+        console.error('Erro ao carregar consignações do Supabase:', err);
       }
     }
 
-    initSupabaseConsignments();
+    loadCloudConsignments();
 
     return () => {
       isMounted = false;
@@ -60,11 +37,8 @@ export function useConsignments(
   }, []);
 
   const handleAddConsignment = async (newConsignment: Consignment) => {
+    // Optimistic UI update
     setConsignments((prev) => [newConsignment, ...prev]);
-
-    // Save locally
-    const currentLocal = getStorageParsed<Consignment[]>('rn3d_consignments', [], true);
-    safeSetLocalStorage('rn3d_consignments', JSON.stringify([newConsignment, ...currentLocal]));
 
     const clientId = newConsignment.clientId;
     const items = newConsignment.items || [];
@@ -124,29 +98,27 @@ export function useConsignments(
     showToast(`Remessa de consignação ${newConsignment.id} criada com sucesso!`, 'success');
 
     try {
-      await createConsignment(newConsignment);
-      const refreshedFromDb = await fetchConsignments();
-      if (refreshedFromDb && refreshedFromDb.length > 0) {
-        setConsignments((prev) => {
-          const mergedMap = new Map<string, Consignment>();
-          refreshedFromDb.forEach((item) => mergedMap.set(item.id.toLowerCase().trim(), item));
-          (prev || []).forEach((item) => {
-            const key = item.id.toLowerCase().trim();
-            if (!mergedMap.has(key)) {
-              mergedMap.set(key, item);
-            }
-          });
-          return Array.from(mergedMap.values());
-        });
+      const success = await createConsignment(newConsignment);
+      if (success) {
+        const refreshed = await fetchConsignments();
+        setConsignments(refreshed);
       }
     } catch (err) {
       console.error('Erro ao gravar consignação no Supabase:', err);
     }
   };
 
+  const handleClearConsignments = async () => {
+    setConsignments([]);
+    showToast('Limpando consignações do Supabase...', 'info');
+    await deleteAllConsignments();
+    showToast('Todas as consignações foram apagadas do sistema!', 'success');
+  };
+
   return {
     consignments,
     setConsignments,
     handleAddConsignment,
+    handleClearConsignments,
   };
 }

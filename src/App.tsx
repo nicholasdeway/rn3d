@@ -427,6 +427,7 @@ export function App() {
                   products={appData.products}
                   exchanges={appData.exchanges}
                   onAddConsignment={appData.handleAddConsignment}
+                  onClearConsignments={appData.handleClearConsignments}
                   preselectedClientId={preselectedClientIdForAction}
                 />
               )}
