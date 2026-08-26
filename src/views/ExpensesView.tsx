@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ExpenseItem, ExpenseCategory, AccountBalances, MarketplaceAccount } from '../types';
+import { ReceiptViewerModal } from '../components/ReceiptViewerModal';
 import {
   TrendingDown,
   Plus,
@@ -1523,55 +1524,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
         </div>
       )}
 
-      {/* MODAL: VISUALIZADOR DE COMPROVANTE */}
-      {selectedReceipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
-              <div className="flex items-center gap-2">
-                <Paperclip className="w-5 h-5 text-indigo-500" />
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{selectedReceipt.title}</h3>
-                  <p className="text-[11px] text-slate-400">{selectedReceipt.name || 'Comprovante de Lançamento'}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <a
-                  href={selectedReceipt.url}
-                  download={selectedReceipt.name || 'comprovante'}
-                  className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-700 dark:text-slate-200 rounded-xl transition-colors cursor-pointer"
-                  title="Baixar arquivo"
-                >
-                  <Download className="w-4 h-4" />
-                </a>
-                <button
-                  onClick={() => setSelectedReceipt(null)}
-                  className="p-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 text-slate-700 dark:text-slate-200 rounded-xl transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 overflow-auto flex-1 flex items-center justify-center bg-slate-100 dark:bg-[#10121a]">
-              {selectedReceipt.type === 'pdf' || selectedReceipt.url.startsWith('data:application/pdf') ? (
-                <iframe
-                  src={selectedReceipt.url}
-                  className="w-full h-[60vh] rounded-xl border border-slate-200 dark:border-slate-800"
-                  title="Visualizador de PDF"
-                />
-              ) : (
-                <img
-                  src={selectedReceipt.url}
-                  alt="Comprovante"
-                  className="max-h-[65vh] max-w-full object-contain rounded-xl shadow-md border border-slate-200 dark:border-slate-800"
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MODAL: VISUALIZADOR DE COMPROVANTE COM ZOOM INTERATIVO */}
+      <ReceiptViewerModal receipt={selectedReceipt} onClose={() => setSelectedReceipt(null)} />
     </div>
   );
 };

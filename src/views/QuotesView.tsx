@@ -733,11 +733,11 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Card Actions */}
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">
+                  {/* Card Actions Grid (Mobile Optimized) */}
+                  <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
                     <button
                       onClick={() => toggleExpandQuote(q.id)}
-                      className={`flex-1 py-2 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors ${
+                      className={`w-full py-2 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors ${
                         isExpanded
                           ? 'bg-indigo-600 text-white shadow-2xs'
                           : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
@@ -756,15 +756,15 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
                     <button
                       onClick={() => setPreviewPdfQuote(q)}
-                      className="flex-1 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                      className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
                     >
-                      <Printer className="w-3.5 h-3.5" /> PDF
+                      <Printer className="w-3.5 h-3.5" /> PDF A4
                     </button>
 
                     {!isConverted && (
                       <button
                         onClick={() => handleEditQuote(q)}
-                        className="flex-1 py-2 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                        className="w-full py-2 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
                         title="Editar orçamento em aberto"
                       >
                         <Edit2 className="w-3.5 h-3.5" /> Editar
@@ -772,13 +772,13 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     )}
 
                     {isConverted ? (
-                      <span className="flex-1 py-2 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 border border-emerald-300 dark:border-emerald-800/80 text-xs text-center">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Pedido Gerado
+                      <span className="col-span-2 py-2 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-xl font-extrabold inline-flex items-center justify-center gap-1.5 border border-emerald-300 dark:border-emerald-800/80 text-xs text-center shadow-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Pedido Gerado Oficialmente
                       </span>
                     ) : (
                       <button
                         onClick={() => onConvertQuoteToOrder(q)}
-                        className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs text-xs transition-colors"
+                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs text-xs transition-colors"
                       >
                         <ShoppingCart className="w-3.5 h-3.5" /> Converter Pedido
                       </button>

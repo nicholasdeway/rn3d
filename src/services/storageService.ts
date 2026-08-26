@@ -53,11 +53,16 @@ export async function uploadToSupabaseStorage(
     return fileOrBase64;
   }
 
-  // Tenta compactar imagem Base64 primeiro para evitar payloads gigantes no client
+  // Tenta compactar/otimizar imagem Base64 mantendo alta definição para comprovantes
   let preparedBase64 = fileOrBase64;
   if (fileOrBase64.startsWith('data:image/')) {
     try {
-      preparedBase64 = await compressImage(fileOrBase64, 400, 400, 0.75);
+      if (folder === 'receipts') {
+        // Preserva nitidez e alta definição (1920px max, qualidade 0.92) para leitura clara de números e textos de comprovantes
+        preparedBase64 = await compressImage(fileOrBase64, 1920, 1920, 0.92);
+      } else {
+        preparedBase64 = await compressImage(fileOrBase64, 600, 600, 0.82);
+      }
     } catch (e) {
       // Ignora erro de compressão
     }
