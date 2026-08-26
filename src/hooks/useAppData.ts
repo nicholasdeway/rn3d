@@ -244,19 +244,57 @@ export function useAppData() {
       let changed = false;
       const newAutoExpenses: ExpenseItem[] = [];
 
-      // Clean up legacy duplicated 25.00 auto-expenses or duplicate VIS-VIS- entries or zero-cost order expenses
+      // Architectural Rule: Auto-replicated logistics expenses exist ONLY IF target order/visit active logistics cost > 0
       const cleanedPrev = prevExpenses.filter((e) => {
         if (!e.isAutoReplicated) return true;
-        // Remove legacy duplicated R$ 25,00 visit expenses
-        if (e.description?.includes('Deslocamento / Combustível Visita') && e.amount === 25) {
-          changed = true;
-          return false;
+
+        // 1. Order Logistics Expenses
+        if (e.referenceCode && e.referenceCode.startsWith('PED-')) {
+          const matchOrder = orders.find((o) => o.id === e.referenceCode || e.notes?.includes(o.id));
+          if (!matchOrder) {
+            changed = true;
+            return false;
+          }
+          const matchedCli = clients.find(
+            (c) => c.id === matchOrder.clientId || (c.name && c.name.toLowerCase().trim() === matchOrder.clientName.toLowerCase().trim())
+          );
+          const activeCost = typeof matchOrder.internalLogisticsCost === 'number'
+            ? matchOrder.internalLogisticsCost
+            : (matchedCli && typeof matchedCli.defaultLogisticsCost === 'number' ? matchedCli.defaultLogisticsCost : 0);
+
+          if (activeCost === 0) {
+            changed = true;
+            return false;
+          }
         }
-        // Remove erroneous auto-expense for PED-615350 (Depósito Barra Delivery)
-        if (e.referenceCode && e.referenceCode.includes('PED-615350')) {
-          changed = true;
-          return false;
+
+        // 2. Visit Logistics Expenses
+        if (e.referenceCode && e.referenceCode.startsWith('VIS-')) {
+          // Remove malformed duplicate prefix entries
+          if (e.referenceCode.includes('VIS-VIS-')) {
+            changed = true;
+            return false;
+          }
+          const visitId = e.referenceCode.replace('VIS-', '');
+          const matchVisit = visits.find((v) => v.id === visitId || e.description?.includes(v.id));
+          if (!matchVisit) {
+            changed = true;
+            return false;
+          }
+          if (matchVisit.reason && matchVisit.reason.toLowerCase().includes('entrega do pedido')) {
+            changed = true;
+            return false;
+          }
+          const matchedCli = clients.find(
+            (c) => c.id === matchVisit.clientId || (c.name && c.name.toLowerCase().trim() === matchVisit.clientName.toLowerCase().trim())
+          );
+          const activeCost = matchedCli && typeof matchedCli.defaultLogisticsCost === 'number' ? matchedCli.defaultLogisticsCost : 0;
+          if (activeCost === 0) {
+            changed = true;
+            return false;
+          }
         }
+
         return true;
       });
 
@@ -266,16 +304,16 @@ export function useAppData() {
         );
 
         let cost = 0;
-        if (typeof o.internalLogisticsCost === 'number' && o.internalLogisticsCost > 0) {
+        if (typeof o.internalLogisticsCost === 'number') {
           cost = o.internalLogisticsCost;
-        } else if (matchedCli && typeof matchedCli.defaultLogisticsCost === 'number' && matchedCli.defaultLogisticsCost > 0) {
+        } else if (matchedCli && typeof matchedCli.defaultLogisticsCost === 'number') {
           cost = matchedCli.defaultLogisticsCost;
         } else {
           try {
             const saved = localStorage.getItem('rn3d_client_logistics');
             if (saved) {
               const parsed = JSON.parse(saved);
-              if (o.clientId && parsed[o.clientId] && parsed[o.clientId].cost) {
+              if (o.clientId && parsed[o.clientId] && parsed[o.clientId].cost !== undefined) {
                 cost = Number(parsed[o.clientId].cost) || 0;
               }
             }
@@ -313,7 +351,7 @@ export function useAppData() {
             (c) => c.id === v.clientId || (c.name && c.name.toLowerCase().trim() === v.clientName.toLowerCase().trim())
           );
 
-          let cost = 20.0;
+          let cost = 0;
           if (matchedCli && typeof matchedCli.defaultLogisticsCost === 'number' && matchedCli.defaultLogisticsCost > 0) {
             cost = matchedCli.defaultLogisticsCost;
           } else {
@@ -322,11 +360,13 @@ export function useAppData() {
               if (saved) {
                 const parsed = JSON.parse(saved);
                 if (v.clientId && parsed[v.clientId] && parsed[v.clientId].cost) {
-                  cost = Number(parsed[v.clientId].cost) || 20.0;
+                  cost = Number(parsed[v.clientId].cost) || 0;
                 }
               }
             } catch (e) {}
           }
+
+          if (cost <= 0) return;
 
           const refCode = `VIS-${v.id}`;
           const alreadyExists = cleanedPrev.some((e) => e.referenceCode === refCode || e.description?.includes(v.id));

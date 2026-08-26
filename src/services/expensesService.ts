@@ -73,9 +73,7 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
         localExpenses = parsed.filter(
           (e) =>
             !e.referenceCode?.includes('VIS-VIS-') &&
-            !(e.amount === 25 && e.description?.includes('Deslocamento / Combustível Visita')) &&
-            !e.referenceCode?.includes('PED-615350') &&
-            !e.description?.includes('PED-615350')
+            !(e.amount === 25 && e.description?.includes('Deslocamento / Combustível Visita'))
         );
       }
     }
@@ -140,14 +138,12 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
     } catch (e) {}
   }
 
-  // Purge legacy duplicated R$ 25,00 visit expenses or zero-cost order expenses (PED-615350) permanently from Supabase
+  // Purge legacy duplicated R$ 25,00 visit expenses permanently from Supabase
   const badRowIds = data
     .filter(
       (row) =>
         (row.reference_code && row.reference_code.includes('VIS-VIS-')) ||
-        (Number(row.amount) === 25 && row.description && row.description.includes('Deslocamento / Combustível Visita')) ||
-        (row.reference_code && row.reference_code.includes('PED-615350')) ||
-        (row.description && row.description.includes('PED-615350'))
+        (Number(row.amount) === 25 && row.description && row.description.includes('Deslocamento / Combustível Visita'))
     )
     .map((row) => row.id);
 
@@ -163,8 +159,6 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
       if (row.reference_code === 'SYS_ACCOUNT_BALANCES') return false;
       if (row.reference_code && row.reference_code.includes('VIS-VIS-')) return false;
       if (Number(row.amount) === 25 && row.description && row.description.includes('Deslocamento / Combustível Visita')) return false;
-      if (row.reference_code && row.reference_code.includes('PED-615350')) return false;
-      if (row.description && row.description.includes('PED-615350')) return false;
       return true;
     })
     .map((row) => {
