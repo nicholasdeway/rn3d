@@ -140,25 +140,28 @@ export function useOrders(
 
   const handleUpdateOrderProgress = async (orderId: string, newProgress: number) => {
     let finalStatus = '';
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id === orderId) {
-          let autoStatus = o.status;
-          if (newProgress >= 100) {
-            autoStatus = o.status === 'Entregue' ? 'Entregue' : 'Concluído';
-          } else {
-            autoStatus = o.status === 'Entregue' ? 'Entregue' : 'Em produção';
+    React.startTransition(() => {
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id === orderId) {
+            let autoStatus = o.status;
+            if (newProgress >= 100) {
+              autoStatus = o.status === 'Entregue' ? 'Entregue' : 'Concluído';
+            } else {
+              autoStatus = o.status === 'Entregue' ? 'Entregue' : 'Em produção';
+            }
+            finalStatus = autoStatus;
+            return {
+              ...o,
+              productionProgressPct: newProgress,
+              status: autoStatus,
+            };
           }
-          finalStatus = autoStatus;
-          return {
-            ...o,
-            productionProgressPct: newProgress,
-            status: autoStatus,
-          };
-        }
-        return o;
-      })
-    );
+          return o;
+        })
+      );
+    });
+
     showToast(`Progresso do Pedido ${orderId} atualizado para ${newProgress}%`, 'info');
     try {
       await updateOrderProgress(orderId, newProgress, finalStatus);
@@ -171,62 +174,72 @@ export function useOrders(
     let targetOrder: Order | undefined;
     let targetProgress = 0;
 
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id === orderId) {
-          const isCompletedStatus =
-            newStatus === 'Entregue' || newStatus === 'Concluído' || newStatus === 'Pronto';
-          const newProgress = isCompletedStatus ? 100 : o.productionProgressPct;
-          targetProgress = newProgress;
+    React.startTransition(() => {
+      setOrders((prev) =>
+        prev.map((o) => {
+          if (o.id === orderId) {
+            const isCompletedStatus =
+              newStatus === 'Entregue' || newStatus === 'Concluído' || newStatus === 'Pronto';
+            const newProgress = isCompletedStatus ? 100 : o.productionProgressPct;
+            targetProgress = newProgress;
 
-          const updated = {
-            ...o,
-            status: newStatus as any,
-            productionProgressPct: newProgress,
-            timeline: [
-              {
-                date: `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
-                title: `Status alterado para: ${newStatus}`,
-              },
-              ...o.timeline,
-            ],
+            const updated = {
+              ...o,
+              status: newStatus as any,
+              productionProgressPct: newProgress,
+              timeline: [
+                {
+                  date: `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
+                  title: `Status alterado para: ${newStatus}`,
+                },
+                ...o.timeline,
+              ],
+            };
+            targetOrder = updated;
+            return updated;
+          }
+          return o;
+        })
+      );
+
+      if (newStatus === 'Entregue') {
+        const found = orders.find((o) => o.id === orderId);
+        if (found) {
+          const modeText = found.paidAmount >= found.totalValue ? 'Pago' : 'Faturado / Pendente';
+          const formattedDate = new Date().toLocaleDateString('pt-BR');
+          const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+          const deliveryVisit: Visit = {
+            id: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
+            clientId: found.clientId,
+            clientName: found.clientName,
+            scheduledDate: formattedDate,
+            timeSlot: formattedTime,
+            reason: `Entrega do Pedido ${found.id} (${modeText})`,
+            productsOnSite: found.itemsCount,
+            lastVisitText: `${formattedDate} às ${formattedTime}`,
+            status: 'Concluída',
+            completedAt: `${formattedDate} ${formattedTime}`,
+            completedSummary: {
+              durationMinutes: 15,
+              itemsSold: found.itemsCount,
+              totalRevenue: found.totalValue,
+              receivedAmount: found.paidAmount,
+              itemsRemoved: 0,
+              itemsAdded: found.itemsCount,
+              finalStockCount: found.itemsCount,
+              nextVisitDate: 'N/A',
+            },
           };
-          targetOrder = updated;
-          return updated;
-        }
-        return o;
-      })
-    );
 
-    if (newStatus === 'Entregue' && targetOrder) {
-      const modeText = targetOrder.paidAmount >= targetOrder.totalValue ? 'Pago' : 'Faturado / Pendente';
+          setVisits((prev) => [deliveryVisit, ...prev]);
+        }
+      }
+    });
+
+    if (newStatus === 'Entregue') {
       const formattedDate = new Date().toLocaleDateString('pt-BR');
       const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-      const deliveryVisit: Visit = {
-        id: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
-        clientId: targetOrder.clientId,
-        clientName: targetOrder.clientName,
-        scheduledDate: formattedDate,
-        timeSlot: formattedTime,
-        reason: `Entrega do Pedido ${targetOrder.id} (${modeText})`,
-        productsOnSite: targetOrder.itemsCount,
-        lastVisitText: `${formattedDate} às ${formattedTime}`,
-        status: 'Concluída',
-        completedAt: `${formattedDate} ${formattedTime}`,
-        completedSummary: {
-          durationMinutes: 15,
-          itemsSold: targetOrder.itemsCount,
-          totalRevenue: targetOrder.totalValue,
-          receivedAmount: targetOrder.paidAmount,
-          itemsRemoved: 0,
-          itemsAdded: targetOrder.itemsCount,
-          finalStockCount: targetOrder.itemsCount,
-          nextVisitDate: 'N/A',
-        },
-      };
-
-      setVisits((prev) => [deliveryVisit, ...prev]);
       showToast(`📍 Registro de Visita/Entrega gravado em ${formattedDate} às ${formattedTime}!`, 'success');
     } else {
       showToast(`Status do Pedido ${orderId} alterado para "${newStatus}"!`, 'info');
