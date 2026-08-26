@@ -20,7 +20,7 @@ export async function fetchOrders(): Promise<Order[]> {
   }
 
   const dbOrders: Order[] = data
-    .filter((row) => row.order_code !== 'SYS_ACCOUNT_BALANCES' && row.client_name !== 'SISTEMA_BALANCES')
+    .filter((row) => row.order_code !== 'SYS_ACCOUNT_BALANCES' && row.client_name !== 'SISTEMA_BALANCES' && !(row.order_code && row.order_code.startsWith('REM-')))
     .map((row) => {
       let clientCost = Number(row.internal_logistics_cost) || 0;
       let clientType = row.internal_logistics_type || 'combustivel';

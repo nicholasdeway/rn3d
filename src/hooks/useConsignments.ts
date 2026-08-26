@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Consignment, Client } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
+import { fetchConsignments, createConsignment, syncMissingConsignmentsToSupabase } from '../services/consignmentsService';
 
 export function useConsignments(
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void,
@@ -17,7 +18,46 @@ export function useConsignments(
     }
   }, [consignments]);
 
-  const handleAddConsignment = (newConsignment: Consignment) => {
+  // Dual Hydration and auto-sync to Supabase Postgres
+  useEffect(() => {
+    let isMounted = true;
+
+    async function initSupabaseConsignments() {
+      try {
+        const dbItems = await fetchConsignments();
+        if (!isMounted) return;
+
+        if (dbItems && dbItems.length > 0) {
+          setConsignments((prevLocal) => {
+            const mergedMap = new Map<string, Consignment>();
+            dbItems.forEach((item) => mergedMap.set(item.id.toLowerCase().trim(), item));
+            (prevLocal || []).forEach((item) => {
+              const key = item.id.toLowerCase().trim();
+              if (!mergedMap.has(key)) {
+                mergedMap.set(key, item);
+              }
+            });
+            return Array.from(mergedMap.values());
+          });
+        }
+
+        // Auto-sync any local consignments up to Supabase
+        if (consignments && consignments.length > 0) {
+          syncMissingConsignmentsToSupabase(consignments);
+        }
+      } catch (err) {
+        console.error('Erro ao inicializar consignações do Supabase:', err);
+      }
+    }
+
+    initSupabaseConsignments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleAddConsignment = async (newConsignment: Consignment) => {
     setConsignments((prev) => [newConsignment, ...prev]);
 
     const clientId = newConsignment.clientId;
@@ -76,6 +116,12 @@ export function useConsignments(
     );
 
     showToast(`Remessa de consignação ${newConsignment.id} criada com sucesso!`, 'success');
+
+    try {
+      await createConsignment(newConsignment);
+    } catch (err) {
+      console.error('Erro ao gravar consignação no Supabase:', err);
+    }
   };
 
   return {

@@ -15,6 +15,7 @@ import { fetchProducts } from '../services/productsService';
 import { fetchClients } from '../services/clientsService';
 import { fetchOrders } from '../services/ordersService';
 import { fetchQuotes } from '../services/quotesService';
+import { fetchConsignments, syncMissingConsignmentsToSupabase } from '../services/consignmentsService';
 import { syncMissingProductsToSupabase } from '../services/productsService';
 import { syncMissingClientsToSupabase } from '../services/clientsService';
 import { syncMissingOrdersToSupabase } from '../services/ordersService';
@@ -148,17 +149,30 @@ export function useAppData() {
 
     const loadAllData = async () => {
       try {
-        const [dbProducts, dbClients, dbOrders, dbQuotes] = await Promise.all([
+        const [dbProducts, dbClients, dbOrders, dbQuotes, dbConsignments] = await Promise.all([
           fetchProducts(),
           fetchClients(),
           fetchOrders(),
           fetchQuotes(),
+          fetchConsignments(),
         ]);
         if (!isMounted) return;
         setProducts(dbProducts);
         setClients(dbClients);
         setOrders(dbOrders);
         setQuotes(dbQuotes);
+        if (dbConsignments && dbConsignments.length > 0) {
+          setConsignments((prev) => {
+            const map = new Map<string, any>();
+            dbConsignments.forEach((c) => map.set(c.id.toLowerCase().trim(), c));
+            (prev || []).forEach((c) => {
+              if (!map.has(c.id.toLowerCase().trim())) {
+                map.set(c.id.toLowerCase().trim(), c);
+              }
+            });
+            return Array.from(map.values());
+          });
+        }
         if (reloadExpenses) reloadExpenses();
       } catch (err) {
         console.error('Erro ao carregar dados do Supabase:', err);
@@ -173,17 +187,30 @@ export function useAppData() {
     const intervalId = setInterval(async () => {
       if (!isMounted) return;
       try {
-        const [dbProducts, dbClients, dbOrders, dbQuotes] = await Promise.all([
+        const [dbProducts, dbClients, dbOrders, dbQuotes, dbConsignments] = await Promise.all([
           fetchProducts(),
           fetchClients(),
           fetchOrders(),
           fetchQuotes(),
+          fetchConsignments(),
         ]);
         if (!isMounted) return;
         setProducts(dbProducts);
         setClients(dbClients);
         setOrders(dbOrders);
         setQuotes(dbQuotes);
+        if (dbConsignments && dbConsignments.length > 0) {
+          setConsignments((prev) => {
+            const map = new Map<string, any>();
+            dbConsignments.forEach((c) => map.set(c.id.toLowerCase().trim(), c));
+            (prev || []).forEach((c) => {
+              if (!map.has(c.id.toLowerCase().trim())) {
+                map.set(c.id.toLowerCase().trim(), c);
+              }
+            });
+            return Array.from(map.values());
+          });
+        }
         if (reloadExpenses) reloadExpenses();
       } catch (e) {
         // Silent background sync error
@@ -347,30 +374,44 @@ export function useAppData() {
   const handleSyncProductsToSupabase = async () => {
     try {
       showToast('Sincronizando todo o sistema com o Banco de Dados', 'info');
-      const [pCount, cCount, oCount, qCount, eCount] = await Promise.all([
+      const [pCount, cCount, oCount, qCount, eCount, consCount] = await Promise.all([
         syncMissingProductsToSupabase(products),
         syncMissingClientsToSupabase(clients),
         syncMissingOrdersToSupabase(orders),
         syncMissingQuotesToSupabase(quotes),
         syncMissingExpensesToSupabase(expenses),
+        syncMissingConsignmentsToSupabase(consignments),
       ]);
 
-      const [dbProds, dbClients, dbOrders, dbQuotes] = await Promise.all([
+      const [dbProds, dbClients, dbOrders, dbQuotes, dbConsignments] = await Promise.all([
         fetchProducts(),
         fetchClients(),
         fetchOrders(),
         fetchQuotes(),
+        fetchConsignments(),
       ]);
 
       setProducts(dbProds);
       setClients(dbClients);
       setOrders(dbOrders);
       setQuotes(dbQuotes);
+      if (dbConsignments && dbConsignments.length > 0) {
+        setConsignments((prev) => {
+          const map = new Map<string, any>();
+          dbConsignments.forEach((c) => map.set(c.id.toLowerCase().trim(), c));
+          (prev || []).forEach((c) => {
+            if (!map.has(c.id.toLowerCase().trim())) {
+              map.set(c.id.toLowerCase().trim(), c);
+            }
+          });
+          return Array.from(map.values());
+        });
+      }
       if (reloadExpenses) reloadExpenses();
 
-      const totalNew = pCount + cCount + oCount + qCount + eCount;
+      const totalNew = pCount + cCount + oCount + qCount + eCount + consCount;
       if (totalNew > 0) {
-        showToast(`✅ Sincronização concluída! (${pCount} prods, ${cCount} clientes, ${oCount} pedidos, ${qCount} orçamentos, ${eCount} despesas)`, 'success');
+        showToast(`✅ Sincronização concluída! (${pCount} prods, ${cCount} clientes, ${oCount} pedidos, ${consCount} consignações)`, 'success');
       } else {
         showToast('✅ Sistema 100% sincronizado com o Supabase!', 'success');
       }
