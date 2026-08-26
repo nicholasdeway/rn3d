@@ -1666,7 +1666,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                               </div>
                             </div>
                           </td>
-                          <td className="py-2.5 px-1.5 sm:px-3 text-center font-bold dark:text-slate-200 whitespace-nowrap">{item.quantity}</td>
+                          <td className="py-2.5 px-1.5 sm:px-3 text-center font-semibold text-slate-700 dark:text-slate-400 whitespace-nowrap">{item.quantity}</td>
                           <td className="py-2.5 px-1.5 sm:px-3 text-right text-slate-600 dark:text-slate-400 whitespace-nowrap">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
                           <td className="py-2.5 px-1.5 sm:px-3 text-right font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                             R$ {item.subtotal.toFixed(2).replace('.', ',')}

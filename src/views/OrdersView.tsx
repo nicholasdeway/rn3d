@@ -788,7 +788,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
 
               {/* Table of Products in PDF */}
               <table className="w-full text-xs text-left border border-slate-200 dark:border-[#202531] rounded-xl overflow-hidden">
-                <thead className="bg-slate-100 dark:bg-[#181c26] text-slate-600 dark:text-slate-300 font-bold uppercase border-b border-slate-200 dark:border-[#202531]">
+                <thead className="bg-slate-100 dark:bg-[#181c26] text-slate-500 dark:text-slate-400 font-bold uppercase border-b border-slate-200 dark:border-[#202531]">
                   <tr>
                     <th className="p-3">Item / Descrição do Produto</th>
                     <th className="p-3 text-center">Qtd</th>
@@ -797,18 +797,50 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                  {previewPdfOrder.items.map((it, idx) => (
-                    <tr key={idx}>
-                      <td className="p-3 font-semibold text-slate-900 dark:text-slate-100">{it.productName}</td>
-                      <td className="p-3 text-center font-bold dark:text-slate-200">{it.quantity}</td>
-                      <td className="p-3 text-right dark:text-slate-300">
-                        R$ {(it.unitPrice ?? (it.subtotal / it.quantity)).toFixed(2).replace('.', ',')}
-                      </td>
-                      <td className="p-3 text-right font-bold text-slate-900 dark:text-slate-100">
-                        R$ {it.subtotal.toFixed(2).replace('.', ',')}
-                      </td>
-                    </tr>
-                  ))}
+                  {previewPdfOrder.items.map((it, idx) => {
+                    const matchingProduct = products.find(
+                      (p) =>
+                        p.name.toLowerCase() === it.productName.toLowerCase() ||
+                        it.productName.toLowerCase().includes(p.name.toLowerCase()) ||
+                        p.name.toLowerCase().includes(it.productName.toLowerCase()) ||
+                        (p.id && (it as any).productId && p.id === (it as any).productId)
+                    );
+
+                    return (
+                      <tr key={idx}>
+                        <td className="p-3 font-medium text-slate-900 dark:text-slate-100">
+                          <div className="flex items-center gap-2.5">
+                            {matchingProduct?.imageUrl ? (
+                              <img
+                                src={matchingProduct.imageUrl}
+                                alt=""
+                                className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0"
+                              />
+                            ) : (
+                              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
+                                3D
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">{it.productName}</p>
+                              {matchingProduct?.storageCapacity && (
+                                <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
+                                  Cap: {matchingProduct.storageCapacity}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3 text-center font-semibold text-slate-700 dark:text-slate-400 whitespace-nowrap">{it.quantity}</td>
+                        <td className="p-3 text-right text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                          R$ {(it.unitPrice ?? (it.subtotal / it.quantity)).toFixed(2).replace('.', ',')}
+                        </td>
+                        <td className="p-3 text-right font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                          R$ {it.subtotal.toFixed(2).replace('.', ',')}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
 
