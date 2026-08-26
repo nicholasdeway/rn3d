@@ -2,9 +2,16 @@ import { useState, useEffect } from 'react';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 
 export function useTransactions() {
-  const [transactions, setTransactions] = useState<any[]>(() =>
-    getStorageParsed<any[]>('rn3d_transactions', [], true)
-  );
+  const [transactions, setTransactions] = useState<any[]>(() => {
+    const raw = getStorageParsed<any[]>('rn3d_transactions', [], true);
+    return raw.filter(
+      (t) =>
+        !(
+          t.type === 'Recebimento de Pedido' ||
+          (t.notes && typeof t.notes === 'string' && t.notes.toLowerCase().includes('referente ao pedido'))
+        )
+    );
+  });
 
   useEffect(() => {
     safeSetLocalStorage('rn3d_transactions', JSON.stringify(transactions));

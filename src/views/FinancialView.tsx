@@ -24,9 +24,19 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<Order | null>(null);
   const [paymentAmountInput, setPaymentAmountInput] = useState<string>('');
 
+  // Filter out any standalone transaction entries auto-created for orders (to prevent duplicate rows)
+  const filteredTransactions = transactions.filter(
+    (t) =>
+      !(
+        t.type === 'Recebimento de Pedido' ||
+        (t.notes && typeof t.notes === 'string' && t.notes.toLowerCase().includes('referente ao pedido')) ||
+        (t.id && String(t.id).startsWith('PAG-') && orders.some((o) => o.clientName === t.clientName && Math.abs(o.totalValue - t.amount) < 0.01))
+      )
+  );
+
   // 1. Calculate Real Financial Metrics from Orders + Transactions + Consignments
   const ordersTotalPaid = orders.reduce((acc, o) => acc + (o.paidAmount || 0), 0);
-  const transactionsTotal = transactions
+  const transactionsTotal = filteredTransactions
     .filter((t) => t.status === 'Recebido' || !t.status)
     .reduce((acc, t) => acc + t.amount, 0);
 
@@ -43,7 +53,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   const ordersGrossTotal = orders.reduce((acc, o) => acc + o.totalValue, 0);
   const totalGrossSales = ordersGrossTotal + transactionsTotal;
 
-  const totalOperationsCount = orders.length + transactions.length;
+  const totalOperationsCount = orders.length + filteredTransactions.length;
   const averageTicket = totalOperationsCount > 0 ? totalGrossSales / totalOperationsCount : 0;
 
   const handleOpenPaymentModal = (order: Order) => {
@@ -159,7 +169,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Extrato Completo ({orders.length + transactions.length})
+          Extrato Completo ({orders.length + filteredTransactions.length})
         </button>
         <button
           onClick={() => setTab('entradas')}
@@ -186,7 +196,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
       {/* TAB 1: Extrato Completo de Vendas & Pedidos */}
       {tab === 'extrato' && (
         <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
-          {orders.length === 0 && transactions.length === 0 ? (
+          {orders.length === 0 && filteredTransactions.length === 0 ? (
             <div className="p-12 text-center space-y-3">
               <Wallet className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
               <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">Nenhum pedido ou transação financeira</h3>
@@ -254,7 +264,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   );
                 })}
 
-                {transactions.map((t) => (
+                {filteredTransactions.map((t) => (
                   <div key={t.id} className="p-4 space-y-2 bg-slate-50/40 dark:bg-slate-900/40">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">{t.id}</span>
@@ -338,7 +348,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     })}
 
                     {/* Direct Sale Transactions */}
-                    {transactions.map((t) => (
+                    {filteredTransactions.map((t) => (
                       <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-slate-50/40 dark:bg-slate-900/40">
                         <td className="p-4 font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{t.id}</td>
                         <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{t.clientName}</td>
@@ -428,7 +438,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                       </td>
                     </tr>
                   ))}
-                {transactions.map((t) => (
+                {filteredTransactions.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
                     <td className="p-4 font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{t.id}</td>
                     <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{t.clientName}</td>
