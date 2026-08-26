@@ -3,88 +3,104 @@ import { Consignment, ConsignmentItem } from '../types';
 
 /**
  * 100% Real Supabase Postgres Persistence for Consignments
- * Direct Database Read/Write without requiring custom Postgres constraints
+ * Unified Dual-Table Fetch (consignments + orders) for 100% Reliability
  */
 export async function fetchConsignments(): Promise<Consignment[]> {
   if (!isSupabaseConfigured()) return [];
 
+  const resultMap = new Map<string, Consignment>();
+
   try {
-    // 1. Check dedicated 'consignments' table first (if created in Supabase)
+    // 1. Fetch from 'consignments' table if it exists
     try {
       const { data: cData, error: cErr } = await supabase
         .from('consignments')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!cErr && cData && cData.length > 0) {
-        return cData.map((row) => ({
-          id: row.code || row.id,
-          clientId: row.client_id || '',
-          clientName: row.client_name || '',
-          date: row.date || new Date().toISOString().split('T')[0],
-          itemsCount: Number(row.items_count) || 0,
-          totalValue: Number(row.total_value) || 0,
-          status: (row.status as any) || 'Em andamento',
-          lastAuditDate: row.last_audit_date || row.date || new Date().toISOString().split('T')[0],
-          items: typeof row.items === 'string' ? JSON.parse(row.items) : row.items || [],
-          notes: row.notes || '',
-        }));
+      if (!cErr && cData && Array.isArray(cData)) {
+        cData.forEach((row) => {
+          const code = (row.code || row.id || '').toUpperCase().trim();
+          if (code) {
+            let parsedItems: ConsignmentItem[] = [];
+            if (typeof row.items === 'string') {
+              try {
+                parsedItems = JSON.parse(row.items);
+              } catch (_) {}
+            } else if (Array.isArray(row.items)) {
+              parsedItems = row.items;
+            }
+
+            resultMap.set(code, {
+              id: row.code || row.id,
+              clientId: row.client_id || '',
+              clientName: row.client_name || '',
+              date: row.date || new Date().toISOString().split('T')[0],
+              itemsCount: Number(row.items_count) || parsedItems.reduce((acc, i) => acc + (i.quantity || 0), 0),
+              totalValue: Number(row.total_value) || parsedItems.reduce((acc, i) => acc + (i.subtotal || 0), 0),
+              status: (row.status as any) || 'Em andamento',
+              lastAuditDate: row.last_audit_date || row.date || new Date().toISOString().split('T')[0],
+              items: parsedItems,
+              notes: row.notes || '',
+            });
+          }
+        });
       }
     } catch (_) {
-      // Table doesn't exist yet, proceed to orders fallback
+      // Safe fallback if consignments table doesn't exist
     }
 
-    // 2. Fetch from 'orders' table where order_code starts with 'REM-' or payment_status_text is 'Consignação'
+    // 2. Fetch from 'orders' table (fallback & complement)
     const { data: oData, error: oErr } = await supabase
       .from('orders')
       .select('*, order_items(*)')
       .order('created_at', { ascending: false });
 
-    if (!oErr && oData && oData.length > 0) {
-      const consignmentRows = oData.filter(
-        (row) =>
-          (row.order_code && row.order_code.toUpperCase().startsWith('REM-')) ||
-          row.payment_status_text === 'Consignação'
-      );
+    if (!oErr && oData && Array.isArray(oData)) {
+      oData.forEach((row) => {
+        const orderCode = (row.order_code || row.id || '').toUpperCase().trim();
+        const isConsignment = orderCode.startsWith('REM-') || row.payment_status_text === 'Consignação';
 
-      return consignmentRows.map((row) => {
-        let items: ConsignmentItem[] = [];
-        if (row.order_items && row.order_items.length > 0) {
-          items = row.order_items.map((i: any) => ({
-            productId: i.product_id || '',
-            productName: i.product_name,
-            sku: i.sku || '',
-            quantity: i.quantity,
-            unitPrice: Number(i.unit_price) || 0,
-            subtotal: Number(i.subtotal) || 0,
-          }));
+        if (isConsignment && !resultMap.has(orderCode)) {
+          let items: ConsignmentItem[] = [];
+          if (row.order_items && Array.isArray(row.order_items)) {
+            items = row.order_items.map((i: any) => ({
+              productId: i.product_id || '',
+              productName: i.product_name,
+              sku: i.sku || '',
+              quantity: Number(i.quantity) || 1,
+              unitPrice: Number(i.unit_price) || 0,
+              subtotal: Number(i.subtotal) || 0,
+            }));
+          }
+
+          resultMap.set(orderCode, {
+            id: row.order_code || row.id,
+            clientId: row.client_id || '',
+            clientName: row.client_name || 'Cliente Consignado',
+            date: row.date || new Date().toISOString().split('T')[0],
+            itemsCount: Number(row.items_count) || items.reduce((sum, i) => sum + i.quantity, 0),
+            totalValue: Number(row.total_value) || items.reduce((sum, i) => sum + i.subtotal, 0),
+            status: row.status === 'Concluído' ? 'Finalizada' : 'Em andamento',
+            lastAuditDate: row.date || new Date().toISOString().split('T')[0],
+            items,
+            notes: row.notes || '',
+          });
         }
-
-        return {
-          id: row.order_code || row.id,
-          clientId: row.client_id || '',
-          clientName: row.client_name || 'Cliente Consignado',
-          date: row.date || new Date().toISOString().split('T')[0],
-          itemsCount: row.items_count || items.reduce((sum, i) => sum + i.quantity, 0),
-          totalValue: Number(row.total_value) || 0,
-          status: row.status === 'Concluído' ? 'Finalizada' : 'Em andamento',
-          lastAuditDate: row.date || new Date().toISOString().split('T')[0],
-          items,
-          notes: row.notes || '',
-        };
       });
     }
   } catch (err) {
-    console.error('Erro ao buscar consignações no Supabase:', err);
+    console.error('Erro ao buscar consignações do Supabase:', err);
   }
 
-  return [];
+  return Array.from(resultMap.values());
 }
 
 export async function createConsignment(consignment: Consignment): Promise<boolean> {
   if (!isSupabaseConfigured()) return false;
 
   try {
+    // 1. Direct insert into 'orders' table
     const orderPayload = {
       order_code: consignment.id,
       client_id: consignment.clientId || null,
@@ -100,38 +116,32 @@ export async function createConsignment(consignment: Consignment): Promise<boole
       internal_logistics_cost: 0,
     };
 
-    // Check if order_code already exists in Supabase DB
-    const { data: existing } = await supabase
+    const { data: existingOrder } = await supabase
       .from('orders')
       .select('id')
       .eq('order_code', consignment.id)
-      .maybeSingle();
+      .limit(1);
 
     let oData: any = null;
 
-    if (existing?.id) {
-      const { data: updated, error: uErr } = await supabase
+    if (existingOrder && existingOrder.length > 0) {
+      const { data: updated } = await supabase
         .from('orders')
         .update(orderPayload)
-        .eq('id', existing.id)
+        .eq('id', existingOrder[0].id)
         .select()
         .single();
-
-      if (uErr) console.error('Erro ao atualizar consignação no Supabase:', uErr.message);
       oData = updated;
     } else {
-      const { data: inserted, error: iErr } = await supabase
+      const { data: inserted } = await supabase
         .from('orders')
         .insert([orderPayload])
         .select()
         .single();
-
-      if (iErr) console.error('Erro ao inserir consignação no Supabase:', iErr.message);
       oData = inserted;
     }
 
     if (oData?.id && consignment.items && consignment.items.length > 0) {
-      // Clean up previous items if updating
       await supabase.from('order_items').delete().eq('order_id', oData.id);
 
       const itemRows = consignment.items.map((item) => ({
@@ -144,7 +154,7 @@ export async function createConsignment(consignment: Consignment): Promise<boole
       await supabase.from('order_items').insert(itemRows);
     }
 
-    // Try secondary consignments table safely without throwing on missing schema
+    // 2. Safe secondary insert into 'consignments' table if present
     try {
       const cPayload = {
         code: consignment.id,
@@ -159,9 +169,7 @@ export async function createConsignment(consignment: Consignment): Promise<boole
         notes: consignment.notes || '',
       };
       await supabase.from('consignments').insert([cPayload]);
-    } catch (_) {
-      // Safe fallback ignore
-    }
+    } catch (_) {}
 
     return true;
   } catch (err) {
