@@ -134,8 +134,29 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
     } catch (e) {}
   }
 
+  // Purge legacy duplicated R$ 25,00 visit expenses permanently from Supabase
+  const badRowIds = data
+    .filter(
+      (row) =>
+        (row.reference_code && row.reference_code.includes('VIS-VIS-')) ||
+        (Number(row.amount) === 25 && row.description && row.description.includes('Deslocamento / Combustível Visita'))
+    )
+    .map((row) => row.id);
+
+  if (badRowIds.length > 0) {
+    supabase.from('expenses').delete().in('id', badRowIds).then(({ error }) => {
+      if (error) console.error('Erro ao expurgar despesas legadas do Supabase:', error.message);
+      else console.log(`[expensesService] Expurgadas ${badRowIds.length} despesas duplicadas do Supabase com sucesso.`);
+    });
+  }
+
   const dbExpenses: ExpenseItem[] = data
-    .filter((row) => row.reference_code !== 'SYS_ACCOUNT_BALANCES')
+    .filter((row) => {
+      if (row.reference_code === 'SYS_ACCOUNT_BALANCES') return false;
+      if (row.reference_code && row.reference_code.includes('VIS-VIS-')) return false;
+      if (Number(row.amount) === 25 && row.description && row.description.includes('Deslocamento / Combustível Visita')) return false;
+      return true;
+    })
     .map((row) => {
       const decoded = decodeNotesAndMetadata(row);
       return {
