@@ -229,8 +229,14 @@ export function useExpenses(
   };
 
   const handleUpdateExpense = async (updatedExpense: ExpenseItem) => {
-    setExpenses((prev) => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
-    showToast(`Lançamento "${updatedExpense.description}" atualizado com sucesso!`, 'success');
+    setExpenses((prev) => {
+      const next = prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e));
+      try {
+        safeSetLocalStorage('rn3d_expenses', JSON.stringify(next));
+      } catch (err) {}
+      return next;
+    });
+    showToast(`Comprovante de "${updatedExpense.description}" salvo com sucesso!`, 'success');
     try {
       await updateExpense(updatedExpense.id, updatedExpense);
     } catch (err) {

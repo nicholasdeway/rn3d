@@ -328,6 +328,21 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
 }
 
 export async function updateExpense(id: string, updates: Partial<ExpenseItem>): Promise<boolean> {
+  // 1. Salva a atualização imediatamente no localStorage para garantir persistência após F5
+  try {
+    const saved = localStorage.getItem('rn3d_expenses');
+    if (saved) {
+      const list: ExpenseItem[] = JSON.parse(saved);
+      const updatedList = list.map((e) => {
+        if (e.id === id || (e.referenceCode && e.referenceCode === updates.referenceCode) || (e.description === updates.description && e.date === updates.date)) {
+          return { ...e, ...updates };
+        }
+        return e;
+      });
+      localStorage.setItem('rn3d_expenses', JSON.stringify(updatedList));
+    }
+  } catch (e) {}
+
   if (!isSupabaseConfigured()) {
     return true;
   }
@@ -352,20 +367,28 @@ export async function updateExpense(id: string, updates: Partial<ExpenseItem>): 
   if (updates.receiptName !== undefined) payload.receipt_name = updates.receiptName;
   payload.notes = encodeNotesAndMetadata(updates);
 
-  const isLocalId = !id || id.startsWith('exp-') || id.length < 30;
-  let query = supabase.from('expenses').update(payload);
-  if (!isLocalId) {
-    query = query.eq('id', id);
-  } else if (updates.referenceCode) {
-    query = query.eq('reference_code', updates.referenceCode);
-  } else {
-    return true;
+  // Tentativa 1: Atualiza pelo ID exato se for UUID real do Supabase
+  if (id && !id.startsWith('exp-') && !id.startsWith('apt-') && !id.startsWith('trf-') && id.length > 20) {
+    const { error } = await supabase.from('expenses').update(payload).eq('id', id);
+    if (!error) return true;
   }
 
-  const { error } = await query;
-  if (error) {
-    return false;
+  // Fallback 1: Atualiza pelo código de referência (pedidos ou transferências)
+  if (updates.referenceCode) {
+    const { error } = await supabase.from('expenses').update(payload).eq('reference_code', updates.referenceCode);
+    if (!error) return true;
   }
+
+  // Fallback 2: Atualiza por descrição e data se for um lançamento manual
+  if (updates.description && updates.date) {
+    const { error } = await supabase
+      .from('expenses')
+      .update(payload)
+      .eq('description', updates.description)
+      .eq('date', updates.date);
+    if (!error) return true;
+  }
+
   return true;
 }
 
