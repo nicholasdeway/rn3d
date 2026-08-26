@@ -62,6 +62,10 @@ export function useConsignments(
   const handleAddConsignment = async (newConsignment: Consignment) => {
     setConsignments((prev) => [newConsignment, ...prev]);
 
+    // Save locally
+    const currentLocal = getStorageParsed<Consignment[]>('rn3d_consignments', [], true);
+    safeSetLocalStorage('rn3d_consignments', JSON.stringify([newConsignment, ...currentLocal]));
+
     const clientId = newConsignment.clientId;
     const items = newConsignment.items || [];
 
@@ -121,6 +125,20 @@ export function useConsignments(
 
     try {
       await createConsignment(newConsignment);
+      const refreshedFromDb = await fetchConsignments();
+      if (refreshedFromDb && refreshedFromDb.length > 0) {
+        setConsignments((prev) => {
+          const mergedMap = new Map<string, Consignment>();
+          refreshedFromDb.forEach((item) => mergedMap.set(item.id.toLowerCase().trim(), item));
+          (prev || []).forEach((item) => {
+            const key = item.id.toLowerCase().trim();
+            if (!mergedMap.has(key)) {
+              mergedMap.set(key, item);
+            }
+          });
+          return Array.from(mergedMap.values());
+        });
+      }
     } catch (err) {
       console.error('Erro ao gravar consignação no Supabase:', err);
     }
