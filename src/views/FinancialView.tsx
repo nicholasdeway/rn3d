@@ -45,7 +45,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   const handleOpenPaymentModal = (order: Order) => {
     setSelectedOrderForPayment(order);
     const remaining = Math.max(0, order.totalValue - (order.paidAmount || 0));
-    setPaymentAmountInput(remaining.toFixed(2));
+    setPaymentAmountInput(remaining.toFixed(2).replace('.', ','));
   };
 
   const handleConfirmPayment = (e: React.FormEvent) => {
