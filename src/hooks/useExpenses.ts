@@ -1,39 +1,38 @@
 import { useState, useEffect } from 'react';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ExpenseItem, AccountBalances, MarketplaceAccount } from '../types';
 import {
   fetchExpenses,
-  saveAccountBalancesToSupabase,
   createExpense,
   updateExpense,
   deleteExpense,
+  saveAccountBalancesToSupabase,
 } from '../services/expensesService';
-
-const DEFAULT_BALANCES: AccountBalances = {
-  nubank: 0,
-  shopee: 0,
-  mercadoLivre: 0,
-  tikTokShop: 0,
-  amazon: 0,
-};
 
 export function useExpenses(
   user: any,
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void
 ) {
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
-  const [accountBalances, setAccountBalances] = useState<AccountBalances>(DEFAULT_BALANCES);
+  const [accountBalances, setAccountBalances] = useState<AccountBalances>({
+    nubank: 0,
+    shopee: 0,
+    mercadoLivre: 0,
+    tikTokShop: 0,
+    amazon: 0,
+  });
 
   const reloadExpenses = async () => {
     try {
       const res = await fetchExpenses();
-      if (res && res.expenses) {
+      if (res.expenses) {
         setExpenses(res.expenses);
       }
-      if (res && res.balances) {
+      if (res.balances) {
         setAccountBalances(res.balances);
       }
     } catch (err) {
-      console.error('Erro ao recarregar despesas do Supabase:', err);
+      console.error('Erro ao recarregar despesas/saldos do Supabase:', err);
     }
   };
 
@@ -52,7 +51,7 @@ export function useExpenses(
 
     setExpenses((prev) => [formattedItem, ...prev]);
 
-    // If it's a Retirada, deduct from Nubank balance automatically
+    // Financial Balance Rules
     if (formattedItem.category === 'Retirada') {
       const updated = {
         ...accountBalances,
@@ -60,7 +59,7 @@ export function useExpenses(
       };
       setAccountBalances(updated);
       await saveAccountBalancesToSupabase(updated);
-      showToast(`Retirada (R$ ${formattedItem.amount.toFixed(2)}) por ${formattedItem.createdBy} registrada!`, 'success');
+      showToast(`Retirada (R$ ${formattedItem.amount.toFixed(2)}) por ${formattedItem.createdBy} registrada (- Nubank)!`, 'success');
     } else if (formattedItem.category === 'Aporte / Reembolso de Sócio') {
       const updated = {
         ...accountBalances,
@@ -68,9 +67,18 @@ export function useExpenses(
       };
       setAccountBalances(updated);
       await saveAccountBalancesToSupabase(updated);
-      showToast(`Lançamento/Aporte de R$ ${formattedItem.amount.toFixed(2)} por ${formattedItem.createdBy} creditado no Nubank!`, 'success');
+      showToast(`Lançamento/Aporte de R$ ${formattedItem.amount.toFixed(2)} por ${formattedItem.createdBy} creditado (+ Nubank)!`, 'success');
+    } else if (formattedItem.category !== 'Transferência de Marketplace' && formattedItem.category !== 'Entrada de Pedido') {
+      // Despesas Operacionais (Compra de Filamento, Combustível, Bicos, Embalagens, Impostos, Outros) abatem do Nubank
+      const updated = {
+        ...accountBalances,
+        nubank: Math.max(0, accountBalances.nubank - formattedItem.amount),
+      };
+      setAccountBalances(updated);
+      await saveAccountBalancesToSupabase(updated);
+      showToast(`Despesa "${formattedItem.description}" (R$ ${formattedItem.amount.toFixed(2)}) lançada (- Nubank)!`, 'success');
     } else {
-      showToast(`Despesa "${formattedItem.description}" registrada por ${formattedItem.createdBy}!`, 'success');
+      showToast(`Lançamento "${formattedItem.description}" registrado por ${formattedItem.createdBy}!`, 'success');
     }
 
     try {
@@ -166,7 +174,7 @@ export function useExpenses(
 
   const handleUpdateExpense = async (updatedExpense: ExpenseItem) => {
     setExpenses((prev) => prev.map((e) => (e.id === updatedExpense.id ? updatedExpense : e)));
-    showToast(`Comprovante de "${updatedExpense.description}" salvo no Supabase com sucesso!`, 'success');
+    showToast(`Comprovante de "${updatedExpense.description}" salvo com sucesso!`, 'success');
     try {
       await updateExpense(updatedExpense.id, updatedExpense);
     } catch (err) {
@@ -175,10 +183,10 @@ export function useExpenses(
   };
 
   const handleDeleteExpense = async (expenseId: string) => {
-    const target = expenses.find((e) => e.id === expenseId);
-    const desc = target ? target.description : 'Lançamento';
+    const exp = expenses.find((e) => e.id === expenseId);
     setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
-    showToast(`"${desc}" excluído com sucesso!`, 'success');
+    showToast(`Lançamento "${exp?.description || expenseId}" excluído com sucesso!`, 'success');
+
     try {
       await deleteExpense(expenseId);
     } catch (err) {
@@ -192,16 +200,21 @@ export function useExpenses(
       [accountKey]: newBalance,
     };
     setAccountBalances(updated);
-    await saveAccountBalancesToSupabase(updated);
-    showToast(`Saldo ${accountKey.toUpperCase()} atualizado para R$ ${newBalance.toFixed(2).replace('.', ',')}!`, 'success');
+    showToast(`Saldo da conta ${accountKey.toUpperCase()} atualizado para R$ ${newBalance.toFixed(2).replace('.', ',')}!`, 'success');
+
+    try {
+      await saveAccountBalancesToSupabase(updated);
+    } catch (err) {
+      console.error('Erro ao salvar novo saldo no Supabase:', err);
+    }
   };
 
   return {
     expenses,
     setExpenses,
     accountBalances,
-    accountBalance: accountBalances.nubank,
     setAccountBalances,
+    accountBalance: accountBalances.nubank,
     reloadExpenses,
     handleCreateExpense,
     handleExecuteTransfer,

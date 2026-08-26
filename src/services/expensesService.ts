@@ -11,6 +11,10 @@ const STANDARD_DB_CATEGORIES = [
   'Caixas & Embalagens',
   'Álcool & Insumos',
   'Impostos (DAS)',
+  'Transferência de Marketplace',
+  'Aporte / Reembolso de Sócio',
+  'Retirada',
+  'Entrada de Pedido',
   'Outros',
 ];
 
