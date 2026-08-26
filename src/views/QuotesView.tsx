@@ -1722,7 +1722,14 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 Fechar
               </button>
               <button
-                onClick={() => window.print()}
+                onClick={() => {
+                  const originalTitle = document.title;
+                  document.title = `${previewPdfQuote.id} - ${previewPdfQuote.clientName} - RN 3D`;
+                  window.print();
+                  setTimeout(() => {
+                    document.title = originalTitle;
+                  }, 1000);
+                }}
                 className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs inline-flex items-center gap-1.5 transition-all"
               >
                 <Printer className="w-4 h-4" /> Baixar / Imprimir PDF
