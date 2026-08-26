@@ -286,23 +286,6 @@ export function useOrders(
       })
     );
 
-    const orderObj = orders.find((o) => o.id === orderId);
-    if (orderObj) {
-      setTransactions((prev) => [
-        {
-          id: `PAG-${Math.floor(Math.random() * 9000 + 1000)}`,
-          clientName: orderObj.clientName,
-          date: new Date().toLocaleDateString('pt-BR'),
-          type: 'Recebimento de Pedido',
-          amount: additionalAmount,
-          paymentMethod: 'PIX',
-          status: 'Recebido',
-          notes: `Entrada parcial/total referente ao Pedido ${orderId}`,
-        },
-        ...prev,
-      ]);
-    }
-
     showToast(`Recebimento de R$ ${additionalAmount.toFixed(2).replace('.', ',')} registrado com sucesso! Dashboard e Caixa atualizados.`, 'success');
 
     try {

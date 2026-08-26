@@ -359,7 +359,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                         <td className="p-4 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                             <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-lg font-bold inline-flex items-center gap-1 border border-emerald-300 dark:border-emerald-800/80 text-xs shrink-0 whitespace-nowrap">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Recebido
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Quitado
                             </span>
                           </div>
                         </td>
