@@ -1,6 +1,11 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Consignment, ConsignmentItem } from '../types';
 
+function isValidUuid(str?: string | null): boolean {
+  if (!str) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+}
+
 /**
  * 100% Real Supabase Postgres Persistence for Consignments
  * Unified Dual-Table Fetch (consignments + orders) for 100% Reliability
@@ -100,10 +105,12 @@ export async function createConsignment(consignment: Consignment): Promise<boole
   if (!isSupabaseConfigured()) return false;
 
   try {
+    const validClientId = isValidUuid(consignment.clientId) ? consignment.clientId : null;
+
     // 1. Direct insert into 'orders' table
     const orderPayload = {
       order_code: consignment.id,
-      client_id: consignment.clientId || null,
+      client_id: validClientId,
       client_name: consignment.clientName || 'Cliente Consignado',
       date: consignment.date || new Date().toISOString().split('T')[0],
       items_count: consignment.itemsCount || 0,
@@ -125,19 +132,23 @@ export async function createConsignment(consignment: Consignment): Promise<boole
     let oData: any = null;
 
     if (existingOrder && existingOrder.length > 0) {
-      const { data: updated } = await supabase
+      const { data: updated, error: uErr } = await supabase
         .from('orders')
         .update(orderPayload)
         .eq('id', existingOrder[0].id)
         .select()
         .single();
+
+      if (uErr) console.error('Erro ao atualizar consignação em orders:', uErr.message);
       oData = updated;
     } else {
-      const { data: inserted } = await supabase
+      const { data: inserted, error: iErr } = await supabase
         .from('orders')
         .insert([orderPayload])
         .select()
         .single();
+
+      if (iErr) console.error('Erro ao inserir consignação em orders:', iErr.message);
       oData = inserted;
     }
 
@@ -158,7 +169,7 @@ export async function createConsignment(consignment: Consignment): Promise<boole
     try {
       const cPayload = {
         code: consignment.id,
-        client_id: consignment.clientId || null,
+        client_id: validClientId,
         client_name: consignment.clientName,
         date: consignment.date,
         items_count: consignment.itemsCount,
