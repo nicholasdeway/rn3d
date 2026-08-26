@@ -200,9 +200,9 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     receiptName: '',
   });
 
-  // Filtered expenses
+  // Filtered and deterministically sorted expenses (Date desc -> Time desc -> ID desc)
   const filteredExpenses = useMemo(() => {
-    return expenses.filter((item) => {
+    const filtered = expenses.filter((item) => {
       const matchesSearch =
         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.beneficiary && item.beneficiary.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -213,6 +213,22 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       const matchesStatus = statusFilter === 'Todos' || item.paymentStatus === statusFilter;
 
       return matchesSearch && matchesCategory && matchesStatus;
+    });
+
+    return filtered.sort((a, b) => {
+      const dateA = a.date || '';
+      const dateB = b.date || '';
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA);
+      }
+
+      const timeA = a.timestamp || '00:00:00';
+      const timeB = b.timestamp || '00:00:00';
+      if (timeA !== timeB) {
+        return timeB.localeCompare(timeA);
+      }
+
+      return (b.id || '').localeCompare(a.id || '');
     });
   }, [expenses, searchTerm, categoryFilter, statusFilter]);
 

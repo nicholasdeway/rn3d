@@ -350,6 +350,7 @@ export function useAppData() {
               category: 'Combustível & Transporte',
               amount: cost,
               date: o.date || new Date().toISOString().split('T')[0],
+              timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
               paymentStatus: 'Pago',
               beneficiary: 'Logística de Entrega',
               isAutoReplicated: true,
