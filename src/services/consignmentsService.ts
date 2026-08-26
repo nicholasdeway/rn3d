@@ -3,7 +3,7 @@ import { Consignment, ConsignmentItem } from '../types';
 
 /**
  * 100% Real Supabase Postgres Persistence for Consignments
- * Zero Mock Data - Direct Database Read/Write
+ * Direct Database Read/Write without requiring custom Postgres constraints
  */
 export async function fetchConsignments(): Promise<Consignment[]> {
   if (!isSupabaseConfigured()) return [];
@@ -85,7 +85,6 @@ export async function createConsignment(consignment: Consignment): Promise<boole
   if (!isSupabaseConfigured()) return false;
 
   try {
-    // 1. Direct insert/upsert into 'orders' table
     const orderPayload = {
       order_code: consignment.id,
       client_id: consignment.clientId || null,
@@ -101,17 +100,40 @@ export async function createConsignment(consignment: Consignment): Promise<boole
       internal_logistics_cost: 0,
     };
 
-    const { data: oData, error: oErr } = await supabase
+    // Check if order_code already exists in Supabase DB
+    const { data: existing } = await supabase
       .from('orders')
-      .upsert([orderPayload], { onConflict: 'order_code' })
-      .select()
-      .single();
+      .select('id')
+      .eq('order_code', consignment.id)
+      .maybeSingle();
 
-    if (oErr) {
-      console.error('Erro ao salvar consignação em orders no Supabase:', oErr.message);
+    let oData: any = null;
+
+    if (existing?.id) {
+      const { data: updated, error: uErr } = await supabase
+        .from('orders')
+        .update(orderPayload)
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (uErr) console.error('Erro ao atualizar consignação no Supabase:', uErr.message);
+      oData = updated;
+    } else {
+      const { data: inserted, error: iErr } = await supabase
+        .from('orders')
+        .insert([orderPayload])
+        .select()
+        .single();
+
+      if (iErr) console.error('Erro ao inserir consignação no Supabase:', iErr.message);
+      oData = inserted;
     }
 
     if (oData?.id && consignment.items && consignment.items.length > 0) {
+      // Clean up previous items if updating
+      await supabase.from('order_items').delete().eq('order_id', oData.id);
+
       const itemRows = consignment.items.map((item) => ({
         order_id: oData.id,
         product_name: item.productName,
@@ -122,7 +144,7 @@ export async function createConsignment(consignment: Consignment): Promise<boole
       await supabase.from('order_items').insert(itemRows);
     }
 
-    // 2. Secondary insert into 'consignments' table if present
+    // Try secondary consignments table safely without throwing on missing schema
     try {
       const cPayload = {
         code: consignment.id,
