@@ -104,7 +104,6 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
 
   const payload: any = {
     order_code: order.id,
-    client_id: order.clientId || null,
     client_name: order.clientName,
     date: order.date || new Date().toISOString().split('T')[0],
     items_count: order.itemsCount || (order.items ? order.items.length : 0),
@@ -112,10 +111,11 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     paid_amount: order.paidAmount || 0,
     payment_status_text: order.paymentStatusText || (order.paidAmount && order.totalValue && order.paidAmount >= order.totalValue ? 'Pago Total' : 'Pendente'),
     status: order.status || 'Novo',
-    production_progress_pct: order.productionProgressPct || 0,
-    internal_logistics_type: order.internalLogisticsType || 'combustivel',
-    internal_logistics_cost: order.internalLogisticsCost || 0,
   };
+
+  if (order.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.clientId)) {
+    payload.client_id = order.clientId;
+  }
 
   const { data, error } = await supabase
     .from('orders')

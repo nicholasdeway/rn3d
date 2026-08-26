@@ -3,7 +3,7 @@ import { Consignment, ConsignmentItem } from '../types';
 
 /**
  * 100% Cloud-Native Supabase Persistence for Consignments
- * Pure Supabase DB Read/Write — Zero LocalStorage Partitioning
+ * Reads and writes directly to 'orders' and 'order_items' table with 'REM-' prefix
  */
 export async function fetchConsignments(): Promise<Consignment[]> {
   if (!isSupabaseConfigured()) return [];
@@ -59,9 +59,8 @@ export async function createConsignment(consignment: Consignment): Promise<boole
   if (!isSupabaseConfigured()) return false;
 
   try {
-    const orderPayload = {
+    const orderPayload: any = {
       order_code: consignment.id,
-      client_id: consignment.clientId || null,
       client_name: consignment.clientName || 'Cliente Consignado',
       date: consignment.date || new Date().toISOString().split('T')[0],
       items_count: consignment.itemsCount || 0,
@@ -69,10 +68,11 @@ export async function createConsignment(consignment: Consignment): Promise<boole
       paid_amount: 0,
       payment_status_text: 'Consignação',
       status: consignment.status === 'Finalizada' ? 'Concluído' : 'Em produção',
-      production_progress_pct: 100,
-      internal_logistics_type: 'combustivel',
-      internal_logistics_cost: 0,
     };
+
+    if (consignment.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(consignment.clientId)) {
+      orderPayload.client_id = consignment.clientId;
+    }
 
     const { data: oData, error: oErr } = await supabase
       .from('orders')
@@ -115,11 +115,9 @@ export async function deleteAllConsignments(): Promise<boolean> {
   if (!isSupabaseConfigured()) return true;
 
   try {
-    // Delete from orders table where order_code starts with 'REM-' or payment_status_text = 'Consignação'
     await supabase.from('orders').delete().ilike('order_code', 'REM-%');
     await supabase.from('orders').delete().eq('payment_status_text', 'Consignação');
 
-    // Delete from consignments table if present
     try {
       await supabase.from('consignments').delete().neq('id', '00000000-0000-0000-0000-000000000000');
     } catch (_) {}
