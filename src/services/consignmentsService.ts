@@ -136,20 +136,18 @@ export async function createConsignment(consignment: Consignment): Promise<boole
         .from('orders')
         .update(orderPayload)
         .eq('id', existingOrder[0].id)
-        .select()
-        .single();
+        .select();
 
       if (uErr) console.error('Erro ao atualizar consignação em orders:', uErr.message);
-      oData = updated;
+      oData = updated && updated.length > 0 ? updated[0] : null;
     } else {
       const { data: inserted, error: iErr } = await supabase
         .from('orders')
         .insert([orderPayload])
-        .select()
-        .single();
+        .select();
 
       if (iErr) console.error('Erro ao inserir consignação em orders:', iErr.message);
-      oData = inserted;
+      oData = inserted && inserted.length > 0 ? inserted[0] : null;
     }
 
     if (oData?.id && consignment.items && consignment.items.length > 0) {

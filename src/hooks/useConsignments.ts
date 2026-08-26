@@ -34,8 +34,18 @@ export function useConsignments(
         const dbItems = await fetchConsignments();
         if (!isMounted) return;
 
-        if (dbItems) {
-          setConsignments(dbItems);
+        if (dbItems && dbItems.length > 0) {
+          setConsignments((prevLocal) => {
+            const mergedMap = new Map<string, Consignment>();
+            dbItems.forEach((item) => mergedMap.set(item.id.toLowerCase().trim(), item));
+            (prevLocal || []).forEach((item) => {
+              const key = item.id.toLowerCase().trim();
+              if (!mergedMap.has(key)) {
+                mergedMap.set(key, item);
+              }
+            });
+            return Array.from(mergedMap.values());
+          });
         }
       } catch (err) {
         console.error('Erro ao inicializar consignações do Supabase:', err);
