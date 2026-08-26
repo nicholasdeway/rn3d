@@ -400,11 +400,28 @@ export function useAppData() {
       let changed = false;
       const newPaymentEntries: ExpenseItem[] = [];
 
+      const updatedPrev = prevExpenses.map((exp) => {
+        if (exp.referenceCode && exp.referenceCode.startsWith('PED-PAY-')) {
+          const orderId = exp.referenceCode.replace('PED-PAY-', '');
+          const matchedOrder = orders.find((o) => o.id === orderId);
+          if (matchedOrder && matchedOrder.paymentReceiptUrl && !exp.receiptUrl) {
+            changed = true;
+            return {
+              ...exp,
+              receiptUrl: matchedOrder.paymentReceiptUrl,
+              receiptType: matchedOrder.paymentReceiptType || 'image',
+              receiptName: matchedOrder.paymentReceiptName || 'Comprovante de Pagamento',
+            };
+          }
+        }
+        return exp;
+      });
+
       orders.forEach((o) => {
         const paid = Number(o.paidAmount) || 0;
         if (paid > 0) {
           const refCode = `PED-PAY-${o.id}`;
-          const alreadyExists = prevExpenses.some((e) => e.referenceCode === refCode);
+          const alreadyExists = updatedPrev.some((e) => e.referenceCode === refCode);
           if (!alreadyExists) {
             changed = true;
             newPaymentEntries.push({
@@ -420,13 +437,16 @@ export function useAppData() {
               destinationAccount: 'Nubank',
               isAutoReplicated: true,
               referenceCode: refCode,
+              receiptUrl: o.paymentReceiptUrl || '',
+              receiptType: o.paymentReceiptType || 'image',
+              receiptName: o.paymentReceiptName || (o.paymentReceiptUrl ? 'Comprovante de Pagamento' : ''),
               notes: `Pagamento de ${o.paymentMethod || 'PIX'} referente ao pedido ${o.id}`,
             });
           }
         }
       });
 
-      return changed ? [...newPaymentEntries, ...prevExpenses] : prevExpenses;
+      return changed ? [...newPaymentEntries, ...updatedPrev] : prevExpenses;
     });
   }, [orders]);
 

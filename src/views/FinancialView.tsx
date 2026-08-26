@@ -1,14 +1,26 @@
 import React, { useState } from 'react';
 import { SaleTransaction, Consignment, Order } from '../types';
-import { DollarSign, Wallet, ArrowUpRight, Clock, CheckCircle2, Plus, X, HandCoins, TrendingUp } from 'lucide-react';
+import { DollarSign, Wallet, ArrowUpRight, Clock, CheckCircle2, Plus, X, HandCoins, TrendingUp, Paperclip } from 'lucide-react';
 import { formatDateBR } from '../utils/formatters';
 
 interface FinancialViewProps {
   transactions: SaleTransaction[];
   consignments?: Consignment[];
   orders?: Order[];
-  onUpdateOrderPayment?: (orderId: string, additionalAmount: number) => void;
-  onRecordPayment?: (orderId: string, additionalAmount: number) => void;
+  onUpdateOrderPayment?: (
+    orderId: string,
+    additionalAmount: number,
+    receiptUrl?: string,
+    receiptType?: 'image' | 'pdf',
+    receiptName?: string
+  ) => void;
+  onRecordPayment?: (
+    orderId: string,
+    additionalAmount: number,
+    receiptUrl?: string,
+    receiptType?: 'image' | 'pdf',
+    receiptName?: string
+  ) => void;
 }
 
 export const FinancialView: React.FC<FinancialViewProps> = ({
@@ -23,6 +35,26 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   const [tab, setTab] = useState<'extrato' | 'entradas' | 'receber'>('extrato');
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<Order | null>(null);
   const [paymentAmountInput, setPaymentAmountInput] = useState<string>('');
+  const [paymentReceiptUrl, setPaymentReceiptUrl] = useState<string>('');
+  const [paymentReceiptType, setPaymentReceiptType] = useState<'image' | 'pdf'>('image');
+  const [paymentReceiptName, setPaymentReceiptName] = useState<string>('');
+
+  const handlePaymentFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isPdf = file.type === 'application/pdf';
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const base64Url = reader.result as string;
+      setPaymentReceiptUrl(base64Url);
+      setPaymentReceiptType(isPdf ? 'pdf' : 'image');
+      setPaymentReceiptName(file.name);
+    };
+
+    reader.readAsDataURL(file);
+  };
 
   // Filter out any standalone transaction entries auto-created for orders (to prevent duplicate rows)
   const filteredTransactions = transactions.filter(
@@ -60,6 +92,9 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     setSelectedOrderForPayment(order);
     const remaining = Math.max(0, order.totalValue - (order.paidAmount || 0));
     setPaymentAmountInput(remaining.toFixed(2).replace('.', ','));
+    setPaymentReceiptUrl('');
+    setPaymentReceiptType('image');
+    setPaymentReceiptName('');
   };
 
   const handleConfirmPayment = (e: React.FormEvent) => {
@@ -69,8 +104,18 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     const val = parseFloat(cleanStr);
     if (isNaN(val) || val <= 0) return;
 
-    handlePayment(selectedOrderForPayment.id, val);
+    handlePayment(
+      selectedOrderForPayment.id,
+      val,
+      paymentReceiptUrl || undefined,
+      paymentReceiptType,
+      paymentReceiptName || undefined
+    );
     setSelectedOrderForPayment(null);
+    setPaymentAmountInput('');
+    setPaymentReceiptUrl('');
+    setPaymentReceiptType('image');
+    setPaymentReceiptName('');
   };
 
   return (
@@ -615,6 +660,24 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   placeholder="Ex: 27,50"
                   className="w-full px-3 py-2 bg-white dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-extrabold text-emerald-600 dark:text-emerald-400 text-base focus:outline-none focus:border-indigo-500"
                 />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1">
+                  Comprovante de Recebimento (Opcional - PNG/JPG ou PDF)
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,application/pdf"
+                  onChange={handlePaymentFileUpload}
+                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 dark:file:bg-emerald-950/60 dark:file:text-emerald-300 cursor-pointer"
+                />
+                {paymentReceiptName && (
+                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1.5 flex items-center gap-1">
+                    <Paperclip className="w-3.5 h-3.5" />
+                    <span>Anexado: {paymentReceiptName}</span>
+                  </p>
+                )}
               </div>
 
               <div className="pt-3 border-t border-slate-100 dark:border-[#202531] flex items-center justify-end gap-2">

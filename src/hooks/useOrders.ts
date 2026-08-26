@@ -258,7 +258,13 @@ export function useOrders(
     }
   };
 
-  const handleUpdateOrderPayment = async (orderId: string, additionalAmount: number) => {
+  const handleUpdateOrderPayment = async (
+    orderId: string,
+    additionalAmount: number,
+    receiptUrl?: string,
+    receiptType?: 'image' | 'pdf',
+    receiptName?: string
+  ) => {
     let finalPaidAmount = 0;
     let finalPaymentStatus = 'Aguardando Pagamento';
 
@@ -278,11 +284,14 @@ export function useOrders(
             ...o,
             paidAmount: newPaidAmount,
             paymentStatusText: newPaymentStatus,
+            paymentReceiptUrl: receiptUrl || o.paymentReceiptUrl,
+            paymentReceiptType: receiptType || o.paymentReceiptType,
+            paymentReceiptName: receiptName || o.paymentReceiptName,
             timeline: [
               {
                 date: `${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`,
                 title: `Entrada em Caixa Registrada: R$ ${additionalAmount.toFixed(2).replace('.', ',')}`,
-                description: `Status de Pagamento: ${newPaymentStatus}`,
+                description: `Status de Pagamento: ${newPaymentStatus}${receiptName ? ` (Comprovante: ${receiptName})` : ''}`,
               },
               ...o.timeline,
             ],

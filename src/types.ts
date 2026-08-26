@@ -251,6 +251,10 @@ export interface Order {
   attendanceMode?: AttendanceMode;
   internalLogisticsType?: 'combustivel' | 'frete' | 'retirada';
   internalLogisticsCost?: number;
+  paymentMethod?: string;
+  paymentReceiptUrl?: string;
+  paymentReceiptType?: 'image' | 'pdf';
+  paymentReceiptName?: string;
   notes?: string;
   paymentTerms?: string;
   items: {
