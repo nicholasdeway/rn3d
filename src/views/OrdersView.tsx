@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Order, Product, Client } from '../types';
-import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles, ChevronDown, ChevronUp, Paperclip, Eye } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
+import { ReceiptViewerModal } from '../components/ReceiptViewerModal';
+import { uploadToSupabaseStorage } from '../services/storageService';
 import { formatDateBR } from '../utils/formatters';
 
 interface OrdersViewProps {
@@ -11,6 +13,13 @@ interface OrdersViewProps {
   searchQuery?: string;
   onUpdateOrderProgress?: (orderId: string, newProgressPct: number) => void;
   onUpdateOrderStatus?: (orderId: string, newStatus: Order['status']) => void;
+  onUpdateOrderPayment?: (
+    orderId: string,
+    additionalAmount: number,
+    receiptUrl?: string,
+    receiptType?: 'image' | 'pdf',
+    receiptName?: string
+  ) => void;
 }
 
 export const OrdersView: React.FC<OrdersViewProps> = ({
@@ -20,10 +29,14 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   searchQuery = '',
   onUpdateOrderProgress,
   onUpdateOrderStatus,
+  onUpdateOrderPayment,
 }) => {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [previewPdfOrder, setPreviewPdfOrder] = useState<Order | null>(null);
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
+  const [editingReceiptOrder, setEditingReceiptOrder] = useState<Order | null>(null);
+  const [receiptFile, setReceiptFile] = useState<{ url: string; type: 'image' | 'pdf'; name: string } | null>(null);
+  const [selectedReceiptViewer, setSelectedReceiptViewer] = useState<{ url: string; type?: 'image' | 'pdf'; name?: string; title: string } | null>(null);
 
   const filteredOrders = orders.filter((o) => {
     if (!searchQuery || searchQuery.trim() === '') return true;
@@ -478,21 +491,37 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                       </span>
                     </label>
 
-                    <button
-                      type="button"
-                      onClick={() => toggleExpandOrder(o.id)}
-                      className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors"
-                    >
-                      {isExpanded ? (
-                        <>
-                          <ChevronUp className="w-3.5 h-3.5" /> Fechar
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown className="w-3.5 h-3.5" /> Detalhes
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingReceiptOrder(o);
+                          setReceiptFile(null);
+                        }}
+                        className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors"
+                        title="Anexar ou editar comprovante de pagamento"
+                      >
+                        <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>{o.paymentReceiptUrl ? 'Comprovante' : 'Anexar'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandOrder(o.id)}
+                        className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="w-3.5 h-3.5" /> Fechar
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-3.5 h-3.5" /> Detalhes
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Inline Expanded Details (Mobile) */}
@@ -610,6 +639,18 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                             </label>
                           </td>
                           <td className="p-4 text-right space-x-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingReceiptOrder(o);
+                                setReceiptFile(null);
+                              }}
+                              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer text-xs"
+                              title="Anexar ou alterar comprovante de pagamento"
+                            >
+                              <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
+                              <span>{o.paymentReceiptUrl ? 'Comprovante' : 'Anexar'}</span>
+                            </button>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -940,6 +981,160 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           onClose={() => setZoomImage(null)}
         />
       )}
+
+      {/* MODAL: GERENCIAR / ANEXAR COMPROVANTE DO PEDIDO */}
+      {editingReceiptOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Paperclip className="w-5 h-5 text-indigo-500" />
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                    Comprovante do Pedido #{editingReceiptOrder.id}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Cliente: {editingReceiptOrder.clientName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingReceiptOrder(null);
+                  setReceiptFile(null);
+                }}
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Existing or New Receipt State */}
+            <div className="space-y-4 text-xs">
+              {editingReceiptOrder.paymentReceiptUrl || receiptFile?.url ? (
+                <div className="p-3.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Comprovante Anexado
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSelectedReceiptViewer({
+                          url: receiptFile?.url || editingReceiptOrder.paymentReceiptUrl!,
+                          type: receiptFile?.type || editingReceiptOrder.paymentReceiptType || 'image',
+                          name: receiptFile?.name || editingReceiptOrder.paymentReceiptName || 'Comprovante',
+                          title: `Comprovante de Pagamento (${editingReceiptOrder.id})`,
+                        })
+                      }
+                      className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5" /> Visualizar / Zoom
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                    Arquivo: <strong>{receiptFile?.name || editingReceiptOrder.paymentReceiptName || 'Comprovante de Recebimento'}</strong>
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-50 dark:bg-[#181c26] border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-center space-y-2">
+                  <Paperclip className="w-8 h-8 text-slate-400 mx-auto" />
+                  <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">Nenhum comprovante anexado a este pedido</p>
+                  <p className="text-[11px] text-slate-400">Selecione uma imagem (PNG/JPG) ou PDF do comprovante bancário.</p>
+                </div>
+              )}
+
+              {/* Upload Input Field */}
+              <div>
+                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  {editingReceiptOrder.paymentReceiptUrl || receiptFile?.url ? 'Substituir por Novo Comprovante' : 'Selecionar Comprovante'}
+                </label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const isPdf = file.type === 'application/pdf';
+                    const reader = new FileReader();
+                    reader.onloadend = async () => {
+                      const base64 = reader.result as string;
+                      let uploadedUrl = base64;
+                      if (base64.startsWith('data:')) {
+                        uploadedUrl = await uploadToSupabaseStorage(base64, 'receipts', `order_pay_${editingReceiptOrder.id}`);
+                      }
+                      setReceiptFile({
+                        url: uploadedUrl,
+                        type: isPdf ? 'pdf' : 'image',
+                        name: file.name,
+                      });
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-950 dark:file:text-indigo-300 hover:file:bg-indigo-100 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Modal Bottom Actions */}
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 gap-2">
+              {editingReceiptOrder.paymentReceiptUrl || receiptFile?.url ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onUpdateOrderPayment) {
+                      onUpdateOrderPayment(editingReceiptOrder.id, 0, '', 'image', '');
+                    }
+                    setEditingReceiptOrder(null);
+                    setReceiptFile(null);
+                  }}
+                  className="px-3 py-2 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-xl font-bold text-xs cursor-pointer"
+                >
+                  Remover
+                </button>
+              ) : <div />}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingReceiptOrder(null);
+                    setReceiptFile(null);
+                  }}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (receiptFile && onUpdateOrderPayment) {
+                      onUpdateOrderPayment(
+                        editingReceiptOrder.id,
+                        0,
+                        receiptFile.url,
+                        receiptFile.type,
+                        receiptFile.name
+                      );
+                    }
+                    setEditingReceiptOrder(null);
+                    setReceiptFile(null);
+                  }}
+                  disabled={!receiptFile}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
+                >
+                  Salvar Comprovante
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visualizador HD de Comprovante com Zoom */}
+      <ReceiptViewerModal receipt={selectedReceiptViewer} onClose={() => setSelectedReceiptViewer(null)} />
     </div>
   );
 };

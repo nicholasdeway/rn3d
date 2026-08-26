@@ -117,25 +117,27 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
     return { expenses: localExpenses, balances: localBalances };
   }
 
-  // Extract system account balances row if present in expenses
-  const sysBalanceRow = data.find((row) => row.reference_code === 'SYS_ACCOUNT_BALANCES');
-  if (sysBalanceRow && sysBalanceRow.notes) {
-    try {
-      let rawJson = sysBalanceRow.notes;
-      if (rawJson.startsWith('[META:')) {
-        const endIdx = rawJson.indexOf(']');
-        if (endIdx > 6) {
-          const meta = JSON.parse(rawJson.substring(6, endIdx));
-          rawJson = meta.userNotes || rawJson.substring(endIdx + 1);
+  // Extract system account balances row if present in expenses (only if localBalances not already stored locally)
+  if (!localBalances) {
+    const sysBalanceRow = data.find((row) => row.reference_code === 'SYS_ACCOUNT_BALANCES');
+    if (sysBalanceRow && sysBalanceRow.notes) {
+      try {
+        let rawJson = sysBalanceRow.notes;
+        if (rawJson.startsWith('[META:')) {
+          const endIdx = rawJson.indexOf(']');
+          if (endIdx > 6) {
+            const meta = JSON.parse(rawJson.substring(6, endIdx));
+            rawJson = meta.userNotes || rawJson.substring(endIdx + 1);
+          }
         }
-      }
-      const parsedBalances = JSON.parse(rawJson);
-      if (parsedBalances && typeof parsedBalances === 'object' && typeof parsedBalances.nubank === 'number') {
-        localBalances = parsedBalances;
-        localStorage.setItem('rn3d_account_balances', JSON.stringify(parsedBalances));
-        localStorage.setItem('rn3d_account_balance', (parsedBalances.nubank || 0).toString());
-      }
-    } catch (e) {}
+        const parsedBalances = JSON.parse(rawJson);
+        if (parsedBalances && typeof parsedBalances === 'object' && typeof parsedBalances.nubank === 'number') {
+          localBalances = parsedBalances;
+          localStorage.setItem('rn3d_account_balances', JSON.stringify(parsedBalances));
+          localStorage.setItem('rn3d_account_balance', (parsedBalances.nubank || 0).toString());
+        }
+      } catch (e) {}
+    }
   }
 
   // Purge legacy & duplicate expenses permanently from Supabase
