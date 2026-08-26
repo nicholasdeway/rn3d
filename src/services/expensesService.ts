@@ -258,7 +258,6 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
     date: expense.date || new Date().toISOString().split('T')[0],
     payment_status: expense.paymentStatus || 'Pago',
     beneficiary: expense.beneficiary || '',
-    created_by: expense.createdBy || 'Nicholas',
     receipt_url: receiptUrl,
     receipt_type: expense.receiptType || (receiptUrl.startsWith('data:application/pdf') ? 'pdf' : 'image'),
     receipt_name: expense.receiptName || '',
