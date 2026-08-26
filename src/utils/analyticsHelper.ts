@@ -6,8 +6,13 @@ export interface MonthlyAnalyticsData {
   receitas: number;
   despesas: number;
   saldo: number;
+  saldoAcumulado: number;
 }
 
+/**
+ * Calcula os dados analíticos mensais 100% reais dos últimos 6 meses
+ * sem valores fakes ou baselines mockadas.
+ */
 export function computeMonthlyAnalyticsData(
   orders: Order[] = [],
   transactions: any[] = [],
@@ -71,6 +76,7 @@ export function computeMonthlyAnalyticsData(
     return null;
   };
 
+  // 1. Pedidos Faturados / Recebidos
   orders.forEach((o) => {
     const key = parseDateToMonthKey(o.date);
     const revenue = Number(o.paidAmount) || Number(o.totalValue) || 0;
@@ -80,56 +86,67 @@ export function computeMonthlyAnalyticsData(
     }
   });
 
+  // 2. Transações de Caixa / Vendas
   transactions.forEach((t) => {
     const key = parseDateToMonthKey(t.date);
     const amt = Number(t.amount) || 0;
     if (key && monthlyMap.has(key)) {
       const cur = monthlyMap.get(key)!;
-      if (t.type === 'receita') {
+      const typeLower = (t.type || '').toLowerCase();
+      if (typeLower.includes('receita') || typeLower.includes('venda') || typeLower.includes('entrada') || typeLower.includes('recebimento')) {
         cur.receitas += amt;
-      } else if (t.type === 'despesa') {
+      } else if (typeLower.includes('despesa') || typeLower.includes('saída') || typeLower.includes('retirada')) {
         cur.despesas += amt;
       }
     }
   });
 
+  // 3. Consignações Ativas
   consignments.forEach((c) => {
     const key = parseDateToMonthKey(c.date);
     const val = Number(c.totalValue) || 0;
     if (key && monthlyMap.has(key)) {
       const cur = monthlyMap.get(key)!;
-      cur.receitas += val * 0.3;
+      cur.receitas += val;
     }
   });
 
+  // 4. Lançamentos de Despesas & Aportes
   expenses.forEach((exp) => {
-    if (exp.paymentStatus === 'Pago') {
-      const key = parseDateToMonthKey(exp.date);
-      const amt = Number(exp.amount) || 0;
-      if (key && monthlyMap.has(key)) {
-        const cur = monthlyMap.get(key)!;
+    if (exp.referenceCode === 'SYS_ACCOUNT_BALANCES' || exp.category === 'Transferência de Marketplace') {
+      return;
+    }
+
+    const key = parseDateToMonthKey(exp.date);
+    const amt = Number(exp.amount) || 0;
+
+    if (key && monthlyMap.has(key)) {
+      const cur = monthlyMap.get(key)!;
+      if (exp.category === 'Aporte / Reembolso de Sócio') {
+        cur.receitas += amt;
+      } else if (exp.paymentStatus === 'Pago') {
         cur.despesas += amt;
       }
     }
   });
 
-  const totalRealReceitas = Array.from(monthlyMap.values()).reduce((sum, m) => sum + m.receitas, 0);
-  const totalRealDespesas = Array.from(monthlyMap.values()).reduce((sum, m) => sum + m.despesas, 0);
+  let runningAccumulatedBalance = 0;
 
-  const baselineReceitas = [1900, 2600, 3400, 4300, 5200, Math.max(6400, totalRealReceitas)];
-  const baselineDespesas = [650, 920, 1200, 1450, 1750, Math.max(2100, totalRealDespesas)];
-
-  return last6Months.map((m, i) => {
+  return last6Months.map((m) => {
     const key = `${m.year}-${m.idx}`;
     const real = monthlyMap.get(key) || { receitas: 0, despesas: 0 };
-    const receitas = real.receitas > 0 ? real.receitas : baselineReceitas[i];
-    const despesas = real.despesas > 0 ? real.despesas : baselineDespesas[i];
+    const receitas = real.receitas;
+    const despesas = real.despesas;
+    const saldo = receitas - despesas;
+    runningAccumulatedBalance += saldo;
+
     return {
       month: m.label,
       monthFullName: m.fullLabel,
       receitas,
       despesas,
-      saldo: Math.max(0, receitas - despesas),
+      saldo,
+      saldoAcumulado: runningAccumulatedBalance,
     };
   });
 }
