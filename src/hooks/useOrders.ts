@@ -205,34 +205,40 @@ export function useOrders(
       if (newStatus === 'Entregue') {
         const found = orders.find((o) => o.id === orderId);
         if (found) {
-          const modeText = found.paidAmount >= found.totalValue ? 'Pago' : 'Faturado / Pendente';
-          const formattedDate = new Date().toLocaleDateString('pt-BR');
-          const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          const visitId = `VIS-${found.id}`;
+          setVisits((prev) => {
+            const alreadyExists = prev.some((v) => v.id === visitId || (v.reason && v.reason.includes(found.id)));
+            if (alreadyExists) return prev;
 
-          const deliveryVisit: Visit = {
-            id: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
-            clientId: found.clientId,
-            clientName: found.clientName,
-            scheduledDate: formattedDate,
-            timeSlot: formattedTime,
-            reason: `Entrega do Pedido ${found.id} (${modeText})`,
-            productsOnSite: found.itemsCount,
-            lastVisitText: `${formattedDate} às ${formattedTime}`,
-            status: 'Concluída',
-            completedAt: `${formattedDate} ${formattedTime}`,
-            completedSummary: {
-              durationMinutes: 15,
-              itemsSold: found.itemsCount,
-              totalRevenue: found.totalValue,
-              receivedAmount: found.paidAmount,
-              itemsRemoved: 0,
-              itemsAdded: found.itemsCount,
-              finalStockCount: found.itemsCount,
-              nextVisitDate: 'N/A',
-            },
-          };
+            const modeText = found.paidAmount >= found.totalValue ? 'Pago' : 'Faturado / Pendente';
+            const formattedDate = new Date().toLocaleDateString('pt-BR');
+            const formattedTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-          setVisits((prev) => [deliveryVisit, ...prev]);
+            const deliveryVisit: Visit = {
+              id: visitId,
+              clientId: found.clientId,
+              clientName: found.clientName,
+              scheduledDate: formattedDate,
+              timeSlot: formattedTime,
+              reason: `Entrega do Pedido ${found.id} (${modeText})`,
+              productsOnSite: found.itemsCount,
+              lastVisitText: `${formattedDate} às ${formattedTime}`,
+              status: 'Concluída',
+              completedAt: `${formattedDate} ${formattedTime}`,
+              completedSummary: {
+                durationMinutes: 15,
+                itemsSold: found.itemsCount,
+                totalRevenue: found.totalValue,
+                receivedAmount: found.paidAmount,
+                itemsRemoved: 0,
+                itemsAdded: found.itemsCount,
+                finalStockCount: found.itemsCount,
+                nextVisitDate: 'N/A',
+              },
+            };
+
+            return [deliveryVisit, ...prev];
+          });
         }
       }
     });

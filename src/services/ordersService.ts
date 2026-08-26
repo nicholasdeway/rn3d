@@ -31,32 +31,56 @@ export async function fetchOrders(): Promise<Order[]> {
 
   const dbOrders: Order[] = data
     .filter((row) => row.order_code !== 'SYS_ACCOUNT_BALANCES' && row.client_name !== 'SISTEMA_BALANCES')
-    .map((row) => ({
-    id: row.order_code || row.id,
-    clientId: row.client_id || '',
-    clientName: row.client_name,
-    date: row.date || new Date().toISOString().split('T')[0],
-    itemsCount: row.items_count || (row.order_items ? row.order_items.length : 0),
-    totalValue: Number(row.total_value) || 0,
-    paidAmount: Number(row.paid_amount) || 0,
-    paymentStatusText: row.payment_status_text || 'Pendente',
-    status: row.status as Order['status'],
-    productionProgressPct: row.production_progress_pct || 0,
-    productionSlaDate: row.production_sla_date || '',
-    estimatedDeliveryDate: row.estimated_delivery_date || '',
-    items: (row.order_items || []).map((item: any) => ({
-      productName: item.product_name,
-      quantity: item.quantity,
-      unitPrice: Number(item.unit_price) || 0,
-      subtotal: Number(item.subtotal) || 0,
-    })),
-    timeline: [
-      {
-        date: new Date(row.created_at).toLocaleString('pt-BR'),
-        title: 'Pedido Registrado no Sistema',
-      },
-    ],
-  }));
+    .map((row) => {
+      let clientCost = Number(row.internal_logistics_cost);
+      let clientType = row.internal_logistics_type || 'combustivel';
+
+      if (!clientCost || isNaN(clientCost)) {
+        try {
+          const savedLogistics = localStorage.getItem('rn3d_client_logistics');
+          if (savedLogistics) {
+            const parsed = JSON.parse(savedLogistics);
+            if (row.client_id && parsed[row.client_id]) {
+              clientCost = Number(parsed[row.client_id].cost) || 0;
+              clientType = parsed[row.client_id].type || clientType;
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (!clientCost && clientType === 'combustivel') {
+        clientCost = 20.0;
+      }
+
+      return {
+        id: row.order_code || row.id,
+        clientId: row.client_id || '',
+        clientName: row.client_name,
+        date: row.date || new Date().toISOString().split('T')[0],
+        itemsCount: row.items_count || (row.order_items ? row.order_items.length : 0),
+        totalValue: Number(row.total_value) || 0,
+        paidAmount: Number(row.paid_amount) || 0,
+        paymentStatusText: row.payment_status_text || 'Pendente',
+        status: row.status as Order['status'],
+        productionProgressPct: row.production_progress_pct || 0,
+        productionSlaDate: row.production_sla_date || '',
+        estimatedDeliveryDate: row.estimated_delivery_date || '',
+        internalLogisticsType: clientType as any,
+        internalLogisticsCost: clientCost,
+        items: (row.order_items || []).map((item: any) => ({
+          productName: item.product_name,
+          quantity: item.quantity,
+          unitPrice: Number(item.unit_price) || 0,
+          subtotal: Number(item.subtotal) || 0,
+        })),
+        timeline: [
+          {
+            date: new Date(row.created_at).toLocaleString('pt-BR'),
+            title: 'Pedido Registrado no Sistema',
+          },
+        ],
+      };
+    });
 
   try {
     localStorage.setItem('rn3d_orders', JSON.stringify(dbOrders));

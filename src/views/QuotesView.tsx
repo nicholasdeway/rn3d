@@ -148,15 +148,31 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
   const selectedClient = availableClientsList.find((c) => c.id === selectedClientId) || fallbackDefaultClient;
 
-  // Sync client logistics memory: Always use selectedClient.defaultLogisticsCost (defaulting strictly to 0)
+  // Sync client logistics memory: Always use selectedClient.defaultLogisticsCost (defaulting to 20 if combustivel)
   React.useEffect(() => {
     if (!selectedClient) return;
 
-    const cost = typeof selectedClient.defaultLogisticsCost === 'number'
+    let cost = typeof selectedClient.defaultLogisticsCost === 'number'
       ? selectedClient.defaultLogisticsCost
       : (Number(selectedClient.defaultLogisticsCost) || 0);
 
     const type = selectedClient.defaultLogisticsType || 'combustivel';
+
+    if (!cost) {
+      try {
+        const saved = localStorage.getItem('rn3d_client_logistics');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (selectedClient.id && parsed[selectedClient.id] && parsed[selectedClient.id].cost) {
+            cost = Number(parsed[selectedClient.id].cost) || 0;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!cost && type === 'combustivel') {
+      cost = 20.0;
+    }
 
     setInternalLogisticsType(type);
     setInternalLogisticsCost(cost);

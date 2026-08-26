@@ -244,14 +244,48 @@ export function useAppData() {
       let changed = false;
       const newAutoExpenses: ExpenseItem[] = [];
 
+      // Clean up legacy duplicated 25.00 auto-expenses or duplicate VIS-VIS- entries
+      const cleanedPrev = prevExpenses.filter((e) => {
+        if (!e.isAutoReplicated) return true;
+        // Remove legacy duplicated R$ 25,00 visit expenses
+        if (e.description?.includes('Deslocamento / Combustível Visita') && e.amount === 25) {
+          changed = true;
+          return false;
+        }
+        return true;
+      });
+
       orders.forEach((o) => {
-        const cost = Number(o.internalLogisticsCost) || 0;
+        let cost = Number(o.internalLogisticsCost) || 0;
+        if (!cost || cost === 0) {
+          const matchedCli = clients.find(
+            (c) => c.id === o.clientId || (c.name && c.name.toLowerCase().trim() === o.clientName.toLowerCase().trim())
+          );
+          if (matchedCli && typeof matchedCli.defaultLogisticsCost === 'number' && matchedCli.defaultLogisticsCost > 0) {
+            cost = matchedCli.defaultLogisticsCost;
+          } else {
+            try {
+              const saved = localStorage.getItem('rn3d_client_logistics');
+              if (saved) {
+                const parsed = JSON.parse(saved);
+                if (o.clientId && parsed[o.clientId] && parsed[o.clientId].cost) {
+                  cost = Number(parsed[o.clientId].cost) || 20.0;
+                }
+              }
+            } catch (e) {}
+          }
+          if (!cost && (!o.internalLogisticsType || o.internalLogisticsType === 'combustivel')) {
+            cost = 20.0;
+          }
+        }
+
         if (cost > 0) {
-          const alreadyExists = prevExpenses.some((e) => e.referenceCode === o.id);
+          const refCode = o.id;
+          const alreadyExists = cleanedPrev.some((e) => e.referenceCode === refCode || e.notes?.includes(o.id));
           if (!alreadyExists) {
             changed = true;
             newAutoExpenses.push({
-              id: `exp-auto-${o.id}`,
+              id: `exp-auto-${refCode}`,
               description: `Custo de Logística / Frete (${o.id} - ${o.clientName})`,
               category: 'Combustível & Transporte',
               amount: cost,
@@ -259,7 +293,7 @@ export function useAppData() {
               paymentStatus: 'Pago',
               beneficiary: 'Logística de Entrega',
               isAutoReplicated: true,
-              referenceCode: o.id,
+              referenceCode: refCode,
               notes: `Gerado automaticamente via Pedido ${o.id}`,
             });
           }
@@ -268,9 +302,31 @@ export function useAppData() {
 
       visits.forEach((v) => {
         if (v.status === 'Concluída') {
-          const cost = 25.0; // Standard estimated visit fuel cost if presencial visit completed
+          // Skip order delivery visits so fuel cost is not duplicated with order logistics cost
+          const isOrderDelivery = v.reason && v.reason.toLowerCase().includes('entrega do pedido');
+          if (isOrderDelivery) return;
+
+          const matchedCli = clients.find(
+            (c) => c.id === v.clientId || (c.name && c.name.toLowerCase().trim() === v.clientName.toLowerCase().trim())
+          );
+
+          let cost = 20.0;
+          if (matchedCli && typeof matchedCli.defaultLogisticsCost === 'number' && matchedCli.defaultLogisticsCost > 0) {
+            cost = matchedCli.defaultLogisticsCost;
+          } else {
+            try {
+              const saved = localStorage.getItem('rn3d_client_logistics');
+              if (saved) {
+                const parsed = JSON.parse(saved);
+                if (v.clientId && parsed[v.clientId] && parsed[v.clientId].cost) {
+                  cost = Number(parsed[v.clientId].cost) || 20.0;
+                }
+              }
+            } catch (e) {}
+          }
+
           const refCode = `VIS-${v.id}`;
-          const alreadyExists = prevExpenses.some((e) => e.referenceCode === refCode);
+          const alreadyExists = cleanedPrev.some((e) => e.referenceCode === refCode || e.description?.includes(v.id));
           if (!alreadyExists) {
             changed = true;
             newAutoExpenses.push({
@@ -289,9 +345,9 @@ export function useAppData() {
         }
       });
 
-      return changed ? [...newAutoExpenses, ...prevExpenses] : prevExpenses;
+      return changed ? [...newAutoExpenses, ...cleanedPrev] : prevExpenses;
     });
-  }, [orders, visits]);
+  }, [orders, visits, clients]);
 
   // Auto-mirror order local payments (e.g. 50% signal deposit / 50% completion) into expenses/transactions log
   useEffect(() => {
