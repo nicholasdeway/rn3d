@@ -203,9 +203,9 @@ export function useAppData() {
     };
   }, [user, setProducts, setClients, setOrders, setQuotes]);
 
-  // Sync clients' productsOnSiteCount and productsValuation dynamically from consignments
+  // Sync clients' productsOnSiteCount, productsValuation, and lastVisitDate dynamically from consignments, orders, and visits
   useEffect(() => {
-    if (clients.length === 0 || consignments.length === 0) return;
+    if (clients.length === 0) return;
 
     setClients((prevClients) => {
       let changed = false;
@@ -219,15 +219,60 @@ export function useAppData() {
         const totalItemsCount = matchingConsignments.reduce((sum, c) => sum + c.itemsCount, 0);
         const totalValuation = matchingConsignments.reduce((sum, c) => sum + c.totalValue, 0);
 
-        if (
-          cli.productsOnSiteCount !== totalItemsCount ||
-          Math.abs((cli.productsValuation || 0) - totalValuation) > 0.01
-        ) {
+        // Find most recent visit date from completed visits or delivered orders
+        const matchingVisits = visits.filter(
+          (v) =>
+            (v.clientId === cli.id || (v.clientName && v.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())) &&
+            v.status === 'Concluída'
+        );
+
+        const matchingDeliveredOrders = orders.filter(
+          (o) =>
+            (o.clientId === cli.id || (o.clientName && o.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())) &&
+            (o.status === 'Entregue' || o.status === 'Concluído')
+        );
+
+        let latestVisitDateStr = cli.lastVisitDate || 'Sem visitas';
+
+        const dates: string[] = [];
+        matchingVisits.forEach((v) => {
+          if (v.completedAt) dates.push(v.completedAt.split(' ')[0]);
+          else if (v.lastVisitText && v.lastVisitText !== 'N/A' && v.lastVisitText !== 'Sem visitas') {
+            dates.push(v.lastVisitText.split(' ')[0]);
+          } else if (v.scheduledDate) dates.push(v.scheduledDate);
+        });
+
+        matchingDeliveredOrders.forEach((o) => {
+          if (o.date) dates.push(o.date);
+        });
+
+        if (dates.length > 0) {
+          dates.sort((a, b) => {
+            const parseD = (str: string) => {
+              if (str.includes('/')) {
+                const parts = str.split('/');
+                if (parts.length === 3) return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
+              } else if (str.includes('-')) {
+                const parts = str.split('-');
+                if (parts.length >= 3) return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime();
+              }
+              return 0;
+            };
+            return parseD(b) - parseD(a);
+          });
+          latestVisitDateStr = dates[0];
+        }
+
+        const stockChanged = cli.productsOnSiteCount !== totalItemsCount || Math.abs((cli.productsValuation || 0) - totalValuation) > 0.01;
+        const lastVisitChanged = latestVisitDateStr !== cli.lastVisitDate && latestVisitDateStr !== 'Sem visitas' && latestVisitDateStr !== 'N/A';
+
+        if (stockChanged || lastVisitChanged) {
           changed = true;
           return {
             ...cli,
             productsOnSiteCount: totalItemsCount,
             productsValuation: totalValuation,
+            lastVisitDate: lastVisitChanged ? latestVisitDateStr : cli.lastVisitDate,
           };
         }
         return cli;
@@ -235,7 +280,7 @@ export function useAppData() {
 
       return changed ? updated : prevClients;
     });
-  }, [consignments, clients]);
+  }, [consignments, orders, visits, clients]);
 
   // Auto-replicate internal logistics costs from orders and visits into expenses (Combustível & Transporte)
 
