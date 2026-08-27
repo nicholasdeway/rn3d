@@ -101,13 +101,30 @@ export async function uploadToSupabaseStorage(
 
     const path = `${folder}/${cleanPrefix}_${Date.now()}.${extension}`;
 
-    const { error: uploadError } = await supabase.storage
+    let { error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(path, blob, {
         contentType,
         cacheControl: '36000',
         upsert: true,
       });
+
+    if (uploadError && (uploadError.message.includes('not found') || uploadError.message.includes('Bucket') || uploadError.message.includes('400'))) {
+      try {
+        console.info(`[Storage] Tentando criar bucket '${BUCKET_NAME}' automaticamente no Supabase...`);
+        await supabase.storage.createBucket(BUCKET_NAME, { public: true });
+        const retry = await supabase.storage
+          .from(BUCKET_NAME)
+          .upload(path, blob, {
+            contentType,
+            cacheControl: '36000',
+            upsert: true,
+          });
+        uploadError = retry.error;
+      } catch (createErr: any) {
+        console.warn('[Storage] Não foi possível criar bucket automaticamente:', createErr?.message || createErr);
+      }
+    }
 
     if (uploadError) {
       console.warn(`[Storage] Não foi possível enviar para o bucket '${BUCKET_NAME}':`, uploadError.message);
