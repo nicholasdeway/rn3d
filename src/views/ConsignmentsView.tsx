@@ -887,39 +887,51 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 background: white !important;
                 color: black !important;
                 height: auto !important;
+                min-height: 0 !important;
                 overflow: visible !important;
               }
 
-              body * {
-                visibility: hidden !important;
+              header, nav, aside, footer, .no-print, [role="alert"] {
+                display: none !important;
               }
 
-              .print-container,
-              .print-container * {
-                visibility: visible !important;
+              #root, #root > div, main {
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                background: white !important;
               }
 
               .print-container {
-                position: fixed !important;
-                left: 0 !important;
-                top: 0 !important;
-                right: 0 !important;
+                position: static !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
                 width: 100% !important;
                 height: auto !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
                 max-height: none !important;
-                background: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
                 overflow: visible !important;
                 display: block !important;
-                z-index: 999999 !important;
+                background: white !important;
+                color: black !important;
               }
 
               .print-sheet {
                 padding: 0 !important;
                 margin: 0 !important;
+                height: auto !important;
                 max-height: none !important;
                 overflow: visible !important;
+                background: white !important;
+                color: black !important;
+                display: block !important;
               }
 
               .no-print {

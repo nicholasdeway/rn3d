@@ -464,6 +464,7 @@ html.dark .print-sheet .divide-slate-200>*+* {
     overflow: visible !important;
     background: #ffffff !important;
     color: #000000 !important;
+    display: block !important;
   }
 
   tr {

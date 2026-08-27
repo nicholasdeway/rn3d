@@ -233,12 +233,14 @@ export function useAppData() {
     };
   }, [user, setProducts, setClients, setOrders, setQuotes]);
 
-  // Sync clients' productsOnSiteCount, productsValuation, and lastVisitDate dynamically from consignments, orders, and visits
+  // Sync clients' productsOnSiteCount, productsValuation, lastVisitDate, nextVisitDate, and visitStatus dynamically
   useEffect(() => {
     if (clients.length === 0) return;
 
     setClients((prevClients) => {
       let changed = false;
+      const todayStr = new Date().toLocaleDateString('pt-BR');
+
       const updated = prevClients.map((cli) => {
         const matchingConsignments = consignments.filter(
           (c) =>
@@ -252,9 +254,10 @@ export function useAppData() {
         // Find most recent visit date from completed visits or delivered orders
         const matchingVisits = visits.filter(
           (v) =>
-            (v.clientId === cli.id || (v.clientName && v.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())) &&
-            v.status === 'Concluída'
+            v.clientId === cli.id || (v.clientName && v.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())
         );
+
+        const completedVisits = matchingVisits.filter((v) => v.status === 'Concluída');
 
         const matchingDeliveredOrders = orders.filter(
           (o) =>
@@ -265,7 +268,7 @@ export function useAppData() {
         let latestVisitDateStr = cli.lastVisitDate || 'Sem visitas';
 
         const dates: string[] = [];
-        matchingVisits.forEach((v) => {
+        completedVisits.forEach((v) => {
           if (v.completedAt) dates.push(v.completedAt.split(' ')[0]);
           else if (v.lastVisitText && v.lastVisitText !== 'N/A' && v.lastVisitText !== 'Sem visitas') {
             dates.push(v.lastVisitText.split(' ')[0]);
@@ -293,16 +296,79 @@ export function useAppData() {
           latestVisitDateStr = dates[0];
         }
 
+        // Find pending scheduled visits for this client
+        const pendingVisits = matchingVisits.filter((v) => v.status !== 'Concluída');
+
+        let computedNextVisitDate = cli.nextVisitDate || 'A agendar';
+        let computedVisitStatus: 'Hoje' | 'Atrasada' | 'Em breve' | 'Concluída' | 'Última visita' = cli.visitStatus || 'Última visita';
+
+        if (pendingVisits.length > 0) {
+          // Sort by scheduledDate ascending (earliest scheduled visit first)
+          pendingVisits.sort((a, b) => {
+            const parseD = (str: string) => {
+              if (!str) return 0;
+              if (str.includes('/')) {
+                const parts = str.split('/');
+                if (parts.length === 3) return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
+              } else if (str.includes('-')) {
+                const parts = str.split('-');
+                if (parts.length >= 3) return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime();
+              }
+              return 0;
+            };
+            return parseD(a.scheduledDate) - parseD(b.scheduledDate);
+          });
+
+          const nextScheduled = pendingVisits[0];
+          computedNextVisitDate = nextScheduled.scheduledDate || 'A agendar';
+
+          const now = new Date();
+          const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+          const parseDateToTimestamp = (str?: string) => {
+            if (!str) return 0;
+            if (str.includes('/')) {
+              const parts = str.split('/');
+              if (parts.length === 3) return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
+            } else if (str.includes('-')) {
+              const parts = str.split('-');
+              if (parts.length >= 3) return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime();
+            }
+            return 0;
+          };
+
+          const schedTime = parseDateToTimestamp(nextScheduled.scheduledDate);
+
+          if (schedTime > 0) {
+            if (schedTime === todayMidnight || nextScheduled.scheduledDate === todayStr) {
+              computedVisitStatus = 'Hoje';
+            } else if (schedTime < todayMidnight) {
+              computedVisitStatus = 'Atrasada';
+            } else {
+              computedVisitStatus = 'Em breve';
+            }
+          } else {
+            computedVisitStatus = nextScheduled.status === 'Hoje' ? 'Hoje' : nextScheduled.status === 'Atrasada' ? 'Atrasada' : 'Em breve';
+          }
+        } else {
+          computedNextVisitDate = 'A agendar';
+          computedVisitStatus = 'Última visita';
+        }
+
         const stockChanged = cli.productsOnSiteCount !== totalItemsCount || Math.abs((cli.productsValuation || 0) - totalValuation) > 0.01;
         const lastVisitChanged = latestVisitDateStr !== cli.lastVisitDate && latestVisitDateStr !== 'Sem visitas' && latestVisitDateStr !== 'N/A';
+        const nextVisitChanged = computedNextVisitDate !== cli.nextVisitDate;
+        const visitStatusChanged = computedVisitStatus !== cli.visitStatus;
 
-        if (stockChanged || lastVisitChanged) {
+        if (stockChanged || lastVisitChanged || nextVisitChanged || visitStatusChanged) {
           changed = true;
           return {
             ...cli,
             productsOnSiteCount: totalItemsCount,
             productsValuation: totalValuation,
             lastVisitDate: lastVisitChanged ? latestVisitDateStr : cli.lastVisitDate,
+            nextVisitDate: computedNextVisitDate,
+            visitStatus: computedVisitStatus,
           };
         }
         return cli;

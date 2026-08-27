@@ -334,6 +334,11 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                         Em breve
                       </span>
                     )}
+                    {(c.visitStatus === 'Última visita' || c.visitStatus === 'Concluída' || (!c.visitStatus && c.lastVisitDate)) && (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                        Última visita {c.lastVisitDate && c.lastVisitDate !== 'Sem visitas' && c.lastVisitDate !== 'N/A' ? `(${formatDateBR(c.lastVisitDate)})` : ''}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -454,6 +459,11 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                         {c.visitStatus === 'Em breve' && (
                           <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
                             Em breve
+                          </span>
+                        )}
+                        {(c.visitStatus === 'Última visita' || c.visitStatus === 'Concluída' || (!c.visitStatus && c.lastVisitDate)) && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                            Última visita {c.lastVisitDate && c.lastVisitDate !== 'Sem visitas' && c.lastVisitDate !== 'N/A' ? `(${formatDateBR(c.lastVisitDate)})` : ''}
                           </span>
                         )}
                       </td>

@@ -101,7 +101,7 @@ export interface Client {
   receivableBalance: number; // A receber
   lastVisitDate: string;
   nextVisitDate: string;
-  visitStatus: 'Hoje' | 'Atrasada' | 'Em breve' | 'Concluída';
+  visitStatus: 'Hoje' | 'Atrasada' | 'Em breve' | 'Concluída' | 'Última visita';
 }
 
 export interface ConsignmentItem {

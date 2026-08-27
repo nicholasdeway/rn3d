@@ -678,40 +678,76 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto">
           <style>{`
             @media print {
-              body * {
-                visibility: hidden !important;
+              @page {
+                size: A4 portrait;
+                margin: 10mm 12mm;
               }
 
-              .print-container,
-              .print-container * {
-                visibility: visible !important;
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                color: black !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+              }
+
+              header, nav, aside, footer, .no-print, [role="alert"] {
+                display: none !important;
+              }
+
+              #root, #root > div, main {
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                background: white !important;
               }
 
               .print-container {
-                position: fixed !important;
-                left: 0 !important;
-                top: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                width: 100vw !important;
-                height: 100vh !important;
-                background: white !important;
-                padding: 0 !important;
+                position: static !important;
                 margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                height: auto !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                max-height: none !important;
                 overflow: visible !important;
                 display: block !important;
-                z-index: 999999 !important;
+                background: white !important;
+                color: black !important;
               }
 
               .print-sheet {
-                padding: 12mm 16mm !important;
+                padding: 0 !important;
                 margin: 0 !important;
+                height: auto !important;
                 max-height: none !important;
                 overflow: visible !important;
+                background: white !important;
+                color: black !important;
+                display: block !important;
               }
 
               .no-print {
                 display: none !important;
+              }
+
+              tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+
+              .print-avoid-break {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
               }
             }
           `}</style>

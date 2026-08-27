@@ -1519,38 +1519,47 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 background: white !important;
                 color: black !important;
                 height: auto !important;
+                min-height: 0 !important;
                 overflow: visible !important;
               }
 
-              body * {
-                visibility: hidden !important;
+              header, nav, aside, footer, .no-print, [role="alert"] {
+                display: none !important;
               }
 
-              .printable-quote-modal,
-              .printable-quote-modal * {
-                visibility: visible !important;
+              #root, #root > div, main {
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                background: white !important;
+              }
+
+              main > div > *:not(.printable-quote-modal) {
+                display: none !important;
               }
 
               .printable-quote-modal {
-                position: fixed !important;
+                position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
-                right: 0 !important;
                 width: 100% !important;
                 height: auto !important;
+                min-height: 0 !important;
                 max-height: none !important;
-                background: white !important;
-                padding: 0 !important;
                 margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
                 overflow: visible !important;
                 display: block !important;
                 z-index: 999999 !important;
               }
 
               .print-container {
-                position: relative !important;
-                top: 0 !important;
-                left: 0 !important;
+                position: static !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 max-width: 100% !important;
@@ -1562,19 +1571,19 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 max-height: none !important;
                 overflow: visible !important;
                 display: block !important;
+                background: white !important;
+                color: black !important;
               }
 
               .print-sheet {
                 padding: 0 !important;
                 margin: 0 !important;
+                height: auto !important;
                 max-height: none !important;
                 overflow: visible !important;
                 background: white !important;
                 color: black !important;
-              }
-
-              .no-print {
-                display: none !important;
+                display: block !important;
               }
 
               tr {

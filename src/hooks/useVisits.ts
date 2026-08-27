@@ -35,6 +35,34 @@ export function useVisits(
       ? newVisitData.scheduledDate
       : newVisitData.scheduledDate.split('-').reverse().join('/');
 
+    const todayStr = new Date().toLocaleDateString('pt-BR');
+    const now = new Date();
+    const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+    const parseDateToTimestamp = (str: string) => {
+      if (str.includes('/')) {
+        const parts = str.split('/');
+        if (parts.length === 3) return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
+      } else if (str.includes('-')) {
+        const parts = str.split('-');
+        if (parts.length >= 3) return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime();
+      }
+      return 0;
+    };
+
+    const schedTime = parseDateToTimestamp(formattedDate);
+    let calculatedStatus: 'Hoje' | 'Atrasada' | 'Em breve' = 'Em breve';
+
+    if (schedTime > 0) {
+      if (schedTime === todayMidnight || formattedDate === todayStr) {
+        calculatedStatus = 'Hoje';
+      } else if (schedTime < todayMidnight) {
+        calculatedStatus = 'Atrasada';
+      } else {
+        calculatedStatus = 'Em breve';
+      }
+    }
+
     const newVisit: Visit = {
       id: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
       clientId: client.id,
@@ -44,13 +72,13 @@ export function useVisits(
       reason: newVisitData.reason || 'Conferência e reposição presencial',
       productsOnSite: client.productsOnSiteCount || 0,
       lastVisitText: client.lastVisitDate || 'N/A',
-      status: 'Em breve',
+      status: calculatedStatus,
     };
 
     setVisits((prev) => [newVisit, ...prev]);
 
     setClients((prev) =>
-      prev.map((c) => (c.id === client.id ? { ...c, nextVisitDate: formattedDate, visitStatus: 'Em breve' } : c))
+      prev.map((c) => (c.id === client.id ? { ...c, nextVisitDate: formattedDate, visitStatus: calculatedStatus } : c))
     );
 
     showToast(`🗓️ Visita agendada para ${client.name} em ${formattedDate}!`, 'success');
@@ -134,8 +162,8 @@ export function useVisits(
             ...c,
             productsOnSiteCount: finalStock,
             lastVisitDate: dateStr,
-            nextVisitDate: nextVisitStr,
-            visitStatus: 'Em breve',
+            nextVisitDate: 'A agendar',
+            visitStatus: 'Última visita',
           };
         }
         return c;
@@ -264,19 +292,7 @@ export function useVisits(
         });
       }
 
-      const nextPendingVisit: Visit = {
-        id: `VIS-${Math.floor(100000 + Math.random() * 900000)}`,
-        clientId: clientId,
-        clientName: client.name,
-        scheduledDate: nextVisitStr,
-        timeSlot: '14:00',
-        reason: 'Conferência periódica de expositor e nova reposição',
-        productsOnSite: finalStock,
-        lastVisitText: dateStr,
-        status: 'Em breve',
-      };
-
-      return [nextPendingVisit, ...updated];
+      return updated;
     });
 
     showToast(

@@ -772,10 +772,12 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               .print-sheet {
                 padding: 0 !important;
                 margin: 0 !important;
+                height: auto !important;
                 max-height: none !important;
                 overflow: visible !important;
                 background: white !important;
                 color: black !important;
+                display: block !important;
               }
 
               tr {
