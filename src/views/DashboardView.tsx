@@ -102,7 +102,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <Sparkles className="w-4 h-4 text-indigo-400" />
               Painel Operacional • Banco Ativo
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Visão Geral da Oficina 3D</h2>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Visão Geral</h2>
             <p className="text-indigo-200/80 text-sm mt-1">
               Acompanhe vendas, clientes, pedidos e estoque em tempo real.
             </p>
@@ -110,22 +110,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
             <button
-              onClick={() => onNavigate('consignments')}
-              className="flex items-center gap-2 px-3.5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
-            >
-              <Boxes className="w-4 h-4" />
-              <span>Consignações</span>
-            </button>
-            <button
-              onClick={() => onQuickAction('novo-produto')}
-              className="flex items-center gap-2 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-sm transition-all cursor-pointer"
-            >
-              <PackagePlus className="w-4 h-4" />
-              <span>Cadastrar Produto</span>
-            </button>
-            <button
               onClick={() => onQuickAction('novo-pedido')}
-              className="flex items-center gap-2 px-3.5 py-2.5 bg-white text-slate-900 hover:bg-indigo-50 rounded-xl text-xs font-semibold transition-all shadow-sm cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2.5 bg-white text-slate-900 hover:bg-indigo-50 rounded-xl text-xs font-semibold transition-all shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4 text-indigo-600" />
               <span>Novo Pedido</span>

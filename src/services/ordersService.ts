@@ -30,6 +30,7 @@ export async function fetchOrders(): Promise<Order[]> {
         clientId: row.client_id || '',
         clientName: row.client_name,
         date: row.date || new Date().toISOString().split('T')[0],
+        createdAt: row.created_at || undefined,
         itemsCount: row.items_count || (row.order_items ? row.order_items.length : 0),
         totalValue: Number(row.total_value) || 0,
         paidAmount: Number(row.paid_amount) || 0,

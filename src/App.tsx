@@ -88,7 +88,7 @@ export function App() {
       (c.items || []).forEach((item, idx) => {
         derived.push({
           id: `MOV-REM-${c.id}-${idx}`,
-          timestamp: `${c.date} 10:00`,
+          timestamp: c.createdAt || c.date,
           productId: item.productId,
           productName: item.productName,
           quantityDelta: -item.quantity,
@@ -104,7 +104,7 @@ export function App() {
       (ex.itemsRemoved || []).forEach((item, idx) => {
         derived.push({
           id: `MOV-TRC-${ex.id}-${idx}`,
-          timestamp: `${ex.date} 14:30`,
+          timestamp: ex.createdAt || ex.date,
           productId: item.productId,
           productName: item.productName,
           quantityDelta: item.quantity,
@@ -120,7 +120,7 @@ export function App() {
       (o.items || []).forEach((item, idx) => {
         derived.push({
           id: `MOV-PED-${o.id}-${idx}`,
-          timestamp: `${o.date} 16:00`,
+          timestamp: o.createdAt || o.date,
           productId: `prod-${idx}`,
           productName: item.productName,
           quantityDelta: item.quantity,

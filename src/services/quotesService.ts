@@ -24,6 +24,7 @@ export async function fetchQuotes(): Promise<Quote[]> {
     clientId: row.client_id || '',
     clientName: row.client_name,
     date: row.date || new Date().toISOString().split('T')[0],
+    createdAt: row.created_at || undefined,
     validityDays: row.validity_days || 15,
     productionSlaDays: row.production_sla_days || 7,
     items: (row.quote_items || []).map((item: any) => ({

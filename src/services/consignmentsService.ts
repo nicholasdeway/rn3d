@@ -39,6 +39,7 @@ export async function fetchConsignments(): Promise<Consignment[]> {
           clientId: row.client_id || '',
           clientName: row.client_name || 'Cliente Consignado',
           date: row.date || new Date().toISOString().split('T')[0],
+          createdAt: row.created_at || undefined,
           itemsCount: Number(row.items_count) || items.reduce((sum, i) => sum + i.quantity, 0),
           totalValue: Number(row.total_value) || items.reduce((sum, i) => sum + i.subtotal, 0),
           status: row.status === 'Concluído' ? 'Finalizada' : 'Em andamento',

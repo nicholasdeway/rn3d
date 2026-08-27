@@ -34,7 +34,24 @@ export function formatDocument(val: string): string {
 export function formatDateBR(dateStr?: string | null): string {
   if (!dateStr || dateStr === 'N/A' || dateStr === '—' || dateStr === 'A agendar') return dateStr || '';
 
-  const isoMatch = String(dateStr).trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}))?/);
+  const str = String(dateStr).trim();
+
+  // Try standard JS Date parsing for ISO timestamps with timezone Z/offset
+  if (str.includes('T') || str.includes('Z') || (str.includes('-') && str.length > 10)) {
+    try {
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+      }
+    } catch (e) {}
+  }
+
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}))?/);
   if (isoMatch) {
     const [_, year, month, day, hours, minutes] = isoMatch;
     if (hours && minutes) {
@@ -43,7 +60,7 @@ export function formatDateBR(dateStr?: string | null): string {
     return `${day}/${month}/${year}`;
   }
 
-  return String(dateStr);
+  return str;
 }
 
 export function getTodayBR(): string {

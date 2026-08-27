@@ -119,6 +119,7 @@ export interface Consignment {
   clientId: string;
   clientName: string;
   date: string;
+  createdAt?: string;
   itemsCount: number;
   totalValue: number;
   status: 'Em andamento' | 'Finalizada' | 'Cancelada';
@@ -175,6 +176,7 @@ export interface ExchangeNote {
   destinationClientName?: string;
   type?: 'troca_local' | 'migracao_lojas' | 'recolhimento_oficina';
   date: string;
+  createdAt?: string;
   responsible: string;
   responsibleName?: string;
   itemsRemoved: {
@@ -219,6 +221,7 @@ export interface Quote {
   clientPhone?: string;
   clientAddress?: string;
   date: string;
+  createdAt?: string;
   validityDays: number;
   productionSlaDays: number;
   items: QuoteItem[];
@@ -240,6 +243,7 @@ export interface Order {
   clientId: string;
   clientName: string;
   date: string;
+  createdAt?: string;
   itemsCount: number;
   totalValue: number;
   paidAmount: number;
