@@ -123,16 +123,15 @@ export const Header: React.FC<HeaderProps> = ({
       <header className="h-16 bg-white dark:bg-[#12151c] border-b border-slate-200/80 dark:border-[#202531] px-3 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30 shadow-xs gap-3">
         {/* Left Side: Back Button, Mobile Logo, and Long Expanded Web Search Bar */}
         <div className="flex items-center gap-2 sm:gap-3 flex-1">
-          {/* Universal Visual Back Button ("← Voltar") for iOS, Android & Desktop */}
+          {/* Universal Visual Back Button (Icon Only "<") for iOS, Android & Desktop */}
           {canGoBack && onGoBack && (
             <button
               onClick={onGoBack}
               type="button"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/80 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl text-xs font-bold transition-all cursor-pointer border border-slate-200/80 dark:border-slate-700/80 shrink-0 shadow-2xs group"
+              className="flex items-center justify-center p-2 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/80 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all cursor-pointer border border-slate-200/80 dark:border-slate-700/80 shrink-0 shadow-2xs group"
               title="Voltar para a tela anterior"
             >
-              <ArrowLeft className="w-4 h-4 text-indigo-600 dark:text-indigo-400 group-hover:-translate-x-0.5 transition-transform" />
-              <span className="font-extrabold text-xs">Voltar</span>
+              <ArrowLeft className="w-5 h-5 text-indigo-600 dark:text-indigo-400 group-hover:-translate-x-0.5 transition-transform" />
             </button>
           )}
 
@@ -401,8 +400,8 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </div>
 
-          {/* User Profile Info Badge */}
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
+          {/* User Profile Info Badge (Hidden on mobile, visible on desktop md+) */}
+          <div className="hidden md:flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
             <div className="w-8 h-8 rounded-xl bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center font-bold text-xs shadow-2xs border border-slate-700">
               {user?.email?.charAt(0).toUpperCase() || 'N'}
             </div>

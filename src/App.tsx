@@ -164,39 +164,42 @@ export function App() {
     setActiveVisitClientId(nextVisitClientId);
   };
 
-  // Sync initial state and handle popstate (native Android back gesture / browser back button)
+  // Sync initial history state and handle popstate/hashchange (native Android back gesture / iOS / Web)
   useEffect(() => {
+    const initialView = currentView || 'dashboard';
     if (!window.history.state) {
-      window.history.replaceState(
-        {
-          view: currentView,
-          activeClientIdForProfile,
-          activeVisitClientId,
-        },
-        '',
-        `#${currentView}`
-      );
+      window.history.replaceState({ view: 'dashboard', isBase: true }, '', '#dashboard');
+      if (initialView !== 'dashboard') {
+        window.history.pushState({ view: initialView, activeClientIdForProfile, activeVisitClientId }, '', `#${initialView}`);
+      }
     }
 
-    const handlePopState = (event: PopStateEvent) => {
-      if (event.state && event.state.view) {
-        setCurrentView(event.state.view);
-        setActiveClientIdForProfile(event.state.activeClientIdForProfile || null);
-        setActiveVisitClientId(event.state.activeVisitClientId || null);
+    const handleHistoryChange = (event?: Event) => {
+      const state = (event as PopStateEvent)?.state;
+      const hash = window.location.hash.replace('#', '') as ViewMode;
+
+      if (state && state.view) {
+        setCurrentView(state.view);
+        setActiveClientIdForProfile(state.activeClientIdForProfile || null);
+        setActiveVisitClientId(state.activeVisitClientId || null);
+      } else if (hash && hash.length > 0) {
+        setCurrentView(hash);
+        setActiveClientIdForProfile(null);
+        setActiveVisitClientId(null);
       } else {
-        const hash = window.location.hash.replace('#', '') as ViewMode;
-        if (hash) {
-          setCurrentView(hash);
-        } else {
-          setCurrentView('dashboard');
-        }
+        setCurrentView('dashboard');
         setActiveClientIdForProfile(null);
         setActiveVisitClientId(null);
       }
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', handleHistoryChange);
+    window.addEventListener('hashchange', handleHistoryChange);
+
+    return () => {
+      window.removeEventListener('popstate', handleHistoryChange);
+      window.removeEventListener('hashchange', handleHistoryChange);
+    };
   }, []);
 
   const handleGoBack = () => {
