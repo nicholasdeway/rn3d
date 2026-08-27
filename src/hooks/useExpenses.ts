@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ExpenseItem, AccountBalances, MarketplaceAccount } from '../types';
+import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import {
   fetchExpenses,
   createExpense,
@@ -29,7 +30,36 @@ export function useExpenses(
         setExpenses(res.expenses);
       }
       if (res.balances) {
-        setAccountBalances(res.balances);
+        let currentBalances = res.balances;
+
+        // Auto-reconcilia lancamentos de Entrada de Pedido no saldo Nubank
+        const orderPaymentItems = (res.expenses || []).filter(
+          (e) =>
+            (e.category === 'Entrada de Pedido' || (e.referenceCode && e.referenceCode.startsWith('PED-PAY-'))) &&
+            e.paymentStatus === 'Pago'
+        );
+
+        const creditedRefCodes = new Set(getStorageParsed<string[]>('rn3d_credited_order_payments', []));
+        let balanceChanged = false;
+
+        orderPaymentItems.forEach((p) => {
+          const key = p.referenceCode || p.id;
+          if (key && !creditedRefCodes.has(key)) {
+            creditedRefCodes.add(key);
+            currentBalances = {
+              ...currentBalances,
+              nubank: (currentBalances.nubank || 0) + p.amount,
+            };
+            balanceChanged = true;
+          }
+        });
+
+        if (balanceChanged) {
+          safeSetLocalStorage('rn3d_credited_order_payments', JSON.stringify(Array.from(creditedRefCodes)));
+          await saveAccountBalancesToSupabase(currentBalances);
+        }
+
+        setAccountBalances(currentBalances);
       }
     } catch (err) {
       console.error('Erro ao recarregar despesas/saldos do Supabase:', err);
