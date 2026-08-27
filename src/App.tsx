@@ -135,7 +135,18 @@ export function App() {
     return derived;
   }, [appData.movements, appData.consignments, appData.exchanges, appData.orders]);
 
-  // Unified Navigation Manager with HTML5 History API
+  interface NavigationHistoryEntry {
+    view: ViewMode;
+    activeClientIdForProfile: string | null;
+    activeVisitClientId: string | null;
+  }
+
+  const [historyStack, setHistoryStack] = useState<NavigationHistoryEntry[]>(() => {
+    const initialView = (localStorage.getItem('rn3d_current_view') as ViewMode) || 'dashboard';
+    return [{ view: initialView, activeClientIdForProfile: null, activeVisitClientId: null }];
+  });
+
+  // Unified Navigation Manager with internal SPA history stack
   const navigateTo = (
     view: ViewMode,
     options?: {
@@ -147,16 +158,29 @@ export function App() {
     const nextClientProfileId = options?.clientIdForProfile !== undefined ? options.clientIdForProfile : null;
     const nextVisitClientId = options?.visitClientId !== undefined ? options.visitClientId : null;
 
-    const stateObj = {
+    const newEntry: NavigationHistoryEntry = {
       view,
       activeClientIdForProfile: nextClientProfileId,
       activeVisitClientId: nextVisitClientId,
     };
 
     if (options?.replace) {
-      window.history.replaceState(stateObj, '', `#${view}`);
+      setHistoryStack((prev) => {
+        const copy = [...prev];
+        if (copy.length > 0) copy[copy.length - 1] = newEntry;
+        else copy.push(newEntry);
+        return copy;
+      });
+      window.history.replaceState({ view, activeClientIdForProfile: nextClientProfileId, activeVisitClientId: nextVisitClientId }, '', `#${view}`);
     } else {
-      window.history.pushState(stateObj, '', `#${view}`);
+      setHistoryStack((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.view === view && last.activeClientIdForProfile === nextClientProfileId && last.activeVisitClientId === nextVisitClientId) {
+          return prev;
+        }
+        return [...prev, newEntry];
+      });
+      window.history.pushState({ view, activeClientIdForProfile: nextClientProfileId, activeVisitClientId: nextVisitClientId }, '', `#${view}`);
     }
 
     setCurrentView(view);
@@ -168,10 +192,7 @@ export function App() {
   useEffect(() => {
     const initialView = currentView || 'dashboard';
     if (!window.history.state) {
-      window.history.replaceState({ view: 'dashboard', isBase: true }, '', '#dashboard');
-      if (initialView !== 'dashboard') {
-        window.history.pushState({ view: initialView, activeClientIdForProfile, activeVisitClientId }, '', `#${initialView}`);
-      }
+      window.history.replaceState({ view: initialView, activeClientIdForProfile, activeVisitClientId }, '', `#${initialView}`);
     }
 
     const handleHistoryChange = (event?: Event) => {
@@ -203,14 +224,34 @@ export function App() {
   }, []);
 
   const handleGoBack = () => {
-    if (window.history.length > 1) {
-      window.history.back();
+    if (historyStack.length > 1) {
+      const nextStack = historyStack.slice(0, historyStack.length - 1);
+      const prevEntry = nextStack[nextStack.length - 1];
+      setHistoryStack(nextStack);
+
+      window.history.replaceState(
+        {
+          view: prevEntry.view,
+          activeClientIdForProfile: prevEntry.activeClientIdForProfile,
+          activeVisitClientId: prevEntry.activeVisitClientId,
+        },
+        '',
+        `#${prevEntry.view}`
+      );
+
+      setCurrentView(prevEntry.view);
+      setActiveClientIdForProfile(prevEntry.activeClientIdForProfile);
+      setActiveVisitClientId(prevEntry.activeVisitClientId);
     } else {
-      navigateTo('dashboard', { replace: true });
+      setHistoryStack([{ view: 'dashboard', activeClientIdForProfile: null, activeVisitClientId: null }]);
+      window.history.replaceState({ view: 'dashboard', activeClientIdForProfile: null, activeVisitClientId: null }, '', '#dashboard');
+      setCurrentView('dashboard');
+      setActiveClientIdForProfile(null);
+      setActiveVisitClientId(null);
     }
   };
 
-  const canGoBack = currentView !== 'dashboard' || activeClientIdForProfile !== null || activeVisitClientId !== null;
+  const canGoBack = historyStack.length > 1 || (currentView !== 'dashboard' || activeClientIdForProfile !== null || activeVisitClientId !== null);
 
   if (loading) {
     return (
