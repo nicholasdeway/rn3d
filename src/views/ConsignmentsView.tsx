@@ -16,6 +16,7 @@ import {
   FileText,
   Grid,
   List,
+  Edit,
 } from 'lucide-react';
 
 interface ConsignmentsViewProps {
@@ -53,6 +54,15 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [selectedConsignment, setSelectedConsignment] = useState<Consignment | null>(null);
+
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingConsignmentId, setEditingConsignmentId] = useState<string | null>(null);
+  const [editSelectedClientId, setEditSelectedClientId] = useState<string>('');
+  const [editDeliveryDate, setEditDeliveryDate] = useState<string>(getTodayBR());
+  const [editStatus, setEditStatus] = useState<'Em andamento' | 'Finalizada' | 'Cancelada'>('Em andamento');
+  const [editNotes, setEditNotes] = useState('');
+  const [editItems, setEditItems] = useState<ConsignmentItem[]>([]);
 
   // Form State
   const [selectedClientId, setSelectedClientId] = useState<string>(
@@ -129,6 +139,66 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
     onAddConsignment(newConsignment);
     setIsWizardOpen(false);
     setItems([]);
+  };
+
+  const handleStartEditConsignment = (c: Consignment) => {
+    setEditingConsignmentId(c.id);
+    setEditSelectedClientId(c.clientId || clients[0]?.id || '');
+    setEditDeliveryDate(c.date || getTodayBR());
+    setEditStatus((c.status as any) || 'Em andamento');
+    setEditItems(c.items ? c.items.map((i) => ({ ...i })) : []);
+    setEditNotes(c.notes || '');
+    setIsEditModalOpen(true);
+  };
+
+  const handleAddProductToEditItems = (prod: Product) => {
+    const existingIndex = editItems.findIndex((i) => i.productId === prod.id);
+    if (existingIndex >= 0) {
+      const updated = [...editItems];
+      updated[existingIndex].quantity += 1;
+      updated[existingIndex].subtotal = updated[existingIndex].quantity * updated[existingIndex].unitPrice;
+      setEditItems(updated);
+    } else {
+      setEditItems([
+        ...editItems,
+        {
+          productId: prod.id,
+          productName: prod.name,
+          sku: prod.sku,
+          quantity: 1,
+          unitPrice: prod.standardPrice,
+          subtotal: prod.standardPrice,
+        },
+      ]);
+    }
+  };
+
+  const handleSaveEditedConsignment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingConsignmentId || editItems.length === 0) return;
+
+    const targetClient = clients.find((cli) => cli.id === editSelectedClientId);
+    const totalQty = editItems.reduce((acc, i) => acc + i.quantity, 0);
+    const totalVal = editItems.reduce((acc, i) => acc + i.subtotal, 0);
+
+    const updatedConsignment: Consignment = {
+      id: editingConsignmentId,
+      clientId: editSelectedClientId,
+      clientName: targetClient?.name || 'Cliente Consignado',
+      date: editDeliveryDate,
+      itemsCount: totalQty,
+      totalValue: totalVal,
+      status: editStatus,
+      lastAuditDate: editDeliveryDate,
+      items: editItems,
+      notes: editNotes,
+    };
+
+    if (onUpdateConsignment) {
+      onUpdateConsignment(updatedConsignment);
+    }
+    setIsEditModalOpen(false);
+    setEditingConsignmentId(null);
   };
 
   return (
@@ -268,16 +338,29 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                     </div>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 dark:border-[#202531] flex items-center justify-between gap-2">
+                  <div className="pt-2 border-t border-slate-100 dark:border-[#202531] flex items-center justify-between gap-1.5">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedConsignment(c);
                       }}
-                      className="flex-1 py-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                      className="flex-1 py-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
                     >
-                      <Printer className="w-3.5 h-3.5" /> Ver PDF
+                      <Printer className="w-3.5 h-3.5" /> PDF
                     </button>
+                    {onUpdateConsignment && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartEditConsignment(c);
+                        }}
+                        className="px-2.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:hover:bg-amber-900/50 dark:text-amber-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                        title="Editar Remessa"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>Editar</span>
+                      </button>
+                    )}
                     {onDeleteConsignment && (
                       <button
                         onClick={(e) => {
@@ -286,7 +369,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                             onDeleteConsignment(c.id);
                           }
                         }}
-                        className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                        className="px-2.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
                         title="Excluir Remessa"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -347,6 +430,18 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                             >
                               <Printer className="w-3.5 h-3.5" /> Ver PDF
                             </button>
+                            {onUpdateConsignment && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleStartEditConsignment(c);
+                                }}
+                                className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:hover:bg-amber-900/50 dark:text-amber-400 rounded-lg font-semibold flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0 whitespace-nowrap"
+                                title="Editar Remessa"
+                              >
+                                <Edit className="w-3.5 h-3.5" /> Editar
+                              </button>
+                            )}
                             {onDeleteConsignment && (
                               <button
                                 onClick={(e) => {
@@ -604,6 +699,180 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
         </div>
       )}
 
+      {/* ✏️ Modal de Edição de Consignação */}
+      {isEditModalOpen && editingConsignmentId && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-2 sm:p-4 md:p-6">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-[96vw] xl:max-w-4xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden max-h-[95vh] flex flex-col animate-in fade-in zoom-in-95 duration-150 shadow-2xl">
+            <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base sm:text-lg flex items-center gap-2">
+                <Edit className="w-5 h-5 text-amber-500" />
+                Editar Remessa de Consignação ({editingConsignmentId})
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditedConsignment} className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Cliente / Estabelecimento
+                  </label>
+                  <select
+                    value={editSelectedClientId}
+                    onChange={(e) => setEditSelectedClientId(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500/20"
+                  >
+                    {clients.map((cli) => (
+                      <option key={cli.id} value={cli.id}>
+                        {cli.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Data da Remessa
+                  </label>
+                  <input
+                    type="date"
+                    value={editDeliveryDate}
+                    onChange={(e) => setEditDeliveryDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Status da Remessa
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as any)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500/20"
+                  >
+                    <option value="Em andamento">Em andamento</option>
+                    <option value="Finalizada">Finalizada (Auditada / Faturada)</option>
+                    <option value="Cancelada">Cancelada</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  Adicionar Produtos à Remessa
+                </label>
+                <ProductSelectCombobox
+                  products={products}
+                  onSelectProduct={handleAddProductToEditItems}
+                  placeholder="Buscar produto do catálogo 3D..."
+                />
+              </div>
+
+              {/* Edit Items List */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Produtos em Consignação ({editItems.reduce((sum, i) => sum + i.quantity, 0)} unidades)
+                </h4>
+                {editItems.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic p-4 text-center bg-slate-50 dark:bg-[#181c26] rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                    Nenhum produto adicionado. Adicione acima.
+                  </p>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    {editItems.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="p-3 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] flex items-center justify-between gap-3 text-xs"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{item.productName}</p>
+                          <p className="text-[10px] text-slate-400 font-mono">{item.sku}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => {
+                              const qty = Math.max(1, parseInt(e.target.value) || 1);
+                              const updated = [...editItems];
+                              updated[idx].quantity = qty;
+                              updated[idx].subtotal = qty * updated[idx].unitPrice;
+                              setEditItems(updated);
+                            }}
+                            className="w-16 px-2 py-1 bg-white dark:bg-[#12151c] border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-center text-slate-900 dark:text-slate-100 text-xs"
+                          />
+                          <span className="text-slate-400">×</span>
+                          <span className="font-bold text-slate-700 dark:text-slate-300">
+                            R$ {item.unitPrice.toFixed(2).replace('.', ',')}
+                          </span>
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400 min-w-[70px] text-right">
+                            R$ {item.subtotal.toFixed(2).replace('.', ',')}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setEditItems(editItems.filter((_, i) => i !== idx))}
+                            className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Observações / Notas Gerais
+                </label>
+                <textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  rows={2}
+                  placeholder="Informações sobre expositores, reposições ou acordos..."
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500/20"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 block font-medium">Total Atualizado</span>
+                  <span className="text-base font-black text-emerald-600 dark:text-emerald-400">
+                    R$ {editItems.reduce((acc, i) => acc + i.subtotal, 0).toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editItems.length === 0}
+                    className="px-5 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-xs cursor-pointer flex items-center gap-2"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Salvar Alterações</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* 📄 Modal de Detalhes da Consignação & Comprovante PDF A4 */}
       {selectedConsignment && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto">
@@ -651,6 +920,18 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 Comprovante de Remessa em Consignação ({selectedConsignment.id})
               </span>
               <div className="flex items-center gap-2 sm:gap-3">
+                {onUpdateConsignment && (
+                  <button
+                    onClick={() => {
+                      const toEdit = selectedConsignment;
+                      setSelectedConsignment(null);
+                      handleStartEditConsignment(toEdit);
+                    }}
+                    className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
+                  >
+                    <Edit className="w-4 h-4" /> Editar
+                  </button>
+                )}
                 {onDeleteConsignment && (
                   <button
                     onClick={() => {
