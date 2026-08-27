@@ -135,6 +135,80 @@ export function App() {
     return derived;
   }, [appData.movements, appData.consignments, appData.exchanges, appData.orders]);
 
+  // Unified Navigation Manager with HTML5 History API
+  const navigateTo = (
+    view: ViewMode,
+    options?: {
+      clientIdForProfile?: string | null;
+      visitClientId?: string | null;
+      replace?: boolean;
+    }
+  ) => {
+    const nextClientProfileId = options?.clientIdForProfile !== undefined ? options.clientIdForProfile : null;
+    const nextVisitClientId = options?.visitClientId !== undefined ? options.visitClientId : null;
+
+    const stateObj = {
+      view,
+      activeClientIdForProfile: nextClientProfileId,
+      activeVisitClientId: nextVisitClientId,
+    };
+
+    if (options?.replace) {
+      window.history.replaceState(stateObj, '', `#${view}`);
+    } else {
+      window.history.pushState(stateObj, '', `#${view}`);
+    }
+
+    setCurrentView(view);
+    setActiveClientIdForProfile(nextClientProfileId);
+    setActiveVisitClientId(nextVisitClientId);
+  };
+
+  // Sync initial state and handle popstate (native Android back gesture / browser back button)
+  useEffect(() => {
+    if (!window.history.state) {
+      window.history.replaceState(
+        {
+          view: currentView,
+          activeClientIdForProfile,
+          activeVisitClientId,
+        },
+        '',
+        `#${currentView}`
+      );
+    }
+
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.view) {
+        setCurrentView(event.state.view);
+        setActiveClientIdForProfile(event.state.activeClientIdForProfile || null);
+        setActiveVisitClientId(event.state.activeVisitClientId || null);
+      } else {
+        const hash = window.location.hash.replace('#', '') as ViewMode;
+        if (hash) {
+          setCurrentView(hash);
+        } else {
+          setCurrentView('dashboard');
+        }
+        setActiveClientIdForProfile(null);
+        setActiveVisitClientId(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      navigateTo('dashboard', { replace: true });
+    }
+  };
+
+  const canGoBack = currentView !== 'dashboard' || activeClientIdForProfile !== null || activeVisitClientId !== null;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white gap-4 font-sans">
@@ -151,13 +225,12 @@ export function App() {
   }
 
   const handleStartVisit = (clientId: string) => {
-    setActiveVisitClientId(clientId);
+    navigateTo('visits', { visitClientId: clientId });
   };
 
   const handleSelectClientProfile = (clientOrId: string | Client) => {
     const id = typeof clientOrId === 'string' ? clientOrId : clientOrId.id;
-    setActiveClientIdForProfile(id);
-    setCurrentView('client-profile');
+    navigateTo('client-profile', { clientIdForProfile: id });
   };
 
   const selectedProfileClient =
@@ -178,11 +251,7 @@ export function App() {
       {/* Desktop & Mobile Responsive Sidebar Drawer */}
       <Sidebar
         currentView={currentView}
-        onSelectView={(mode) => {
-          setActiveVisitClientId(null);
-          setCurrentView(mode);
-          setActiveClientIdForProfile(null);
-        }}
+        onSelectView={(mode) => navigateTo(mode)}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         isMobileOpen={isMobileMenuOpen}
@@ -198,11 +267,10 @@ export function App() {
         {/* Top Header */}
         <Header
           currentView={currentView}
+          canGoBack={canGoBack}
+          onGoBack={handleGoBack}
           onOpenMobileSidebar={() => setIsMobileMenuOpen(true)}
-          onNavigate={(view) => {
-            setCurrentView(view);
-            setActiveClientIdForProfile(null);
-          }}
+          onNavigate={(view) => navigateTo(view)}
           products={appData.products}
           clients={appData.clients}
           orders={appData.orders}
@@ -213,14 +281,13 @@ export function App() {
           onSelectSearchResult={(type, id, item) => {
             appData.setGlobalSearchQuery(id || item?.id || '');
             if (type === 'order') {
-              setCurrentView('orders');
+              navigateTo('orders');
             } else if (type === 'quote') {
-              setCurrentView('quotes');
+              navigateTo('quotes');
             } else if (type === 'product') {
-              setCurrentView('products');
+              navigateTo('products');
             } else if (type === 'client') {
-              setActiveClientIdForProfile(id);
-              setCurrentView('client-profile');
+              navigateTo('client-profile', { clientIdForProfile: id });
             }
           }}
           onQuickAction={(action) => {
@@ -229,36 +296,36 @@ export function App() {
                 appData.handleSyncProductsToSupabase();
                 break;
               case 'calculadora-3d':
-                setCurrentView('calculator');
+                navigateTo('calculator');
                 break;
               case 'novo-pedido':
               case 'order':
-                setCurrentView('orders');
+                navigateTo('orders');
                 break;
               case 'novo-orcamento':
               case 'quote':
-                setCurrentView('quotes');
+                navigateTo('quotes');
                 break;
               case 'nova-consignacao':
               case 'consignment':
-                setCurrentView('consignments');
+                navigateTo('consignments');
                 break;
               case 'registrar-visita':
               case 'visit':
-                setCurrentView('visits');
+                navigateTo('visits');
                 break;
               case 'registrar-entrada':
               case 'inventory':
-                setCurrentView('inventory-general');
+                navigateTo('inventory-general');
                 break;
               case 'novo-produto':
               case 'cadastrar-produto':
               case 'product':
                 setAutoOpenNewProductModal(true);
-                setCurrentView('products');
+                navigateTo('products');
                 break;
               case 'client':
-                setCurrentView('clients');
+                navigateTo('clients');
                 break;
               default:
                 break;
@@ -291,7 +358,7 @@ export function App() {
                   orders={appData.orders}
                   transactions={appData.transactions}
                   expenses={appData.expenses}
-                  onNavigate={(view) => setCurrentView(view)}
+                  onNavigate={(view) => navigateTo(view)}
                   onStartVisit={handleStartVisit}
                   onSelectClient={handleSelectClientProfile}
                   onUpdateOrderProgress={appData.handleUpdateOrderProgress}
@@ -302,46 +369,46 @@ export function App() {
                       case 'cadastrar-produto':
                       case 'product':
                         setAutoOpenNewProductModal(true);
-                        setCurrentView('products');
+                        navigateTo('products');
                         break;
                       case 'calculadora-3d':
-                        setCurrentView('calculator');
+                        navigateTo('calculator');
                         break;
                       case 'novo-pedido':
                       case 'order':
-                        setCurrentView('orders');
+                        navigateTo('orders');
                         break;
                       case 'novo-orcamento':
                       case 'quote':
-                        setCurrentView('quotes');
+                        navigateTo('quotes');
                         break;
                       case 'nova-consignacao':
                       case 'consignment':
-                        setCurrentView('consignments');
+                        navigateTo('consignments');
                         break;
                       case 'nova-troca':
                       case 'exchange':
-                        setCurrentView('exchanges');
+                        navigateTo('exchanges');
                         break;
                       case 'registrar-visita':
                       case 'visit':
-                        setCurrentView('visits');
+                        navigateTo('visits');
                         break;
                       case 'registrar-entrada':
                       case 'inventory':
-                        setCurrentView('inventory-general');
+                        navigateTo('inventory-general');
                         break;
                       case 'movimentacoes':
                       case 'movements':
-                        setCurrentView('movements');
+                        navigateTo('inventory-movements');
                         break;
                       case 'financeiro':
                       case 'financial':
-                        setCurrentView('financial');
+                        navigateTo('financial');
                         break;
                       case 'relatorios':
                       case 'reports':
-                        setCurrentView('reports');
+                        navigateTo('reports');
                         break;
                       default:
                         break;
