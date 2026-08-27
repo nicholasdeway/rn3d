@@ -146,7 +146,7 @@ export function App() {
     return [{ view: initialView, activeClientIdForProfile: null, activeVisitClientId: null }];
   });
 
-  // Unified Navigation Manager with internal SPA history stack
+  // Unified Navigation Manager with internal SPA history stack and 2-stage hierarchy
   const navigateTo = (
     view: ViewMode,
     options?: {
@@ -163,6 +163,44 @@ export function App() {
       activeClientIdForProfile: nextClientProfileId,
       activeVisitClientId: nextVisitClientId,
     };
+
+    // Estágio 2: Perfil do Cliente -> garante que 'clients' (Estágio 1) esteja no histórico como pai
+    if (view === 'client-profile' && nextClientProfileId) {
+      setHistoryStack((prev) => {
+        const copy = [...prev];
+        const last = copy[copy.length - 1];
+        if (!last || last.view !== 'clients') {
+          copy.push({ view: 'clients', activeClientIdForProfile: null, activeVisitClientId: null });
+        }
+        copy.push(newEntry);
+        return copy;
+      });
+      window.history.pushState({ view: 'clients', activeClientIdForProfile: null, activeVisitClientId: null }, '', '#clients');
+      window.history.pushState(newEntry, '', `#${view}`);
+      setCurrentView(view);
+      setActiveClientIdForProfile(nextClientProfileId);
+      setActiveVisitClientId(nextVisitClientId);
+      return;
+    }
+
+    // Estágio 2: Execução de Visita -> garante que 'visits' (Estágio 1) esteja no histórico como pai
+    if (nextVisitClientId) {
+      setHistoryStack((prev) => {
+        const copy = [...prev];
+        const last = copy[copy.length - 1];
+        if (!last || last.view !== 'visits') {
+          copy.push({ view: 'visits', activeClientIdForProfile: null, activeVisitClientId: null });
+        }
+        copy.push(newEntry);
+        return copy;
+      });
+      window.history.pushState({ view: 'visits', activeClientIdForProfile: null, activeVisitClientId: null }, '', '#visits');
+      window.history.pushState(newEntry, '', `#${view}`);
+      setCurrentView(view);
+      setActiveClientIdForProfile(null);
+      setActiveVisitClientId(nextVisitClientId);
+      return;
+    }
 
     if (options?.replace) {
       setHistoryStack((prev) => {
