@@ -1520,7 +1520,6 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 padding: 0 !important;
                 background: white !important;
                 color: black !important;
-                width: 100% !important;
                 height: auto !important;
                 overflow: visible !important;
               }
@@ -1535,11 +1534,13 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               }
 
               .printable-quote-modal {
-                position: absolute !important;
+                position: fixed !important;
                 left: 0 !important;
                 top: 0 !important;
+                right: 0 !important;
                 width: 100% !important;
                 height: auto !important;
+                max-height: none !important;
                 background: white !important;
                 padding: 0 !important;
                 margin: 0 !important;
