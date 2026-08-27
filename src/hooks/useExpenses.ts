@@ -68,7 +68,15 @@ export function useExpenses(
       setAccountBalances(updated);
       await saveAccountBalancesToSupabase(updated);
       showToast(`Lançamento/Aporte de R$ ${formattedItem.amount.toFixed(2)} por ${formattedItem.createdBy} creditado (+ Nubank)!`, 'success');
-    } else if (formattedItem.category !== 'Transferência de Marketplace' && formattedItem.category !== 'Entrada de Pedido') {
+    } else if (formattedItem.category === 'Entrada de Pedido') {
+      const updated = {
+        ...accountBalances,
+        nubank: accountBalances.nubank + formattedItem.amount,
+      };
+      setAccountBalances(updated);
+      await saveAccountBalancesToSupabase(updated);
+      showToast(`Entrada de Pedido (R$ ${formattedItem.amount.toFixed(2).replace('.', ',')}) creditada na conta Nubank!`, 'success');
+    } else if (formattedItem.category !== 'Transferência de Marketplace') {
       // Despesas Operacionais (Compra de Filamento, Combustível, Bicos, Embalagens, Impostos, Outros) abatem do Nubank
       const updated = {
         ...accountBalances,

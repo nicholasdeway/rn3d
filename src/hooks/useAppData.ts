@@ -20,7 +20,7 @@ import { syncMissingProductsToSupabase } from '../services/productsService';
 import { syncMissingClientsToSupabase } from '../services/clientsService';
 import { syncMissingOrdersToSupabase } from '../services/ordersService';
 import { syncMissingQuotesToSupabase } from '../services/quotesService';
-import { syncMissingExpensesToSupabase } from '../services/expensesService';
+import { syncMissingExpensesToSupabase, createExpense } from '../services/expensesService';
 
 export function useAppData() {
   const { user } = useAuth();
@@ -413,7 +413,7 @@ export function useAppData() {
           const alreadyExists = updatedPrev.some((e) => e.referenceCode === refCode);
           if (!alreadyExists) {
             changed = true;
-            newPaymentEntries.push({
+            const newExpItem: ExpenseItem = {
               id: `exp-pay-${o.id}`,
               description: `Entrada / Pagamento de Pedido (${o.id} - ${o.clientName})`,
               category: 'Entrada de Pedido',
@@ -430,7 +430,11 @@ export function useAppData() {
               receiptType: o.paymentReceiptType || 'image',
               receiptName: o.paymentReceiptName || (o.paymentReceiptUrl ? 'Comprovante de Pagamento' : ''),
               notes: `Pagamento de ${o.paymentMethod || 'PIX'} referente ao pedido ${o.id}`,
-            });
+            };
+            newPaymentEntries.push(newExpItem);
+
+            // Persiste no Supabase para evitar expurgo e credita o Nubank no banco
+            createExpense(newExpItem).catch((err) => console.error('Erro ao persistir entrada de pedido no Supabase:', err));
           }
         }
       });
@@ -438,6 +442,43 @@ export function useAppData() {
       return changed ? [...newPaymentEntries, ...updatedPrev] : prevExpenses;
     });
   }, [orders]);
+
+  const handleUpdateOrderPaymentWrapper = async (
+    orderId: string,
+    addedAmount: number,
+    receiptUrl?: string,
+    receiptType?: 'image' | 'pdf',
+    receiptName?: string
+  ) => {
+    await handleUpdateOrderPayment(orderId, addedAmount, receiptUrl, receiptType, receiptName);
+
+    const targetOrder = orders.find((o) => o.id === orderId);
+    const clientName = targetOrder ? targetOrder.clientName : 'Cliente Local';
+    const finalReceiptUrl = receiptUrl || (targetOrder ? targetOrder.paymentReceiptUrl : '');
+    const finalReceiptType = receiptType || (targetOrder ? targetOrder.paymentReceiptType : 'image');
+    const finalReceiptName = receiptName || (targetOrder ? targetOrder.paymentReceiptName : '');
+
+    const paymentExpenseItem: ExpenseItem = {
+      id: `exp-pay-${orderId}-${Date.now()}`,
+      description: `Entrada / Pagamento de Pedido (${orderId} - ${clientName})`,
+      category: 'Entrada de Pedido',
+      amount: addedAmount,
+      date: new Date().toISOString().split('T')[0],
+      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      paymentStatus: 'Pago',
+      beneficiary: clientName,
+      createdBy: 'Sistema RN 3D',
+      destinationAccount: 'Nubank',
+      isAutoReplicated: true,
+      referenceCode: `PED-PAY-${orderId}`,
+      receiptUrl: finalReceiptUrl,
+      receiptType: finalReceiptType,
+      receiptName: finalReceiptName,
+      notes: `Pagamento de R$ ${addedAmount.toFixed(2).replace('.', ',')} referente ao pedido ${orderId}`,
+    };
+
+    await handleCreateExpense(paymentExpenseItem);
+  };
 
 
   const handleSyncProductsToSupabase = async () => {
@@ -532,7 +573,7 @@ export function useAppData() {
     handleDeleteOrder,
     handleUpdateOrderProgress,
     handleUpdateOrderStatus,
-    handleUpdateOrderPayment,
+    handleUpdateOrderPayment: handleUpdateOrderPaymentWrapper,
     handleExecuteExchange,
     handleScheduleVisit,
     handleDeleteVisit,

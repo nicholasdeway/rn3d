@@ -41,6 +41,9 @@ export async function fetchOrders(): Promise<Order[]> {
         estimatedDeliveryDate: row.estimated_delivery_date || '',
         internalLogisticsType: clientType as any,
         internalLogisticsCost: clientCost,
+        paymentReceiptUrl: row.payment_receipt_url || '',
+        paymentReceiptType: row.payment_receipt_type || 'image',
+        paymentReceiptName: row.payment_receipt_name || '',
         items: (row.order_items || []).map((item: any) => ({
           productName: item.product_name,
           quantity: item.quantity,
@@ -82,9 +85,17 @@ export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promi
       production_progress_pct: o.productionProgressPct || 0,
       internal_logistics_type: o.internalLogisticsType || 'combustivel',
       internal_logistics_cost: o.internalLogisticsCost || 0,
+      payment_receipt_url: o.paymentReceiptUrl || '',
+      payment_receipt_type: o.paymentReceiptType || 'image',
+      payment_receipt_name: o.paymentReceiptName || '',
     }));
 
-    const { error } = await supabase.from('orders').insert(rows);
+    let { error } = await supabase.from('orders').insert(rows);
+    if (error && error.message.includes('column')) {
+      const fallbackRows = rows.map(({ payment_receipt_url, payment_receipt_type, payment_receipt_name, ...rest }: any) => rest);
+      const retry = await supabase.from('orders').insert(fallbackRows);
+      error = retry.error;
+    }
 
     if (error) {
       console.warn('Aviso na sincronização de pedidos com Supabase:', error.message);
@@ -112,17 +123,29 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     paid_amount: order.paidAmount || 0,
     payment_status_text: order.paymentStatusText || (order.paidAmount && order.totalValue && order.paidAmount >= order.totalValue ? 'Pago Total' : 'Pendente'),
     status: order.status || 'Novo',
+    payment_receipt_url: order.paymentReceiptUrl || '',
+    payment_receipt_type: order.paymentReceiptType || 'image',
+    payment_receipt_name: order.paymentReceiptName || '',
   };
 
   if (order.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.clientId)) {
     payload.client_id = order.clientId;
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('orders')
     .insert([payload])
     .select()
     .single();
+
+  if (error && error.message.includes('column')) {
+    delete payload.payment_receipt_url;
+    delete payload.payment_receipt_type;
+    delete payload.payment_receipt_name;
+    const retry = await supabase.from('orders').insert([payload]).select().single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     console.error('Erro ao cadastrar pedido no Supabase:', error.message);
@@ -158,6 +181,9 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (updates.productionProgressPct !== undefined) payload.production_progress_pct = updates.productionProgressPct;
   if (updates.internalLogisticsType !== undefined) payload.internal_logistics_type = updates.internalLogisticsType;
   if (updates.internalLogisticsCost !== undefined) payload.internal_logistics_cost = updates.internalLogisticsCost;
+  if (updates.paymentReceiptUrl !== undefined) payload.payment_receipt_url = updates.paymentReceiptUrl;
+  if (updates.paymentReceiptType !== undefined) payload.payment_receipt_type = updates.paymentReceiptType;
+  if (updates.paymentReceiptName !== undefined) payload.payment_receipt_name = updates.paymentReceiptName;
 
   const isLocalId = !id || id.startsWith('PED-') || id.length < 30;
 
@@ -168,7 +194,23 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
     query = query.eq('order_code', id);
   }
 
-  const { data, error } = await query.select();
+  let { data, error } = await query.select();
+
+  if (error && error.message.includes('column')) {
+    delete payload.payment_receipt_url;
+    delete payload.payment_receipt_type;
+    delete payload.payment_receipt_name;
+
+    let retryQuery = supabase.from('orders').update(payload);
+    if (!isLocalId) {
+      retryQuery = retryQuery.eq('id', id);
+    } else {
+      retryQuery = retryQuery.eq('order_code', id);
+    }
+    const retry = await retryQuery.select();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     console.error('Erro ao atualizar pedido no Supabase:', error.message);
