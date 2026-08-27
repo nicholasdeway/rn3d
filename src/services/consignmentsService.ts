@@ -65,8 +65,8 @@ export async function createConsignment(consignment: Consignment): Promise<boole
       date: consignment.date || new Date().toISOString().split('T')[0],
       items_count: consignment.itemsCount || 0,
       total_value: consignment.totalValue || 0,
-      paid_amount: 0,
-      payment_status_text: 'Consignação',
+      paid_amount: consignment.status === 'Finalizada' ? consignment.totalValue : 0,
+      payment_status_text: consignment.status === 'Finalizada' ? 'Pago Total' : 'Consignação',
       status: consignment.status === 'Finalizada' ? 'Concluído' : 'Em produção',
     };
 
@@ -113,8 +113,8 @@ export async function updateConsignment(consignment: Consignment): Promise<boole
       date: consignment.date || new Date().toISOString().split('T')[0],
       items_count: consignment.itemsCount || 0,
       total_value: consignment.totalValue || 0,
-      paid_amount: 0,
-      payment_status_text: 'Consignação',
+      paid_amount: consignment.status === 'Finalizada' ? consignment.totalValue : 0,
+      payment_status_text: consignment.status === 'Finalizada' ? 'Pago Total' : 'Consignação',
       status: consignment.status === 'Finalizada' ? 'Concluído' : 'Em produção',
     };
 
@@ -122,35 +122,32 @@ export async function updateConsignment(consignment: Consignment): Promise<boole
       orderPayload.client_id = consignment.clientId;
     }
 
-    // 1. Try update by order_code first
-    const { data: updatedByCode } = await supabase
+    // 1. Locate existing order row strictly by order_code (avoiding UUID type crash on id column)
+    const { data: existing } = await supabase
       .from('orders')
-      .update(orderPayload)
+      .select('id')
       .eq('order_code', consignment.id)
-      .select();
+      .limit(1);
 
-    let oData: any = updatedByCode && updatedByCode.length > 0 ? updatedByCode[0] : null;
+    let oData: any = null;
 
-    // 2. If not found by order_code, try update by id
-    if (!oData) {
-      const { data: updatedById } = await supabase
+    if (existing && existing.length > 0) {
+      const { data: updated, error: uErr } = await supabase
         .from('orders')
         .update(orderPayload)
-        .eq('id', consignment.id)
+        .eq('id', existing[0].id)
         .select();
 
-      oData = updatedById && updatedById.length > 0 ? updatedById[0] : null;
-    }
-
-    // 3. If still not found, insert with order_code
-    if (!oData) {
+      if (uErr) console.error('Erro ao atualizar consignação no Supabase:', uErr.message);
+      oData = updated && updated.length > 0 ? updated[0] : null;
+    } else {
       orderPayload.order_code = consignment.id;
       const { data: inserted, error: iErr } = await supabase
         .from('orders')
         .insert([orderPayload])
         .select();
 
-      if (iErr) console.error('Erro ao inserir consignação ao atualizar:', iErr.message);
+      if (iErr) console.error('Erro ao inserir consignação no Supabase:', iErr.message);
       oData = inserted && inserted.length > 0 ? inserted[0] : null;
     }
 
@@ -181,7 +178,7 @@ export async function deleteSingleConsignment(id: string): Promise<boolean> {
     const { data: orders } = await supabase
       .from('orders')
       .select('id')
-      .or(`order_code.eq.${id},id.eq.${id}`);
+      .eq('order_code', id);
 
     if (orders && orders.length > 0) {
       const orderIds = orders.map((o) => o.id);
@@ -190,7 +187,7 @@ export async function deleteSingleConsignment(id: string): Promise<boolean> {
     }
 
     try {
-      await supabase.from('consignments').delete().or(`code.eq.${id},id.eq.${id}`);
+      await supabase.from('consignments').delete().eq('code', id);
     } catch (_) {}
 
     return true;
