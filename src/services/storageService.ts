@@ -45,9 +45,11 @@ function base64ToBlob(base64Data: string): { blob: Blob; contentType: string; ex
   }
 }
 
+let storageBucketMissing = false;
+
 /**
  * Envia um arquivo ou string Base64 para o Supabase Storage e retorna a URL pública.
- * Se o Supabase não estiver configurado ou o upload falhar, retorna a imagem tratada.
+ * Se o Supabase não estiver configurado ou o bucket não existir, retorna o DataURL para o Postgres.
  */
 export async function uploadToSupabaseStorage(
   fileOrBase64: string,
@@ -83,7 +85,8 @@ export async function uploadToSupabaseStorage(
     }
   }
 
-  if (!isSupabaseConfigured()) {
+  // Se o Supabase não estiver configurado ou se o bucket for sabidamente ausente, usa o DataURL direto no Postgres
+  if (!isSupabaseConfigured() || storageBucketMissing) {
     return preparedBase64;
   }
 
@@ -101,7 +104,7 @@ export async function uploadToSupabaseStorage(
 
     const path = `${folder}/${cleanPrefix}_${Date.now()}.${extension}`;
 
-    let { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
       .upload(path, blob, {
         contentType,
@@ -109,33 +112,18 @@ export async function uploadToSupabaseStorage(
         upsert: true,
       });
 
-    if (uploadError && (uploadError.message.includes('not found') || uploadError.message.includes('Bucket') || uploadError.message.includes('400'))) {
-      try {
-        console.info(`[Storage] Tentando criar bucket '${BUCKET_NAME}' automaticamente no Supabase...`);
-        await supabase.storage.createBucket(BUCKET_NAME, { public: true });
-        const retry = await supabase.storage
-          .from(BUCKET_NAME)
-          .upload(path, blob, {
-            contentType,
-            cacheControl: '36000',
-            upsert: true,
-          });
-        uploadError = retry.error;
-      } catch (createErr: any) {
-        console.warn('[Storage] Não foi possível criar bucket automaticamente:', createErr?.message || createErr);
-      }
-    }
-
     if (uploadError) {
-      console.warn(`[Storage] Não foi possível enviar para o bucket '${BUCKET_NAME}':`, uploadError.message);
-      // Fallback seguro: Retorna o DataURL diretamente para salvar no Postgres no campo receipt_url
+      if (uploadError.message.includes('not found') || uploadError.message.includes('Bucket')) {
+        storageBucketMissing = true;
+        console.warn(`[Storage] Bucket '${BUCKET_NAME}' não encontrado no Supabase. Salvando no PostgreSQL como DataURL.`);
+      }
       return preparedBase64;
     }
 
     const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
     return publicUrlData?.publicUrl || preparedBase64;
   } catch (err: any) {
-    console.error('[Storage] Erro ao processar upload:', err?.message || err);
+    storageBucketMissing = true;
     return preparedBase64;
   }
 }
