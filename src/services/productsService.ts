@@ -1,9 +1,10 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Product } from '../types';
 import { uploadToSupabaseStorage } from './storageService';
+import { CATALOG_PRODUCTS } from '../data/catalogProducts';
 
 /**
- * 100% Direct Supabase Postgres Fetch — Zero LocalStorage Caching
+ * 100% Direct Supabase Postgres Fetch com Atualização Dinâmica de Preços do Catálogo
  */
 export async function fetchProducts(): Promise<Product[]> {
   if (!isSupabaseConfigured()) {
@@ -21,6 +22,32 @@ export async function fetchProducts(): Promise<Product[]> {
   }
 
   const dbProducts: Product[] = data.map((row) => {
+    const catalogMatch = CATALOG_PRODUCTS.find(
+      (c) => c.sku && row.sku && c.sku.trim().toLowerCase() === row.sku.trim().toLowerCase()
+    );
+
+    const dbStandardPrice = Number(row.standard_price) || 0;
+    const dbCashPrice = row.cash_price !== undefined && row.cash_price !== null ? Number(row.cash_price) : dbStandardPrice;
+
+    const finalStandardPrice = catalogMatch?.standardPrice !== undefined ? catalogMatch.standardPrice : dbStandardPrice;
+    const finalCashPrice = catalogMatch?.cashPrice !== undefined ? catalogMatch.cashPrice : (catalogMatch?.standardPrice !== undefined ? catalogMatch.standardPrice : dbCashPrice);
+
+    // Se o preço no Supabase estiver desatualizado em relação ao catálogo, envia update para o banco
+    if (
+      catalogMatch &&
+      (Number(row.standard_price) !== finalStandardPrice || Number(row.cash_price) !== finalCashPrice)
+    ) {
+      supabase
+        .from('products')
+        .update({ standard_price: finalStandardPrice, cash_price: finalCashPrice })
+        .eq('id', row.id)
+        .then(({ error: updateErr }) => {
+          if (updateErr) {
+            supabase.from('products').update({ standard_price: finalStandardPrice }).eq('id', row.id);
+          }
+        });
+    }
+
     return {
       id: row.id,
       name: row.name,
@@ -39,8 +66,8 @@ export async function fetchProducts(): Promise<Product[]> {
       avgPrintTimeMinutes: row.avg_print_time_minutes || 0,
       batchQuantity: row.batch_quantity || 1,
       estimatedCost: Number(row.estimated_cost) || 0,
-      standardPrice: Number(row.standard_price) || 0,
-      cashPrice: row.cash_price !== undefined ? Number(row.cash_price) : Number(row.standard_price) || 0,
+      standardPrice: finalStandardPrice,
+      cashPrice: finalCashPrice,
       minPrice: Number(row.min_price) || 0,
       suggestedRetailPrice: Number(row.suggested_retail_price) || 0,
       currentStock: row.current_stock || 0,

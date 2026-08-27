@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Product } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
+import { CATALOG_PRODUCTS } from '../data/catalogProducts';
 import {
   fetchProducts,
   createProduct,
@@ -12,9 +13,23 @@ import {
 import { compressImage } from '../utils/imageCompressor';
 
 export function useProducts(user: any, showToast: (msg: string, type?: 'success' | 'error' | 'info') => void) {
-  const [products, setProducts] = useState<Product[]>(() =>
-    getStorageParsed<Product[]>('rn3d_products', [], true)
-  );
+  const [products, setProducts] = useState<Product[]>(() => {
+    const cached = getStorageParsed<Product[]>('rn3d_products', [], true);
+    if (!cached || cached.length === 0) return [];
+    return cached.map((p) => {
+      const cat = CATALOG_PRODUCTS.find(
+        (c) => c.sku && p.sku && c.sku.trim().toLowerCase() === p.sku.trim().toLowerCase()
+      );
+      if (cat && (cat.standardPrice !== undefined || cat.cashPrice !== undefined)) {
+        return {
+          ...p,
+          standardPrice: cat.standardPrice !== undefined ? cat.standardPrice : p.standardPrice,
+          cashPrice: cat.cashPrice !== undefined ? cat.cashPrice : (p.cashPrice ?? p.standardPrice),
+        };
+      }
+      return p;
+    });
+  });
 
   useEffect(() => {
     if (products && products.length > 0) {
