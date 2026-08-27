@@ -10,9 +10,9 @@ function base64ToBlob(base64Data: string): { blob: Blob; contentType: string; ex
   try {
     const parts = base64Data.split(';base64,');
     if (parts.length < 2) {
-      return { blob: new Blob([]), contentType: 'image/jpeg', extension: 'jpg' };
+      return { blob: new Blob([]), contentType: 'application/pdf', extension: 'pdf' };
     }
-    const contentType = parts[0].replace('data:', '').trim() || 'image/jpeg';
+    let contentType = parts[0].replace('data:', '').trim();
     const cleanBase64 = parts[1].replace(/\s/g, '');
     const byteCharacters = atob(cleanBase64);
     const byteNumbers = new Uint8Array(byteCharacters.length);
@@ -20,16 +20,28 @@ function base64ToBlob(base64Data: string): { blob: Blob; contentType: string; ex
       byteNumbers[i] = byteCharacters.charCodeAt(i);
     }
 
-    const blob = new Blob([byteNumbers], { type: contentType });
     let extension = 'jpg';
-    if (contentType.includes('png')) extension = 'png';
-    else if (contentType.includes('pdf')) extension = 'pdf';
-    else if (contentType.includes('webp')) extension = 'webp';
-    else if (contentType.includes('svg')) extension = 'svg';
+    if (contentType.includes('pdf')) {
+      extension = 'pdf';
+      contentType = 'application/pdf';
+    } else if (contentType.includes('png')) {
+      extension = 'png';
+      contentType = 'image/png';
+    } else if (contentType.includes('webp')) {
+      extension = 'webp';
+      contentType = 'image/webp';
+    } else if (contentType.includes('svg')) {
+      extension = 'svg';
+      contentType = 'image/svg+xml';
+    } else {
+      contentType = 'image/jpeg';
+      extension = 'jpg';
+    }
 
+    const blob = new Blob([byteNumbers], { type: contentType });
     return { blob, contentType, extension };
   } catch (e) {
-    return { blob: new Blob([]), contentType: 'image/jpeg', extension: 'jpg' };
+    return { blob: new Blob([]), contentType: 'application/pdf', extension: 'pdf' };
   }
 }
 
@@ -81,8 +93,13 @@ export async function uploadToSupabaseStorage(
       return preparedBase64;
     }
 
-    const sanitizedPrefix = fileNamePrefix.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const path = `${folder}/${sanitizedPrefix}_${Date.now()}.${extension}`;
+    const cleanPrefix = fileNamePrefix
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .substring(0, 25) || 'file';
+
+    const path = `${folder}/${cleanPrefix}_${Date.now()}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
