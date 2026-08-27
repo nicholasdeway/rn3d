@@ -878,21 +878,36 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
         <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto">
           <style>{`
             @media print {
+              @page {
+                size: A4 portrait;
+                margin: 10mm 12mm;
+              }
+
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                color: black !important;
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+              }
+
               body * {
                 visibility: hidden !important;
               }
+
               .print-container,
               .print-container * {
                 visibility: visible !important;
               }
+
               .print-container {
-                position: fixed !important;
+                position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                width: 100vw !important;
-                height: 100vh !important;
+                width: 100% !important;
+                height: auto !important;
                 background: white !important;
                 padding: 0 !important;
                 margin: 0 !important;
@@ -900,14 +915,26 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 display: block !important;
                 z-index: 999999 !important;
               }
+
               .print-sheet {
-                padding: 12mm 16mm !important;
+                padding: 0 !important;
                 margin: 0 !important;
                 max-height: none !important;
                 overflow: visible !important;
               }
+
               .no-print {
                 display: none !important;
+              }
+
+              tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+
+              .print-avoid-break {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
               }
             }
           `}</style>
@@ -1071,7 +1098,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
               })()}
 
               {/* Summary Valuation */}
-              <div className="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 flex justify-between items-center text-xs">
+              <div className="print-avoid-break p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 flex justify-between items-center text-xs">
                 <div>
                   <span className="font-bold text-slate-900 block">Saldo Atual Alocado no Expositor:</span>
                   <span className="text-slate-600 font-medium">{selectedConsignment.itemsCount} produtos em exibição</span>
@@ -1086,14 +1113,14 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
               {/* Notes */}
               {selectedConsignment.notes && (
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <div className="print-avoid-break p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                   <span className="font-bold text-slate-900 block text-[11px]">Observações de Entrega:</span>
                   <p className="text-slate-600 italic text-[11px]">{selectedConsignment.notes}</p>
                 </div>
               )}
 
               {/* Signatures Footer */}
-              <div className="pt-10 grid grid-cols-2 gap-8 text-center text-slate-700 text-[11px]">
+              <div className="print-avoid-break pt-10 grid grid-cols-2 gap-8 text-center text-slate-700 text-[11px]">
                 <div className="border-t border-slate-400 pt-2 space-y-0.5">
                   <p className="font-bold text-slate-900">{selectedConsignment.clientName}</p>
                   <p className="text-slate-500">Assinatura de Recebimento do Estabelecimento</p>

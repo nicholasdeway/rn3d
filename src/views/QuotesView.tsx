@@ -1512,16 +1512,17 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
             @media print {
               @page {
                 size: A4 portrait;
-                margin: 0;
+                margin: 10mm 12mm;
               }
 
               html, body {
                 margin: 0 !important;
                 padding: 0 !important;
                 background: white !important;
+                color: black !important;
                 width: 100% !important;
-                height: 100% !important;
-                overflow: hidden !important;
+                height: auto !important;
+                overflow: visible !important;
               }
 
               body * {
@@ -1534,39 +1535,38 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               }
 
               .printable-quote-modal {
-                position: fixed !important;
+                position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
-                right: 0 !important;
-                bottom: 0 !important;
-                width: 100vw !important;
-                height: 100vh !important;
+                width: 100% !important;
+                height: auto !important;
                 background: white !important;
                 padding: 0 !important;
                 margin: 0 !important;
-                overflow: hidden !important;
+                overflow: visible !important;
                 display: block !important;
                 z-index: 999999 !important;
               }
 
               .print-container {
-                position: absolute !important;
+                position: relative !important;
                 top: 0 !important;
                 left: 0 !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 max-width: 100% !important;
                 width: 100% !important;
+                height: auto !important;
                 border: none !important;
                 border-radius: 0 !important;
                 box-shadow: none !important;
-                max-height: 100vh !important;
-                overflow: hidden !important;
+                max-height: none !important;
+                overflow: visible !important;
                 display: block !important;
               }
 
               .print-sheet {
-                padding: 10mm 14mm !important;
+                padding: 0 !important;
                 margin: 0 !important;
                 max-height: none !important;
                 overflow: visible !important;
@@ -1576,6 +1576,16 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
               .no-print {
                 display: none !important;
+              }
+
+              tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+
+              .print-avoid-break {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
               }
             }
           `}</style>
@@ -1680,7 +1690,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               </div>
 
               {/* Totals */}
-              <div className="border-t-2 border-slate-200 dark:border-[#202531] pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+              <div className="print-avoid-break border-t-2 border-slate-200 dark:border-[#202531] pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div className="space-y-1 text-[11px] max-w-md">
                   <p className="dark:text-slate-300">
                     <strong className="dark:text-slate-100">Condições de Pagamento:</strong> {previewPdfQuote.paymentTerms}
@@ -1705,7 +1715,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               </div>
 
               {/* Footer */}
-              <div className="pt-6 border-t border-slate-200 dark:border-[#202531] text-center text-[10px] text-slate-600 dark:text-slate-400 space-y-1">
+              <div className="print-avoid-break pt-6 border-t border-slate-200 dark:border-[#202531] text-center text-[10px] text-slate-600 dark:text-slate-400 space-y-1">
                 <p className="font-bold text-slate-900 dark:text-slate-200">
                   RN 3D Soluções • CNPJ: 67.570.155/0001-34 • WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
                 </p>
