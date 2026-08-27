@@ -102,13 +102,12 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             </div>
           </div>
           <div className="text-right shrink-0">
-            <span className={`text-sm font-black font-mono px-3 py-1 rounded-xl border transition-colors ${
-              o.productionProgressPct === 100
+            <span className={`text-sm font-black font-mono px-3 py-1 rounded-xl border transition-colors ${o.productionProgressPct === 100
                 ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
                 : o.productionProgressPct > 0
                   ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700'
-            }`}>
+              }`}>
               {o.productionProgressPct}%
             </span>
           </div>
@@ -117,13 +116,12 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         {/* Progress Bar Display */}
         <div className="w-full h-3 bg-slate-200/90 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner flex">
           <div
-            className={`h-full transition-all duration-300 ${
-              o.productionProgressPct === 100
+            className={`h-full transition-all duration-300 ${o.productionProgressPct === 100
                 ? 'bg-emerald-500'
                 : o.productionProgressPct >= 50
                   ? 'bg-indigo-600'
                   : 'bg-cyan-500'
-            }`}
+              }`}
             style={{ width: `${o.productionProgressPct}%` }}
           />
         </div>
@@ -184,11 +182,10 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               onClick={() => {
                 if (onUpdateOrderProgress) onUpdateOrderProgress(o.id, pct);
               }}
-              className={`px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${
-                o.productionProgressPct === pct
+              className={`px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-bold transition-all cursor-pointer ${o.productionProgressPct === pct
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
-              }`}
+                }`}
             >
               {pct === 0 ? '0% (Fila)' : pct === 100 ? '100%' : `${pct}%`}
             </button>
@@ -384,11 +381,10 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               return (
                 <div
                   key={o.id}
-                  className={`bg-white dark:bg-[#12151c] p-4 rounded-2xl border transition-all ${
-                    isExpanded
+                  className={`bg-white dark:bg-[#12151c] p-4 rounded-2xl border transition-all ${isExpanded
                       ? 'border-indigo-500 dark:border-indigo-500 ring-2 ring-indigo-500/10 shadow-md'
                       : 'border-slate-200/90 dark:border-[#202531] hover:border-indigo-300 dark:hover:border-indigo-800 shadow-xs'
-                  }`}
+                    }`}
                 >
                   {/* Card Header: Order ID & Interactive 5% Production Progress */}
                   <div
@@ -411,13 +407,12 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                       >
                         <Minus className="w-3 h-3 text-rose-500" />
                       </button>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
-                        o.status === 'Entregue'
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${o.status === 'Entregue'
                           ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 font-extrabold'
                           : o.productionProgressPct === 100
                             ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900'
                             : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900'
-                      }`}>
+                        }`}>
                         {o.status} ({o.productionProgressPct}%)
                       </span>
                       <button
@@ -446,11 +441,10 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                         Data: {o.date} • {o.itemsCount} {o.itemsCount === 1 ? 'item' : 'itens'}
                       </p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                          o.attendanceMode === 'online'
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${o.attendanceMode === 'online'
                             ? 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-900'
                             : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900'
-                        }`}>
+                          }`}>
                           {o.attendanceMode === 'online' ? '💬 Atendimento Online' : '📍 Visita Presencial'}
                         </span>
                         <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
@@ -556,11 +550,10 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                       <React.Fragment key={o.id}>
                         <tr
                           onClick={() => toggleExpandOrder(o.id)}
-                          className={`transition-colors cursor-pointer ${
-                            isExpanded
+                          className={`transition-colors cursor-pointer ${isExpanded
                               ? 'bg-indigo-50/70 dark:bg-[#1c2230]'
                               : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'
-                          }`}
+                            }`}
                         >
                           <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
                             {isExpanded ? (
@@ -591,13 +584,12 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                               >
                                 <Minus className="w-3 h-3 text-rose-500" />
                               </button>
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${
-                                o.status === 'Entregue'
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${o.status === 'Entregue'
                                   ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 font-extrabold'
                                   : o.productionProgressPct === 100
                                     ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900'
                                     : 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900'
-                              }`}>
+                                }`}>
                                 {o.status} ({o.productionProgressPct}%)
                               </span>
                               <button
@@ -666,11 +658,10 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                                 e.stopPropagation();
                                 toggleExpandOrder(o.id);
                               }}
-                              className={`px-3 py-1.5 rounded-lg font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors ${
-                                isExpanded
+                              className={`px-3 py-1.5 rounded-lg font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors ${isExpanded
                                   ? 'bg-indigo-600 text-white shadow-2xs'
                                   : 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900'
-                              }`}
+                                }`}
                             >
                               {isExpanded ? (
                                 <>
@@ -706,6 +697,98 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       {/* Printable PDF Modal Overlay for Order */}
       {previewPdfOrder && (
         <div className="printable-quote-modal fixed inset-0 z-[100] bg-slate-900/60 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
+          {/* Print CSS Rules - Ensures ONLY the selected order PDF is printed on single Page 1 */}
+          <style>{`
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 10mm 12mm;
+              }
+
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                color: black !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+              }
+
+              /* Hide web elements completely so they take 0px height */
+              header, nav, aside, footer, .no-print, [role="alert"] {
+                display: none !important;
+              }
+
+              #root, #root > div, main {
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                background: white !important;
+              }
+
+              /* Hide all siblings inside OrdersView content area */
+              main > div > *:not(.printable-quote-modal) {
+                display: none !important;
+              }
+
+              .printable-quote-modal {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                overflow: visible !important;
+                display: block !important;
+                z-index: 999999 !important;
+              }
+
+              .print-container {
+                position: static !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                height: auto !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                max-height: none !important;
+                overflow: visible !important;
+                display: block !important;
+                background: white !important;
+                color: black !important;
+              }
+
+              .print-sheet {
+                padding: 0 !important;
+                margin: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                background: white !important;
+                color: black !important;
+              }
+
+              tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+
+              .print-avoid-break {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+            }
+          `}</style>
 
           <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[92vh]">
             {/* Modal Top Header (Hidden on Print) */}

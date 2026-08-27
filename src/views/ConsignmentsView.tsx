@@ -240,11 +240,10 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
         <div className="flex items-center justify-center bg-slate-100 dark:bg-[#181c26] p-1 rounded-xl border border-slate-200 dark:border-[#202531] shrink-0">
           <button
             onClick={() => setViewMode('grid')}
-            className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
-              viewMode === 'grid'
+            className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${viewMode === 'grid'
                 ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
+              }`}
             title="Visualização em Cards / Grid"
           >
             <Grid className="w-4 h-4" />
@@ -252,11 +251,10 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
           </button>
           <button
             onClick={() => setViewMode('table')}
-            className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
-              viewMode === 'table'
+            className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${viewMode === 'table'
                 ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-            }`}
+              }`}
             title="Visualização em Lista / Tabela"
           >
             <List className="w-4 h-4" />
@@ -875,7 +873,70 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
       {/* 📄 Modal de Detalhes da Consignação & Comprovante PDF A4 */}
       {selectedConsignment && (
-        <div className="printable-quote-modal fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto">
+          <style>{`
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 10mm 12mm;
+              }
+
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                color: black !important;
+                height: auto !important;
+                overflow: visible !important;
+              }
+
+              body * {
+                visibility: hidden !important;
+              }
+
+              .print-container,
+              .print-container * {
+                visibility: visible !important;
+              }
+
+              .print-container {
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                right: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                display: block !important;
+                z-index: 999999 !important;
+              }
+
+              .print-sheet {
+                padding: 0 !important;
+                margin: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+              }
+
+              .no-print {
+                display: none !important;
+              }
+
+              tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+
+              .print-avoid-break {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+            }
+          `}</style>
 
           <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[92vh] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Top Controls (Hidden on Print) */}

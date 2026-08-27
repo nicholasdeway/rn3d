@@ -167,7 +167,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
             cost = Number(parsed[selectedClient.id].cost) || 0;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     setInternalLogisticsType(type);
@@ -248,7 +248,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
   const handleClearDraft = () => {
     try {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
-    } catch (e) {}
+    } catch (e) { }
     setQuoteItems([]);
     setDiscount(0);
     setDiscountPercent(0);
@@ -474,7 +474,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
     try {
       localStorage.removeItem(DRAFT_STORAGE_KEY);
-    } catch (e) {}
+    } catch (e) { }
     setHasRestoredDraft(false);
     setIsFormOpen(false);
     setQuoteItems([]);
@@ -664,282 +664,280 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
           {/* Quotes Table or Clean Empty State */}
           {quotes.length === 0 ? (
             <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] p-12 text-center shadow-xs space-y-3">
-          <FileText className="w-12 h-12 text-slate-300 mx-auto" />
-          <h3 className="font-bold text-slate-800 text-base">Nenhum orçamento cadastrado</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            Crie propostas comerciais completas em PDF para apresentar aos seus clientes.
-          </p>
-          <button
-            onClick={() => {
-              setEditingQuoteId(null);
-              setQuoteItems([]);
-              setIsFormOpen(true);
-            }}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
-          >
-            Criar Primeiro Orçamento
-          </button>
-        </div>
-      ) : (
-        <>
-          {/* Mobile Card Layout (< 768px) - Eliminates Horizontal Scroll */}
-          <div className="block md:hidden space-y-3">
-            {filteredQuotes.map((q) => {
-              const isExpanded = expandedQuoteId === q.id;
-              const isConverted =
-                q.status === 'Convertido em Pedido' ||
-                q.status === 'Convertido' ||
-                q.status === 'Aprovado';
-
-              const displayStatus = isConverted ? 'Convertido em Pedido' : q.status;
-
-              let badgeStyle = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
-              if (q.status === 'Rascunho') badgeStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 font-bold';
-              if (isConverted) badgeStyle = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
-              if (q.status === 'Recusado') badgeStyle = 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900/50';
-              if (q.status === 'Enviado') badgeStyle = 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900/50';
-
-              return (
-                <div
-                  key={q.id}
-                  className="bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/90 dark:border-[#202531] shadow-xs space-y-3"
-                >
-                  {/* Card Header: ID & Status */}
-                  <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
-                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1 rounded-lg">
-                      {q.id}
-                    </span>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeStyle}`}>
-                      {displayStatus}
-                    </span>
-                  </div>
-
-                  {/* Card Body: Client, Date & Total */}
-                  <div
-                    className="flex items-start justify-between gap-2 cursor-pointer"
-                    onClick={() => toggleExpandQuote(q.id)}
-                  >
-                    <div>
-                      <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{q.clientName}</h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        Data: {formatDateBR(q.date)} • {q.items ? q.items.length : 0} {q.items && q.items.length === 1 ? 'item' : 'itens'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Valor Total</span>
-                      <span className="font-black text-emerald-600 dark:text-emerald-400 text-base">
-                        R$ {q.total.toFixed(2).replace('.', ',')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card Actions Grid (Mobile Optimized) */}
-                  <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
-                    <button
-                      onClick={() => toggleExpandQuote(q.id)}
-                      className={`w-full py-2 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors ${
-                        isExpanded
-                          ? 'bg-indigo-600 text-white shadow-2xs'
-                          : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
-                      }`}
-                    >
-                      {isExpanded ? (
-                        <>
-                          <ChevronUp className="w-3.5 h-3.5" /> Recolher
-                        </>
-                      ) : (
-                        <>
-                          <ChevronDown className="w-3.5 h-3.5" /> Detalhes
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      onClick={() => setPreviewPdfQuote(q)}
-                      className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
-                    >
-                      <Printer className="w-3.5 h-3.5" /> PDF A4
-                    </button>
-
-                    {!isConverted && (
-                      <button
-                        onClick={() => handleEditQuote(q)}
-                        className="w-full py-2 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
-                        title="Editar orçamento em aberto"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" /> Editar
-                      </button>
-                    )}
-
-                    {isConverted ? (
-                      <span className="col-span-2 py-2 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 border border-emerald-300 dark:border-emerald-800/80 text-xs text-center shadow-xs">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Pedido Gerado
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => onConvertQuoteToOrder(q)}
-                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs text-xs transition-colors"
-                      >
-                        <ShoppingCart className="w-3.5 h-3.5" /> Converter Pedido
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Inline Details when expanded */}
-                  {isExpanded && renderInlineQuoteDetails(q)}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Desktop Table Layout (>= 768px) */}
-          <div className="hidden md:block bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                  <tr>
-                    <th className="p-4 whitespace-nowrap">Número</th>
-                    <th className="p-4 whitespace-nowrap">Cliente</th>
-                    <th className="p-4 whitespace-nowrap">Data</th>
-                    <th className="p-4 text-right whitespace-nowrap">Valor Total</th>
-                    <th className="p-4 text-center whitespace-nowrap">Status</th>
-                    <th className="p-4 text-right whitespace-nowrap">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
-                  {filteredQuotes.map((q) => {
-                    const isExpanded = expandedQuoteId === q.id;
-                    const isConverted =
-                      q.status === 'Convertido em Pedido' ||
-                      q.status === 'Convertido' ||
-                      q.status === 'Aprovado';
-
-                    const displayStatus = isConverted ? 'Convertido em Pedido' : q.status;
-
-                    let badgeStyle = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
-                    if (q.status === 'Rascunho') badgeStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 font-bold';
-                    if (isConverted) badgeStyle = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
-                    if (q.status === 'Recusado') badgeStyle = 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900/50';
-                    if (q.status === 'Enviado') badgeStyle = 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900/50';
-
-                    return (
-                      <React.Fragment key={q.id}>
-                        <tr
-                          onClick={() => toggleExpandQuote(q.id)}
-                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
-                        >
-                          <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              {isExpanded ? (
-                                <ChevronUp className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                              ) : (
-                                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                              )}
-                              <span>{q.id}</span>
-                            </div>
-                          </td>
-                          <td className="p-4 font-bold text-slate-900 dark:text-slate-100 min-w-[140px] max-w-[220px] truncate">{q.clientName}</td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(q.date)}</td>
-                          <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                            R$ {q.total.toFixed(2).replace('.', ',')}
-                          </td>
-                          <td className="p-4 text-center whitespace-nowrap">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center justify-center gap-1 whitespace-nowrap ${badgeStyle}`}>
-                              {isConverted && <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />}
-                              <span>{displayStatus}</span>
-                            </span>
-                          </td>
-                          <td className="p-4 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-2 whitespace-nowrap">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  toggleExpandQuote(q.id);
-                                }}
-                                className={`px-3 py-1.5 rounded-lg font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0 ${
-                                  isExpanded
-                                    ? 'bg-indigo-600 text-white shadow-2xs'
-                                    : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
-                                }`}
-                                title={isExpanded ? 'Recolher detalhes' : 'Expandir detalhes completos do orçamento'}
-                              >
-                                {isExpanded ? (
-                                  <>
-                                    <ChevronUp className="w-3.5 h-3.5" /> Recolher
-                                  </>
-                                ) : (
-                                  <>
-                                    <ChevronDown className="w-3.5 h-3.5" /> Detalhes
-                                  </>
-                                )}
-                              </button>
-
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPreviewPdfQuote(q);
-                                }}
-                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
-                              >
-                                <Printer className="w-3.5 h-3.5" /> PDF
-                              </button>
-
-                              {!isConverted && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEditQuote(q);
-                                  }}
-                                  className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50 rounded-lg font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
-                                  title="Editar este orçamento em aberto"
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" /> Editar
-                                </button>
-                              )}
-
-                              {isConverted ? (
-                                <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-lg font-bold inline-flex items-center gap-1.5 border border-emerald-300 dark:border-emerald-800/80 text-xs shadow-2xs shrink-0 whitespace-nowrap">
-                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                  <span>Pedido Gerado</span>
-                                </span>
-                              ) : (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onConvertQuoteToOrder(q);
-                                  }}
-                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-xs text-xs transition-colors shrink-0 whitespace-nowrap"
-                                  title="Gerar Pedido Comercial a partir deste Orçamento"
-                                >
-                                  <ShoppingCart className="w-3.5 h-3.5" />
-                                  <span>Converter <span className="hidden xl:inline">em Pedido</span></span>
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-
-                        {/* Expandable Inline Quote Details */}
-                        {isExpanded && (
-                          <tr className="bg-slate-50/50 dark:bg-[#181c26]/60 border-b border-slate-200 dark:border-[#202531]">
-                            <td colSpan={6} className="p-4 sm:p-6">
-                              {renderInlineQuoteDetails(q)}
-                            </td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <FileText className="w-12 h-12 text-slate-300 mx-auto" />
+              <h3 className="font-bold text-slate-800 text-base">Nenhum orçamento cadastrado</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Crie propostas comerciais completas em PDF para apresentar aos seus clientes.
+              </p>
+              <button
+                onClick={() => {
+                  setEditingQuoteId(null);
+                  setQuoteItems([]);
+                  setIsFormOpen(true);
+                }}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
+              >
+                Criar Primeiro Orçamento
+              </button>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Mobile Card Layout (< 768px) - Eliminates Horizontal Scroll */}
+              <div className="block md:hidden space-y-3">
+                {filteredQuotes.map((q) => {
+                  const isExpanded = expandedQuoteId === q.id;
+                  const isConverted =
+                    q.status === 'Convertido em Pedido' ||
+                    q.status === 'Convertido' ||
+                    q.status === 'Aprovado';
+
+                  const displayStatus = isConverted ? 'Convertido em Pedido' : q.status;
+
+                  let badgeStyle = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+                  if (q.status === 'Rascunho') badgeStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 font-bold';
+                  if (isConverted) badgeStyle = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
+                  if (q.status === 'Recusado') badgeStyle = 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900/50';
+                  if (q.status === 'Enviado') badgeStyle = 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900/50';
+
+                  return (
+                    <div
+                      key={q.id}
+                      className="bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/90 dark:border-[#202531] shadow-xs space-y-3"
+                    >
+                      {/* Card Header: ID & Status */}
+                      <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs bg-indigo-50 dark:bg-indigo-950/80 px-2.5 py-1 rounded-lg">
+                          {q.id}
+                        </span>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${badgeStyle}`}>
+                          {displayStatus}
+                        </span>
+                      </div>
+
+                      {/* Card Body: Client, Date & Total */}
+                      <div
+                        className="flex items-start justify-between gap-2 cursor-pointer"
+                        onClick={() => toggleExpandQuote(q.id)}
+                      >
+                        <div>
+                          <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{q.clientName}</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Data: {formatDateBR(q.date)} • {q.items ? q.items.length : 0} {q.items && q.items.length === 1 ? 'item' : 'itens'}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium block">Valor Total</span>
+                          <span className="font-black text-emerald-600 dark:text-emerald-400 text-base">
+                            R$ {q.total.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Card Actions Grid (Mobile Optimized) */}
+                      <div className="pt-2.5 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => toggleExpandQuote(q.id)}
+                          className={`w-full py-2 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors ${isExpanded
+                              ? 'bg-indigo-600 text-white shadow-2xs'
+                              : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
+                            }`}
+                        >
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp className="w-3.5 h-3.5" /> Recolher
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="w-3.5 h-3.5" /> Detalhes
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          onClick={() => setPreviewPdfQuote(q)}
+                          className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                        >
+                          <Printer className="w-3.5 h-3.5" /> PDF A4
+                        </button>
+
+                        {!isConverted && (
+                          <button
+                            onClick={() => handleEditQuote(q)}
+                            className="w-full py-2 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                            title="Editar orçamento em aberto"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" /> Editar
+                          </button>
+                        )}
+
+                        {isConverted ? (
+                          <span className="col-span-2 py-2 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 border border-emerald-300 dark:border-emerald-800/80 text-xs text-center shadow-xs">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Pedido Gerado
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => onConvertQuoteToOrder(q)}
+                            className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs text-xs transition-colors"
+                          >
+                            <ShoppingCart className="w-3.5 h-3.5" /> Converter Pedido
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Inline Details when expanded */}
+                      {isExpanded && renderInlineQuoteDetails(q)}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table Layout (>= 768px) */}
+              <div className="hidden md:block bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                      <tr>
+                        <th className="p-4 whitespace-nowrap">Número</th>
+                        <th className="p-4 whitespace-nowrap">Cliente</th>
+                        <th className="p-4 whitespace-nowrap">Data</th>
+                        <th className="p-4 text-right whitespace-nowrap">Valor Total</th>
+                        <th className="p-4 text-center whitespace-nowrap">Status</th>
+                        <th className="p-4 text-right whitespace-nowrap">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
+                      {filteredQuotes.map((q) => {
+                        const isExpanded = expandedQuoteId === q.id;
+                        const isConverted =
+                          q.status === 'Convertido em Pedido' ||
+                          q.status === 'Convertido' ||
+                          q.status === 'Aprovado';
+
+                        const displayStatus = isConverted ? 'Convertido em Pedido' : q.status;
+
+                        let badgeStyle = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+                        if (q.status === 'Rascunho') badgeStyle = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 font-bold';
+                        if (isConverted) badgeStyle = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
+                        if (q.status === 'Recusado') badgeStyle = 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-900/50';
+                        if (q.status === 'Enviado') badgeStyle = 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-900/50';
+
+                        return (
+                          <React.Fragment key={q.id}>
+                            <tr
+                              onClick={() => toggleExpandQuote(q.id)}
+                              className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
+                            >
+                              <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                                <div className="flex items-center gap-1.5">
+                                  {isExpanded ? (
+                                    <ChevronUp className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                                  ) : (
+                                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                                  )}
+                                  <span>{q.id}</span>
+                                </div>
+                              </td>
+                              <td className="p-4 font-bold text-slate-900 dark:text-slate-100 min-w-[140px] max-w-[220px] truncate">{q.clientName}</td>
+                              <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(q.date)}</td>
+                              <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                                R$ {q.total.toFixed(2).replace('.', ',')}
+                              </td>
+                              <td className="p-4 text-center whitespace-nowrap">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center justify-center gap-1 whitespace-nowrap ${badgeStyle}`}>
+                                  {isConverted && <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                                  <span>{displayStatus}</span>
+                                </span>
+                              </td>
+                              <td className="p-4 text-right whitespace-nowrap">
+                                <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleExpandQuote(q.id);
+                                    }}
+                                    className={`px-3 py-1.5 rounded-lg font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0 ${isExpanded
+                                        ? 'bg-indigo-600 text-white shadow-2xs'
+                                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
+                                      }`}
+                                    title={isExpanded ? 'Recolher detalhes' : 'Expandir detalhes completos do orçamento'}
+                                  >
+                                    {isExpanded ? (
+                                      <>
+                                        <ChevronUp className="w-3.5 h-3.5" /> Recolher
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ChevronDown className="w-3.5 h-3.5" /> Detalhes
+                                      </>
+                                    )}
+                                  </button>
+
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPreviewPdfQuote(q);
+                                    }}
+                                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
+                                  >
+                                    <Printer className="w-3.5 h-3.5" /> PDF
+                                  </button>
+
+                                  {!isConverted && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditQuote(q);
+                                      }}
+                                      className="px-3 py-1.5 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/50 rounded-lg font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
+                                      title="Editar este orçamento em aberto"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5" /> Editar
+                                    </button>
+                                  )}
+
+                                  {isConverted ? (
+                                    <span className="px-3 py-1.5 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-lg font-bold inline-flex items-center gap-1.5 border border-emerald-300 dark:border-emerald-800/80 text-xs shadow-2xs shrink-0 whitespace-nowrap">
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                      <span>Pedido Gerado</span>
+                                    </span>
+                                  ) : (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onConvertQuoteToOrder(q);
+                                      }}
+                                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-xs text-xs transition-colors shrink-0 whitespace-nowrap"
+                                      title="Gerar Pedido Comercial a partir deste Orçamento"
+                                    >
+                                      <ShoppingCart className="w-3.5 h-3.5" />
+                                      <span>Converter <span className="hidden xl:inline">em Pedido</span></span>
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+
+                            {/* Expandable Inline Quote Details */}
+                            {isExpanded && (
+                              <tr className="bg-slate-50/50 dark:bg-[#181c26]/60 border-b border-slate-200 dark:border-[#202531]">
+                                <td colSpan={6} className="p-4 sm:p-6">
+                                  {renderInlineQuoteDetails(q)}
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </>
-      )}
-    </>
-  ) : (
-    /* Cadastrar Orçamento — Inline Page View (Sem modal) */
-    <div className="w-full space-y-6 animate-in fade-in duration-200">
+      ) : (
+        /* Cadastrar Orçamento — Inline Page View (Sem modal) */
+        <div className="w-full space-y-6 animate-in fade-in duration-200">
           {/* DRAFT RESTORED NOTIFICATION BANNER */}
           {hasRestoredDraft && quoteItems.length > 0 && (
             <div className="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl flex items-center justify-between text-xs text-emerald-800 dark:text-emerald-300 font-bold shadow-xs animate-in fade-in">
@@ -1037,8 +1035,8 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   type="button"
                   onClick={() => setAttendanceMode('presencial')}
                   className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${attendanceMode === 'presencial'
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                     }`}
                 >
                   <MapPin className="w-4 h-4 text-emerald-400" />
@@ -1049,8 +1047,8 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   type="button"
                   onClick={() => setAttendanceMode('online')}
                   className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${attendanceMode === 'online'
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
                     }`}
                 >
                   <MessageSquare className="w-4 h-4 text-cyan-400" />
@@ -1377,8 +1375,8 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                         type="button"
                         onClick={() => handleSelectPaymentTerms(preset)}
                         className={`px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer border ${isSelected
-                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/30'
-                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
+                          ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm ring-2 ring-indigo-500/30'
+                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
                           }`}
                       >
                         {preset}
@@ -1507,6 +1505,89 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
       {/* Preview PDF Modal Document */}
       {previewPdfQuote && (
         <div className="printable-quote-modal fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 print:p-0 print:bg-white">
+          {/* Print CSS Rules */}
+          <style>{`
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 10mm 12mm;
+              }
+
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+                color: black !important;
+                height: auto !important;
+                overflow: visible !important;
+              }
+
+              body * {
+                visibility: hidden !important;
+              }
+
+              .printable-quote-modal,
+              .printable-quote-modal * {
+                visibility: visible !important;
+              }
+
+              .printable-quote-modal {
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                right: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                display: block !important;
+                z-index: 999999 !important;
+              }
+
+              .print-container {
+                position: relative !important;
+                top: 0 !important;
+                left: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+                height: auto !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                max-height: none !important;
+                overflow: visible !important;
+                display: block !important;
+              }
+
+              .print-sheet {
+                padding: 0 !important;
+                margin: 0 !important;
+                max-height: none !important;
+                overflow: visible !important;
+                background: white !important;
+                color: black !important;
+              }
+
+              .no-print {
+                display: none !important;
+              }
+
+              tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+
+              .print-avoid-break {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+            }
+          `}</style>
 
           <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[92vh]">
             {/* Modal Header (Hidden on Print) */}
