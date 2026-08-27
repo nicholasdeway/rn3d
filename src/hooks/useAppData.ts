@@ -432,9 +432,6 @@ export function useAppData() {
               notes: `Pagamento de ${o.paymentMethod || 'PIX'} referente ao pedido ${o.id}`,
             };
             newPaymentEntries.push(newExpItem);
-
-            // Persiste no Supabase para evitar expurgo e credita o Nubank no banco
-            createExpense(newExpItem).catch((err) => console.error('Erro ao persistir entrada de pedido no Supabase:', err));
           }
         }
       });

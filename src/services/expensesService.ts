@@ -133,7 +133,19 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
   const seenRefCodes = new Set<string>();
   const seenSignatures = new Set<string>();
 
-  const filteredData = data.filter((row) => {
+  // Prioriza linhas COM comprovante e mais recentes para nao expurgar o comprovante
+  const sortedData = [...data].sort((a, b) => {
+    const hasReceiptA = a.receipt_url && a.receipt_url.length > 5 ? 1 : 0;
+    const hasReceiptB = b.receipt_url && b.receipt_url.length > 5 ? 1 : 0;
+    if (hasReceiptA !== hasReceiptB) {
+      return hasReceiptB - hasReceiptA;
+    }
+    const timeA = new Date(a.created_at || a.date).getTime();
+    const timeB = new Date(b.created_at || b.date).getTime();
+    return timeB - timeA;
+  });
+
+  const filteredData = sortedData.filter((row) => {
     if (row.reference_code === 'SYS_ACCOUNT_BALANCES') return false;
 
     if (seenIds.has(row.id)) {
@@ -269,6 +281,52 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
     reference_code: expense.referenceCode || '',
     notes: encodeNotesAndMetadata(expense),
   };
+
+  // Se ja existir um lancamento com este mesmo referenceCode, atualiza em vez de inserir duplicata
+  if (expense.referenceCode) {
+    const { data: existing } = await supabase
+      .from('expenses')
+      .select('*')
+      .eq('reference_code', expense.referenceCode)
+      .maybeSingle();
+
+    if (existing && existing.id) {
+      if (existing.receipt_url && !payload.receipt_url) {
+        payload.receipt_url = existing.receipt_url;
+        payload.receipt_type = existing.receipt_type;
+        payload.receipt_name = existing.receipt_name;
+      }
+      const { data: updatedData, error: updateError } = await supabase
+        .from('expenses')
+        .update(payload)
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (!updateError && updatedData) {
+        const decoded = decodeNotesAndMetadata(updatedData);
+        return {
+          id: updatedData.id,
+          description: updatedData.description,
+          category: decoded.category,
+          amount: Number(updatedData.amount) || 0,
+          date: updatedData.date,
+          timestamp: decoded.timestamp,
+          paymentStatus: updatedData.payment_status || 'Pago',
+          beneficiary: updatedData.beneficiary || '',
+          createdBy: decoded.createdBy,
+          sourceAccount: decoded.sourceAccount,
+          destinationAccount: decoded.destinationAccount,
+          receiptUrl: updatedData.receipt_url || '',
+          receiptType: updatedData.receipt_type || 'image',
+          receiptName: updatedData.receipt_name || '',
+          isAutoReplicated: updatedData.is_auto_replicated ?? false,
+          referenceCode: updatedData.reference_code || '',
+          notes: decoded.notes,
+        };
+      }
+    }
+  }
 
   const { data, error } = await supabase
     .from('expenses')
