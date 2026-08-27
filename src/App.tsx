@@ -188,60 +188,48 @@ export function App() {
     setActiveVisitClientId(nextVisitClientId);
   };
 
-  // Sync initial history state and handle popstate/hashchange (native Android back gesture / iOS / Web)
+  // Sync initial history state and intercept native Android back gesture (popstate/hashchange)
   useEffect(() => {
     const initialView = currentView || 'dashboard';
-    if (!window.history.state) {
-      window.history.replaceState({ view: initialView, activeClientIdForProfile, activeVisitClientId }, '', `#${initialView}`);
+
+    // Push initial anchor state so Android always has a history entry to pop
+    window.history.replaceState({ view: 'dashboard', isBase: true }, '', '#dashboard');
+    if (initialView !== 'dashboard') {
+      window.history.pushState({ view: initialView, activeClientIdForProfile, activeVisitClientId }, '', `#${initialView}`);
     }
 
-    const handleHistoryChange = (event?: Event) => {
-      const state = (event as PopStateEvent)?.state;
-      const hash = window.location.hash.replace('#', '') as ViewMode;
+    const handlePopState = (event: PopStateEvent) => {
+      setHistoryStack((prevStack) => {
+        if (prevStack.length > 1) {
+          const nextStack = prevStack.slice(0, prevStack.length - 1);
+          const prevEntry = nextStack[nextStack.length - 1];
 
-      if (state && state.view) {
-        setCurrentView(state.view);
-        setActiveClientIdForProfile(state.activeClientIdForProfile || null);
-        setActiveVisitClientId(state.activeVisitClientId || null);
-      } else if (hash && hash.length > 0) {
-        setCurrentView(hash);
-        setActiveClientIdForProfile(null);
-        setActiveVisitClientId(null);
-      } else {
-        setCurrentView('dashboard');
-        setActiveClientIdForProfile(null);
-        setActiveVisitClientId(null);
-      }
+          setCurrentView(prevEntry.view);
+          setActiveClientIdForProfile(prevEntry.activeClientIdForProfile);
+          setActiveVisitClientId(prevEntry.activeVisitClientId);
+
+          return nextStack;
+        } else {
+          // Lock anchor state so Android native gesture does not close the browser
+          window.history.pushState({ view: 'dashboard', isBase: true }, '', '#dashboard');
+          setCurrentView('dashboard');
+          setActiveClientIdForProfile(null);
+          setActiveVisitClientId(null);
+          return [{ view: 'dashboard', activeClientIdForProfile: null, activeVisitClientId: null }];
+        }
+      });
     };
 
-    window.addEventListener('popstate', handleHistoryChange);
-    window.addEventListener('hashchange', handleHistoryChange);
+    window.addEventListener('popstate', handlePopState);
 
     return () => {
-      window.removeEventListener('popstate', handleHistoryChange);
-      window.removeEventListener('hashchange', handleHistoryChange);
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
 
   const handleGoBack = () => {
     if (historyStack.length > 1) {
-      const nextStack = historyStack.slice(0, historyStack.length - 1);
-      const prevEntry = nextStack[nextStack.length - 1];
-      setHistoryStack(nextStack);
-
-      window.history.replaceState(
-        {
-          view: prevEntry.view,
-          activeClientIdForProfile: prevEntry.activeClientIdForProfile,
-          activeVisitClientId: prevEntry.activeVisitClientId,
-        },
-        '',
-        `#${prevEntry.view}`
-      );
-
-      setCurrentView(prevEntry.view);
-      setActiveClientIdForProfile(prevEntry.activeClientIdForProfile);
-      setActiveVisitClientId(prevEntry.activeVisitClientId);
+      window.history.back();
     } else {
       setHistoryStack([{ view: 'dashboard', activeClientIdForProfile: null, activeVisitClientId: null }]);
       window.history.replaceState({ view: 'dashboard', activeClientIdForProfile: null, activeVisitClientId: null }, '', '#dashboard');
