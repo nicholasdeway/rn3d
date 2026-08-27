@@ -109,7 +109,6 @@ export async function updateConsignment(consignment: Consignment): Promise<boole
 
   try {
     const orderPayload: any = {
-      order_code: consignment.id,
       client_name: consignment.clientName || 'Cliente Consignado',
       date: consignment.date || new Date().toISOString().split('T')[0],
       items_count: consignment.itemsCount || 0,
@@ -123,27 +122,35 @@ export async function updateConsignment(consignment: Consignment): Promise<boole
       orderPayload.client_id = consignment.clientId;
     }
 
-    // Locate existing order row
-    const { data: existing } = await supabase
+    // 1. Try update by order_code first
+    const { data: updatedByCode } = await supabase
       .from('orders')
-      .select('id')
-      .or(`order_code.eq.${consignment.id},id.eq.${consignment.id}`)
-      .limit(1);
+      .update(orderPayload)
+      .eq('order_code', consignment.id)
+      .select();
 
-    let oData: any = null;
+    let oData: any = updatedByCode && updatedByCode.length > 0 ? updatedByCode[0] : null;
 
-    if (existing && existing.length > 0) {
-      const { data: updated } = await supabase
+    // 2. If not found by order_code, try update by id
+    if (!oData) {
+      const { data: updatedById } = await supabase
         .from('orders')
         .update(orderPayload)
-        .eq('id', existing[0].id)
+        .eq('id', consignment.id)
         .select();
-      oData = updated && updated.length > 0 ? updated[0] : null;
-    } else {
-      const { data: inserted } = await supabase
+
+      oData = updatedById && updatedById.length > 0 ? updatedById[0] : null;
+    }
+
+    // 3. If still not found, insert with order_code
+    if (!oData) {
+      orderPayload.order_code = consignment.id;
+      const { data: inserted, error: iErr } = await supabase
         .from('orders')
         .insert([orderPayload])
         .select();
+
+      if (iErr) console.error('Erro ao inserir consignação ao atualizar:', iErr.message);
       oData = inserted && inserted.length > 0 ? inserted[0] : null;
     }
 
