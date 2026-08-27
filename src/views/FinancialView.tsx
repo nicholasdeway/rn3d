@@ -43,7 +43,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const isPdf = file.type === 'application/pdf';
+    const isPdf = file.type === 'application/pdf' || file.type.toLowerCase().includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
     const reader = new FileReader();
 
     reader.onloadend = () => {
@@ -668,7 +668,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                 </label>
                 <input
                   type="file"
-                  accept="image/*,application/pdf"
+                  accept="image/*,.pdf,application/pdf"
                   onChange={handlePaymentFileUpload}
                   className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 dark:file:bg-emerald-950/60 dark:file:text-emerald-300 cursor-pointer"
                 />

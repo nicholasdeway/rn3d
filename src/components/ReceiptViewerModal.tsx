@@ -63,7 +63,11 @@ export const ReceiptViewerModal: React.FC<ReceiptViewerModalProps> = ({ receipt,
 
   if (!receipt) return null;
 
-  const isPdf = receipt.type === 'pdf' || receipt.url.startsWith('data:application/pdf');
+  const isPdf =
+    receipt.type === 'pdf' ||
+    receipt.url.startsWith('data:application/pdf') ||
+    receipt.url.toLowerCase().includes('.pdf') ||
+    (receipt.name && receipt.name.toLowerCase().endsWith('.pdf'));
 
   const handleZoomIn = () => {
     setScale((prev) => Math.min(4, Math.round((prev + 0.25) * 100) / 100));
@@ -236,21 +240,29 @@ export const ReceiptViewerModal: React.FC<ReceiptViewerModalProps> = ({ receipt,
         >
           {isPdf ? (
             <div className="w-full h-full flex flex-col space-y-2">
-              <div className="flex justify-end no-print">
+              <div className="flex items-center justify-between no-print px-1">
+                <span className="text-xs font-bold text-slate-300">📄 Comprovante em PDF</span>
                 <a
                   href={receipt.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  download={receipt.name || 'comprovante.pdf'}
+                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-md transition-colors"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" /> Abrir PDF em Nova Aba
+                  <ExternalLink className="w-4 h-4" /> Abrir / Baixar PDF em Nova Aba
                 </a>
               </div>
-              <iframe
-                src={receipt.url}
+              <object
+                data={receipt.url}
+                type="application/pdf"
                 className="w-full flex-1 rounded-xl border border-slate-700 bg-white"
-                title="Visualizador de PDF"
-              />
+              >
+                <iframe
+                  src={receipt.url}
+                  className="w-full h-full rounded-xl border-0 bg-white"
+                  title="Visualizador de PDF"
+                />
+              </object>
             </div>
           ) : (
             <div

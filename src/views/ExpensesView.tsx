@@ -276,7 +276,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const isPdf = file.type === 'application/pdf';
+    const isPdf = file.type === 'application/pdf' || file.type.toLowerCase().includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
     const reader = new FileReader();
 
     reader.onloadend = () => {
@@ -1645,13 +1645,13 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </label>
                 <input
                   type="file"
-                  accept="image/*,.pdf"
+                  accept="image/*,.pdf,application/pdf"
                   disabled={isUploadingReceipt}
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     setIsUploadingReceipt(true);
-                    const isPdf = file.type === 'application/pdf';
+                    const isPdf = file.type === 'application/pdf' || file.type.toLowerCase().includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
                     const reader = new FileReader();
                     reader.onloadend = async () => {
                       try {

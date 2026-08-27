@@ -1066,11 +1066,11 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                 </label>
                 <input
                   type="file"
-                  accept="image/*,.pdf"
+                  accept="image/*,.pdf,application/pdf"
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    const isPdf = file.type === 'application/pdf';
+                    const isPdf = file.type === 'application/pdf' || file.type.toLowerCase().includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
                     const reader = new FileReader();
                     reader.onloadend = async () => {
                       try {
