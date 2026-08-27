@@ -531,15 +531,15 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
                   <tr>
-                    <th className="p-4">Pedido</th>
-                    <th className="p-4">Cliente</th>
-                    <th className="p-4">Data</th>
+                    <th className="p-4 text-left">Pedido</th>
+                    <th className="p-4 text-left">Cliente</th>
+                    <th className="p-4 text-left">Data</th>
                     <th className="p-4 text-center">Itens</th>
                     <th className="p-4 text-right">Valor</th>
-                    <th className="p-4">Pagamento</th>
-                    <th className="p-4">Progresso Impressão 3D</th>
-                    <th className="p-4">Status Entrega</th>
-                    <th className="p-4 text-right">Ação</th>
+                    <th className="p-4 text-center">Pagamento</th>
+                    <th className="p-4 text-center">Progresso Impressão 3D</th>
+                    <th className="p-4 text-center">Status Entrega</th>
+                    <th className="p-4 text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
@@ -569,9 +569,9 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                           <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
                             R$ {o.totalValue.toFixed(2).replace('.', ',')}
                           </td>
-                          <td className="p-4 font-semibold text-slate-700 dark:text-slate-300">{o.paymentStatusText}</td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <td className="p-4 text-center font-semibold text-slate-700 dark:text-slate-300">{o.paymentStatusText}</td>
+                          <td className="p-4 text-center align-middle">
+                            <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                               <button
                                 type="button"
                                 onClick={() => {
@@ -606,73 +606,78 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                               </button>
                             </div>
                           </td>
-                          <td className="p-4">
-                            <label
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex items-center gap-1.5 cursor-pointer bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-semibold select-none transition-colors"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={o.status === 'Entregue'}
-                                onChange={(e) => {
-                                  const isChecked = e.target.checked;
-                                  if (isChecked) {
-                                    if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, 'Entregue');
-                                  } else {
-                                    const fallbackStatus = o.productionProgressPct === 100 ? 'Pronto' : o.productionProgressPct > 0 ? 'Em produção' : 'Novo';
-                                    if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, fallbackStatus);
-                                  }
-                                }}
-                                className="w-3.5 h-3.5 accent-emerald-600 rounded cursor-pointer"
-                              />
-                              <span className={o.status === 'Entregue' ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'}>
-                                {o.status === 'Entregue' ? 'Entregue' : 'Não entregue'}
-                              </span>
-                            </label>
+                          <td className="p-4 text-center align-middle">
+                            <div className="flex items-center justify-center">
+                              <label
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center gap-1.5 cursor-pointer bg-slate-50 dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-xs font-semibold select-none transition-colors"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={o.status === 'Entregue'}
+                                  onChange={(e) => {
+                                    const isChecked = e.target.checked;
+                                    if (isChecked) {
+                                      if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, 'Entregue');
+                                    } else {
+                                      const fallbackStatus = o.productionProgressPct === 100 ? 'Pronto' : o.productionProgressPct > 0 ? 'Em produção' : 'Novo';
+                                      if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, fallbackStatus);
+                                    }
+                                  }}
+                                  className="w-3.5 h-3.5 accent-emerald-600 rounded cursor-pointer"
+                                />
+                                <span className={o.status === 'Entregue' ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'}>
+                                  {o.status === 'Entregue' ? 'Entregue' : 'Não entregue'}
+                                </span>
+                              </label>
+                            </div>
                           </td>
-                          <td className="p-4 text-right space-x-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingReceiptOrder(o);
-                                setReceiptFile(null);
-                              }}
-                              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer text-xs"
-                              title="Anexar ou alterar comprovante de pagamento"
-                            >
-                              <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
-                              <span>{o.paymentReceiptUrl ? 'Comprovante' : 'Anexar'}</span>
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPreviewPdfOrder(o);
-                              }}
-                              className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-semibold inline-flex items-center gap-1 cursor-pointer text-xs"
-                              title="Ver Documento PDF A4 do Pedido"
-                            >
-                              <Printer className="w-3.5 h-3.5" /> PDF
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleExpandOrder(o.id);
-                              }}
-                              className={`px-3 py-1.5 rounded-lg font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors ${isExpanded
-                                  ? 'bg-indigo-600 text-white shadow-2xs'
-                                  : 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900'
-                                }`}
-                            >
-                              {isExpanded ? (
-                                <>
-                                  <ChevronUp className="w-3.5 h-3.5" /> Recolher
-                                </>
-                              ) : (
-                                <>
-                                  <ChevronDown className="w-3.5 h-3.5" /> Detalhes
-                                </>
-                              )}
-                            </button>
+                          <td className="p-4 text-center align-middle">
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingReceiptOrder(o);
+                                  setReceiptFile(null);
+                                }}
+                                className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/80 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/80 dark:border-slate-700/80 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
+                                title="Anexar ou alterar comprovante de pagamento"
+                              >
+                                <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
+                                <span>{o.paymentReceiptUrl ? 'Comprovante' : 'Anexar'}</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPreviewPdfOrder(o);
+                                }}
+                                className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
+                                title="Ver Documento PDF A4 do Pedido"
+                              >
+                                <Printer className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                                <span>PDF</span>
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleExpandOrder(o.id);
+                                }}
+                                className={`px-2.5 py-1.5 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0 ${isExpanded
+                                    ? 'bg-indigo-600 text-white shadow-2xs'
+                                    : 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 border border-indigo-200/80 dark:border-indigo-800/80'
+                                  }`}
+                              >
+                                {isExpanded ? (
+                                  <>
+                                    <ChevronUp className="w-3.5 h-3.5" /> Detalhes
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="w-3.5 h-3.5" /> Detalhes
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           </td>
                         </tr>
 
