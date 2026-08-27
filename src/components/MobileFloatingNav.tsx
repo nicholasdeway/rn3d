@@ -77,7 +77,7 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
   };
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-auto">
+    <div className="no-print fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-auto">
       {/* Backdrop for FAB Speed Dial or Main Dropdown */}
       {(isDropdownOpen || isFabOpen) && (
         <div
