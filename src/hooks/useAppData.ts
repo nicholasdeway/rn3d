@@ -148,10 +148,10 @@ export function useAppData() {
     if (!user) return;
 
     let isMounted = true;
-    setDataLoading(true);
 
-    const loadAllData = async () => {
+    const loadAllData = async (showLoadingState = true) => {
       try {
+        if (showLoadingState) setDataLoading(true);
         const [dbProducts, dbClients, dbOrders, dbQuotes, dbConsignments] = await Promise.all([
           fetchProducts(),
           fetchClients(),
@@ -180,49 +180,23 @@ export function useAppData() {
       } catch (err) {
         console.error('Erro ao carregar dados do Supabase:', err);
       } finally {
-        if (isMounted) setDataLoading(false);
+        if (isMounted && showLoadingState) setDataLoading(false);
       }
     };
 
-    loadAllData();
+    // Initial load shows loading indicator if needed
+    loadAllData(true);
 
-    // Re-sincronizar apenas ao focar na janela do navegador ou em intervalo longo (5 minutos)
+    // Re-sincronizar silenciosamente a cada 5 minutos (sem disparar efeito de blur/loading nos cards)
     const intervalId = setInterval(async () => {
       if (!isMounted) return;
-      try {
-        const [dbProducts, dbClients, dbOrders, dbQuotes, dbConsignments] = await Promise.all([
-          fetchProducts(),
-          fetchClients(),
-          fetchOrders(),
-          fetchQuotes(),
-          fetchConsignments(),
-        ]);
-        if (!isMounted) return;
-        setProducts(dbProducts);
-        setClients(dbClients);
-        setOrders(dbOrders);
-        setQuotes(dbQuotes);
-        if (dbConsignments && dbConsignments.length > 0) {
-          setConsignments((prev) => {
-            const map = new Map<string, any>();
-            dbConsignments.forEach((c) => map.set(c.id.toLowerCase().trim(), c));
-            (prev || []).forEach((c) => {
-              if (!map.has(c.id.toLowerCase().trim())) {
-                map.set(c.id.toLowerCase().trim(), c);
-              }
-            });
-            return Array.from(map.values());
-          });
-        }
-        if (reloadExpenses) reloadExpenses();
-      } catch (e) {
-        // Silent background sync error
-      }
-    }, 300000); // 5 minutos (300.000 ms) em vez de 5 segundos
+      loadAllData(false);
+    }, 300000);
 
+    // Re-sincronizar silenciosamente ao focar na janela/Alt+Tab (sem disparar efeito de blur/loading nos cards)
     const handleFocus = () => {
       if (!isMounted) return;
-      loadAllData();
+      loadAllData(false);
     };
     window.addEventListener('focus', handleFocus);
 

@@ -13,13 +13,34 @@ export function useExpenses(
   user: any,
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void
 ) {
-  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
-  const [accountBalances, setAccountBalances] = useState<AccountBalances>({
-    nubank: 0,
-    shopee: 0,
-    mercadoLivre: 0,
-    tikTokShop: 0,
-    amazon: 0,
+  const [expenses, setExpenses] = useState<ExpenseItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_expenses_cache');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
+
+  const [accountBalances, setAccountBalances] = useState<AccountBalances>(() => {
+    try {
+      const saved = localStorage.getItem('rn3d_account_balances');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && typeof parsed.nubank === 'number') {
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return {
+      nubank: 542.77,
+      shopee: 0,
+      mercadoLivre: 0,
+      tikTokShop: 0,
+      amazon: 0,
+    };
   });
 
   const reloadExpenses = async () => {
@@ -27,6 +48,9 @@ export function useExpenses(
       const res = await fetchExpenses();
       if (res.expenses) {
         setExpenses(res.expenses);
+        try {
+          localStorage.setItem('rn3d_expenses_cache', JSON.stringify(res.expenses.slice(0, 200)));
+        } catch (e) {}
       }
       if (res.balances) {
         let fixedBalances = { ...res.balances };
@@ -36,6 +60,9 @@ export function useExpenses(
           saveAccountBalancesToSupabase(fixedBalances);
         }
         setAccountBalances(fixedBalances);
+        try {
+          localStorage.setItem('rn3d_account_balances', JSON.stringify(fixedBalances));
+        } catch (e) {}
       }
     } catch (err) {
       console.error('Erro ao recarregar despesas/saldos do Supabase:', err);
