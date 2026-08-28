@@ -47,11 +47,11 @@ export function App() {
   const [autoOpenNewProductModal, setAutoOpenNewProductModal] = useState(false);
   const [autoOpenExpenseModal, setAutoOpenExpenseModal] = useState<'aporte' | 'withdrawal' | 'expense' | null>(null);
 
-  // Persistent Theme Mode state ('light' | 'dark')
+  // Persistent Theme Mode state ('light' | 'dark') — Default: 'dark'
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     const saved = localStorage.getItem('rn3d_theme');
-    if (saved === 'dark' || saved === 'light') return saved;
-    return 'light';
+    if (saved === 'light') return 'light';
+    return 'dark';
   });
 
   useEffect(() => {
