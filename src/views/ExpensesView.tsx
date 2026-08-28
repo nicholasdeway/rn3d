@@ -32,6 +32,8 @@ import {
   Store,
   UserCheck,
   ArrowDownLeft,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { formatDateBR, formatTimeOnly } from '../utils/formatters';
 
@@ -237,6 +239,21 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       return (b.id || '').localeCompare(a.id || '');
     });
   }, [expenses, searchTerm, categoryFilter, statusFilter]);
+
+  // Pagination state (10 items per page)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 10;
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, categoryFilter, statusFilter]);
+
+  const totalPages = Math.ceil(filteredExpenses.length / ITEMS_PER_PAGE) || 1;
+
+  const paginatedExpenses = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredExpenses.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredExpenses, currentPage]);
 
   // Financial KPI totals
   const totalExpensesAmount = useMemo(() => {
@@ -844,7 +861,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
             </p>
           </div>
         ) : (
-          filteredExpenses.map((exp) => (
+          paginatedExpenses.map((exp) => (
             <div
               key={exp.id}
               className="bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-slate-300 dark:hover:border-slate-700 transition-all space-y-3 flex flex-col justify-between"
@@ -1007,7 +1024,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredExpenses.map((exp) => (
+                paginatedExpenses.map((exp) => (
                   <tr key={exp.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="p-4 font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap">
                       <div>
@@ -1147,6 +1164,51 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
           </table>
         </div>
       </div>
+
+      {/* PAGINATION CONTROLS (10 items per page) */}
+      {filteredExpenses.length > 10 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs text-xs">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">
+            Mostrando <span className="font-bold text-slate-900 dark:text-slate-100">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> a{' '}
+            <span className="font-bold text-slate-900 dark:text-slate-100">{Math.min(currentPage * ITEMS_PER_PAGE, filteredExpenses.length)}</span> de{' '}
+            <span className="font-bold text-slate-900 dark:text-slate-100">{filteredExpenses.length}</span> registros
+          </span>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#202531] bg-slate-50 dark:bg-[#181c26] text-slate-700 dark:text-slate-300 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+            </button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setCurrentPage(p)}
+                  className={`w-8 h-8 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
+                    currentPage === p
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-slate-50 dark:bg-[#181c26] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#202531] hover:bg-slate-100 dark:hover:bg-slate-800'
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#202531] bg-slate-50 dark:bg-[#181c26] text-slate-700 dark:text-slate-300 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
+            >
+              Próxima <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: REGISTRAR LANÇAMENTO / APORTE DE SÓCIO */}
       {isAporteModalOpen && (

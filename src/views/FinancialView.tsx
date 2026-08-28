@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { SaleTransaction, Consignment, Order } from '../types';
-import { DollarSign, Wallet, ArrowUpRight, Clock, CheckCircle2, Plus, X, HandCoins, TrendingUp, Paperclip } from 'lucide-react';
+import { DollarSign, Wallet, ArrowUpRight, Clock, CheckCircle2, Plus, X, HandCoins, TrendingUp, Paperclip, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDateBR } from '../utils/formatters';
 
 interface FinancialViewProps {
@@ -38,6 +38,14 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   const [paymentReceiptUrl, setPaymentReceiptUrl] = useState<string>('');
   const [paymentReceiptType, setPaymentReceiptType] = useState<'image' | 'pdf'>('image');
   const [paymentReceiptName, setPaymentReceiptName] = useState<string>('');
+
+  // Pagination state (10 items per page)
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const ITEMS_PER_PAGE = 10;
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [tab]);
 
   const handlePaymentFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -87,6 +95,45 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
   const totalOperationsCount = orders.length + filteredTransactions.length;
   const averageTicket = totalOperationsCount > 0 ? totalGrossSales / totalOperationsCount : 0;
+
+  // TAB 1 Data: Extrato Completo
+  const allExtratoEntries = useMemo(() => {
+    const orderEntries = orders.map((o) => ({ type: 'order' as const, data: o, id: o.id, date: o.date || o.createdAt || '' }));
+    const txEntries = filteredTransactions.map((t) => ({ type: 'transaction' as const, data: t, id: t.id, date: t.timestamp || t.dueDate || '' }));
+    return [...orderEntries, ...txEntries].sort((a, b) => b.date.localeCompare(a.date));
+  }, [orders, filteredTransactions]);
+
+  const extratoTotalPages = Math.ceil(allExtratoEntries.length / ITEMS_PER_PAGE) || 1;
+  const paginatedExtrato = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return allExtratoEntries.slice(start, start + ITEMS_PER_PAGE);
+  }, [allExtratoEntries, currentPage]);
+
+  // TAB 2 Data: Entradas em Caixa
+  const allEntradasEntries = useMemo(() => {
+    const paidOrders = orders.filter((o) => (o.paidAmount || 0) > 0).map((o) => ({ type: 'order' as const, data: o, id: o.id, date: o.date || o.createdAt || '' }));
+    const txEntries = filteredTransactions.map((t) => ({ type: 'transaction' as const, data: t, id: t.id, date: t.timestamp || t.dueDate || '' }));
+    return [...paidOrders, ...txEntries].sort((a, b) => b.date.localeCompare(a.date));
+  }, [orders, filteredTransactions]);
+
+  const entradasTotalPages = Math.ceil(allEntradasEntries.length / ITEMS_PER_PAGE) || 1;
+  const paginatedEntradas = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return allEntradasEntries.slice(start, start + ITEMS_PER_PAGE);
+  }, [allEntradasEntries, currentPage]);
+
+  // TAB 3 Data: Contas a Receber
+  const allReceberEntries = useMemo(() => {
+    const pendingOrders = orders.filter((o) => o.totalValue > (o.paidAmount || 0)).map((o) => ({ type: 'order' as const, data: o, id: o.id, date: o.date || o.createdAt || '' }));
+    const consignmentEntries = consignments.map((c) => ({ type: 'consignment' as const, data: c, id: c.id, date: c.date || c.createdAt || '' }));
+    return [...pendingOrders, ...consignmentEntries].sort((a, b) => b.date.localeCompare(a.date));
+  }, [orders, consignments]);
+
+  const receberTotalPages = Math.ceil(allReceberEntries.length / ITEMS_PER_PAGE) || 1;
+  const paginatedReceber = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return allReceberEntries.slice(start, start + ITEMS_PER_PAGE);
+  }, [allReceberEntries, currentPage]);
 
   const handleOpenPaymentModal = (order: Order) => {
     setSelectedOrderForPayment(order);
@@ -214,7 +261,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Extrato Completo ({orders.length + filteredTransactions.length})
+          Extrato Completo ({allExtratoEntries.length})
         </button>
         <button
           onClick={() => setTab('entradas')}
@@ -224,7 +271,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Entradas em Caixa
+          Entradas em Caixa ({allEntradasEntries.length})
         </button>
         <button
           onClick={() => setTab('receber')}
@@ -234,14 +281,14 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Contas a Receber ({orders.filter((o) => o.totalValue > (o.paidAmount || 0)).length})
+          Contas a Receber ({allReceberEntries.length})
         </button>
       </div>
 
       {/* TAB 1: Extrato Completo de Vendas & Pedidos */}
       {tab === 'extrato' && (
         <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
-          {orders.length === 0 && filteredTransactions.length === 0 ? (
+          {allExtratoEntries.length === 0 ? (
             <div className="p-12 text-center space-y-3">
               <Wallet className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
               <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">Nenhum pedido ou transação financeira</h3>
@@ -253,77 +300,81 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
             <>
               {/* Mobile View: Financial Cards */}
               <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
-                {orders.map((o) => {
-                  const paid = o.paidAmount || 0;
-                  const pending = Math.max(0, o.totalValue - paid);
-                  const isFullyPaid = pending === 0;
+                {paginatedExtrato.map((entry) => {
+                  if (entry.type === 'order') {
+                    const o = entry.data as Order;
+                    const paid = o.paidAmount || 0;
+                    const pending = Math.max(0, o.totalValue - paid);
+                    const isFullyPaid = pending === 0;
 
-                  let statusBadge = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
-                  if (isFullyPaid) statusBadge = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
-                  else if (paid > 0) statusBadge = 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/50 font-bold';
+                    let statusBadge = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+                    if (isFullyPaid) statusBadge = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
+                    else if (paid > 0) statusBadge = 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/50 font-bold';
 
-                  return (
-                    <div key={o.id} className="p-4 space-y-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] border ${statusBadge}`}>
-                          {isFullyPaid ? 'Totalmente Pago' : o.paymentStatusText || 'Pendente'}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-slate-900 dark:text-slate-100">{o.clientName}</span>
-                        <span className="text-slate-500 dark:text-slate-400">{formatDateBR(o.date)}</span>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/60 dark:border-[#202531] text-[11px]">
-                        <div>
-                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Total</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100">R$ {o.totalValue.toFixed(2).replace('.', ',')}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Caixa</span>
-                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {paid.toFixed(2).replace('.', ',')}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Saldo</span>
-                          <span className="font-extrabold text-rose-600 dark:text-rose-400">R$ {pending.toFixed(2).replace('.', ',')}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-end pt-1">
-                        {!isFullyPaid ? (
-                          <button
-                            onClick={() => handleOpenPaymentModal(o)}
-                            className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-                          >
-                            <HandCoins className="w-4 h-4" /> Registrar Recebimento
-                          </button>
-                        ) : (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 text-[11px]">
-                            <CheckCircle2 className="w-4 h-4" /> Quitado
+                    return (
+                      <div key={o.id} className="p-4 space-y-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] border ${statusBadge}`}>
+                            {isFullyPaid ? 'Totalmente Pago' : o.paymentStatusText || 'Pendente'}
                           </span>
-                        )}
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{o.clientName}</span>
+                          <span className="text-slate-500 dark:text-slate-400">{formatDateBR(o.date)}</span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/60 dark:border-[#202531] text-[11px]">
+                          <div>
+                            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Total</span>
+                            <span className="font-bold text-slate-900 dark:text-slate-100">R$ {o.totalValue.toFixed(2).replace('.', ',')}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Caixa</span>
+                            <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {paid.toFixed(2).replace('.', ',')}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Saldo</span>
+                            <span className="font-extrabold text-rose-600 dark:text-rose-400">R$ {pending.toFixed(2).replace('.', ',')}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-end pt-1">
+                          {!isFullyPaid ? (
+                            <button
+                              onClick={() => handleOpenPaymentModal(o)}
+                              className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                            >
+                              <HandCoins className="w-4 h-4" /> Registrar Recebimento
+                            </button>
+                          ) : (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1 text-[11px]">
+                              <CheckCircle2 className="w-4 h-4" /> Quitado
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
+                    );
+                  } else {
+                    const t = entry.data as SaleTransaction;
+                    return (
+                      <div key={t.id} className="p-4 space-y-2 bg-slate-50/40 dark:bg-slate-900/40">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">{t.id}</span>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80">
+                            {t.status || 'Recebido'} ({t.paymentMethod || 'PIX'})
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{t.clientName}</span>
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {t.amount.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                      </div>
+                    );
+                  }
                 })}
-
-                {filteredTransactions.map((t) => (
-                  <div key={t.id} className="p-4 space-y-2 bg-slate-50/40 dark:bg-slate-900/40">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">{t.id}</span>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80">
-                        {t.status || 'Recebido'} ({t.paymentMethod || 'PIX'})
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold text-slate-900 dark:text-slate-100">{t.clientName}</span>
-                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {t.amount.toFixed(2).replace('.', ',')}</span>
-                    </div>
-                  </div>
-                ))}
               </div>
 
               {/* Desktop / Tablet View: Table */}
@@ -342,87 +393,471 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
-                    {/* Orders */}
-                    {orders.map((o) => {
-                      const paid = o.paidAmount || 0;
-                      const pending = Math.max(0, o.totalValue - paid);
-                      const isFullyPaid = pending === 0;
+                    {paginatedExtrato.map((entry) => {
+                      if (entry.type === 'order') {
+                        const o = entry.data as Order;
+                        const paid = o.paidAmount || 0;
+                        const pending = Math.max(0, o.totalValue - paid);
+                        const isFullyPaid = pending === 0;
 
-                      let statusBadge = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
-                      if (isFullyPaid) statusBadge = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
-                      else if (paid > 0) statusBadge = 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/50 font-bold';
+                        let statusBadge = 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+                        if (isFullyPaid) statusBadge = 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80 font-extrabold';
+                        else if (paid > 0) statusBadge = 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/50 font-bold';
 
-                      return (
-                        <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                          <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{o.id}</td>
-                          <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{o.clientName}</td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(o.date)}</td>
-                          <td className="p-4 text-right font-extrabold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                            R$ {o.totalValue.toFixed(2).replace('.', ',')}
-                          </td>
-                          <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                            R$ {paid.toFixed(2).replace('.', ',')}
-                          </td>
-                          <td className="p-4 text-right font-extrabold text-rose-600 dark:text-rose-400 whitespace-nowrap">
-                            R$ {pending.toFixed(2).replace('.', ',')}
-                          </td>
-                          <td className="p-4 text-center whitespace-nowrap">
-                            <span className={`px-2.5 py-1 rounded-full text-[10px] border inline-flex items-center justify-center gap-1 whitespace-nowrap ${statusBadge}`}>
-                              {isFullyPaid && <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />}
-                              <span>{isFullyPaid ? 'Totalmente Pago' : o.paymentStatusText || 'Pendente'}</span>
-                            </span>
-                          </td>
-                          <td className="p-4 text-right whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-2 whitespace-nowrap">
-                              {!isFullyPaid ? (
-                                <button
-                                  onClick={() => handleOpenPaymentModal(o)}
-                                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
-                                >
-                                  <HandCoins className="w-3.5 h-3.5" /> Registrar Recebimento
-                                </button>
-                              ) : (
+                        return (
+                          <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                            <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{o.id}</td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{o.clientName}</td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(o.date)}</td>
+                            <td className="p-4 text-right font-extrabold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                              R$ {o.totalValue.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                              R$ {paid.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-right font-extrabold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                              R$ {pending.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-center whitespace-nowrap">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] border inline-flex items-center justify-center gap-1 whitespace-nowrap ${statusBadge}`}>
+                                {isFullyPaid && <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                                <span>{isFullyPaid ? 'Totalmente Pago' : o.paymentStatusText || 'Pendente'}</span>
+                              </span>
+                            </td>
+                            <td className="p-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                                {!isFullyPaid ? (
+                                  <button
+                                    onClick={() => handleOpenPaymentModal(o)}
+                                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
+                                  >
+                                    <HandCoins className="w-3.5 h-3.5" /> Registrar Recebimento
+                                  </button>
+                                ) : (
+                                  <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-lg font-bold inline-flex items-center gap-1 border border-emerald-300 dark:border-emerald-800/80 text-xs shrink-0 whitespace-nowrap">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Quitado
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      } else {
+                        const t = entry.data as SaleTransaction;
+                        return (
+                          <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-slate-50/40 dark:bg-slate-900/40">
+                            <td className="p-4 font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{t.id}</td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{t.clientName}</td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(t.timestamp || t.dueDate)}</td>
+                            <td className="p-4 text-right font-extrabold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                              R$ {t.amount.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                              R$ {t.amount.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-right font-extrabold text-slate-400 dark:text-slate-500 whitespace-nowrap">R$ 0,00</td>
+                            <td className="p-4 text-center whitespace-nowrap">
+                              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80 inline-flex items-center justify-center gap-1 whitespace-nowrap">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                <span>{t.status || 'Recebido'} ({t.paymentMethod || 'PIX'})</span>
+                              </span>
+                            </td>
+                            <td className="p-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                                 <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-lg font-bold inline-flex items-center gap-1 border border-emerald-300 dark:border-emerald-800/80 text-xs shrink-0 whitespace-nowrap">
                                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Quitado
                                 </span>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
                     })}
-
-                    {/* Direct Sale Transactions */}
-                    {filteredTransactions.map((t) => (
-                      <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-slate-50/40 dark:bg-slate-900/40">
-                        <td className="p-4 font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{t.id}</td>
-                        <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{t.clientName}</td>
-                        <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(t.date)}</td>
-                        <td className="p-4 text-right font-extrabold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                          R$ {t.amount.toFixed(2).replace('.', ',')}
-                        </td>
-                        <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                          R$ {t.amount.toFixed(2).replace('.', ',')}
-                        </td>
-                        <td className="p-4 text-right font-extrabold text-slate-400 dark:text-slate-500 whitespace-nowrap">R$ 0,00</td>
-                        <td className="p-4 text-center whitespace-nowrap">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80 inline-flex items-center justify-center gap-1 whitespace-nowrap">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                            <span>{t.status || 'Recebido'} ({t.paymentMethod || 'PIX'})</span>
-                          </span>
-                        </td>
-                        <td className="p-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2 whitespace-nowrap">
-                            <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 rounded-lg font-bold inline-flex items-center gap-1 border border-emerald-300 dark:border-emerald-800/80 text-xs shrink-0 whitespace-nowrap">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Quitado
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination controls for Extrato */}
+              {allExtratoEntries.length > 10 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">
+                    Mostrando <span className="font-bold text-slate-900 dark:text-slate-100">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> a{' '}
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{Math.min(currentPage * ITEMS_PER_PAGE, allExtratoEntries.length)}</span> de{' '}
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{allExtratoEntries.length}</span> registros
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#202531] bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: extratoTotalPages }, (_, i) => i + 1).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`w-8 h-8 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
+                            currentPage === p
+                              ? 'bg-indigo-600 text-white shadow-xs'
+                              : 'bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#202531] hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      disabled={currentPage === extratoTotalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(extratoTotalPages, p + 1))}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#202531] bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      Próxima <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* TAB 2: Entradas em Caixa (Pagamentos Confirmados) */}
+      {tab === 'entradas' && (
+        <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
+          {allEntradasEntries.length === 0 ? (
+            <div className="p-12 text-center space-y-3">
+              <Wallet className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
+              <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">Nenhuma entrada registrada</h3>
+            </div>
+          ) : (
+            <>
+              {/* Mobile View */}
+              <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+                {paginatedEntradas.map((entry) => {
+                  if (entry.type === 'order') {
+                    const o = entry.data as Order;
+                    return (
+                      <div key={o.id} className="p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[11px]">{formatDateBR(o.date)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{o.clientName}</span>
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}</span>
+                        </div>
+                        <span className="inline-block px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold text-[10px]">
+                          ✓ Recebido no Sinal / Entrada
+                        </span>
+                      </div>
+                    );
+                  } else {
+                    const t = entry.data as SaleTransaction;
+                    return (
+                      <div key={t.id} className="p-4 space-y-2 bg-slate-50/40 dark:bg-slate-900/40">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">{t.id}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[11px]">{formatDateBR(t.timestamp || t.dueDate)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{t.clientName}</span>
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {t.amount.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                })}
+              </div>
+
+              {/* Desktop View */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                    <tr>
+                      <th className="p-4 whitespace-nowrap">Origem / Código</th>
+                      <th className="p-4 whitespace-nowrap">Cliente</th>
+                      <th className="p-4 whitespace-nowrap">Data</th>
+                      <th className="p-4 text-right whitespace-nowrap">Valor Entrado em Caixa</th>
+                      <th className="p-4 text-center whitespace-nowrap">Status de Confirmação</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
+                    {paginatedEntradas.map((entry) => {
+                      if (entry.type === 'order') {
+                        const o = entry.data as Order;
+                        return (
+                          <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                            <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{o.id}</td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{o.clientName}</td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(o.date)}</td>
+                            <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                              R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-center whitespace-nowrap">
+                              <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold text-emerald-700 dark:text-emerald-300 text-[10px] inline-flex items-center justify-center gap-1 whitespace-nowrap">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                <span>Recebido no Sinal / Entrada</span>
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      } else {
+                        const t = entry.data as SaleTransaction;
+                        return (
+                          <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                            <td className="p-4 font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{t.id}</td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{t.clientName}</td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(t.timestamp || t.dueDate)}</td>
+                            <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                              R$ {t.amount.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-center whitespace-nowrap">
+                              <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold text-emerald-700 dark:text-emerald-300 text-[10px] inline-flex items-center justify-center gap-1 whitespace-nowrap">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                <span>Venda Confirmada ({t.paymentMethod})</span>
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      }
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination controls for Entradas */}
+              {allEntradasEntries.length > 10 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">
+                    Mostrando <span className="font-bold text-slate-900 dark:text-slate-100">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> a{' '}
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{Math.min(currentPage * ITEMS_PER_PAGE, allEntradasEntries.length)}</span> de{' '}
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{allEntradasEntries.length}</span> registros
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#202531] bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: entradasTotalPages }, (_, i) => i + 1).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`w-8 h-8 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
+                            currentPage === p
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#202531] hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      disabled={currentPage === entradasTotalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(entradasTotalPages, p + 1))}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#202531] bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      Próxima <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: Contas a Receber / Financiados */}
+      {tab === 'receber' && (
+        <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
+          {allReceberEntries.length === 0 ? (
+            <div className="p-12 text-center space-y-3">
+              <Wallet className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto" />
+              <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">Nenhum valor pendente a receber</h3>
+            </div>
+          ) : (
+            <>
+              {/* Mobile View */}
+              <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
+                {paginatedReceber.map((entry) => {
+                  if (entry.type === 'order') {
+                    const o = entry.data as Order;
+                    const remaining = o.totalValue - (o.paidAmount || 0);
+                    return (
+                      <div key={o.id} className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">{o.clientName}</span>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/60 dark:border-[#202531] text-[11px]">
+                          <div>
+                            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Total</span>
+                            <span className="font-bold text-slate-900 dark:text-slate-100">R$ {o.totalValue.toFixed(2).replace('.', ',')}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Já Pago</span>
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}</span>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Pendente</span>
+                            <span className="font-extrabold text-rose-600 dark:text-rose-400">R$ {remaining.toFixed(2).replace('.', ',')}</span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => handleOpenPaymentModal(o)}
+                          className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                        >
+                          <HandCoins className="w-4 h-4" /> Dar Baixa / Quitar
+                        </button>
+                      </div>
+                    );
+                  } else {
+                    const c = entry.data as Consignment;
+                    return (
+                      <div key={c.id} className="p-4 space-y-2 bg-purple-50/30 dark:bg-purple-950/20">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono font-bold text-purple-600 dark:text-purple-400 text-xs">{c.id} (Consignação)</span>
+                          <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">{c.clientName}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-slate-500 dark:text-slate-400">Valor em Loja:</span>
+                          <span className="font-extrabold text-indigo-600 dark:text-indigo-400">R$ {c.totalValue.toFixed(2).replace('.', ',')}</span>
+                        </div>
+                      </div>
+                    );
+                  }
+                })}
+              </div>
+
+              {/* Desktop View */}
+              <div className="hidden sm:block overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                    <tr>
+                      <th className="p-4 whitespace-nowrap">Pedido / Loja</th>
+                      <th className="p-4 whitespace-nowrap">Cliente</th>
+                      <th className="p-4 text-right whitespace-nowrap">Valor Total Pedido</th>
+                      <th className="p-4 text-right whitespace-nowrap">Valor Já Pago</th>
+                      <th className="p-4 text-right whitespace-nowrap">Saldo Pendente (A Receber)</th>
+                      <th className="p-4 text-right whitespace-nowrap">Ação de Recebimento</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
+                    {paginatedReceber.map((entry) => {
+                      if (entry.type === 'order') {
+                        const o = entry.data as Order;
+                        const remaining = o.totalValue - (o.paidAmount || 0);
+                        return (
+                          <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                            <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{o.id}</td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{o.clientName}</td>
+                            <td className="p-4 text-right font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                              R$ {o.totalValue.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-right font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                              R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-right font-extrabold text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                              R$ {remaining.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                                <button
+                                  onClick={() => handleOpenPaymentModal(o)}
+                                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
+                                >
+                                  <HandCoins className="w-3.5 h-3.5" /> Dar Baixa / Quitar
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      } else {
+                        const c = entry.data as Consignment;
+                        return (
+                          <tr key={c.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-purple-50/30 dark:bg-purple-950/20">
+                            <td className="p-4 font-mono font-bold text-purple-600 dark:text-purple-400 whitespace-nowrap">{c.id} (Consignação)</td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{c.clientName}</td>
+                            <td className="p-4 text-right font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                              R$ {c.totalValue.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-right font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">R$ 0,00</td>
+                            <td className="p-4 text-right font-extrabold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                              R$ {c.totalValue.toFixed(2).replace('.', ',')}
+                            </td>
+                            <td className="p-4 text-right whitespace-nowrap">
+                              <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                                <span className="px-2.5 py-1 bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 rounded-lg font-bold text-xs inline-block whitespace-nowrap border border-purple-200 dark:border-purple-800">
+                                  Acerto na Visita
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination controls for Contas a Receber */}
+              {allReceberEntries.length > 10 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] text-xs">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">
+                    Mostrando <span className="font-bold text-slate-900 dark:text-slate-100">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> a{' '}
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{Math.min(currentPage * ITEMS_PER_PAGE, allReceberEntries.length)}</span> de{' '}
+                    <span className="font-bold text-slate-900 dark:text-slate-100">{allReceberEntries.length}</span> registros
+                  </span>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#202531] bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: receberTotalPages }, (_, i) => i + 1).map((p) => (
+                        <button
+                          key={p}
+                          onClick={() => setCurrentPage(p)}
+                          className={`w-8 h-8 rounded-lg font-bold text-xs transition-colors cursor-pointer ${
+                            currentPage === p
+                              ? 'bg-indigo-600 text-white shadow-xs'
+                              : 'bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#202531] hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      disabled={currentPage === receberTotalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(receberTotalPages, p + 1))}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#202531] bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      Próxima <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
