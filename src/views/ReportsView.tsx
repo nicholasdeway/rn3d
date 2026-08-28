@@ -38,22 +38,160 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   clients = [],
   expenses = [],
 }) => {
-  const [period, setPeriod] = useState('Este Mês');
+  const [period, setPeriod] = useState<string>('Este Mês');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [showCustomPicker, setShowCustomPicker] = useState<boolean>(false);
   const [subScreen, setSubScreen] = useState<'dashboard' | 'full-products-ranking' | 'full-clients-ranking'>('dashboard');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // 1. Monthly analytics data for charts
-  const monthlyAnalyticsData = useMemo(() => {
-    return computeMonthlyAnalyticsData(orders, transactions, consignments, expenses);
-  }, [orders, transactions, consignments, expenses]);
+  // Auxiliary Date Parser (Handles ISO, YYYY-MM-DD, DD/MM/YYYY)
+  const parseToDate = (dateStr?: string | null): Date | null => {
+    if (!dateStr) return null;
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      }
+    } else if (dateStr.includes('-')) {
+      const cleanStr = dateStr.split('T')[0];
+      const parts = cleanStr.split('-');
+      if (parts.length === 3) {
+        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      }
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  };
 
-  // 2. Compute Product Profitability Rankings
+  // Compute Active Date Range Window
+  const { dateRangeStart, dateRangeEnd, labelPeriodText } = useMemo(() => {
+    const now = new Date();
+    const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    if (period === 'Hoje') {
+      return {
+        dateRangeStart: todayZero,
+        dateRangeEnd: todayEnd,
+        labelPeriodText: `Hoje (${todayZero.toLocaleDateString('pt-BR')})`,
+      };
+    }
+    if (period === '7 dias') {
+      const start = new Date(todayZero);
+      start.setDate(start.getDate() - 6);
+      return {
+        dateRangeStart: start,
+        dateRangeEnd: todayEnd,
+        labelPeriodText: `Últimos 7 dias (${start.toLocaleDateString('pt-BR')} a ${todayEnd.toLocaleDateString('pt-BR')})`,
+      };
+    }
+    if (period === '30 dias') {
+      const start = new Date(todayZero);
+      start.setDate(start.getDate() - 29);
+      return {
+        dateRangeStart: start,
+        dateRangeEnd: todayEnd,
+        labelPeriodText: `Últimos 30 dias (${start.toLocaleDateString('pt-BR')} a ${todayEnd.toLocaleDateString('pt-BR')})`,
+      };
+    }
+    if (period === 'Este Mês') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      return {
+        dateRangeStart: start,
+        dateRangeEnd: end,
+        labelPeriodText: `Este Mês (${start.toLocaleDateString('pt-BR')} a ${end.toLocaleDateString('pt-BR')})`,
+      };
+    }
+    if (period === 'Este Ano') {
+      const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+      const end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+      return {
+        dateRangeStart: start,
+        dateRangeEnd: end,
+        labelPeriodText: `Ano de ${now.getFullYear()}`,
+      };
+    }
+    if (period === 'Personalizado') {
+      const start = customStartDate ? parseToDate(customStartDate) : null;
+      const end = customEndDate ? parseToDate(customEndDate) : (start ? new Date(start) : null);
+
+      if (start) start.setHours(0, 0, 0, 0);
+      if (end) end.setHours(23, 59, 59, 999);
+
+      let text = 'Período Personalizado';
+      if (start && end) {
+        if (start.toDateString() === end.toDateString()) {
+          text = `Data: ${start.toLocaleDateString('pt-BR')}`;
+        } else {
+          text = `De ${start.toLocaleDateString('pt-BR')} até ${end.toLocaleDateString('pt-BR')}`;
+        }
+      } else if (start) {
+        text = `A partir de ${start.toLocaleDateString('pt-BR')}`;
+      } else if (end) {
+        text = `Até ${end.toLocaleDateString('pt-BR')}`;
+      }
+
+      return {
+        dateRangeStart: start,
+        dateRangeEnd: end,
+        labelPeriodText: text,
+      };
+    }
+
+    // Default: 'Tudo'
+    return {
+      dateRangeStart: null,
+      dateRangeEnd: null,
+      labelPeriodText: 'Todo o histórico',
+    };
+  }, [period, customStartDate, customEndDate]);
+
+  // Evaluator function to check if item date falls within selected range
+  const isDateInRange = (dateStr?: string | null): boolean => {
+    if (!dateRangeStart && !dateRangeEnd) return true;
+    const d = parseToDate(dateStr);
+    if (!d) return true;
+
+    if (dateRangeStart && d.getTime() < dateRangeStart.getTime()) {
+      return false;
+    }
+    if (dateRangeEnd && d.getTime() > dateRangeEnd.getTime()) {
+      return false;
+    }
+    return true;
+  };
+
+  // Filtered collections based on active date range
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => isDateInRange(o.date || o.createdAt));
+  }, [orders, dateRangeStart, dateRangeEnd]);
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((t) => isDateInRange(t.timestamp || t.date || t.dueDate));
+  }, [transactions, dateRangeStart, dateRangeEnd]);
+
+  const filteredConsignments = useMemo(() => {
+    return consignments.filter((c) => isDateInRange(c.date || c.createdAt));
+  }, [consignments, dateRangeStart, dateRangeEnd]);
+
+  const filteredExpenses = useMemo(() => {
+    return expenses.filter((e) => isDateInRange(e.date || e.timestamp));
+  }, [expenses, dateRangeStart, dateRangeEnd]);
+
+  // 1. Monthly analytics data for charts (re-calculated with filtered dataset)
+  const monthlyAnalyticsData = useMemo(() => {
+    return computeMonthlyAnalyticsData(filteredOrders, filteredTransactions, filteredConsignments, filteredExpenses);
+  }, [filteredOrders, filteredTransactions, filteredConsignments, filteredExpenses]);
+
+  // 2. Compute Product Profitability Rankings (filtered)
   const productProfitability = useMemo(() => {
     return products.map((p) => {
       let salesCount = 0;
       let totalRevenue = 0;
 
-      orders.forEach((o) => {
+      filteredOrders.forEach((o) => {
         if (o.items) {
           o.items.forEach((item) => {
             if (
@@ -67,14 +205,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         }
       });
 
-      consignments.forEach((cons) => {
+      filteredConsignments.forEach((cons) => {
         if (cons.items) {
           cons.items.forEach((cItem) => {
             if (
               cItem.productName.toLowerCase().trim() === p.name.toLowerCase().trim() ||
               cItem.productId === p.id
             ) {
-              // Include estimated turnover from consignments
               salesCount += Math.round(cItem.quantity * 0.4);
               totalRevenue += cItem.subtotal * 0.4;
             }
@@ -82,7 +219,6 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         }
       });
 
-      // Unit cost: estimatedCost or 35% of standard price as fallback
       const unitCost = p.estimatedCost > 0 ? p.estimatedCost : p.standardPrice * 0.35;
       const totalCost = salesCount * unitCost;
       const netProfit = Math.max(0, totalRevenue - totalCost);
@@ -102,7 +238,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         marginPct: marginPct || 65,
       };
     });
-  }, [products, orders, consignments]);
+  }, [products, filteredOrders, filteredConsignments]);
 
   // Sorted product rankings
   const allProductsRanked = useMemo(() => {
@@ -113,13 +249,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     return allProductsRanked.slice(0, 5);
   }, [allProductsRanked]);
 
-  // 3. Compute Client / Partner Store Rankings
+  // 3. Compute Client / Partner Store Rankings (filtered)
   const clientRankings = useMemo(() => {
     return clients.map((cli) => {
       let ordersCount = 0;
       let totalRevenue = 0;
 
-      orders.forEach((o) => {
+      filteredOrders.forEach((o) => {
         const matches =
           o.clientId === cli.id ||
           (o.clientName && o.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim());
@@ -129,7 +265,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         }
       });
 
-      const clientConsignments = consignments.filter(
+      const clientConsignments = filteredConsignments.filter(
         (c) =>
           c.clientId === cli.id ||
           (c.clientName && c.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())
@@ -152,7 +288,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         lastVisitDate: cli.lastVisitDate,
       };
     });
-  }, [clients, orders, consignments]);
+  }, [clients, filteredOrders, filteredConsignments]);
 
   // Sorted client rankings
   const allClientsRanked = useMemo(() => {
@@ -398,35 +534,116 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   // RENDER MAIN DASHBOARD VIEW
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-            Relatórios e Inteligência de Vendas
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Análise em tempo real de curva ABC, margens de lucro por modelo e ranking de clientes.
-          </p>
-        </div>
+      {/* Top Header & Interactive Date Filter */}
+      <div className="bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+              Relatórios e Inteligência de Vendas
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+              <span>Análise de curva ABC, margens de lucro por modelo e ranking de clientes.</span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-extrabold rounded-full border border-indigo-200 dark:border-indigo-800 text-[11px]">
+                {labelPeriodText}
+              </span>
+            </p>
+          </div>
 
-        {/* Period Selector */}
-        <div className="flex items-center gap-2 bg-slate-50 dark:bg-[#181c26] p-1.5 rounded-xl border border-slate-200 dark:border-[#202531]">
-          <Calendar className="w-4 h-4 text-slate-400 ml-2" />
-          {['Hoje', '7 dias', '30 dias', 'Este Mês'].map((p) => (
+          {/* Period Presets & Interactive Calendar Toggle */}
+          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-[#181c26] p-1.5 rounded-xl border border-slate-200 dark:border-[#202531] flex-wrap">
+            {/* Functional Calendar Icon Button */}
             <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                period === p
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              type="button"
+              onClick={() => {
+                setShowCustomPicker((prev) => !prev);
+                if (period !== 'Personalizado') {
+                  setPeriod('Personalizado');
+                }
+              }}
+              title="Clique para selecionar intervalo de datas personalizado"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                showCustomPicker || period === 'Personalizado'
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                  : 'bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
-              {p}
+              <Calendar className="w-4 h-4 text-amber-500" />
+              <span>Personalizado</span>
             </button>
-          ))}
+
+            {['Hoje', '7 dias', '30 dias', 'Este Mês', 'Este Ano', 'Tudo'].map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  setPeriod(p);
+                  setShowCustomPicker(false);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  period === p && !showCustomPicker
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Custom Date Range Panel (Data X até Y) */}
+        {(showCustomPicker || period === 'Personalizado') && (
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 bg-indigo-50/50 dark:bg-indigo-950/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/40 flex flex-wrap items-center justify-between gap-4 animate-in fade-in duration-150">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+                <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>Selecionar período personalizado:</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                <label className="text-slate-600 dark:text-slate-400 font-semibold">Data Inicial (De):</label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => {
+                    setCustomStartDate(e.target.value);
+                    setPeriod('Personalizado');
+                  }}
+                  className="px-3 py-1.5 bg-white dark:bg-[#12151c] border border-slate-200 dark:border-[#202531] rounded-lg text-xs text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500 shadow-xs"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                <label className="text-slate-600 dark:text-slate-400 font-semibold">Data Final (Até):</label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => {
+                    setCustomEndDate(e.target.value);
+                    setPeriod('Personalizado');
+                  }}
+                  className="px-3 py-1.5 bg-white dark:bg-[#12151c] border border-slate-200 dark:border-[#202531] rounded-lg text-xs text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500 shadow-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {(customStartDate || customEndDate) && (
+                <button
+                  onClick={() => {
+                    setCustomStartDate('');
+                    setCustomEndDate('');
+                    setPeriod('Este Mês');
+                    setShowCustomPicker(false);
+                  }}
+                  className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Limpar Filtro
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Financial Analytics & Trends Charts (Definance Style) */}
