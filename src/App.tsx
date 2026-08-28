@@ -657,6 +657,7 @@ export function App() {
                   accountBalances={appData.accountBalances}
                   accountBalance={appData.accountBalance}
                   autoOpenModal={autoOpenExpenseModal}
+                  isLoading={appData.dataLoading}
                   onCreateExpense={appData.handleCreateExpense}
                   onExecuteTransfer={appData.handleExecuteTransfer}
                   onUpdateExpense={appData.handleUpdateExpense}

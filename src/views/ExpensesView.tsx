@@ -42,6 +42,7 @@ interface ExpensesViewProps {
   accountBalances?: AccountBalances;
   accountBalance?: number;
   autoOpenModal?: 'aporte' | 'withdrawal' | 'expense' | null;
+  isLoading?: boolean;
   onCreateExpense: (expense: ExpenseItem) => void;
   onExecuteTransfer?: (
     source: MarketplaceAccount,
@@ -80,6 +81,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
   expenses = [],
   accountBalances = { nubank: 0, shopee: 0, mercadoLivre: 0, tikTokShop: 0, amazon: 0 },
   autoOpenModal = null,
+  isLoading = false,
   onCreateExpense,
   onExecuteTransfer,
   onUpdateExpense,
@@ -581,7 +583,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </button>
               </div>
             ) : (
-              <p className="text-xl font-black text-emerald-400 tracking-tight mt-1.5">
+              <p className={`text-xl font-black text-emerald-400 tracking-tight mt-1.5 transition-all duration-300 ${isLoading ? 'discreet-mode-blur' : ''}`}>
                 R$ {accountBalances.nubank.toFixed(2).replace('.', ',')}
               </p>
             )}
@@ -630,7 +632,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </button>
               </div>
             ) : (
-              <p className="text-xl font-black text-amber-600 dark:text-amber-400 tracking-tight mt-1.5">
+              <p className={`text-xl font-black text-amber-600 dark:text-amber-400 tracking-tight mt-1.5 transition-all duration-300 ${isLoading ? 'discreet-mode-blur' : ''}`}>
                 R$ {accountBalances.shopee.toFixed(2).replace('.', ',')}
               </p>
             )}
@@ -684,7 +686,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </button>
               </div>
             ) : (
-              <p className="text-xl font-black text-yellow-600 dark:text-yellow-400 tracking-tight mt-1.5">
+              <p className={`text-xl font-black text-yellow-600 dark:text-yellow-400 tracking-tight mt-1.5 transition-all duration-300 ${isLoading ? 'discreet-mode-blur' : ''}`}>
                 R$ {accountBalances.mercadoLivre.toFixed(2).replace('.', ',')}
               </p>
             )}
@@ -738,7 +740,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </button>
               </div>
             ) : (
-              <p className="text-xl font-black text-cyan-600 dark:text-cyan-400 tracking-tight mt-1.5">
+              <p className={`text-xl font-black text-cyan-600 dark:text-cyan-400 tracking-tight mt-1.5 transition-all duration-300 ${isLoading ? 'discreet-mode-blur' : ''}`}>
                 R$ {accountBalances.tikTokShop.toFixed(2).replace('.', ',')}
               </p>
             )}
@@ -792,7 +794,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </button>
               </div>
             ) : (
-              <p className="text-xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight mt-1.5">
+              <p className={`text-xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight mt-1.5 transition-all duration-300 ${isLoading ? 'discreet-mode-blur' : ''}`}>
                 R$ {accountBalances.amazon.toFixed(2).replace('.', ',')}
               </p>
             )}

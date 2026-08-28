@@ -33,6 +33,18 @@ html.dark .definance-kpi-card:hover {
   box-shadow: 0 10px 30px -5px rgba(16, 185, 129, 0.15);
 }
 
+/* Definance-style Discreet Mode / Loading Blur */
+.discreet-mode-blur {
+  filter: blur(12px) !important;
+  opacity: 0.5 !important;
+  user-select: none !important;
+  pointer-events: none !important;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: filter, opacity;
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
 /* System Dark Theme Custom Utility Overrides (Estritamente aplicados SOMENTE quando html tem classe .dark) */
 html.dark {
   color-scheme: dark;
