@@ -160,10 +160,10 @@ export function useAppData() {
           fetchConsignments(),
         ]);
         if (!isMounted) return;
-        setProducts(dbProducts);
-        setClients(dbClients);
-        setOrders(dbOrders);
-        setQuotes(dbQuotes);
+        setProducts((prev) => (prev && prev.length === dbProducts.length && JSON.stringify(prev) === JSON.stringify(dbProducts) ? prev : dbProducts));
+        setClients((prev) => (prev && prev.length === dbClients.length && JSON.stringify(prev) === JSON.stringify(dbClients) ? prev : dbClients));
+        setOrders((prev) => (prev && prev.length === dbOrders.length && JSON.stringify(prev) === JSON.stringify(dbOrders) ? prev : dbOrders));
+        setQuotes((prev) => (prev && prev.length === dbQuotes.length && JSON.stringify(prev) === JSON.stringify(dbQuotes) ? prev : dbQuotes));
         if (dbConsignments && dbConsignments.length > 0) {
           setConsignments((prev) => {
             const map = new Map<string, any>();

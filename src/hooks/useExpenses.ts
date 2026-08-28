@@ -47,10 +47,15 @@ export function useExpenses(
     try {
       const res = await fetchExpenses();
       if (res.expenses) {
-        setExpenses(res.expenses);
-        try {
-          localStorage.setItem('rn3d_expenses_cache', JSON.stringify(res.expenses.slice(0, 200)));
-        } catch (e) {}
+        setExpenses((prev) => {
+          if (prev && prev.length === res.expenses.length && JSON.stringify(prev) === JSON.stringify(res.expenses)) {
+            return prev;
+          }
+          try {
+            localStorage.setItem('rn3d_expenses_cache', JSON.stringify(res.expenses.slice(0, 200)));
+          } catch (e) {}
+          return res.expenses;
+        });
       }
       if (res.balances) {
         let fixedBalances = { ...res.balances };
@@ -59,10 +64,22 @@ export function useExpenses(
           fixedBalances.nubank = 542.77;
           saveAccountBalancesToSupabase(fixedBalances);
         }
-        setAccountBalances(fixedBalances);
-        try {
-          localStorage.setItem('rn3d_account_balances', JSON.stringify(fixedBalances));
-        } catch (e) {}
+        setAccountBalances((prev) => {
+          if (
+            prev &&
+            prev.nubank === fixedBalances.nubank &&
+            prev.shopee === fixedBalances.shopee &&
+            prev.mercadoLivre === fixedBalances.mercadoLivre &&
+            prev.tikTokShop === fixedBalances.tikTokShop &&
+            prev.amazon === fixedBalances.amazon
+          ) {
+            return prev;
+          }
+          try {
+            localStorage.setItem('rn3d_account_balances', JSON.stringify(fixedBalances));
+          } catch (e) {}
+          return fixedBalances;
+        });
       }
     } catch (err) {
       console.error('Erro ao recarregar despesas/saldos do Supabase:', err);

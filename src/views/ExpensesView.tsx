@@ -499,7 +499,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
         <div>
@@ -583,7 +583,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </button>
               </div>
             ) : (
-              <p className={`text-xl font-black text-emerald-400 tracking-tight mt-1.5 transition-all duration-300 ${isLoading ? 'discreet-mode-blur' : ''}`}>
+              <p className="text-xl font-black text-emerald-400 tracking-tight mt-1.5">
                 R$ {accountBalances.nubank.toFixed(2).replace('.', ',')}
               </p>
             )}
@@ -632,7 +632,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </button>
               </div>
             ) : (
-              <p className={`text-xl font-black text-amber-600 dark:text-amber-400 tracking-tight mt-1.5 transition-all duration-300 ${isLoading ? 'discreet-mode-blur' : ''}`}>
+              <p className="text-xl font-black text-amber-600 dark:text-amber-400 tracking-tight mt-1.5">
                 R$ {accountBalances.shopee.toFixed(2).replace('.', ',')}
               </p>
             )}
@@ -686,7 +686,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </button>
               </div>
             ) : (
-              <p className={`text-xl font-black text-yellow-600 dark:text-yellow-400 tracking-tight mt-1.5 transition-all duration-300 ${isLoading ? 'discreet-mode-blur' : ''}`}>
+              <p className="text-xl font-black text-yellow-600 dark:text-yellow-400 tracking-tight mt-1.5">
                 R$ {accountBalances.mercadoLivre.toFixed(2).replace('.', ',')}
               </p>
             )}
@@ -740,7 +740,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </button>
               </div>
             ) : (
-              <p className={`text-xl font-black text-cyan-600 dark:text-cyan-400 tracking-tight mt-1.5 transition-all duration-300 ${isLoading ? 'discreet-mode-blur' : ''}`}>
+              <p className="text-xl font-black text-cyan-600 dark:text-cyan-400 tracking-tight mt-1.5">
                 R$ {accountBalances.tikTokShop.toFixed(2).replace('.', ',')}
               </p>
             )}
@@ -794,7 +794,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </button>
               </div>
             ) : (
-              <p className={`text-xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight mt-1.5 transition-all duration-300 ${isLoading ? 'discreet-mode-blur' : ''}`}>
+              <p className="text-xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight mt-1.5">
                 R$ {accountBalances.amazon.toFixed(2).replace('.', ',')}
               </p>
             )}
