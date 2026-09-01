@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { isSupabaseConfigured } from '../lib/supabase';
-import { Lock, Mail, Eye, EyeOff, ShieldCheck, AlertCircle, ArrowRight } from 'lucide-react';
+import { Lock, Mail, Eye, EyeOff, Box, ShieldCheck, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
 
 export const LoginView: React.FC = () => {
-  const { signInWithPassword } = useAuth();
+  const { signInWithPassword, loginAsDemo } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -96,7 +96,7 @@ export const LoginView: React.FC = () => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@email.com"
+                placeholder="seu.email@empresa.com.br"
                 className="w-full bg-slate-950/60 border border-slate-800 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 required
               />
@@ -144,6 +144,8 @@ export const LoginView: React.FC = () => {
             )}
           </button>
         </form>
+
+
 
         {/* Security Footer Note */}
         <div className="mt-6 text-center text-[10px] text-slate-500 flex items-center justify-center gap-1.5">

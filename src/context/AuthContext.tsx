@@ -14,22 +14,30 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEFAULT_ADMIN_USER: User = {
-  id: 'admin-user-rn3d',
-  email: 'admin@rn3d.com.br',
-  user_metadata: { name: 'Administrador 3D' },
-  app_metadata: {},
-  aud: 'authenticated',
-  created_at: new Date().toISOString(),
-} as unknown as User;
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(DEFAULT_ADMIN_USER);
+  const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [isDemo, setIsDemo] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isDemo, setIsDemo] = useState<boolean>(false);
 
   useEffect(() => {
+    // 48-Hour Login Session Expiration check (48 * 60 * 60 * 1000 ms)
+    const loginTime = localStorage.getItem('rn3d_login_timestamp');
+    const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
+
+    if (loginTime && Date.now() - Number(loginTime) > FORTY_EIGHT_HOURS_MS) {
+      console.warn('[Auth Expiration] Sessão de 48 horas expirada. Efetuando logout automático...');
+      localStorage.removeItem('rn3d_login_timestamp');
+      localStorage.removeItem('rn3d_demo_user');
+      if (isSupabaseConfigured()) {
+        supabase.auth.signOut();
+      }
+      setUser(null);
+      setSession(null);
+      setLoading(false);
+      return;
+    }
+
     // Check local storage for demo session first
     const savedDemoUser = localStorage.getItem('rn3d_demo_user');
     if (savedDemoUser) {
@@ -40,29 +48,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (!isSupabaseConfigured()) {
-      setUser(DEFAULT_ADMIN_USER);
       setLoading(false);
       return;
     }
 
     // Fetch initial Supabase session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setSession(session);
-        setUser(session.user);
-      } else {
-        setUser(DEFAULT_ADMIN_USER);
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session && !localStorage.getItem('rn3d_login_timestamp')) {
+        localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
       }
       setLoading(false);
     });
 
     // Listen to Auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setSession(session);
-        setUser(session.user);
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session) {
+        if (!localStorage.getItem('rn3d_login_timestamp')) {
+          localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
+        }
       } else {
-        setUser(DEFAULT_ADMIN_USER);
+        localStorage.removeItem('rn3d_login_timestamp');
       }
       setLoading(false);
     });
@@ -74,32 +83,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithPassword = async (email: string, password: string) => {
     if (!isSupabaseConfigured()) {
-      setUser(DEFAULT_ADMIN_USER);
-      return { error: null };
+      return { error: new Error('Supabase não está configurado no arquivo .env. Use o modo demonstração ou configure as chaves.') };
     }
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (!error && data) {
-      if (data.session) setSession(data.session);
-      if (data.user) setUser(data.user);
-    } else {
-      setUser(DEFAULT_ADMIN_USER);
+    if (!error) {
+      localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
     }
-    return { error: null };
+    return { error };
   };
 
   const loginAsDemo = () => {
-    setUser(DEFAULT_ADMIN_USER);
+    const demoUser = {
+      id: 'demo-user-123',
+      email: 'admin@rn3d.com.br',
+      user_metadata: { name: 'Administrador 3D' },
+      app_metadata: {},
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+    } as unknown as User;
+
+    localStorage.setItem('rn3d_demo_user', JSON.stringify(demoUser));
+    localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
     setIsDemo(true);
+    setUser(demoUser);
   };
 
   const signOut = async () => {
-    if (isSupabaseConfigured()) {
-      await supabase.auth.signOut().catch(() => {});
+    if (isDemo) {
+      localStorage.removeItem('rn3d_demo_user');
+      setIsDemo(false);
+      setUser(null);
+      setSession(null);
+      return;
     }
-    setUser(DEFAULT_ADMIN_USER);
+
+    if (isSupabaseConfigured()) {
+      await supabase.auth.signOut();
+    }
+    setUser(null);
     setSession(null);
   };
 
