@@ -588,9 +588,10 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               </p>
             )}
           </div>
-          <span className="text-[10px] text-emerald-400/90 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-md inline-block">
-            Conta Principal
-          </span>
+          <div className="w-full py-1.5 bg-emerald-500/10 text-emerald-400 font-bold text-[11px] rounded-lg flex items-center justify-center gap-1 border border-emerald-500/30">
+            <Wallet className="w-3 h-3 text-emerald-400" />
+            <span>Conta Principal</span>
+          </div>
         </div>
 
         {/* CARD 2: SALDO SHOPEE */}
