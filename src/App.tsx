@@ -279,21 +279,7 @@ export function App() {
 
   const canGoBack = historyStack.length > 1 || (currentView !== 'dashboard' || activeClientIdForProfile !== null || activeVisitClientId !== null);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white gap-4 font-sans">
-        <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center animate-pulse shadow-lg shadow-indigo-600/30">
-          <Box className="w-6 h-6 text-white" />
-        </div>
-        <p className="text-xs text-slate-400 font-medium tracking-wide">Carregando credenciais de sessão...</p>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <LoginView />;
-  }
-
+  // Authentication requirement removed: directly opens into Administrative Mode
   const handleStartVisit = (clientId: string) => {
     navigateTo('visits', { visitClientId: clientId });
   };
