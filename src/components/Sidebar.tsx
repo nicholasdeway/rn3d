@@ -82,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       groupLabel: 'Financeiro',
       items: [
         { id: 'financial', label: 'Vendas e Pagamentos', icon: DollarSign },
-        { id: 'expenses', label: 'Despesas & Saídas', icon: TrendingDown },
+        { id: 'expenses', label: 'Financeiro', icon: TrendingDown },
       ],
     },
     {
