@@ -15,8 +15,48 @@ function isMockItem(id?: string, title?: string): boolean {
   return false;
 }
 
+// Sync all recurring bills to SYS_RECURRING_BILLS in orders table for guaranteed cross-device sync
+async function saveSysRecurringBillsToSupabase(bills: RecurringBill[]): Promise<void> {
+  if (!isSupabaseConfigured()) return;
+  try {
+    const payload = {
+      order_code: 'SYS_RECURRING_BILLS',
+      client_name: 'SISTEMA_RECURRING_BILLS',
+      total_value: 0,
+      paid_amount: 0,
+      payment_status_text: JSON.stringify(bills),
+      status: 'Novo',
+    };
+    await supabase.from('orders').upsert(payload, { onConflict: 'order_code' });
+  } catch (e) {
+    console.error('Erro ao salvar SYS_RECURRING_BILLS no Supabase:', e);
+  }
+}
+
+async function fetchSysRecurringBillsFromSupabase(): Promise<RecurringBill[]> {
+  if (!isSupabaseConfigured()) return [];
+  try {
+    const { data } = await supabase
+      .from('orders')
+      .select('payment_status_text')
+      .eq('order_code', 'SYS_RECURRING_BILLS')
+      .maybeSingle();
+
+    if (data && data.payment_status_text) {
+      const parsed = JSON.parse(data.payment_status_text);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((b) => !isMockItem(b.id, b.title));
+      }
+    }
+  } catch (e) {}
+  return [];
+}
+
 export async function fetchRecurringBills(): Promise<RecurringBill[]> {
+  let billsFromDb: RecurringBill[] = [];
+
   if (isSupabaseConfigured()) {
+    // 1. Try querying recurring_bills table directly
     try {
       const { data, error } = await supabase
         .from('recurring_bills')
@@ -32,7 +72,7 @@ export async function fetchRecurringBills(): Promise<RecurringBill[]> {
         }
 
         const cleanRows = data.filter((row) => !isMockItem(row.id, row.title));
-        const bills: RecurringBill[] = cleanRows.map((row) => ({
+        billsFromDb = cleanRows.map((row) => ({
           id: row.id,
           title: row.title,
           category: row.category as ExpenseCategory,
@@ -45,15 +85,41 @@ export async function fetchRecurringBills(): Promise<RecurringBill[]> {
           lastPaidMonth: row.last_paid_month || '',
           createdAt: row.created_at,
         }));
-        safeSetLocalStorage('rn3d_recurring_bills', JSON.stringify(bills));
-        return bills;
       }
     } catch (e) {
-      console.warn('Erro ao carregar recurring_bills do Supabase, utilizando fallback local:', e);
+      console.warn('Erro ao consultar tabela recurring_bills:', e);
     }
+
+    // 2. Fetch SYS_RECURRING_BILLS fallback from orders table
+    const sysBills = await fetchSysRecurringBillsFromSupabase();
+
+    // Prefer table data if available, otherwise sysBills
+    let mergedBills: RecurringBill[] = [];
+    if (billsFromDb.length > 0) {
+      mergedBills = billsFromDb;
+    } else if (sysBills.length > 0) {
+      mergedBills = sysBills;
+    }
+
+    // 3. Check if local storage has any items created on this device that are missing from Supabase
+    const cached = getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []).filter(
+      (item) => !isMockItem(item.id, item.title)
+    );
+
+    if (cached.length > 0 && mergedBills.length === 0) {
+      // Upload local items to Supabase
+      mergedBills = cached;
+      saveSysRecurringBillsToSupabase(mergedBills);
+    } else if (mergedBills.length > 0) {
+      // Keep SYS_RECURRING_BILLS updated
+      saveSysRecurringBillsToSupabase(mergedBills);
+    }
+
+    safeSetLocalStorage('rn3d_recurring_bills', JSON.stringify(mergedBills));
+    return mergedBills;
   }
 
-  // Fallback to LocalStorage if Supabase fails or is unconfigured
+  // Fallback to LocalStorage if Supabase is unconfigured
   const cached = getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []);
   const cleanCached = cached.filter((item) => !isMockItem(item.id, item.title));
   if (cleanCached.length !== cached.length) {
@@ -64,20 +130,39 @@ export async function fetchRecurringBills(): Promise<RecurringBill[]> {
 
 
 export async function createRecurringBill(bill: Partial<RecurringBill>): Promise<RecurringBill | null> {
-  const payload = {
+  const newBill: RecurringBill = {
+    id: bill.id || `rec-bill-${Date.now()}`,
     title: bill.title || 'Conta Fixa Sem Nome',
-    category: bill.category || 'Outros',
+    category: (bill.category || 'Outros') as ExpenseCategory,
     amount: bill.amount || 0,
-    due_day: bill.dueDay || 1,
+    dueDay: bill.dueDay || 1,
     recurrence: bill.recurrence || 'Mensal',
     beneficiary: bill.beneficiary || '',
     notes: bill.notes || '',
     status: bill.status || 'Ativo',
-    last_paid_month: bill.lastPaidMonth || '',
+    lastPaidMonth: bill.lastPaidMonth || '',
+    createdAt: new Date().toISOString(),
   };
 
+  const currentBills = getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []).filter(
+    (b) => !isMockItem(b.id, b.title)
+  );
+  const updatedList = [newBill, ...currentBills.filter((b) => b.id !== newBill.id)];
+
   if (isSupabaseConfigured()) {
+    // 1. Insert into recurring_bills table
     try {
+      const payload = {
+        title: newBill.title,
+        category: newBill.category,
+        amount: newBill.amount,
+        due_day: newBill.dueDay,
+        recurrence: newBill.recurrence,
+        beneficiary: newBill.beneficiary,
+        notes: newBill.notes,
+        status: newBill.status,
+        last_paid_month: newBill.lastPaidMonth,
+      };
       const { data, error } = await supabase
         .from('recurring_bills')
         .insert([payload])
@@ -85,88 +170,68 @@ export async function createRecurringBill(bill: Partial<RecurringBill>): Promise
         .single();
 
       if (!error && data) {
-        return {
-          id: data.id,
-          title: data.title,
-          category: data.category as ExpenseCategory,
-          amount: Number(data.amount) || 0,
-          dueDay: Number(data.due_day) || 1,
-          recurrence: data.recurrence as 'Mensal' | 'Anual',
-          beneficiary: data.beneficiary || '',
-          notes: data.notes || '',
-          status: data.status as 'Ativo' | 'Pausado',
-          lastPaidMonth: data.last_paid_month || '',
-          createdAt: data.created_at,
-        };
+        newBill.id = data.id;
+        newBill.createdAt = data.created_at;
       }
     } catch (e) {
-      console.error('Erro ao criar conta fixa no Supabase:', e);
+      console.error('Erro ao inserir em recurring_bills table:', e);
     }
+
+    // 2. Persist updated list to SYS_RECURRING_BILLS in orders table (guaranteed cross-device sync)
+    await saveSysRecurringBillsToSupabase(updatedList);
   }
 
-  // Local fallback
-  const localBill: RecurringBill = {
-    id: bill.id || `rec-bill-${Date.now()}`,
-    title: payload.title,
-    category: payload.category as ExpenseCategory,
-    amount: payload.amount,
-    dueDay: payload.due_day,
-    recurrence: payload.recurrence as 'Mensal' | 'Anual',
-    beneficiary: payload.beneficiary,
-    notes: payload.notes,
-    status: payload.status as 'Ativo' | 'Pausado',
-    lastPaidMonth: payload.last_paid_month,
-    createdAt: new Date().toISOString(),
-  };
-
-  const current = getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []);
-  safeSetLocalStorage('rn3d_recurring_bills', JSON.stringify([localBill, ...current]));
-  return localBill;
+  safeSetLocalStorage('rn3d_recurring_bills', JSON.stringify(updatedList));
+  return newBill;
 }
 
 export async function updateRecurringBill(id: string, updates: Partial<RecurringBill>): Promise<boolean> {
-  const payload: any = {};
-  if (updates.title !== undefined) payload.title = updates.title;
-  if (updates.category !== undefined) payload.category = updates.category;
-  if (updates.amount !== undefined) payload.amount = updates.amount;
-  if (updates.dueDay !== undefined) payload.due_day = updates.dueDay;
-  if (updates.recurrence !== undefined) payload.recurrence = updates.recurrence;
-  if (updates.beneficiary !== undefined) payload.beneficiary = updates.beneficiary;
-  if (updates.notes !== undefined) payload.notes = updates.notes;
-  if (updates.status !== undefined) payload.status = updates.status;
-  if (updates.lastPaidMonth !== undefined) payload.last_paid_month = updates.lastPaidMonth;
+  const currentBills = getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []).filter(
+    (b) => !isMockItem(b.id, b.title)
+  );
+  const updatedList = currentBills.map((item) => (item.id === id ? { ...item, ...updates } : item));
 
   if (isSupabaseConfigured()) {
+    // 1. Update recurring_bills table if applicable
     try {
-      const { error } = await supabase
-        .from('recurring_bills')
-        .update(payload)
-        .eq('id', id);
-      if (!error) return true;
-    } catch (e) {
-      console.error('Erro ao atualizar conta fixa no Supabase:', e);
-    }
+      const payload: any = {};
+      if (updates.title !== undefined) payload.title = updates.title;
+      if (updates.category !== undefined) payload.category = updates.category;
+      if (updates.amount !== undefined) payload.amount = updates.amount;
+      if (updates.dueDay !== undefined) payload.due_day = updates.dueDay;
+      if (updates.recurrence !== undefined) payload.recurrence = updates.recurrence;
+      if (updates.beneficiary !== undefined) payload.beneficiary = updates.beneficiary;
+      if (updates.notes !== undefined) payload.notes = updates.notes;
+      if (updates.status !== undefined) payload.status = updates.status;
+      if (updates.lastPaidMonth !== undefined) payload.last_paid_month = updates.lastPaidMonth;
+
+      await supabase.from('recurring_bills').update(payload).eq('id', id);
+    } catch (e) {}
+
+    // 2. Update SYS_RECURRING_BILLS in orders table
+    await saveSysRecurringBillsToSupabase(updatedList);
   }
 
-  // Local fallback update
-  const current = getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []);
-  const updated = current.map((item) => (item.id === id ? { ...item, ...updates } : item));
-  safeSetLocalStorage('rn3d_recurring_bills', JSON.stringify(updated));
+  safeSetLocalStorage('rn3d_recurring_bills', JSON.stringify(updatedList));
   return true;
 }
 
 export async function deleteRecurringBill(id: string): Promise<boolean> {
+  const currentBills = getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []).filter(
+    (b) => !isMockItem(b.id, b.title)
+  );
+  const updatedList = currentBills.filter((item) => item.id !== id);
+
   if (isSupabaseConfigured()) {
+    // 1. Delete from recurring_bills table
     try {
-      const { error } = await supabase.from('recurring_bills').delete().eq('id', id);
-      if (!error) return true;
-    } catch (e) {
-      console.error('Erro ao excluir conta fixa no Supabase:', e);
-    }
+      await supabase.from('recurring_bills').delete().eq('id', id);
+    } catch (e) {}
+
+    // 2. Update SYS_RECURRING_BILLS in orders table
+    await saveSysRecurringBillsToSupabase(updatedList);
   }
 
-  const current = getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []);
-  const filtered = current.filter((item) => item.id !== id);
-  safeSetLocalStorage('rn3d_recurring_bills', JSON.stringify(filtered));
+  safeSetLocalStorage('rn3d_recurring_bills', JSON.stringify(updatedList));
   return true;
 }
