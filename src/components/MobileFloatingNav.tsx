@@ -31,12 +31,14 @@ interface MobileFloatingNavProps {
   currentView: ViewMode;
   onSelectView: (view: ViewMode) => void;
   onQuickAction: (actionType: 'aporte' | 'withdrawal' | 'expense' | 'quote' | 'nova-consignacao') => void;
+  pendingBillsCount?: number;
 }
 
 export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
   currentView,
   onSelectView,
   onQuickAction,
+  pendingBillsCount = 0,
 }) => {
   const { signOut } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -53,7 +55,7 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
     { id: 'consignments' as ViewMode, label: 'Remessas de Consignação', icon: Boxes, color: 'text-purple-400' },
     { id: 'quotes' as ViewMode, label: 'Orçamentos', icon: FileText, color: 'text-indigo-400' },
     { id: 'expenses' as ViewMode, label: 'Financeiro', icon: TrendingDown, color: 'text-rose-400' },
-    { id: 'recurring-bills' as ViewMode, label: 'Contas Fixas & Lembretes', icon: Bell, color: 'text-amber-400' },
+    { id: 'recurring-bills' as ViewMode, label: 'Contas Fixas & Lembretes', icon: Bell, color: 'text-amber-400', badge: pendingBillsCount },
     { id: 'financial' as ViewMode, label: 'Financeiro e Vendas', icon: DollarSign, color: 'text-emerald-400' },
     { id: 'calculator' as ViewMode, label: 'Calculadora de Custos 3D', icon: Calculator, color: 'text-amber-400' },
 
@@ -192,14 +194,21 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
                 <button
                   key={item.id}
                   onClick={() => handleSelectDropdownItem(item.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-semibold text-left transition-all ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl text-xs font-semibold text-left transition-all ${
                     isActive
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                       : 'text-slate-200 hover:bg-slate-800/80 hover:text-white'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${item.color}`} />
-                  <span>{item.label}</span>
+                  <div className="flex items-center gap-3">
+                    <Icon className={`w-4 h-4 shrink-0 ${item.color}`} />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && item.badge > 0 ? (
+                    <span className="bg-rose-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0">
+                      {item.badge}
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
@@ -273,15 +282,18 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
             setIsFabOpen(false);
             setIsDropdownOpen(!isDropdownOpen);
           }}
-          className={`w-full flex flex-col items-center justify-center py-1 rounded-full transition-all cursor-pointer ${
+          className={`w-full flex flex-col items-center justify-center py-1 rounded-full transition-all cursor-pointer relative ${
             isDropdownOpen ? 'text-emerald-400 scale-105 font-bold' : 'text-slate-400 hover:text-slate-200 font-medium'
           }`}
         >
-          <div className={`p-1 rounded-full ${isDropdownOpen ? 'bg-emerald-500/15' : ''}`}>
+          <div className={`p-1 rounded-full relative ${isDropdownOpen ? 'bg-emerald-500/15' : ''}`}>
             {isDropdownOpen ? (
               <X className="w-5 h-5 text-emerald-400 stroke-[2.5]" />
             ) : (
               <Menu className="w-5 h-5 text-slate-400" />
+            )}
+            {pendingBillsCount > 0 && !isDropdownOpen && (
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-rose-600 rounded-full animate-pulse border border-slate-900" />
             )}
           </div>
           <span className={`text-[9px] sm:text-[10px] tracking-wider mt-0.5 ${isDropdownOpen ? 'text-emerald-400 font-extrabold' : 'text-slate-400'}`}>

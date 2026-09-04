@@ -717,6 +717,7 @@ export function App() {
       {/* Floating Bottom Footer Navigation Bar on Mobile */}
       <MobileFloatingNav
         currentView={currentView}
+        pendingBillsCount={appData.pendingAlertsCount}
         onSelectView={(mode) => {
           setAutoOpenExpenseModal(null);
           setCurrentView(mode);

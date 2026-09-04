@@ -114,9 +114,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
+      {/* Mobile Drawer Overlay Backdrop */}
+      {isMobileOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs transition-opacity animate-in fade-in"
+          onClick={onCloseMobile}
+        />
+      )}
+
       <aside
-        className={`hidden lg:flex fixed top-0 left-0 bottom-0 z-40 bg-white border-r border-slate-200/80 transition-all duration-300 ease-in-out flex-col justify-between
-          ${isCollapsed ? 'w-20' : 'w-64'}
+        className={`fixed top-0 left-0 bottom-0 z-50 bg-white dark:bg-[#12151c] border-r border-slate-200 dark:border-slate-800 transition-transform duration-300 ease-in-out flex flex-col justify-between
+          ${isMobileOpen ? 'translate-x-0 w-72 shadow-2xl' : '-translate-x-full lg:translate-x-0'}
+          ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}
         `}
       >
         {/* Top Branding Header */}

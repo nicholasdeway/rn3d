@@ -192,6 +192,7 @@ export function useAppData() {
           });
         }
         if (reloadExpenses) reloadExpenses();
+        if (reloadBills) reloadBills();
       } catch (err) {
         console.error('Erro ao carregar dados do Supabase:', err);
       } finally {

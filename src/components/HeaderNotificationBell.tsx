@@ -180,7 +180,7 @@ export const HeaderNotificationBell: React.FC<HeaderNotificationBellProps> = ({
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  onNavigate('expenses');
+                  onNavigate('recurring-bills');
                 }}
                 className="w-full text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center justify-center gap-1 py-1 cursor-pointer"
               >
