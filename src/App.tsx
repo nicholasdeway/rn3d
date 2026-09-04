@@ -664,6 +664,7 @@ export function App() {
                   transactions={appData.transactions}
                   orders={appData.orders}
                   consignments={appData.consignments}
+                  expenses={appData.expenses}
                   onUpdateOrderPayment={appData.handleUpdateOrderPayment}
                   onRecordPayment={appData.handleUpdateOrderPayment}
                 />

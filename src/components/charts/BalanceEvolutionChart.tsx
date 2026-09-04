@@ -13,9 +13,10 @@ import { MonthlyAnalyticsData } from '../../utils/analyticsHelper';
 
 interface BalanceEvolutionChartProps {
   data: MonthlyAnalyticsData[];
+  onViewDetails?: () => void;
 }
 
-export const BalanceEvolutionChart: React.FC<BalanceEvolutionChartProps> = ({ data }) => {
+export const BalanceEvolutionChart: React.FC<BalanceEvolutionChartProps> = ({ data, onViewDetails }) => {
   const formatCurrency = (val: number) => {
     return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
@@ -33,14 +34,25 @@ export const BalanceEvolutionChart: React.FC<BalanceEvolutionChartProps> = ({ da
 
   return (
     <div className="bg-white dark:bg-[#12151c] p-4 sm:p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs flex flex-col justify-between space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-emerald-500 shrink-0" />
           <span>Evolução do Saldo Acumulado</span>
         </h3>
-        <span className="text-[10px] sm:text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 sm:px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-900/50 flex items-center gap-1 shrink-0">
-          <TrendingUp className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Tendência Financeira Real</span><span className="sm:hidden">Tendência</span>
-        </span>
+        <div className="flex items-center gap-2">
+          {onViewDetails && (
+            <button
+              type="button"
+              onClick={onViewDetails}
+              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer active:scale-95"
+            >
+              <span>Ver Detalhes</span>
+            </button>
+          )}
+          <span className="text-[10px] sm:text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 sm:px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-900/50 flex items-center gap-1 shrink-0">
+            <TrendingUp className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Tendência Financeira Real</span><span className="sm:hidden">Tendência</span>
+          </span>
+        </div>
       </div>
 
       <div className="h-[320px] sm:h-[340px] w-full">

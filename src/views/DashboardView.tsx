@@ -24,6 +24,7 @@ import {
   Printer,
   CheckCircle2,
   MessageSquare,
+  FileText,
 } from 'lucide-react';
 
 interface DashboardViewProps {
@@ -196,7 +197,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       {/* Financial Analytics & Trends Charts (Definance Style) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <MonthlyComparisonChart data={monthlyAnalyticsData} />
-        <BalanceEvolutionChart data={monthlyAnalyticsData} />
+        <BalanceEvolutionChart data={monthlyAnalyticsData} onViewDetails={() => onNavigate('financial')} />
       </div>
 
       {/* SEÇÃO NOVO REQUISITO: Pedidos de Venda em Aberto & Produção 3D (Com conversão direta para Entregue) */}

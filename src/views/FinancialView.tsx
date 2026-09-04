@@ -1,12 +1,32 @@
 import React, { useState, useMemo } from 'react';
-import { SaleTransaction, Consignment, Order } from '../types';
-import { DollarSign, Wallet, ArrowUpRight, Clock, CheckCircle2, Plus, X, HandCoins, TrendingUp, Paperclip, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SaleTransaction, Consignment, Order, ExpenseItem } from '../types';
+import {
+  DollarSign,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownRight,
+  Clock,
+  CheckCircle2,
+  Plus,
+  X,
+  HandCoins,
+  TrendingUp,
+  Paperclip,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Search,
+  Filter,
+  ArrowRight,
+  Tag,
+} from 'lucide-react';
 import { formatDateBR } from '../utils/formatters';
 
 interface FinancialViewProps {
   transactions: SaleTransaction[];
   consignments?: Consignment[];
   orders?: Order[];
+  expenses?: ExpenseItem[];
   onUpdateOrderPayment?: (
     orderId: string,
     additionalAmount: number,
@@ -27,12 +47,20 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   transactions = [],
   consignments = [],
   orders = [],
+  expenses = [],
   onUpdateOrderPayment,
   onRecordPayment,
 }) => {
   const handlePayment = onUpdateOrderPayment || onRecordPayment;
 
   const [tab, setTab] = useState<'extrato' | 'entradas' | 'receber'>('extrato');
+  const [period, setPeriod] = useState<string>('Este Mês');
+  const [customStartDate, setCustomStartDate] = useState<string>('');
+  const [customEndDate, setCustomEndDate] = useState<string>('');
+  const [showCustomPicker, setShowCustomPicker] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [movementType, setMovementType] = useState<'todos' | 'entradas' | 'saidas'>('todos');
+
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<Order | null>(null);
   const [paymentAmountInput, setPaymentAmountInput] = useState<string>('');
   const [paymentReceiptUrl, setPaymentReceiptUrl] = useState<string>('');
@@ -45,7 +73,118 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [tab]);
+  }, [tab, period, customStartDate, customEndDate, searchTerm, movementType]);
+
+  // Auxiliary Date Parser (Handles ISO, YYYY-MM-DD, DD/MM/YYYY)
+  const parseToDate = (dateStr?: string | null): Date | null => {
+    if (!dateStr) return null;
+    if (dateStr.includes('/')) {
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      }
+    } else if (dateStr.includes('-')) {
+      const cleanStr = dateStr.split('T')[0];
+      const parts = cleanStr.split('-');
+      if (parts.length === 3) {
+        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      }
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  // Compute Active Date Range Window
+  const { dateRangeStart, dateRangeEnd, labelPeriodText } = useMemo(() => {
+    const now = new Date();
+    const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+    if (period === 'Hoje') {
+      return {
+        dateRangeStart: todayZero,
+        dateRangeEnd: todayEnd,
+        labelPeriodText: `Hoje (${todayZero.toLocaleDateString('pt-BR')})`,
+      };
+    }
+    if (period === '7 dias') {
+      const start = new Date(todayZero);
+      start.setDate(start.getDate() - 6);
+      return {
+        dateRangeStart: start,
+        dateRangeEnd: todayEnd,
+        labelPeriodText: `Últimos 7 dias (${start.toLocaleDateString('pt-BR')} a ${todayEnd.toLocaleDateString('pt-BR')})`,
+      };
+    }
+    if (period === '30 dias') {
+      const start = new Date(todayZero);
+      start.setDate(start.getDate() - 29);
+      return {
+        dateRangeStart: start,
+        dateRangeEnd: todayEnd,
+        labelPeriodText: `Últimos 30 dias (${start.toLocaleDateString('pt-BR')} a ${todayEnd.toLocaleDateString('pt-BR')})`,
+      };
+    }
+    if (period === 'Este Mês') {
+      const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      return {
+        dateRangeStart: start,
+        dateRangeEnd: end,
+        labelPeriodText: `Este Mês (${start.toLocaleDateString('pt-BR')} a ${end.toLocaleDateString('pt-BR')})`,
+      };
+    }
+    if (period === 'Este Ano') {
+      const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+      const end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+      return {
+        dateRangeStart: start,
+        dateRangeEnd: end,
+        labelPeriodText: `Ano de ${now.getFullYear()}`,
+      };
+    }
+    if (period === 'Personalizado') {
+      const start = customStartDate ? parseToDate(customStartDate) : null;
+      const end = customEndDate ? parseToDate(customEndDate) : (start ? new Date(start) : null);
+
+      if (start) start.setHours(0, 0, 0, 0);
+      if (end) end.setHours(23, 59, 59, 999);
+
+      let text = 'Período Personalizado';
+      if (start && end) {
+        text = start.toDateString() === end.toDateString()
+          ? `Data: ${start.toLocaleDateString('pt-BR')}`
+          : `De ${start.toLocaleDateString('pt-BR')} até ${end.toLocaleDateString('pt-BR')}`;
+      } else if (start) {
+        text = `A partir de ${start.toLocaleDateString('pt-BR')}`;
+      } else if (end) {
+        text = `Até ${end.toLocaleDateString('pt-BR')}`;
+      }
+
+      return {
+        dateRangeStart: start,
+        dateRangeEnd: end,
+        labelPeriodText: text,
+      };
+    }
+
+    return {
+      dateRangeStart: null,
+      dateRangeEnd: null,
+      labelPeriodText: 'Todo o Histórico',
+    };
+  }, [period, customStartDate, customEndDate]);
+
+  // Evaluator function to check if item date falls within selected range
+  const isDateInRange = (dateStr?: string | null): boolean => {
+    if (!dateRangeStart && !dateRangeEnd) return true;
+    const d = parseToDate(dateStr);
+    if (!d) return true;
+
+    if (dateRangeStart && d.getTime() < dateRangeStart.getTime()) return false;
+    if (dateRangeEnd && d.getTime() > dateRangeEnd.getTime()) return false;
+    return true;
+  };
 
   const handlePaymentFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,7 +203,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     reader.readAsDataURL(file);
   };
 
-  // Filter out any standalone transaction entries auto-created for orders (to prevent duplicate rows)
+  // Filter out standalone transactions auto-created for orders and system sync items
   const filteredTransactions = transactions.filter(
     (t) =>
       !(
@@ -74,34 +213,108 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
       )
   );
 
-  // 1. Calculate Real Financial Metrics from Orders + Transactions + Consignments
-  const ordersTotalPaid = orders.reduce((acc, o) => acc + (o.paidAmount || 0), 0);
-  const transactionsTotal = filteredTransactions
-    .filter((t) => t.status === 'Recebido' || !t.status)
-    .reduce((acc, t) => acc + t.amount, 0);
-
-  const totalReceived = ordersTotalPaid + transactionsTotal;
-
-  const ordersPendingReceivable = orders.reduce(
-    (acc, o) => acc + Math.max(0, o.totalValue - (o.paidAmount || 0)),
-    0
+  // Clean expenses (exclude SYS_ internal balance rows)
+  const cleanExpenses = expenses.filter(
+    (exp) => !exp.referenceCode?.startsWith('SYS_') && exp.category !== 'Transferência de Marketplace'
   );
-  const consignmentsTotalReceivable = consignments.reduce((acc, c) => acc + c.totalValue, 0);
 
-  const totalReceivable = ordersPendingReceivable + consignmentsTotalReceivable;
-
-  const ordersGrossTotal = orders.reduce((acc, o) => acc + o.totalValue, 0);
-  const totalGrossSales = ordersGrossTotal + transactionsTotal;
-
-  const totalOperationsCount = orders.length + filteredTransactions.length;
-  const averageTicket = totalOperationsCount > 0 ? totalGrossSales / totalOperationsCount : 0;
-
-  // TAB 1 Data: Extrato Completo
+  // Extrato Entries: Entradas & Saídas combinadas
   const allExtratoEntries = useMemo(() => {
-    const orderEntries = orders.map((o) => ({ type: 'order' as const, data: o, id: o.id, date: o.date || o.createdAt || '' }));
-    const txEntries = filteredTransactions.map((t) => ({ type: 'transaction' as const, data: t, id: t.id, date: t.timestamp || t.dueDate || '' }));
-    return [...orderEntries, ...txEntries].sort((a, b) => b.date.localeCompare(a.date));
-  }, [orders, filteredTransactions]);
+    // 1. Order Entries (Entradas)
+    const orderEntries = orders
+      .filter((o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_'))
+      .filter((o) => isDateInRange(o.date || o.createdAt))
+      .map((o) => ({
+        type: 'order' as const,
+        direction: 'entrada' as const,
+        data: o,
+        id: o.id,
+        date: o.date || o.createdAt || '',
+        title: `Pedido #${o.id}`,
+        clientOrCategory: o.clientName,
+        amount: o.paidAmount || o.totalValue || 0,
+        paidAmount: o.paidAmount || 0,
+        totalValue: o.totalValue || 0,
+        status: o.paymentStatusText || (o.paidAmount >= o.totalValue ? 'Pago Total' : 'Pendente'),
+      }));
+
+    // 2. Transaction Entries (Entradas)
+    const txEntries = filteredTransactions
+      .filter((t) => isDateInRange(t.timestamp || t.date || t.dueDate))
+      .map((t) => ({
+        type: 'transaction' as const,
+        direction: 'entrada' as const,
+        data: t,
+        id: t.id,
+        date: t.timestamp || t.dueDate || '',
+        title: `Venda / Transação #${t.id}`,
+        clientOrCategory: t.clientName || 'Cliente Balcão',
+        amount: t.amount || 0,
+        paidAmount: t.amount || 0,
+        totalValue: t.amount || 0,
+        status: t.status || 'Recebido',
+      }));
+
+    // 3. Expense Entries (Saídas)
+    const expenseEntries = cleanExpenses
+      .filter((exp) => isDateInRange(exp.date || exp.timestamp))
+      .map((exp) => ({
+        type: 'expense' as const,
+        direction: (exp.category === 'Aporte / Reembolso de Sócio' ? 'entrada' : 'saida') as 'entrada' | 'saida',
+        data: exp,
+        id: exp.id,
+        date: exp.date || exp.timestamp || '',
+        title: exp.description || 'Despesa Operacional',
+        clientOrCategory: exp.category,
+        amount: exp.amount || 0,
+        paidAmount: exp.paymentStatus === 'Pago' ? exp.amount : 0,
+        totalValue: exp.amount || 0,
+        status: exp.paymentStatus || 'Pago',
+      }));
+
+    const combined = [...orderEntries, ...txEntries, ...expenseEntries];
+
+    // Search term filtering
+    const searchFiltered = combined.filter((item) => {
+      if (movementType !== 'todos' && item.direction !== movementType) return false;
+      if (!searchTerm.trim()) return true;
+      const q = searchTerm.toLowerCase().trim();
+      return (
+        item.id.toLowerCase().includes(q) ||
+        item.title.toLowerCase().includes(q) ||
+        item.clientOrCategory.toLowerCase().includes(q) ||
+        item.amount.toString().includes(q) ||
+        item.status.toLowerCase().includes(q)
+      );
+    });
+
+    return searchFiltered.sort((a, b) => b.date.localeCompare(a.date));
+  }, [orders, filteredTransactions, cleanExpenses, dateRangeStart, dateRangeEnd, searchTerm, movementType]);
+
+  // Calculate Filtered Summary Metrics for Header KPI cards
+  const periodEntradas = useMemo(() => {
+    return allExtratoEntries
+      .filter((e) => e.direction === 'entrada')
+      .reduce((acc, e) => acc + e.amount, 0);
+  }, [allExtratoEntries]);
+
+  const periodSaidas = useMemo(() => {
+    return allExtratoEntries
+      .filter((e) => e.direction === 'saida')
+      .reduce((acc, e) => acc + e.amount, 0);
+  }, [allExtratoEntries]);
+
+  const periodSaldo = periodEntradas - periodSaidas;
+
+  const totalReceivable = useMemo(() => {
+    const ordersPending = orders
+      .filter((o) => !o.id?.startsWith('SYS_') && isDateInRange(o.date || o.createdAt))
+      .reduce((acc, o) => acc + Math.max(0, o.totalValue - (o.paidAmount || 0)), 0);
+    const consignmentsPending = consignments
+      .filter((c) => isDateInRange(c.date || c.createdAt))
+      .reduce((acc, c) => acc + c.totalValue, 0);
+    return ordersPending + consignmentsPending;
+  }, [orders, consignments, dateRangeStart, dateRangeEnd]);
 
   const extratoTotalPages = Math.ceil(allExtratoEntries.length / ITEMS_PER_PAGE) || 1;
   const paginatedExtrato = useMemo(() => {
@@ -111,10 +324,8 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
   // TAB 2 Data: Entradas em Caixa
   const allEntradasEntries = useMemo(() => {
-    const paidOrders = orders.filter((o) => (o.paidAmount || 0) > 0).map((o) => ({ type: 'order' as const, data: o, id: o.id, date: o.date || o.createdAt || '' }));
-    const txEntries = filteredTransactions.map((t) => ({ type: 'transaction' as const, data: t, id: t.id, date: t.timestamp || t.dueDate || '' }));
-    return [...paidOrders, ...txEntries].sort((a, b) => b.date.localeCompare(a.date));
-  }, [orders, filteredTransactions]);
+    return allExtratoEntries.filter((e) => e.direction === 'entrada');
+  }, [allExtratoEntries]);
 
   const entradasTotalPages = Math.ceil(allEntradasEntries.length / ITEMS_PER_PAGE) || 1;
   const paginatedEntradas = useMemo(() => {
@@ -124,10 +335,14 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
   // TAB 3 Data: Contas a Receber
   const allReceberEntries = useMemo(() => {
-    const pendingOrders = orders.filter((o) => o.totalValue > (o.paidAmount || 0)).map((o) => ({ type: 'order' as const, data: o, id: o.id, date: o.date || o.createdAt || '' }));
-    const consignmentEntries = consignments.map((c) => ({ type: 'consignment' as const, data: c, id: c.id, date: c.date || c.createdAt || '' }));
+    const pendingOrders = orders
+      .filter((o) => !o.id?.startsWith('SYS_') && o.totalValue > (o.paidAmount || 0) && isDateInRange(o.date || o.createdAt))
+      .map((o) => ({ type: 'order' as const, data: o, id: o.id, date: o.date || o.createdAt || '' }));
+    const consignmentEntries = consignments
+      .filter((c) => isDateInRange(c.date || c.createdAt))
+      .map((c) => ({ type: 'consignment' as const, data: c, id: c.id, date: c.date || c.createdAt || '' }));
     return [...pendingOrders, ...consignmentEntries].sort((a, b) => b.date.localeCompare(a.date));
-  }, [orders, consignments]);
+  }, [orders, consignments, dateRangeStart, dateRangeEnd]);
 
   const receberTotalPages = Math.ceil(allReceberEntries.length / ITEMS_PER_PAGE) || 1;
   const paginatedReceber = useMemo(() => {
@@ -167,87 +382,238 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <DollarSign className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            Gestão Financeira, Vendas e Pagamentos
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Acompanhamento em tempo real de entradas em caixa, pedidos faturados e saldos pendentes a receber.
-          </p>
+      {/* Top Header & Interactive Date Filter */}
+      <div className="bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <DollarSign className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+              Extrato Financeiro Completo (Entradas & Saídas)
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
+              <span>Acompanhamento detalhado de todas as receitas e despesas registradas.</span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-extrabold rounded-full border border-indigo-200 dark:border-indigo-800 text-[11px]">
+                {labelPeriodText}
+              </span>
+            </p>
+          </div>
+
+          {/* Period Presets & Interactive Calendar Toggle */}
+          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-[#181c26] p-1.5 rounded-xl border border-slate-200 dark:border-[#202531] flex-wrap">
+            <button
+              type="button"
+              onClick={() => {
+                setShowCustomPicker((prev) => !prev);
+                if (period !== 'Personalizado') {
+                  setPeriod('Personalizado');
+                }
+              }}
+              title="Clique para selecionar intervalo de datas personalizado"
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+                showCustomPicker || period === 'Personalizado'
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                  : 'bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+            >
+              <Calendar className="w-4 h-4 text-amber-500" />
+              <span>Personalizado</span>
+            </button>
+
+            {['Hoje', '7 dias', '30 dias', 'Este Mês', 'Este Ano', 'Tudo'].map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  setPeriod(p);
+                  setShowCustomPicker(false);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  period === p && !showCustomPicker
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Custom Date Range Panel (Data X até Y) */}
+        {(showCustomPicker || period === 'Personalizado') && (
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 bg-indigo-50/50 dark:bg-indigo-950/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/40 flex flex-wrap items-center justify-between gap-4 animate-in fade-in duration-150">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-800 dark:text-slate-200">
+                <Calendar className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>Selecionar período personalizado:</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                <label className="text-slate-600 dark:text-slate-400 font-semibold">Data Inicial (De):</label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => {
+                    setCustomStartDate(e.target.value);
+                    setPeriod('Personalizado');
+                  }}
+                  className="px-3 py-1.5 bg-white dark:bg-[#12151c] border border-slate-200 dark:border-[#202531] rounded-lg text-xs text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500 shadow-xs"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 text-xs">
+                <label className="text-slate-600 dark:text-slate-400 font-semibold">Data Final (Até):</label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => {
+                    setCustomEndDate(e.target.value);
+                    setPeriod('Personalizado');
+                  }}
+                  className="px-3 py-1.5 bg-white dark:bg-[#12151c] border border-slate-200 dark:border-[#202531] rounded-lg text-xs text-slate-900 dark:text-slate-100 font-bold focus:outline-none focus:border-indigo-500 shadow-xs"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {(customStartDate || customEndDate) && (
+                <button
+                  onClick={() => {
+                    setCustomStartDate('');
+                    setCustomEndDate('');
+                    setPeriod('Este Mês');
+                    setShowCustomPicker(false);
+                  }}
+                  className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Limpar Filtro
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Dynamic KPI Cards (Definance 2x2 Mobile Layout) */}
+      {/* Dynamic KPI Cards for Selected Period (Definance 2x2 Mobile Layout) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-emerald-500/40 dark:hover:border-emerald-500/40 cursor-pointer">
+        {/* Total Entradas */}
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-emerald-500/40 cursor-pointer">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
-              Total Recebido
+              Total Entradas (Receitas)
             </span>
             <div className="p-1.5 sm:p-2 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
-              <TrendingUp className="w-4 h-4 sm:w-4 sm:h-4" />
+              <ArrowUpRight className="w-4 h-4" />
             </div>
           </div>
           <p className="text-lg sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2 sm:mt-3 tracking-tight truncate">
-            R$ {totalReceived.toFixed(2).replace('.', ',')}
+            R$ {periodEntradas.toFixed(2).replace('.', ',')}
           </p>
           <p className="text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1 truncate">
-            Entrou em Caixa
+            {period}
           </p>
         </div>
 
-        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-indigo-500/40 dark:hover:border-indigo-500/40 cursor-pointer">
+        {/* Total Saídas */}
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-rose-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Total Saídas (Despesas)
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-rose-500/10 text-rose-500 shrink-0">
+              <ArrowDownRight className="w-4 h-4" />
+            </div>
+          </div>
+          <p className="text-lg sm:text-2xl font-black text-rose-600 dark:text-rose-400 mt-2 sm:mt-3 tracking-tight truncate">
+            R$ {periodSaidas.toFixed(2).replace('.', ',')}
+          </p>
+          <p className="text-[10px] sm:text-xs text-rose-600 dark:text-rose-400 font-semibold mt-1 truncate">
+            {period}
+          </p>
+        </div>
+
+        {/* Resultado do Período (Saldo) */}
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-indigo-500/40 cursor-pointer">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
+              Resultado do Período
+            </span>
+            <div className="p-1.5 sm:p-2 rounded-xl bg-indigo-500/10 text-indigo-400 shrink-0">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+          <p className={`text-lg sm:text-2xl font-black mt-2 sm:mt-3 tracking-tight truncate ${
+            periodSaldo >= 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-rose-600 dark:text-rose-400'
+          }`}>
+            R$ {periodSaldo.toFixed(2).replace('.', ',')}
+          </p>
+          <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
+            Entradas − Saídas
+          </p>
+        </div>
+
+        {/* Saldo a Receber */}
+        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-blue-500/40 cursor-pointer">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
               Saldo a Receber
             </span>
-            <div className="p-1.5 sm:p-2 rounded-xl bg-indigo-500/10 text-indigo-400 shrink-0">
-              <DollarSign className="w-4 h-4 sm:w-4 sm:h-4" />
+            <div className="p-1.5 sm:p-2 rounded-xl bg-blue-500/10 text-blue-400 shrink-0">
+              <Clock className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-lg sm:text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-2 sm:mt-3 tracking-tight truncate">
+          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
             R$ {totalReceivable.toFixed(2).replace('.', ',')}
           </p>
           <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
-            Pendente em pedidos
+            Pendente no período
           </p>
         </div>
+      </div>
 
-        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-purple-500/40 dark:hover:border-purple-500/40 cursor-pointer">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
-              Total Emitido
-            </span>
-            <div className="p-1.5 sm:p-2 rounded-xl bg-purple-500/10 text-purple-400 shrink-0">
-              <Wallet className="w-4 h-4 sm:w-4 sm:h-4" />
-            </div>
-          </div>
-          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
-            R$ {totalGrossSales.toFixed(2).replace('.', ',')}
-          </p>
-          <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
-            Faturamento bruto
-          </p>
+      {/* Search & Movement Type Filter Controls */}
+      <div className="bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+        <div className="relative w-full md:w-96">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar por código, cliente, fornecedor ou categoria..."
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-indigo-500 font-semibold"
+          />
         </div>
 
-        <div className="definance-kpi-card bg-white dark:bg-[#12151c] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs hover:border-blue-500/40 dark:hover:border-blue-500/40 cursor-pointer">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 truncate">
-              Ticket Médio
-            </span>
-            <div className="p-1.5 sm:p-2 rounded-xl bg-blue-500/10 text-blue-400 shrink-0">
-              <HandCoins className="w-4 h-4 sm:w-4 sm:h-4" />
-            </div>
-          </div>
-          <p className="text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100 mt-2 sm:mt-3 tracking-tight truncate">
-            R$ {averageTicket.toFixed(2).replace('.', ',')}
-          </p>
-          <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 truncate">
-            Média por pedido
-          </p>
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#181c26] p-1 rounded-xl border border-slate-200 dark:border-[#202531] text-xs font-bold w-full md:w-auto">
+          <button
+            onClick={() => setMovementType('todos')}
+            className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg transition-all cursor-pointer text-center ${
+              movementType === 'todos'
+                ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-2xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
+            }`}
+          >
+            Todas
+          </button>
+          <button
+            onClick={() => setMovementType('entradas')}
+            className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
+              movementType === 'entradas'
+                ? 'bg-emerald-600 text-white shadow-2xs'
+                : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40'
+            }`}
+          >
+            <ArrowUpRight className="w-3.5 h-3.5" /> Entradas
+          </button>
+          <button
+            onClick={() => setMovementType('saidas')}
+            className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
+              movementType === 'saidas'
+                ? 'bg-rose-600 text-white shadow-2xs'
+                : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
+            }`}
+          >
+            <ArrowDownRight className="w-3.5 h-3.5" /> Saídas
+          </button>
         </div>
       </div>
 
@@ -356,6 +722,29 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                         </div>
                       </div>
                     );
+                  } else if (entry.type === 'expense') {
+                    const exp = entry.data as ExpenseItem;
+                    const isEntrada = entry.direction === 'entrada';
+                    return (
+                      <div key={exp.id} className={`p-4 space-y-2 ${isEntrada ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : 'bg-rose-50/40 dark:bg-rose-950/20'}`}>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono font-bold text-xs flex items-center gap-1">
+                            <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isEntrada ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                              {isEntrada ? '+ ENTRADA' : '- SAÍDA'}
+                            </span>
+                          </span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[11px]">{formatDateBR(exp.date)}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 dark:text-slate-100">{exp.description}</span>
+                          <span className={`font-black text-sm ${isEntrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {isEntrada ? '+' : '-'} R$ {exp.amount.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Categoria: {exp.category}</p>
+                      </div>
+                    );
                   } else {
                     const t = entry.data as SaleTransaction;
                     return (
@@ -382,8 +771,8 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
                     <tr>
-                      <th className="p-4 whitespace-nowrap">Código</th>
-                      <th className="p-4 whitespace-nowrap">Cliente</th>
+                      <th className="p-4 whitespace-nowrap">Código / Tipo</th>
+                      <th className="p-4 whitespace-nowrap">Origem / Descrição</th>
                       <th className="p-4 whitespace-nowrap">Data</th>
                       <th className="p-4 text-right whitespace-nowrap">Valor Total</th>
                       <th className="p-4 text-right whitespace-nowrap">Entrou em Caixa</th>
@@ -439,6 +828,51 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                                   </span>
                                 )}
                               </div>
+                            </td>
+                          </tr>
+                        );
+                      } else if (entry.type === 'expense') {
+                        const exp = entry.data as ExpenseItem;
+                        const isEntrada = entry.direction === 'entrada';
+                        return (
+                          <tr key={exp.id} className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors ${isEntrada ? 'bg-emerald-50/30 dark:bg-emerald-950/20' : 'bg-rose-50/30 dark:bg-rose-950/20'}`}>
+                            <td className="p-4 font-mono font-bold whitespace-nowrap">
+                              <span className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold inline-flex items-center gap-1 ${
+                                isEntrada
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300'
+                                  : 'bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border border-rose-300'
+                              }`}>
+                                {isEntrada ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                                <span>{isEntrada ? '+ ENTRADA' : '- SAÍDA'}</span>
+                              </span>
+                            </td>
+                            <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                              {exp.description}
+                              <span className="block text-[10px] text-slate-400 font-normal">Categoria: {exp.category}</span>
+                            </td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(exp.date)}</td>
+                            <td className="p-4 text-right font-extrabold whitespace-nowrap">
+                              <span className={isEntrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                                {isEntrada ? '+' : '-'} R$ {exp.amount.toFixed(2).replace('.', ',')}
+                              </span>
+                            </td>
+                            <td className="p-4 text-right font-extrabold text-slate-500 whitespace-nowrap">
+                              R$ {exp.paymentStatus === 'Pago' ? exp.amount.toFixed(2).replace('.', ',') : '0,00'}
+                            </td>
+                            <td className="p-4 text-right font-extrabold text-slate-400 whitespace-nowrap">
+                              R$ {exp.paymentStatus === 'Pendente' ? exp.amount.toFixed(2).replace('.', ',') : '0,00'}
+                            </td>
+                            <td className="p-4 text-center whitespace-nowrap">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border inline-flex items-center justify-center gap-1 ${
+                                exp.paymentStatus === 'Pago'
+                                  ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300'
+                                  : 'bg-amber-100 text-amber-800 border-amber-300'
+                              }`}>
+                                <span>{exp.paymentStatus || 'Pago'}</span>
+                              </span>
+                            </td>
+                            <td className="p-4 text-right whitespace-nowrap">
+                              <span className="text-[11px] font-semibold text-slate-400">Registrado em Despesas</span>
                             </td>
                           </tr>
                         );
