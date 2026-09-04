@@ -399,7 +399,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
           </div>
 
           {/* Period Presets & Interactive Calendar Toggle */}
-          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-[#181c26] p-1.5 rounded-xl border border-slate-200 dark:border-[#202531] flex-wrap">
+          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-[#181c26] p-1.5 rounded-xl border border-slate-200 dark:border-[#202531] overflow-x-auto custom-scrollbar max-w-full whitespace-nowrap">
             <button
               type="button"
               onClick={() => {
@@ -409,7 +409,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                 }
               }}
               title="Clique para selecionar intervalo de datas personalizado"
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border shrink-0 ${
                 showCustomPicker || period === 'Personalizado'
                   ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                   : 'bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -426,7 +426,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   setPeriod(p);
                   setShowCustomPicker(false);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
                   period === p && !showCustomPicker
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -617,37 +617,49 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         </div>
       </div>
 
-      {/* Navigation Tabs (Segmented Control on Mobile and Desktop) */}
-      <div className="bg-slate-100 dark:bg-[#12151c] p-1.5 rounded-2xl border border-slate-200 dark:border-[#202531] shadow-xs grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+      {/* Navigation Tabs (Segmented Control side-by-side on Mobile and Desktop) */}
+      <div className="bg-slate-100 dark:bg-[#12151c] p-1.5 rounded-2xl border border-slate-200 dark:border-[#202531] shadow-xs grid grid-cols-3 gap-1 sm:gap-1.5">
         <button
           onClick={() => setTab('extrato')}
-          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
+          className={`py-2 px-1.5 sm:px-3 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
             tab === 'extrato'
               ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Extrato Completo ({allExtratoEntries.length})
+          <span className="hidden sm:inline">Extrato Completo</span>
+          <span className="sm:hidden">Extrato</span>
+          <span className="px-1.5 py-0.5 bg-indigo-100/60 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 rounded-full text-[10px] whitespace-nowrap">
+            ({allExtratoEntries.length})
+          </span>
         </button>
         <button
           onClick={() => setTab('entradas')}
-          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
+          className={`py-2 px-1.5 sm:px-3 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
             tab === 'entradas'
               ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Entradas em Caixa ({allEntradasEntries.length})
+          <span className="hidden sm:inline">Entradas em Caixa</span>
+          <span className="sm:hidden">Entradas</span>
+          <span className="px-1.5 py-0.5 bg-emerald-100/60 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 rounded-full text-[10px] whitespace-nowrap">
+            ({allEntradasEntries.length})
+          </span>
         </button>
         <button
           onClick={() => setTab('receber')}
-          className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer text-center ${
+          className={`py-2 px-1.5 sm:px-3 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
             tab === 'receber'
               ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
           }`}
         >
-          Contas a Receber ({allReceberEntries.length})
+          <span className="hidden sm:inline">Contas a Receber</span>
+          <span className="sm:hidden">A Receber</span>
+          <span className="px-1.5 py-0.5 bg-amber-100/60 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 rounded-full text-[10px] whitespace-nowrap">
+            ({allReceberEntries.length})
+          </span>
         </button>
       </div>
 
@@ -680,29 +692,29 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     return (
                       <div key={o.id} className="p-4 space-y-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] border ${statusBadge}`}>
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs shrink-0">{o.id}</span>
+                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] border shrink-0 whitespace-nowrap ${statusBadge}`}>
                             {isFullyPaid ? 'Totalmente Pago' : o.paymentStatusText || 'Pendente'}
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{o.clientName}</span>
-                          <span className="text-slate-500 dark:text-slate-400">{formatDateBR(o.date)}</span>
+                        <div className="flex items-center justify-between gap-2 text-xs">
+                          <span className="font-bold text-slate-900 dark:text-slate-100 flex-1 min-w-0 pr-1 leading-snug break-words">{o.clientName}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[11px] shrink-0 whitespace-nowrap">{formatDateBR(o.date)}</span>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/60 dark:border-[#202531] text-[11px]">
+                        <div className="grid grid-cols-3 gap-1.5 p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/60 dark:border-[#202531] text-[11px]">
                           <div>
                             <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Total</span>
-                            <span className="font-bold text-slate-900 dark:text-slate-100">R$ {o.totalValue.toFixed(2).replace('.', ',')}</span>
+                            <span className="font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">R$ {o.totalValue.toFixed(2).replace('.', ',')}</span>
                           </div>
                           <div>
                             <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Caixa</span>
-                            <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {paid.toFixed(2).replace('.', ',')}</span>
+                            <span className="font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">R$ {paid.toFixed(2).replace('.', ',')}</span>
                           </div>
                           <div>
                             <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Saldo</span>
-                            <span className="font-extrabold text-rose-600 dark:text-rose-400">R$ {pending.toFixed(2).replace('.', ',')}</span>
+                            <span className="font-extrabold text-rose-600 dark:text-rose-400 whitespace-nowrap">R$ {pending.toFixed(2).replace('.', ',')}</span>
                           </div>
                         </div>
 
@@ -726,19 +738,19 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     const exp = entry.data as ExpenseItem;
                     const isEntrada = entry.direction === 'entrada';
                     return (
-                      <div key={exp.id} className={`p-4 space-y-2 ${isEntrada ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : 'bg-rose-50/40 dark:bg-rose-950/20'}`}>
+                      <div key={exp.id} className={`p-4 space-y-2.5 ${isEntrada ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : 'bg-rose-50/40 dark:bg-rose-950/20'}`}>
                         <div className="flex items-center justify-between gap-2">
                           <span className="font-mono font-bold text-xs flex items-center gap-1">
                             <span className={`px-2 py-0.5 rounded-md font-extrabold text-[10px] ${isEntrada ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
                               {isEntrada ? '+ ENTRADA' : '- SAÍDA'}
                             </span>
                           </span>
-                          <span className="text-slate-500 dark:text-slate-400 text-[11px]">{formatDateBR(exp.date)}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[11px] shrink-0 whitespace-nowrap">{formatDateBR(exp.date)}</span>
                         </div>
 
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{exp.description}</span>
-                          <span className={`font-black text-sm ${isEntrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        <div className="flex items-start justify-between gap-3 text-xs">
+                          <span className="font-bold text-slate-900 dark:text-slate-100 flex-1 min-w-0 pr-1 leading-snug break-words">{exp.description}</span>
+                          <span className={`font-black text-sm whitespace-nowrap shrink-0 text-right ${isEntrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                             {isEntrada ? '+' : '-'} R$ {exp.amount.toFixed(2).replace('.', ',')}
                           </span>
                         </div>
@@ -748,17 +760,17 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   } else {
                     const t = entry.data as SaleTransaction;
                     return (
-                      <div key={t.id} className="p-4 space-y-2 bg-slate-50/40 dark:bg-slate-900/40">
+                      <div key={t.id} className="p-4 space-y-2.5 bg-slate-50/40 dark:bg-slate-900/40">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">{t.id}</span>
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80">
+                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs shrink-0">{t.id}</span>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/80 shrink-0 whitespace-nowrap">
                             {t.status || 'Recebido'} ({t.paymentMethod || 'PIX'})
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{t.clientName}</span>
-                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {t.amount.toFixed(2).replace('.', ',')}</span>
+                        <div className="flex items-start justify-between gap-3 text-xs">
+                          <span className="font-bold text-slate-900 dark:text-slate-100 flex-1 min-w-0 pr-1 leading-snug break-words">{t.clientName}</span>
+                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0 text-right">R$ {t.amount.toFixed(2).replace('.', ',')}</span>
                         </div>
                       </div>
                     );
@@ -1297,199 +1309,10 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         </div>
       )}
 
-      {/* TAB 2: Entradas em Caixa (Pagamentos Confirmados) */}
-      {tab === 'entradas' && (
-        <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
-          {/* Mobile View */}
-          <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
-            {orders
-              .filter((o) => (o.paidAmount || 0) > 0)
-              .map((o) => (
-                <div key={o.id} className="p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">{formatDateBR(o.date)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-900 dark:text-slate-100">{o.clientName}</span>
-                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}</span>
-                  </div>
-                  <span className="inline-block px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold text-[10px]">
-                    ✓ Recebido no Sinal / Entrada
-                  </span>
-                </div>
-              ))}
-          </div>
-
-          {/* Desktop View */}
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                <tr>
-                  <th className="p-4 whitespace-nowrap">Origem / Código</th>
-                  <th className="p-4 whitespace-nowrap">Cliente</th>
-                  <th className="p-4 whitespace-nowrap">Data</th>
-                  <th className="p-4 text-right whitespace-nowrap">Valor Entrado em Caixa</th>
-                  <th className="p-4 text-center whitespace-nowrap">Status de Confirmação</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
-                {orders
-                  .filter((o) => (o.paidAmount || 0) > 0)
-                  .map((o) => (
-                    <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                      <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{o.id}</td>
-                      <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{o.clientName}</td>
-                      <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(o.date)}</td>
-                      <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                        R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}
-                      </td>
-                      <td className="p-4 text-center whitespace-nowrap">
-                        <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold text-emerald-700 dark:text-emerald-300 text-[10px] inline-flex items-center justify-center gap-1 whitespace-nowrap">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span>Recebido no Sinal / Entrada</span>
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                {filteredTransactions.map((t) => (
-                  <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                    <td className="p-4 font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{t.id}</td>
-                    <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{t.clientName}</td>
-                    <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(t.date)}</td>
-                    <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                      R$ {t.amount.toFixed(2).replace('.', ',')}
-                    </td>
-                    <td className="p-4 text-center whitespace-nowrap">
-                      <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold text-emerald-700 dark:text-emerald-300 text-[10px] inline-flex items-center justify-center gap-1 whitespace-nowrap">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                        <span>Venda Confirmada ({t.paymentMethod})</span>
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: Contas a Receber / Financiados */}
-      {tab === 'receber' && (
-        <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
-          {/* Mobile View */}
-          <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
-            {orders
-              .filter((o) => o.totalValue > (o.paidAmount || 0))
-              .map((o) => {
-                const remaining = o.totalValue - (o.paidAmount || 0);
-                return (
-                  <div key={o.id} className="p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
-                      <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">{o.clientName}</span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/60 dark:border-[#202531] text-[11px]">
-                      <div>
-                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Total</span>
-                        <span className="font-bold text-slate-900 dark:text-slate-100">R$ {o.totalValue.toFixed(2).replace('.', ',')}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Já Pago</span>
-                        <span className="font-bold text-emerald-600 dark:text-emerald-400">R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Pendente</span>
-                        <span className="font-extrabold text-rose-600 dark:text-rose-400">R$ {remaining.toFixed(2).replace('.', ',')}</span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleOpenPaymentModal(o)}
-                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-                    >
-                      <HandCoins className="w-4 h-4" /> Dar Baixa / Quitar
-                    </button>
-                  </div>
-                );
-              })}
-          </div>
-
-          {/* Desktop View */}
-          <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
-                <tr>
-                  <th className="p-4 whitespace-nowrap">Pedido / Loja</th>
-                  <th className="p-4 whitespace-nowrap">Cliente</th>
-                  <th className="p-4 text-right whitespace-nowrap">Valor Total Pedido</th>
-                  <th className="p-4 text-right whitespace-nowrap">Valor Já Pago</th>
-                  <th className="p-4 text-right whitespace-nowrap">Saldo Pendente (A Receber)</th>
-                  <th className="p-4 text-right whitespace-nowrap">Ação de Recebimento</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
-                {orders
-                  .filter((o) => o.totalValue > (o.paidAmount || 0))
-                  .map((o) => {
-                    const remaining = o.totalValue - (o.paidAmount || 0);
-                    return (
-                      <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                        <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{o.id}</td>
-                        <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{o.clientName}</td>
-                        <td className="p-4 text-right font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                          R$ {o.totalValue.toFixed(2).replace('.', ',')}
-                        </td>
-                        <td className="p-4 text-right font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                          R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}
-                        </td>
-                        <td className="p-4 text-right font-extrabold text-rose-600 dark:text-rose-400 whitespace-nowrap">
-                          R$ {remaining.toFixed(2).replace('.', ',')}
-                        </td>
-                        <td className="p-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2 whitespace-nowrap">
-                            <button
-                              onClick={() => handleOpenPaymentModal(o)}
-                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
-                            >
-                              <HandCoins className="w-3.5 h-3.5" /> Dar Baixa / Quitar
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                {consignments.map((c) => (
-                  <tr key={c.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-purple-50/30 dark:bg-purple-950/20">
-                    <td className="p-4 font-mono font-bold text-purple-600 dark:text-purple-400 whitespace-nowrap">{c.id} (Consignação)</td>
-                    <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{c.clientName}</td>
-                    <td className="p-4 text-right font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                      R$ {c.totalValue.toFixed(2).replace('.', ',')}
-                    </td>
-                    <td className="p-4 text-right font-bold text-slate-400 dark:text-slate-500 whitespace-nowrap">R$ 0,00</td>
-                    <td className="p-4 text-right font-extrabold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                      R$ {c.totalValue.toFixed(2).replace('.', ',')}
-                    </td>
-                    <td className="p-4 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-2 whitespace-nowrap">
-                        <span className="px-2.5 py-1 bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 rounded-lg font-bold text-xs inline-block whitespace-nowrap border border-purple-200 dark:border-purple-800">
-                          Acerto na Visita
-                        </span>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       {/* Payment Entry Modal */}
       {selectedOrderForPayment && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#12151c] w-full max-w-md rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150 shadow-2xl">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-md rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-150">
             <div className="p-5 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
               <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
                 <HandCoins className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
