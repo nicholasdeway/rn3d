@@ -399,7 +399,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
           </div>
 
           {/* Period Presets & Interactive Calendar Toggle */}
-          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-[#181c26] p-1.5 rounded-xl border border-slate-200 dark:border-[#202531] overflow-x-auto custom-scrollbar max-w-full whitespace-nowrap">
+          <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-[#181c26] p-1.5 rounded-xl border border-slate-200 dark:border-[#202531] flex-wrap">
             <button
               type="button"
               onClick={() => {
@@ -409,7 +409,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                 }
               }}
               title="Clique para selecionar intervalo de datas personalizado"
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border shrink-0 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 border ${
                 showCustomPicker || period === 'Personalizado'
                   ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                   : 'bg-white dark:bg-[#12151c] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -426,7 +426,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   setPeriod(p);
                   setShowCustomPicker(false);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   period === p && !showCustomPicker
                     ? 'bg-indigo-600 text-white shadow-xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
