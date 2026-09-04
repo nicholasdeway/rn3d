@@ -345,6 +345,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
       name: editFormData.name || editingProduct.name,
       sku: editFormData.sku || editingProduct.sku,
       category: editFormData.category || editingProduct.category,
+      material: (editFormData.material as 'PLA' | 'PETG' | 'ABS') || editingProduct.material || 'PLA',
       storageCapacity: editFormData.storageCapacity !== undefined ? editFormData.storageCapacity : editingProduct.storageCapacity,
       imageUrl: editFormData.imageUrl !== undefined ? editFormData.imageUrl : editingProduct.imageUrl,
       standardPrice: Number(editFormData.standardPrice),
@@ -561,10 +562,15 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   </div>
 
                   <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
-                        {p.category}
-                      </span>
+                    <div className="flex items-center justify-between gap-1 flex-wrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+                          {p.category}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80">
+                          {p.material || 'PLA'}
+                        </span>
+                      </div>
                       <button
                         type="button"
                         onClick={(e) => handleToggleProductStatus(p, e)}
@@ -672,7 +678,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                       </div>
                       <div>
                         <p className="text-sm font-semibold">{p.name}</p>
-                        <p className="text-[11px] text-slate-400 font-normal">{p.material} • {p.color}</p>
+                        <p className="text-[11px] text-slate-400 font-normal">Material: <strong className="font-semibold text-slate-600 dark:text-slate-300">{p.material || 'PLA'}</strong></p>
                       </div>
                     </td>
                     <td className="p-4 font-mono text-slate-600">{p.sku}</td>
@@ -835,13 +841,25 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Categoria</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Material do Filamento *</label>
+                  <select
+                    value={editFormData.material || 'PLA'}
+                    onChange={(e) => setEditFormData({ ...editFormData, material: e.target.value as 'PLA' | 'PETG' | 'ABS' })}
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#202531] rounded-xl bg-slate-50 dark:bg-[#181c26] font-semibold text-slate-900 dark:text-slate-100"
+                  >
+                    <option value="PLA">PLA</option>
+                    <option value="PETG">PETG</option>
+                    <option value="ABS">ABS</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Categoria</label>
                   <select
                     value={editFormData.category || 'Case de Munição'}
                     onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#202531] rounded-xl bg-slate-50 dark:bg-[#181c26] font-semibold text-slate-900 dark:text-slate-100"
                   >
                     {categories.filter((c) => c !== 'Todos').map((c) => (
                       <option key={c} value={c}>{c}</option>
@@ -849,13 +867,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Capacidade de Armazenamento</label>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Capacidade de Armazenamento</label>
                   <input
                     type="text"
                     value={editFormData.storageCapacity || ''}
                     onChange={(e) => setEditFormData({ ...editFormData, storageCapacity: e.target.value })}
                     placeholder="Ex: 50 munições, 20 munições (Pocket)..."
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                    className="w-full px-3 py-2 border border-slate-200 dark:border-[#202531] rounded-xl bg-slate-50 dark:bg-[#181c26] text-slate-900 dark:text-slate-100"
                   />
                 </div>
               </div>
@@ -1029,12 +1047,25 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                     />
                   </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Categoria</label>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Material do Filamento *</label>
+                    <select
+                      value={formData.material || 'PLA'}
+                      onChange={(e) => setFormData({ ...formData, material: e.target.value as 'PLA' | 'PETG' | 'ABS' })}
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-[#202531] rounded-xl bg-slate-50 dark:bg-[#181c26] font-semibold text-slate-900 dark:text-slate-100"
+                    >
+                      <option value="PLA">PLA</option>
+                      <option value="PETG">PETG</option>
+                      <option value="ABS">ABS</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Categoria</label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-[#202531] rounded-xl bg-slate-50 dark:bg-[#181c26] font-semibold text-slate-900 dark:text-slate-100"
                     >
                       {categories.filter((c) => c !== 'Todos').map((c) => (
                         <option key={c} value={c}>{c}</option>
@@ -1042,15 +1073,16 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     </select>
                   </div>
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Capacidade de Armazenamento</label>
+                    <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Capacidade de Armazenamento</label>
                     <input
                       type="text"
                       value={formData.storageCapacity || ''}
                       onChange={(e) => setFormData({ ...formData, storageCapacity: e.target.value })}
                       placeholder="Ex: 50 munições, 20 munições..."
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl"
+                      className="w-full px-3 py-2 border border-slate-200 dark:border-[#202531] rounded-xl bg-slate-50 dark:bg-[#181c26] text-slate-900 dark:text-slate-100"
                     />
                   </div>
+                </div>
                 </div>
               </div>
 

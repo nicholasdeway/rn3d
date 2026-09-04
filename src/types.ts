@@ -30,7 +30,7 @@ export interface Product {
   storageCapacity?: string;
   imageUrl?: string;
   // Characteristics
-  material: 'PLA' | 'PETG' | 'ABS' | 'TPU' | 'Resina';
+  material: 'PLA' | 'PETG' | 'ABS';
   color: string;
   weightGram: number;
   // Measures (mm)
@@ -434,7 +434,7 @@ export interface CalculatorInputs {
   spoolWeightGrams: number;
   printWeightGrams: number;
   failureRatePct: number;
-  materialType: 'PLA' | 'PETG' | 'ABS' | 'TPU' | 'Resina';
+  materialType: 'PLA' | 'PETG' | 'ABS';
   printerPowerWatts: number;
   energyKwhCost: number;
   printHours: number;
