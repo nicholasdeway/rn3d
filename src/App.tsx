@@ -2,7 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Toast } from './components/Toast';
+import { BillReminderModal } from './components/BillReminderModal';
 import { MobileFloatingNav } from './components/MobileFloatingNav';
+
 import { useAuth } from './context/AuthContext';
 import { LoginView } from './views/LoginView';
 import { Box } from 'lucide-react';
@@ -318,6 +320,13 @@ export function App() {
         />
       )}
 
+      {/* Pop-up Responsivo de Lembrete de Contas Fixas (7 e 3 Dias) */}
+      <BillReminderModal
+        billAlerts={appData.billAlerts}
+        onMarkPaid={appData.handleMarkBillPaid}
+        onNavigate={(mode) => navigateTo(mode)}
+      />
+
       {/* Desktop & Mobile Responsive Sidebar Drawer */}
       <Sidebar
         currentView={currentView}
@@ -345,9 +354,14 @@ export function App() {
           clients={appData.clients}
           orders={appData.orders}
           quotes={appData.quotes}
+          billAlerts={appData.billAlerts}
+          pendingAlertsCount={appData.pendingAlertsCount}
+          urgentAlertsCount={appData.urgentAlertsCount}
+          onMarkBillPaid={appData.handleMarkBillPaid}
           theme={theme}
           onToggleTheme={handleToggleTheme}
           onSearchChange={(query) => appData.setGlobalSearchQuery(query)}
+
           onSelectSearchResult={(type, id, item) => {
             appData.setGlobalSearchQuery(id || item?.id || '');
             if (type === 'order') {
@@ -658,13 +672,20 @@ export function App() {
                   accountBalance={appData.accountBalance}
                   autoOpenModal={autoOpenExpenseModal}
                   isLoading={appData.dataLoading}
+                  recurringBills={appData.recurringBills}
+                  billAlerts={appData.billAlerts}
                   onCreateExpense={appData.handleCreateExpense}
                   onExecuteTransfer={appData.handleExecuteTransfer}
                   onUpdateExpense={appData.handleUpdateExpense}
                   onDeleteExpense={appData.handleDeleteExpense}
                   onUpdateSingleBalance={appData.handleUpdateSingleBalance}
+                  onCreateBill={appData.handleCreateBill}
+                  onUpdateBill={appData.handleUpdateBill}
+                  onDeleteBill={appData.handleDeleteBill}
+                  onMarkBillPaid={appData.handleMarkBillPaid}
                 />
               )}
+
 
               {currentView === 'reports' && (
                 <ReportsView

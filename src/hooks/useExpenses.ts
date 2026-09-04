@@ -92,11 +92,25 @@ export function useExpenses(
     }
   }, [user]);
 
-  const handleCreateExpense = async (newExpense: ExpenseItem) => {
+  const handleCreateExpense = async (newExpense: Partial<ExpenseItem>): Promise<ExpenseItem | null> => {
     const formattedItem: ExpenseItem = {
-      ...newExpense,
+      id: newExpense.id || `exp-${Date.now()}`,
+      description: newExpense.description || 'Despesa sem descrição',
+      category: newExpense.category || 'Outros',
+      amount: newExpense.amount || 0,
+      date: newExpense.date || new Date().toISOString().split('T')[0],
       timestamp: newExpense.timestamp || new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      paymentStatus: newExpense.paymentStatus || 'Pago',
+      beneficiary: newExpense.beneficiary || '',
       createdBy: newExpense.createdBy || 'Nicholas',
+      sourceAccount: newExpense.sourceAccount,
+      destinationAccount: newExpense.destinationAccount,
+      receiptUrl: newExpense.receiptUrl || '',
+      receiptType: newExpense.receiptType || 'image',
+      receiptName: newExpense.receiptName || '',
+      isAutoReplicated: newExpense.isAutoReplicated ?? false,
+      referenceCode: newExpense.referenceCode || '',
+      notes: newExpense.notes || '',
     };
 
     setExpenses((prev) => [formattedItem, ...prev]);
@@ -145,11 +159,15 @@ export function useExpenses(
         setExpenses((prev) =>
           prev.map((e) => (e.id === formattedItem.id ? { ...e, id: savedInDb.id } : e))
         );
+        return savedInDb;
       }
     } catch (err) {
       console.error('Erro ao salvar despesa no Supabase:', err);
     }
+
+    return formattedItem;
   };
+
 
   const handleExecuteTransfer = async (
     source: MarketplaceAccount,

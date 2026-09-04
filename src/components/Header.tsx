@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Client, Order, Product, Quote, ViewMode } from '../types';
+import { Client, Order, Product, Quote, ViewMode, RecurringBillAlertStatus, RecurringBill } from '../types';
+import { HeaderNotificationBell } from './HeaderNotificationBell';
 import { useAuth } from '../context/AuthContext';
 import {
   Menu,
@@ -32,10 +33,15 @@ interface HeaderProps {
   clients?: Client[];
   orders?: Order[];
   quotes?: Quote[];
+  billAlerts?: RecurringBillAlertStatus[];
+  pendingAlertsCount?: number;
+  urgentAlertsCount?: number;
+  onMarkBillPaid?: (bill: RecurringBill) => void;
   onSelectSearchResult?: (type: 'order' | 'quote' | 'product' | 'client', id: string, item: any) => void;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
 }
+
 
 export const Header: React.FC<HeaderProps> = ({
   currentView,
@@ -49,10 +55,15 @@ export const Header: React.FC<HeaderProps> = ({
   clients = [],
   orders = [],
   quotes = [],
+  billAlerts = [],
+  pendingAlertsCount = 0,
+  urgentAlertsCount = 0,
+  onMarkBillPaid,
   onSelectSearchResult,
   theme = 'light',
   onToggleTheme,
 }) => {
+
   const { user, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchVal, setSearchVal] = useState('');
@@ -340,7 +351,17 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden md:inline">Sincronizar Sistema</span>
           </button>
 
+          {/* Sininho de Notificações de Contas Fixas (7 e 3 Dias) */}
+          <HeaderNotificationBell
+            billAlerts={billAlerts}
+            pendingAlertsCount={pendingAlertsCount}
+            urgentAlertsCount={urgentAlertsCount}
+            onMarkPaid={(bill) => onMarkBillPaid && onMarkBillPaid(bill)}
+            onNavigate={(mode) => onNavigate && onNavigate(mode)}
+          />
+
           {/* Dark / Light Mode Theme Toggle Button */}
+
           {onToggleTheme && (
             <button
               onClick={onToggleTheme}

@@ -10,6 +10,8 @@ import { useOrders } from './useOrders';
 import { useExchanges } from './useExchanges';
 import { useVisits } from './useVisits';
 import { useExpenses } from './useExpenses';
+import { useRecurringBills } from './useRecurringBills';
+
 
 import { fetchProducts } from '../services/productsService';
 import { fetchClients } from '../services/clientsService';
@@ -69,6 +71,19 @@ export function useAppData() {
     handleDeleteExpense,
     handleUpdateSingleBalance,
   } = useExpenses(user, showToast);
+
+  const {
+    recurringBills,
+    billAlerts,
+    pendingAlertsCount,
+    urgentAlertsCount,
+    reloadBills,
+    handleCreateBill,
+    handleUpdateBill,
+    handleDeleteBill,
+    handleMarkBillPaid,
+  } = useRecurringBills(showToast, handleCreateExpense);
+
 
   const {
     transactions,
@@ -515,7 +530,17 @@ export function useAppData() {
     expenses,
     accountBalances,
     accountBalance,
+    recurringBills,
+    billAlerts,
+    pendingAlertsCount,
+    urgentAlertsCount,
+    reloadBills,
+    handleCreateBill,
+    handleUpdateBill,
+    handleDeleteBill,
+    handleMarkBillPaid,
     globalSearchQuery,
+
     dataLoading,
     toast,
     setToast,

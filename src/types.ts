@@ -354,6 +354,32 @@ export interface ExpenseItem {
   notes?: string;
 }
 
+export interface RecurringBill {
+  id: string;
+  title: string;
+  category: ExpenseCategory;
+  amount: number;
+  dueDay: number; // 1 a 31
+  recurrence: 'Mensal' | 'Anual';
+  beneficiary?: string;
+  notes?: string;
+  status: 'Ativo' | 'Pausado';
+  lastPaidMonth?: string; // ex: '2026-09'
+  createdAt?: string;
+}
+
+export interface RecurringBillAlertStatus {
+  bill: RecurringBill;
+  targetDueDate: string; // YYYY-MM-DD
+  daysRemaining: number;
+  isPaidThisMonth: boolean;
+  isOverdue: boolean;
+  isUrgent: boolean; // <= 3 dias
+  isWarning: boolean; // 4 a 7 dias
+  statusTag: 'pago' | 'atrasado' | 'urgente_3d' | 'aviso_7d' | 'em_dia';
+}
+
+
 export interface AppSettings {
   company: {
     fantasyName: string;
