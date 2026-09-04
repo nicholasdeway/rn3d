@@ -78,6 +78,7 @@ export function computeMonthlyAnalyticsData(
 
   // 1. Pedidos Faturados / Recebidos
   orders.forEach((o) => {
+    if (o.id?.startsWith('SYS_') || o.clientName?.startsWith('SISTEMA_')) return;
     const key = parseDateToMonthKey(o.date);
     const revenue = Number(o.paidAmount) || Number(o.totalValue) || 0;
     if (key && monthlyMap.has(key)) {
@@ -113,7 +114,10 @@ export function computeMonthlyAnalyticsData(
 
   // 4. Lançamentos de Despesas & Aportes
   expenses.forEach((exp) => {
-    if (exp.referenceCode === 'SYS_ACCOUNT_BALANCES' || exp.category === 'Transferência de Marketplace') {
+    if (
+      exp.referenceCode?.startsWith('SYS_') ||
+      exp.category === 'Transferência de Marketplace'
+    ) {
       return;
     }
 
