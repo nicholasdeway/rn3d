@@ -1258,8 +1258,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
       {/* MODAL: REGISTRAR LANÇAMENTO / APORTE DE SÓCIO */}
       {isAporteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
                 <ArrowDownLeft className="w-5 h-5 text-emerald-500" />
@@ -1364,8 +1364,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
       {/* MODAL: RESGATE / TRANSFERÊNCIA DE MARKETPLACE */}
       {isTransferModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
                 <RefreshCw className="w-5 h-5 text-amber-500" />
@@ -1470,8 +1470,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
       {/* MODAL: NOVA DESPESA OPERACIONAL */}
       {isNewExpenseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-lg w-full p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
                 <TrendingDown className="w-5 h-5 text-rose-500" />
@@ -1594,8 +1594,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
       {/* MODAL: RETIRADA */}
       {isWithdrawalModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base flex items-center gap-2">
                 <Users className="w-5 h-5 text-amber-500" />
@@ -1687,8 +1687,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
       {/* MODAL: GERENCIAR / ANEXAR COMPROVANTE DE DESPESA */}
       {editingReceiptExpense && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Paperclip className="w-5 h-5 text-indigo-500" />
@@ -1840,8 +1840,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
       {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE TRANSAÇÃO */}
       {deletingExpense && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 space-y-4">
             <div className="flex items-center gap-3 text-rose-500">
               <div className="p-3 bg-rose-100 dark:bg-rose-950/80 rounded-2xl">
                 <Trash2 className="w-6 h-6 text-rose-600 dark:text-rose-400" />

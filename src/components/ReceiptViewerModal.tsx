@@ -128,9 +128,9 @@ export const ReceiptViewerModal: React.FC<ReceiptViewerModalProps> = ({ receipt,
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in duration-200 select-none">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 animate-in fade-in duration-200 select-none">
       <div
-        className={`bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl flex flex-col shadow-2xl overflow-hidden transition-all duration-200 ${
+        className={`bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl flex flex-col overflow-hidden transition-all duration-200 ${
           isFullscreen ? 'w-full h-full max-w-none max-h-none rounded-none' : 'max-w-4xl w-full h-[90vh]'
         }`}
       >
@@ -277,7 +277,7 @@ export const ReceiptViewerModal: React.FC<ReceiptViewerModalProps> = ({ receipt,
                 src={receipt.url}
                 alt={receipt.title}
                 draggable={false}
-                className="max-h-[75vh] max-w-[85vw] object-contain rounded-xl shadow-2xl border border-slate-800 pointer-events-auto select-none transition-shadow"
+                className="max-h-[75vh] max-w-[85vw] object-contain rounded-xl border border-slate-800 pointer-events-auto select-none transition-shadow"
               />
             </div>
           )}
