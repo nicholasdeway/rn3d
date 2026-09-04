@@ -2,6 +2,19 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { RecurringBill, ExpenseCategory } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 
+const MOCK_IDS = ['rec-bill-1', 'rec-bill-2', 'rec-bill-3'];
+const MOCK_TITLES = [
+  'das - imposto simples nacional',
+  'upseller erp - mensalidade',
+  'chatgpt plus / openai api',
+];
+
+function isMockItem(id?: string, title?: string): boolean {
+  if (id && MOCK_IDS.includes(id)) return true;
+  if (title && MOCK_TITLES.some((m) => title.toLowerCase().includes(m))) return true;
+  return false;
+}
+
 export async function fetchRecurringBills(): Promise<RecurringBill[]> {
   if (isSupabaseConfigured()) {
     try {
@@ -11,7 +24,15 @@ export async function fetchRecurringBills(): Promise<RecurringBill[]> {
         .order('due_day', { ascending: true });
 
       if (!error && data) {
-        const bills: RecurringBill[] = data.map((row) => ({
+        // Delete mock rows from Supabase if present
+        const mockRows = data.filter((row) => isMockItem(row.id, row.title));
+        if (mockRows.length > 0) {
+          const idsToDelete = mockRows.map((r) => r.id);
+          await supabase.from('recurring_bills').delete().in('id', idsToDelete);
+        }
+
+        const cleanRows = data.filter((row) => !isMockItem(row.id, row.title));
+        const bills: RecurringBill[] = cleanRows.map((row) => ({
           id: row.id,
           title: row.title,
           category: row.category as ExpenseCategory,
@@ -33,7 +54,12 @@ export async function fetchRecurringBills(): Promise<RecurringBill[]> {
   }
 
   // Fallback to LocalStorage if Supabase fails or is unconfigured
-  return getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []);
+  const cached = getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []);
+  const cleanCached = cached.filter((item) => !isMockItem(item.id, item.title));
+  if (cleanCached.length !== cached.length) {
+    safeSetLocalStorage('rn3d_recurring_bills', JSON.stringify(cleanCached));
+  }
+  return cleanCached;
 }
 
 
