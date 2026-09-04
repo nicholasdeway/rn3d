@@ -85,12 +85,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isSupabaseConfigured()) {
       return { error: new Error('Supabase não está configurado no arquivo .env. Use o modo demonstração ou configure as chaves.') };
     }
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (!error) {
+    if (!error && data?.session) {
       localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
+      setSession(data.session);
+      setUser(data.session.user ?? data.user ?? null);
     }
     return { error };
   };

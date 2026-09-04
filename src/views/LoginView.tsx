@@ -13,11 +13,15 @@ export const LoginView: React.FC = () => {
 
   const supabaseReady = isSupabaseConfigured();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
-    if (!email || !password) {
+    const form = e.currentTarget;
+    const targetEmail = (email || (form.elements.namedItem('email') as HTMLInputElement)?.value || '').trim();
+    const targetPassword = password || (form.elements.namedItem('password') as HTMLInputElement)?.value || '';
+
+    if (!targetEmail || !targetPassword) {
       setError('Por favor, preencha o e-mail e a senha.');
       return;
     }
@@ -25,7 +29,7 @@ export const LoginView: React.FC = () => {
     setLoading(true);
 
     try {
-      const { error: authError } = await signInWithPassword(email, password);
+      const { error: authError } = await signInWithPassword(targetEmail, targetPassword);
       if (authError) {
         setError(authError.message === 'Invalid login credentials'
           ? 'Credenciais inválidas. Verifique seu e-mail e senha.'
@@ -93,6 +97,7 @@ export const LoginView: React.FC = () => {
             <div className="relative">
               <Mail className="w-5 h-5 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
+                name="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -110,6 +115,7 @@ export const LoginView: React.FC = () => {
             <div className="relative">
               <Lock className="w-5 h-5 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
+                name="password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
