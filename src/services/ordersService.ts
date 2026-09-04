@@ -20,7 +20,12 @@ export async function fetchOrders(): Promise<Order[]> {
   }
 
   const dbOrders: Order[] = data
-    .filter((row) => row.order_code !== 'SYS_ACCOUNT_BALANCES' && row.client_name !== 'SISTEMA_BALANCES' && !(row.order_code && row.order_code.startsWith('REM-')))
+    .filter(
+      (row) =>
+        !row.order_code?.startsWith('SYS_') &&
+        !row.client_name?.startsWith('SISTEMA_') &&
+        !(row.order_code && row.order_code.startsWith('REM-'))
+    )
     .map((row) => {
       let clientCost = Number(row.internal_logistics_cost) || 0;
       let clientType = row.internal_logistics_type || 'combustivel';
@@ -69,7 +74,13 @@ export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promi
     const { data: dbData } = await supabase.from('orders').select('order_code');
     const existingCodes = new Set((dbData || []).map((row) => (row.order_code || '').toLowerCase().trim()));
 
-    const toInsert = missingOrders.filter((o) => o.id && !existingCodes.has(o.id.toLowerCase().trim()));
+    const toInsert = missingOrders.filter(
+      (o) =>
+        o.id &&
+        !o.id.startsWith('SYS_') &&
+        !o.clientName?.startsWith('SISTEMA_') &&
+        !existingCodes.has(o.id.toLowerCase().trim())
+    );
     if (toInsert.length === 0) return 0;
 
     const rows = toInsert.map((o) => ({

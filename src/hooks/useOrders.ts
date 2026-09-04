@@ -15,14 +15,19 @@ export function useOrders(
   setTransactions?: any
 ) {
   const [orders, setOrders] = useState<Order[]>(() =>
-    getStorageParsed<Order[]>('rn3d_orders', [], true)
+    getStorageParsed<Order[]>('rn3d_orders', [], true).filter(
+      (o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_') && !o.id?.startsWith('REM-')
+    )
   );
 
   const toast = typeof showToastOrQuotes === 'function' ? showToastOrQuotes : showToast || (() => {});
 
   useEffect(() => {
     if (orders && orders.length > 0) {
-      safeSetLocalStorage('rn3d_orders', JSON.stringify(orders));
+      const cleanOrders = orders.filter(
+        (o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_') && !o.id?.startsWith('REM-')
+      );
+      safeSetLocalStorage('rn3d_orders', JSON.stringify(cleanOrders));
     }
   }, [orders]);
 
