@@ -2,39 +2,6 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { RecurringBill, ExpenseCategory } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 
-const INITIAL_DEFAULT_BILLS: Partial<RecurringBill>[] = [
-  {
-    title: 'DAS - Imposto Simples Nacional',
-    category: 'Impostos (DAS)',
-    amount: 250.0,
-    dueDay: 20,
-    recurrence: 'Mensal',
-    beneficiary: 'Receita Federal / Simples Nacional',
-    notes: 'Guia DAS de imposto mensal da empresa',
-    status: 'Ativo',
-  },
-  {
-    title: 'UpSeller ERP - Mensalidade',
-    category: 'Outros',
-    amount: 89.9,
-    dueDay: 10,
-    recurrence: 'Mensal',
-    beneficiary: 'UpSeller ERP',
-    notes: 'Assinatura do sistema ERP e integração de marketplaces',
-    status: 'Ativo',
-  },
-  {
-    title: 'ChatGPT Plus / OpenAI API',
-    category: 'Outros',
-    amount: 110.0,
-    dueDay: 15,
-    recurrence: 'Mensal',
-    beneficiary: 'OpenAI',
-    notes: 'Assinatura de inteligência artificial para o sistema',
-    status: 'Ativo',
-  },
-];
-
 export async function fetchRecurringBills(): Promise<RecurringBill[]> {
   if (isSupabaseConfigured()) {
     try {
@@ -44,16 +11,6 @@ export async function fetchRecurringBills(): Promise<RecurringBill[]> {
         .order('due_day', { ascending: true });
 
       if (!error && data) {
-        if (data.length === 0) {
-          // Seed initial default bills to Supabase if empty
-          const seeded: RecurringBill[] = [];
-          for (const item of INITIAL_DEFAULT_BILLS) {
-            const created = await createRecurringBill(item);
-            if (created) seeded.push(created);
-          }
-          if (seeded.length > 0) return seeded;
-        }
-
         const bills: RecurringBill[] = data.map((row) => ({
           id: row.id,
           title: row.title,
@@ -76,26 +33,9 @@ export async function fetchRecurringBills(): Promise<RecurringBill[]> {
   }
 
   // Fallback to LocalStorage if Supabase fails or is unconfigured
-  const saved = getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []);
-  if (saved && saved.length > 0) return saved;
-
-  // Initial seed in local storage
-  const defaultList: RecurringBill[] = INITIAL_DEFAULT_BILLS.map((b, idx) => ({
-    id: `rec-bill-${idx + 1}`,
-    title: b.title || '',
-    category: (b.category as ExpenseCategory) || 'Outros',
-    amount: b.amount || 0,
-    dueDay: b.dueDay || 1,
-    recurrence: (b.recurrence as 'Mensal' | 'Anual') || 'Mensal',
-    beneficiary: b.beneficiary || '',
-    notes: b.notes || '',
-    status: 'Ativo',
-    lastPaidMonth: '',
-    createdAt: new Date().toISOString(),
-  }));
-  safeSetLocalStorage('rn3d_recurring_bills', JSON.stringify(defaultList));
-  return defaultList;
+  return getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []);
 }
+
 
 export async function createRecurringBill(bill: Partial<RecurringBill>): Promise<RecurringBill | null> {
   const payload = {

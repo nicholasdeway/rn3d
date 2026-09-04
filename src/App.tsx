@@ -29,8 +29,10 @@ import { MovementsView } from './views/MovementsView';
 import { ClientInventoryView } from './views/ClientInventoryView';
 import { FinancialView } from './views/FinancialView';
 import { ExpensesView } from './views/ExpensesView';
+import { RecurringBillsView } from './views/RecurringBillsView';
 import { ReportsView } from './views/ReportsView';
 import { SettingsView } from './views/SettingsView';
+
 
 export function App() {
   const { user, loading } = useAuth();
@@ -335,7 +337,9 @@ export function App() {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         isMobileOpen={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
+        pendingBillsCount={appData.pendingAlertsCount}
       />
+
 
       {/* Main Right Content Area */}
       <div
@@ -672,19 +676,25 @@ export function App() {
                   accountBalance={appData.accountBalance}
                   autoOpenModal={autoOpenExpenseModal}
                   isLoading={appData.dataLoading}
-                  recurringBills={appData.recurringBills}
-                  billAlerts={appData.billAlerts}
                   onCreateExpense={appData.handleCreateExpense}
                   onExecuteTransfer={appData.handleExecuteTransfer}
                   onUpdateExpense={appData.handleUpdateExpense}
                   onDeleteExpense={appData.handleDeleteExpense}
                   onUpdateSingleBalance={appData.handleUpdateSingleBalance}
+                />
+              )}
+
+              {currentView === 'recurring-bills' && (
+                <RecurringBillsView
+                  recurringBills={appData.recurringBills}
+                  billAlerts={appData.billAlerts}
                   onCreateBill={appData.handleCreateBill}
                   onUpdateBill={appData.handleUpdateBill}
                   onDeleteBill={appData.handleDeleteBill}
                   onMarkBillPaid={appData.handleMarkBillPaid}
                 />
               )}
+
 
 
               {currentView === 'reports' && (

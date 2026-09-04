@@ -22,6 +22,7 @@ import {
   ChevronRight,
   X,
   LogOut,
+  Bell,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -31,12 +32,14 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   isMobileOpen: boolean;
   onCloseMobile: () => void;
+  pendingBillsCount?: number;
 }
 
 interface NavItem {
   id: ViewMode;
   label: string;
   icon: React.ElementType;
+  badge?: number;
 }
 
 interface NavGroup {
@@ -51,6 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapse,
   isMobileOpen,
   onCloseMobile,
+  pendingBillsCount = 0,
 }) => {
   const { isDemo, signOut } = useAuth();
 
@@ -83,6 +87,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       items: [
         { id: 'financial', label: 'Vendas e Pagamentos', icon: DollarSign },
         { id: 'expenses', label: 'Financeiro', icon: TrendingDown },
+        { id: 'recurring-bills', label: 'Contas Fixas', icon: Bell, badge: pendingBillsCount },
       ],
     },
     {
@@ -93,6 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         { id: 'inventory-clients', label: 'Estoque em Clientes', icon: Store },
       ],
     },
+
     {
       items: [
         { id: 'reports', label: 'Relatórios', icon: BarChart3 },
@@ -210,7 +216,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       className={`w-5 h-5 shrink-0 transition-colors cursor-pointer ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200'
                         }`}
                     />
-                    {!isCollapsed && <span className="truncate cursor-pointer">{item.label}</span>}
+                    {!isCollapsed && (
+                      <span className="truncate cursor-pointer flex-1 text-left flex items-center justify-between">
+                        <span>{item.label}</span>
+                        {item.badge && item.badge > 0 ? (
+                          <span className="bg-rose-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full ml-1 shrink-0">
+                            {item.badge}
+                          </span>
+                        ) : null}
+                      </span>
+                    )}
+
+                    {isCollapsed && item.badge && item.badge > 0 ? (
+                      <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-600 rounded-full" />
+                    ) : null}
+
 
                     {isActive && (
                       <span className="absolute left-0 top-2 bottom-2 w-1 bg-indigo-600 rounded-r-full" />

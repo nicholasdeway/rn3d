@@ -24,6 +24,7 @@ import {
   ArrowDownLeft,
   History,
   Store,
+  Bell,
 } from 'lucide-react';
 
 interface MobileFloatingNavProps {
@@ -52,8 +53,10 @@ export const MobileFloatingNav: React.FC<MobileFloatingNavProps> = ({
     { id: 'consignments' as ViewMode, label: 'Remessas de Consignação', icon: Boxes, color: 'text-purple-400' },
     { id: 'quotes' as ViewMode, label: 'Orçamentos', icon: FileText, color: 'text-indigo-400' },
     { id: 'expenses' as ViewMode, label: 'Financeiro', icon: TrendingDown, color: 'text-rose-400' },
+    { id: 'recurring-bills' as ViewMode, label: 'Contas Fixas & Lembretes', icon: Bell, color: 'text-amber-400' },
     { id: 'financial' as ViewMode, label: 'Financeiro e Vendas', icon: DollarSign, color: 'text-emerald-400' },
     { id: 'calculator' as ViewMode, label: 'Calculadora de Custos 3D', icon: Calculator, color: 'text-amber-400' },
+
     { id: 'visits' as ViewMode, label: 'Visitas e Rotas', icon: MapPin, color: 'text-emerald-400' },
     { id: 'exchanges' as ViewMode, label: 'Trocas de Produtos', icon: Repeat, color: 'text-amber-400' },
     { id: 'clients' as ViewMode, label: 'Gestão de Clientes', icon: Users, color: 'text-blue-400' },

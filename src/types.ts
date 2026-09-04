@@ -15,8 +15,10 @@ export type ViewMode =
   | 'inventory-clients'
   | 'financial'
   | 'expenses'
+  | 'recurring-bills'
   | 'reports'
   | 'settings';
+
 
 export interface Product {
   id: string;
