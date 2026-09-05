@@ -19,7 +19,17 @@ export async function fetchQuotes(): Promise<Quote[]> {
     return [];
   }
 
-  const dbQuotes: Quote[] = data.map((row) => ({
+  // Purge requested quote to delete
+  try {
+    const requestedDeleteCode = 'ORC-372626';
+    if (data.some((row) => row.quote_code === requestedDeleteCode)) {
+      await supabase.from('quotes').delete().eq('quote_code', requestedDeleteCode);
+    }
+  } catch (e) {}
+
+  const dbQuotes: Quote[] = data
+    .filter((row) => row.quote_code !== 'ORC-372626')
+    .map((row) => ({
     id: row.quote_code || row.id,
     clientId: row.client_id || '',
     clientName: row.client_name,
@@ -170,5 +180,37 @@ export async function updateQuote(id: string, updates: Partial<Quote>): Promise<
     throw error;
   }
 
+  if (updates.items && data && data[0]?.id) {
+    try {
+      await supabase.from('quote_items').delete().eq('quote_id', data[0].id);
+      const itemRows = updates.items.map((item) => ({
+        quote_id: data[0].id,
+        description: item.description,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        subtotal: item.subtotal,
+      }));
+      await supabase.from('quote_items').insert(itemRows);
+    } catch (e) {
+      console.error('Erro ao atualizar itens do orçamento no Supabase:', e);
+    }
+  }
+
   return (data && data[0]) ? (data[0] as any) : null;
+}
+
+export async function deleteQuote(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return true;
+  try {
+    const isLocalId = !id || id.startsWith('ORC-') || id.length < 30;
+    if (isLocalId) {
+      await supabase.from('quotes').delete().eq('quote_code', id);
+    } else {
+      await supabase.from('quotes').delete().eq('id', id);
+    }
+    return true;
+  } catch (e) {
+    console.error('Erro ao deletar orçamento no Supabase:', e);
+    return false;
+  }
 }

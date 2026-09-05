@@ -9,12 +9,13 @@ import {
 
 export function useQuotes(user: any, showToast: (msg: string, type?: 'success' | 'error' | 'info') => void) {
   const [quotes, setQuotes] = useState<Quote[]>(() =>
-    getStorageParsed<Quote[]>('rn3d_quotes', [], true)
+    getStorageParsed<Quote[]>('rn3d_quotes', [], true).filter((q) => q.id !== 'ORC-372626')
   );
 
   useEffect(() => {
     if (quotes && quotes.length > 0) {
-      safeSetLocalStorage('rn3d_quotes', JSON.stringify(quotes));
+      const cleanQuotes = quotes.filter((q) => q.id !== 'ORC-372626');
+      safeSetLocalStorage('rn3d_quotes', JSON.stringify(cleanQuotes));
     }
   }, [quotes]);
 

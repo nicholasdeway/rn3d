@@ -20,6 +20,7 @@ export function useOrders(
         !o.id?.startsWith('SYS_') &&
         !o.clientName?.startsWith('SISTEMA_') &&
         !o.id?.startsWith('REM-') &&
+        o.id !== 'PED-372626' &&
         o.id !== 'PED-262862' &&
         o.id !== 'PED-247388'
     )
@@ -34,6 +35,7 @@ export function useOrders(
           !o.id?.startsWith('SYS_') &&
           !o.clientName?.startsWith('SISTEMA_') &&
           !o.id?.startsWith('REM-') &&
+          o.id !== 'PED-372626' &&
           o.id !== 'PED-262862' &&
           o.id !== 'PED-247388'
       );

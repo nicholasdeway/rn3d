@@ -21,7 +21,7 @@ export async function fetchOrders(): Promise<Order[]> {
 
   // Purge duplicate auto-generated open orders if present
   try {
-    const duplicateCodesToDelete = ['PED-262862', 'PED-247388'];
+    const duplicateCodesToDelete = ['PED-372626', 'PED-262862', 'PED-247388'];
     const hasDuplicates = data.some((row) => duplicateCodesToDelete.includes(row.order_code));
     if (hasDuplicates) {
       await supabase.from('orders').delete().in('order_code', duplicateCodesToDelete);
@@ -34,6 +34,7 @@ export async function fetchOrders(): Promise<Order[]> {
         !row.order_code?.startsWith('SYS_') &&
         !row.client_name?.startsWith('SISTEMA_') &&
         !(row.order_code && row.order_code.startsWith('REM-')) &&
+        row.order_code !== 'PED-372626' &&
         row.order_code !== 'PED-262862' &&
         row.order_code !== 'PED-247388'
     )
