@@ -5,6 +5,7 @@ import {
   fetchOrders,
   createOrder,
   updateOrder,
+  deleteOrder,
 } from '../services/ordersService';
 
 export function useOrders(
@@ -19,10 +20,7 @@ export function useOrders(
       (o) =>
         !o.id?.startsWith('SYS_') &&
         !o.clientName?.startsWith('SISTEMA_') &&
-        !o.id?.startsWith('REM-') &&
-        o.id !== 'PED-372626' &&
-        o.id !== 'PED-262862' &&
-        o.id !== 'PED-247388'
+        !o.id?.startsWith('REM-')
     )
   );
 
@@ -34,10 +32,7 @@ export function useOrders(
         (o) =>
           !o.id?.startsWith('SYS_') &&
           !o.clientName?.startsWith('SISTEMA_') &&
-          !o.id?.startsWith('REM-') &&
-          o.id !== 'PED-372626' &&
-          o.id !== 'PED-262862' &&
-          o.id !== 'PED-247388'
+          !o.id?.startsWith('REM-')
       );
       safeSetLocalStorage('rn3d_orders', JSON.stringify(cleanOrders));
     }
@@ -129,6 +124,11 @@ export function useOrders(
   const handleDeleteOrder = async (orderId: string) => {
     setOrders((prev) => prev.filter((o) => o.id !== orderId));
     toast(`Pedido #${orderId} removido!`, 'success');
+    try {
+      await deleteOrder(orderId);
+    } catch (err) {
+      console.error('Erro ao deletar pedido no Supabase:', err);
+    }
   };
 
   const handleUpdateOrderPayment = async (

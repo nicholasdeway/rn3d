@@ -618,6 +618,7 @@ export function App() {
                   onUpdateQuote={appData.handleUpdateQuote}
                   onUpdateQuoteStatus={appData.handleUpdateQuoteStatus}
                   onConvertQuoteToOrder={appData.handleConvertQuoteToOrder}
+                  onDeleteQuote={appData.handleDeleteQuote}
                   preselectedClientId={preselectedClientIdForAction}
                 />
               )}

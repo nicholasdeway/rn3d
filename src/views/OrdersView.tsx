@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Order, Product, Client } from '../types';
-import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles, ChevronDown, ChevronUp, Paperclip, Eye } from 'lucide-react';
+import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles, ChevronDown, ChevronUp, Paperclip, Eye, Trash2 } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 import { ReceiptViewerModal } from '../components/ReceiptViewerModal';
 import { uploadToSupabaseStorage } from '../services/storageService';
@@ -20,6 +20,7 @@ interface OrdersViewProps {
     receiptType?: 'image' | 'pdf',
     receiptName?: string
   ) => void;
+  onDeleteOrder?: (orderId: string) => void;
 }
 
 export const OrdersView: React.FC<OrdersViewProps> = ({
@@ -30,8 +31,10 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   onUpdateOrderProgress,
   onUpdateOrderStatus,
   onUpdateOrderPayment,
+  onDeleteOrder,
 }) => {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [previewPdfOrder, setPreviewPdfOrder] = useState<Order | null>(null);
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
   const [editingReceiptOrder, setEditingReceiptOrder] = useState<Order | null>(null);
@@ -500,6 +503,21 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                         <span>{o.paymentReceiptUrl ? 'Comprovante' : 'Anexar'}</span>
                       </button>
 
+                      {onDeleteOrder && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingOrderId(o.id);
+                          }}
+                          className="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors"
+                          title="Excluir pedido"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Excluir</span>
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => toggleExpandOrder(o.id)}
@@ -657,6 +675,19 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                                 <Printer className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                                 <span>PDF</span>
                               </button>
+                              {onDeleteOrder && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletingOrderId(o.id);
+                                  }}
+                                  className="px-2.5 py-1.5 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
+                                  title="Excluir pedido e lançamentos financeiros"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Excluir</span>
+                                </button>
+                              )}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1149,6 +1180,45 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
 
       {/* Visualizador HD de Comprovante com Zoom */}
       <ReceiptViewerModal receipt={selectedReceiptViewer} onClose={() => setSelectedReceiptViewer(null)} />
+
+      {/* Confirmation Modal for Order Deletion */}
+      {deletingOrderId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-white dark:bg-[#12151c] rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-[#202531] shadow-xl space-y-4">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+              <div className="p-2.5 bg-rose-100 dark:bg-rose-950/80 rounded-xl">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">Excluir Pedido</h3>
+                <p className="text-xs text-slate-500 font-mono">#{deletingOrderId}</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Atenção: Ao excluir este pedido, os lançamentos de pagamento associados no <strong>Vendas e Pagamentos / Financeiro</strong> também serão removidos do sistema em cascata.
+            </p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                onClick={() => setDeletingOrderId(null)}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (onDeleteOrder && deletingOrderId) {
+                    onDeleteOrder(deletingOrderId);
+                  }
+                  setDeletingOrderId(null);
+                }}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-colors"
+              >
+                Sim, Excluir Pedido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

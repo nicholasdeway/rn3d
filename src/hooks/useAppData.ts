@@ -108,6 +108,7 @@ export function useAppData() {
     handleCreateQuote,
     handleUpdateQuote,
     handleUpdateQuoteStatus,
+    handleDeleteQuote,
   } = useQuotes(user, showToast);
 
   const {
@@ -136,6 +137,18 @@ export function useAppData() {
     handleUpdateOrderStatus,
     handleUpdateOrderPayment,
   } = useOrders(user, quotes, showToast, setVisits, setTransactions);
+
+  const handleDeleteOrderCascade = async (orderId: string) => {
+    await handleDeleteOrder(orderId);
+
+    const matchingExpenses = expenses.filter(
+      (e) => e.referenceCode === `PED-PAY-${orderId}` || e.id.startsWith(`exp-pay-${orderId}`)
+    );
+
+    for (const exp of matchingExpenses) {
+      await handleDeleteExpense(exp.id);
+    }
+  };
 
   const {
     exchanges,
@@ -624,6 +637,7 @@ export function useAppData() {
     handleCreateQuote,
     handleUpdateQuote,
     handleUpdateQuoteStatus,
+    handleDeleteQuote,
     handleConvertQuoteToOrder,
     handleCreateExpense,
     handleExecuteTransfer,
@@ -631,7 +645,7 @@ export function useAppData() {
     handleDeleteExpense,
     handleUpdateSingleBalance,
     handleCreateOrder,
-    handleDeleteOrder,
+    handleDeleteOrder: handleDeleteOrderCascade,
     handleUpdateOrderProgress,
     handleUpdateOrderStatus,
     handleUpdateOrderPayment: handleUpdateOrderPaymentWrapper,

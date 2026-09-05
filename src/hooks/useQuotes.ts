@@ -5,17 +5,17 @@ import {
   fetchQuotes,
   createQuote,
   updateQuote,
+  deleteQuote,
 } from '../services/quotesService';
 
 export function useQuotes(user: any, showToast: (msg: string, type?: 'success' | 'error' | 'info') => void) {
   const [quotes, setQuotes] = useState<Quote[]>(() =>
-    getStorageParsed<Quote[]>('rn3d_quotes', [], true).filter((q) => q.id !== 'ORC-372626')
+    getStorageParsed<Quote[]>('rn3d_quotes', [], true)
   );
 
   useEffect(() => {
-    if (quotes && quotes.length > 0) {
-      const cleanQuotes = quotes.filter((q) => q.id !== 'ORC-372626');
-      safeSetLocalStorage('rn3d_quotes', JSON.stringify(cleanQuotes));
+    if (quotes) {
+      safeSetLocalStorage('rn3d_quotes', JSON.stringify(quotes));
     }
   }, [quotes]);
 
@@ -73,6 +73,16 @@ export function useQuotes(user: any, showToast: (msg: string, type?: 'success' |
     }
   };
 
+  const handleDeleteQuote = async (quoteId: string) => {
+    setQuotes((prev) => prev.filter((q) => q.id !== quoteId));
+    showToast(`Orçamento #${quoteId} removido!`, 'success');
+    try {
+      await deleteQuote(quoteId);
+    } catch (err) {
+      console.error('Erro ao deletar orçamento no Supabase:', err);
+    }
+  };
+
   return {
     quotes,
     setQuotes,
@@ -80,5 +90,7 @@ export function useQuotes(user: any, showToast: (msg: string, type?: 'success' |
     handleCreateQuote: handleAddQuote,
     handleUpdateQuote,
     handleUpdateQuoteStatus,
+    handleDeleteQuote,
   };
 }
+

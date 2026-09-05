@@ -19,17 +19,7 @@ export async function fetchQuotes(): Promise<Quote[]> {
     return [];
   }
 
-  // Purge requested quote to delete
-  try {
-    const requestedDeleteCode = 'ORC-372626';
-    if (data.some((row) => row.quote_code === requestedDeleteCode)) {
-      await supabase.from('quotes').delete().eq('quote_code', requestedDeleteCode);
-    }
-  } catch (e) {}
-
-  const dbQuotes: Quote[] = data
-    .filter((row) => row.quote_code !== 'ORC-372626')
-    .map((row) => ({
+  const dbQuotes: Quote[] = data.map((row) => ({
     id: row.quote_code || row.id,
     clientId: row.client_id || '',
     clientName: row.client_name,

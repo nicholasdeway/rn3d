@@ -19,24 +19,12 @@ export async function fetchOrders(): Promise<Order[]> {
     return [];
   }
 
-  // Purge duplicate auto-generated open orders if present
-  try {
-    const duplicateCodesToDelete = ['PED-372626', 'PED-262862', 'PED-247388'];
-    const hasDuplicates = data.some((row) => duplicateCodesToDelete.includes(row.order_code));
-    if (hasDuplicates) {
-      await supabase.from('orders').delete().in('order_code', duplicateCodesToDelete);
-    }
-  } catch (e) {}
-
   const dbOrders: Order[] = data
     .filter(
       (row) =>
         !row.order_code?.startsWith('SYS_') &&
         !row.client_name?.startsWith('SISTEMA_') &&
-        !(row.order_code && row.order_code.startsWith('REM-')) &&
-        row.order_code !== 'PED-372626' &&
-        row.order_code !== 'PED-262862' &&
-        row.order_code !== 'PED-247388'
+        !(row.order_code && row.order_code.startsWith('REM-'))
     )
     .map((row) => {
       let clientCost = Number(row.internal_logistics_cost) || 0;
@@ -250,3 +238,20 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
 
   return (data && data[0]) ? (data[0] as any) : null;
 }
+
+export async function deleteOrder(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return true;
+  try {
+    const isLocalId = !id || id.startsWith('PED-') || id.length < 30;
+    if (isLocalId) {
+      await supabase.from('orders').delete().eq('order_code', id);
+    } else {
+      await supabase.from('orders').delete().eq('id', id);
+    }
+    return true;
+  } catch (e) {
+    console.error('Erro ao deletar pedido no Supabase:', e);
+    return false;
+  }
+}
+
