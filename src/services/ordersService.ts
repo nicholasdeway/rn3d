@@ -95,23 +95,28 @@ export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promi
     );
     if (toInsert.length === 0) return 0;
 
-    const rows = toInsert.map((o) => ({
-      order_code: o.id,
-      client_id: o.clientId || null,
-      client_name: o.clientName,
-      date: o.date,
-      items_count: o.itemsCount || (o.items ? o.items.length : 0),
-      total_value: o.totalValue,
-      paid_amount: o.paidAmount,
-      payment_status_text: o.paymentStatusText || (o.paidAmount >= o.totalValue ? 'Pago Total' : o.paidAmount > 0 ? 'Parcial' : 'Pendente'),
-      status: o.status || 'Novo',
-      production_progress_pct: o.productionProgressPct || 0,
-      internal_logistics_type: o.internalLogisticsType || 'combustivel',
-      internal_logistics_cost: o.internalLogisticsCost || 0,
-      payment_receipt_url: o.paymentReceiptUrl || '',
-      payment_receipt_type: o.paymentReceiptType || 'image',
-      payment_receipt_name: o.paymentReceiptName || '',
-    }));
+    const rows = toInsert.map((o) => {
+      const rowPayload: any = {
+        order_code: o.id,
+        client_id: o.clientId || null,
+        client_name: o.clientName,
+        date: o.date,
+        items_count: o.itemsCount || (o.items ? o.items.length : 0),
+        total_value: o.totalValue,
+        paid_amount: o.paidAmount,
+        payment_status_text: o.paymentStatusText || (o.paidAmount >= o.totalValue ? 'Pago Total' : o.paidAmount > 0 ? 'Parcial' : 'Pendente'),
+        status: o.status || 'Novo',
+        production_progress_pct: o.productionProgressPct || 0,
+        internal_logistics_type: o.internalLogisticsType || 'combustivel',
+        internal_logistics_cost: o.internalLogisticsCost || 0,
+      };
+      if (o.paymentReceiptUrl) {
+        rowPayload.payment_receipt_url = o.paymentReceiptUrl;
+        rowPayload.payment_receipt_type = o.paymentReceiptType || 'image';
+        rowPayload.payment_receipt_name = o.paymentReceiptName || '';
+      }
+      return rowPayload;
+    });
 
     let { error } = await supabase.from('orders').insert(rows);
     if (error && error.message.includes('column')) {
@@ -146,10 +151,13 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     paid_amount: order.paidAmount || 0,
     payment_status_text: order.paymentStatusText || (order.paidAmount && order.totalValue && order.paidAmount >= order.totalValue ? 'Pago Total' : 'Pendente'),
     status: order.status || 'Novo',
-    payment_receipt_url: order.paymentReceiptUrl || '',
-    payment_receipt_type: order.paymentReceiptType || 'image',
-    payment_receipt_name: order.paymentReceiptName || '',
   };
+
+  if (order.paymentReceiptUrl) {
+    payload.payment_receipt_url = order.paymentReceiptUrl;
+    payload.payment_receipt_type = order.paymentReceiptType || 'image';
+    payload.payment_receipt_name = order.paymentReceiptName || '';
+  }
 
   if (order.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.clientId)) {
     payload.client_id = order.clientId;
