@@ -312,7 +312,11 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
       );
     });
 
-    return searchFiltered.sort((a, b) => b.date.localeCompare(a.date));
+    return searchFiltered.sort((a, b) => {
+      const timeA = parseToDate(a.date)?.getTime() || 0;
+      const timeB = parseToDate(b.date)?.getTime() || 0;
+      return timeB - timeA;
+    });
   }, [orders, filteredTransactions, cleanExpenses, dateRangeStart, dateRangeEnd, searchTerm, movementType]);
 
   // Calculate Filtered Summary Metrics for Header KPI cards
@@ -365,7 +369,11 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     const consignmentEntries = consignments
       .filter((c) => isDateInRange(c.date || c.createdAt))
       .map((c) => ({ type: 'consignment' as const, data: c, id: c.id, date: c.date || c.createdAt || '' }));
-    return [...pendingOrders, ...consignmentEntries].sort((a, b) => b.date.localeCompare(a.date));
+    return [...pendingOrders, ...consignmentEntries].sort((a, b) => {
+      const timeA = parseToDate(a.date)?.getTime() || 0;
+      const timeB = parseToDate(b.date)?.getTime() || 0;
+      return timeB - timeA;
+    });
   }, [orders, consignments, dateRangeStart, dateRangeEnd]);
 
   const receberTotalPages = Math.ceil(allReceberEntries.length / ITEMS_PER_PAGE) || 1;
