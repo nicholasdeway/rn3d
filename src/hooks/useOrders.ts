@@ -16,7 +16,12 @@ export function useOrders(
 ) {
   const [orders, setOrders] = useState<Order[]>(() =>
     getStorageParsed<Order[]>('rn3d_orders', [], true).filter(
-      (o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_') && !o.id?.startsWith('REM-')
+      (o) =>
+        !o.id?.startsWith('SYS_') &&
+        !o.clientName?.startsWith('SISTEMA_') &&
+        !o.id?.startsWith('REM-') &&
+        o.id !== 'PED-262862' &&
+        o.id !== 'PED-247388'
     )
   );
 
@@ -25,7 +30,12 @@ export function useOrders(
   useEffect(() => {
     if (orders && orders.length > 0) {
       const cleanOrders = orders.filter(
-        (o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_') && !o.id?.startsWith('REM-')
+        (o) =>
+          !o.id?.startsWith('SYS_') &&
+          !o.clientName?.startsWith('SISTEMA_') &&
+          !o.id?.startsWith('REM-') &&
+          o.id !== 'PED-262862' &&
+          o.id !== 'PED-247388'
       );
       safeSetLocalStorage('rn3d_orders', JSON.stringify(cleanOrders));
     }

@@ -9,7 +9,7 @@ const MOCK_TITLES = [
   'chatgpt plus / openai api',
 ];
 
-let hasRecurringBillsTable = true;
+let hasRecurringBillsTable = false;
 
 function isMockItem(id?: string, title?: string): boolean {
   if (id && MOCK_IDS.includes(id)) return true;

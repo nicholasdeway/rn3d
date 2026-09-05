@@ -19,12 +19,23 @@ export async function fetchOrders(): Promise<Order[]> {
     return [];
   }
 
+  // Purge duplicate auto-generated open orders if present
+  try {
+    const duplicateCodesToDelete = ['PED-262862', 'PED-247388'];
+    const hasDuplicates = data.some((row) => duplicateCodesToDelete.includes(row.order_code));
+    if (hasDuplicates) {
+      await supabase.from('orders').delete().in('order_code', duplicateCodesToDelete);
+    }
+  } catch (e) {}
+
   const dbOrders: Order[] = data
     .filter(
       (row) =>
         !row.order_code?.startsWith('SYS_') &&
         !row.client_name?.startsWith('SISTEMA_') &&
-        !(row.order_code && row.order_code.startsWith('REM-'))
+        !(row.order_code && row.order_code.startsWith('REM-')) &&
+        row.order_code !== 'PED-262862' &&
+        row.order_code !== 'PED-247388'
     )
     .map((row) => {
       let clientCost = Number(row.internal_logistics_cost) || 0;
