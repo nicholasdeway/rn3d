@@ -75,19 +75,43 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     setCurrentPage(1);
   }, [tab, period, customStartDate, customEndDate, searchTerm, movementType]);
 
-  // Auxiliary Date Parser (Handles ISO, YYYY-MM-DD, DD/MM/YYYY)
+  // Auxiliary Date Parser (Handles ISO, YYYY-MM-DD, DD/MM/YYYY, YYYY/MM/DD)
   const parseToDate = (dateStr?: string | null): Date | null => {
     if (!dateStr) return null;
-    if (dateStr.includes('/')) {
-      const parts = dateStr.split('/');
+    let str = String(dateStr).trim().split('T')[0].split(' ')[0];
+    if (!str) return null;
+
+    if (str.includes('/')) {
+      const parts = str.split('/');
       if (parts.length === 3) {
-        return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+        let p0 = Number(parts[0]);
+        let p1 = Number(parts[1]);
+        let p2 = Number(parts[2]);
+        if (isNaN(p0) || isNaN(p1) || isNaN(p2)) return null;
+
+        if (parts[0].length === 4) {
+          return new Date(p0, p1 - 1, p2);
+        }
+        if (parts[2].length === 4) {
+          return new Date(p2, p1 - 1, p0);
+        }
+        return new Date(p2 > 100 ? p2 : 2000 + p2, p1 - 1, p0);
       }
-    } else if (dateStr.includes('-')) {
-      const cleanStr = dateStr.split('T')[0];
-      const parts = cleanStr.split('-');
+    } else if (str.includes('-')) {
+      const parts = str.split('-');
       if (parts.length === 3) {
-        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        let p0 = Number(parts[0]);
+        let p1 = Number(parts[1]);
+        let p2 = Number(parts[2]);
+        if (isNaN(p0) || isNaN(p1) || isNaN(p2)) return null;
+
+        if (parts[0].length === 4) {
+          return new Date(p0, p1 - 1, p2);
+        }
+        if (parts[2].length === 4) {
+          return new Date(p2, p1 - 1, p0);
+        }
+        return new Date(p0, p1 - 1, p2);
       }
     }
     const d = new Date(dateStr);
