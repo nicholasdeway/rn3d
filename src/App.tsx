@@ -617,7 +617,7 @@ export function App() {
                   onAddQuote={appData.handleCreateQuote}
                   onUpdateQuote={appData.handleUpdateQuote}
                   onUpdateQuoteStatus={appData.handleUpdateQuoteStatus}
-                  onConvertQuoteToOrder={(quote) => appData.handleUpdateQuoteStatus(quote.id, 'Convertido em Pedido')}
+                  onConvertQuoteToOrder={appData.handleConvertQuoteToOrder}
                   preselectedClientId={preselectedClientIdForAction}
                 />
               )}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ExpenseItem } from '../types';
+import { ExpenseItem, Quote, Order } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from './useProducts';
 import { useClients } from './useClients';
@@ -467,6 +467,134 @@ export function useAppData() {
     await handleCreateExpense(paymentExpenseItem);
   };
 
+  const handleConvertQuoteToOrder = useCallback(
+    async (quote: Quote) => {
+      await handleUpdateQuoteStatus(quote.id, 'Convertido em Pedido');
+
+      const orderId = quote.id.startsWith('ORC-')
+        ? `PED-${quote.id.replace('ORC-', '')}`
+        : `PED-${quote.id}`;
+
+      const existingOrder = orders.find(
+        (o) => o.id.toLowerCase() === orderId.toLowerCase() || o.id.toLowerCase() === quote.id.toLowerCase()
+      );
+
+      if (!existingOrder) {
+        const itemsCount = (quote.items || []).reduce(
+          (acc, i) => acc + (Number(i.quantity) || 1),
+          0
+        );
+
+        const slaDays = quote.productionSlaDays || 7;
+        const slaDateObj = new Date(Date.now() + slaDays * 86400000);
+        const productionSlaDateStr = `${slaDateObj.getFullYear()}-${String(slaDateObj.getMonth() + 1).padStart(2, '0')}-${String(slaDateObj.getDate()).padStart(2, '0')}`;
+
+        const newOrder: Order = {
+          id: orderId,
+          clientId: quote.clientId || '',
+          clientName: quote.clientName || 'Cliente Local',
+          date: quote.date || new Date().toISOString().split('T')[0],
+          createdAt: new Date().toISOString(),
+          itemsCount: itemsCount,
+          totalValue: Number(quote.total) || Number(quote.subtotal) || 0,
+          paidAmount: 0,
+          paymentStatusText: 'Pendente',
+          status: 'Novo',
+          productionProgressPct: 0,
+          productionSlaDate: productionSlaDateStr,
+          attendanceMode: quote.attendanceMode,
+          internalLogisticsType: quote.internalLogisticsType,
+          internalLogisticsCost: quote.internalLogisticsCost,
+          notes: quote.notes || `Convertido a partir do Orçamento #${quote.id}`,
+          paymentTerms: quote.paymentTerms || '',
+          items: (quote.items || []).map((item) => ({
+            productName: item.description || 'Item sem nome',
+            quantity: item.quantity || 1,
+            unitPrice: Number(item.unitPrice) || 0,
+            subtotal: Number(item.subtotal) || (item.quantity * item.unitPrice) || 0,
+          })),
+          timeline: [
+            {
+              date: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+              title: 'Pedido Convertido de Orçamento',
+              description: `Convertido a partir do Orçamento #${quote.id}`,
+            },
+          ],
+        };
+
+        await handleCreateOrder(newOrder);
+        showToast(`Orçamento #${quote.id} convertido no Pedido #${newOrder.id} com sucesso!`, 'success');
+      } else {
+        showToast(`Pedido #${orderId} já existia no sistema. Status atualizado.`, 'info');
+      }
+    },
+    [handleUpdateQuoteStatus, orders, handleCreateOrder, showToast]
+  );
+
+  // Auto-convert any converted quotes that don't have a matching order yet
+  useEffect(() => {
+    if (!quotes || quotes.length === 0 || !orders) return;
+
+    const convertedQuotes = quotes.filter(
+      (q) => q.status === 'Convertido em Pedido' || q.status === 'Convertido'
+    );
+
+    convertedQuotes.forEach((quote) => {
+      const expectedOrderId = quote.id.startsWith('ORC-')
+        ? `PED-${quote.id.replace('ORC-', '')}`
+        : `PED-${quote.id}`;
+
+      const exists = orders.some(
+        (o) => o.id.toLowerCase() === expectedOrderId.toLowerCase() || o.id.toLowerCase() === quote.id.toLowerCase()
+      );
+
+      if (!exists) {
+        const itemsCount = (quote.items || []).reduce(
+          (acc, i) => acc + (Number(i.quantity) || 1),
+          0
+        );
+
+        const slaDays = quote.productionSlaDays || 7;
+        const slaDateObj = new Date(Date.now() + slaDays * 86400000);
+        const productionSlaDateStr = `${slaDateObj.getFullYear()}-${String(slaDateObj.getMonth() + 1).padStart(2, '0')}-${String(slaDateObj.getDate()).padStart(2, '0')}`;
+
+        const missingOrder: Order = {
+          id: expectedOrderId,
+          clientId: quote.clientId || '',
+          clientName: quote.clientName || 'Cliente Local',
+          date: quote.date || new Date().toISOString().split('T')[0],
+          createdAt: quote.createdAt || new Date().toISOString(),
+          itemsCount: itemsCount,
+          totalValue: Number(quote.total) || Number(quote.subtotal) || 0,
+          paidAmount: 0,
+          paymentStatusText: 'Pendente',
+          status: 'Novo',
+          productionProgressPct: 0,
+          productionSlaDate: productionSlaDateStr,
+          attendanceMode: quote.attendanceMode,
+          internalLogisticsType: quote.internalLogisticsType,
+          internalLogisticsCost: quote.internalLogisticsCost,
+          notes: quote.notes || `Convertido a partir do Orçamento #${quote.id}`,
+          paymentTerms: quote.paymentTerms || '',
+          items: (quote.items || []).map((item) => ({
+            productName: item.description || 'Item sem nome',
+            quantity: item.quantity || 1,
+            unitPrice: Number(item.unitPrice) || 0,
+            subtotal: Number(item.subtotal) || (item.quantity * item.unitPrice) || 0,
+          })),
+          timeline: [
+            {
+              date: new Date().toLocaleDateString('pt-BR'),
+              title: 'Pedido Convertido de Orçamento (Sincronizado)',
+              description: `Recuperado a partir do Orçamento #${quote.id}`,
+            },
+          ],
+        };
+
+        handleCreateOrder(missingOrder);
+      }
+    });
+  }, [quotes, orders, handleCreateOrder]);
 
   const handleSyncProductsToSupabase = async () => {
     try {
@@ -561,6 +689,7 @@ export function useAppData() {
     handleCreateQuote,
     handleUpdateQuote,
     handleUpdateQuoteStatus,
+    handleConvertQuoteToOrder,
     handleCreateExpense,
     handleExecuteTransfer,
     handleUpdateExpense,
