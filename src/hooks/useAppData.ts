@@ -11,6 +11,7 @@ import { useExchanges } from './useExchanges';
 import { useVisits } from './useVisits';
 import { useExpenses } from './useExpenses';
 import { useRecurringBills } from './useRecurringBills';
+import { normalizeToIsoDate } from '../utils/formatters';
 
 
 import { fetchProducts } from '../services/productsService';
@@ -142,8 +143,15 @@ export function useAppData() {
   const handleDeleteOrderCascade = async (orderId: string) => {
     await handleDeleteOrder(orderId);
 
+    const cleanId = orderId.replace(/^PED-/, '');
     const matchingExpenses = expenses.filter(
-      (e) => e.referenceCode === `PED-PAY-${orderId}` || e.id.startsWith(`exp-pay-${orderId}`)
+      (e) =>
+        (e.referenceCode && (e.referenceCode.includes(orderId) || e.referenceCode.includes(cleanId))) ||
+        e.id.includes(orderId) ||
+        e.id.includes(cleanId) ||
+        e.description.includes(orderId) ||
+        e.description.includes(cleanId) ||
+        (e.notes && (e.notes.includes(orderId) || e.notes.includes(cleanId)))
     );
 
     for (const exp of matchingExpenses) {
@@ -522,7 +530,7 @@ export function useAppData() {
           id: orderId,
           clientId: quote.clientId || '',
           clientName: quote.clientName || 'Cliente Local',
-          date: quote.date || new Date().toISOString().split('T')[0],
+          date: normalizeToIsoDate(quote.date),
           createdAt: new Date().toISOString(),
           itemsCount: itemsCount,
           totalValue: totalVal,

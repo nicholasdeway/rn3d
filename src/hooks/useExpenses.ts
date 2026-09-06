@@ -263,6 +263,26 @@ export function useExpenses(
     setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
     showToast(`Lançamento "${exp?.description || expenseId}" excluído com sucesso!`, 'success');
 
+    if (exp) {
+      let newBalance = accountBalances.nubank;
+
+      if (exp.category === 'Entrada de Pedido' || exp.category === 'Aporte / Reembolso de Sócio') {
+        newBalance = Math.max(0, newBalance - (exp.amount || 0));
+      } else if (exp.category === 'Retirada' || exp.category !== 'Transferência de Marketplace') {
+        newBalance = newBalance + (exp.amount || 0);
+      }
+
+      if (newBalance !== accountBalances.nubank) {
+        const updatedBalances = { ...accountBalances, nubank: newBalance };
+        setAccountBalances(updatedBalances);
+        try {
+          await saveAccountBalancesToSupabase(updatedBalances);
+        } catch (err) {
+          console.error('Erro ao atualizar saldo no Supabase após exclusão de lançamento:', err);
+        }
+      }
+    }
+
     try {
       await deleteExpense(expenseId);
     } catch (err) {

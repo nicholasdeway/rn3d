@@ -1,7 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ExpenseItem, ExpenseCategory, AccountBalances } from '../types';
 import { uploadToSupabaseStorage } from './storageService';
-import { formatTimeOnly } from '../utils/formatters';
+import { formatTimeOnly, normalizeToIsoDate } from '../utils/formatters';
 
 const STANDARD_DB_CATEGORIES = [
   'Combustível & Transporte',
@@ -286,7 +286,7 @@ export async function createExpense(expense: Partial<ExpenseItem>): Promise<Expe
     description: expense.description || 'Despesa sem descrição',
     category: safeCategory,
     amount: expense.amount || 0,
-    date: expense.date || new Date().toISOString().split('T')[0],
+    date: normalizeToIsoDate(expense.date),
     payment_status: expense.paymentStatus || 'Pago',
     beneficiary: expense.beneficiary || '',
     receipt_url: receiptUrl,

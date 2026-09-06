@@ -93,7 +93,7 @@ export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promi
       order_code: o.id,
       client_id: (o.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(o.clientId)) ? o.clientId : null,
       client_name: o.clientName,
-      date: o.date,
+      date: normalizeToIsoDate(o.date),
       items_count: o.itemsCount || (o.items ? o.items.length : 0),
       total_value: o.totalValue,
       paid_amount: o.paidAmount,
@@ -126,7 +126,7 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
   const payload: any = {
     order_code: order.id,
     client_name: order.clientName,
-    date: order.date || new Date().toISOString().split('T')[0],
+    date: normalizeToIsoDate(order.date),
     items_count: order.itemsCount || (order.items ? order.items.length : 0),
     total_value: order.totalValue || 0,
     paid_amount: order.paidAmount || 0,
