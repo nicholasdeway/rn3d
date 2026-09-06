@@ -246,9 +246,24 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (updates.productionProgressPct !== undefined) corePayload.production_progress_pct = updates.productionProgressPct;
   if (updates.internalLogisticsType !== undefined) corePayload.internal_logistics_type = updates.internalLogisticsType;
   if (updates.internalLogisticsCost !== undefined) corePayload.internal_logistics_cost = updates.internalLogisticsCost;
-  corePayload.notes = encodeOrderNotesAndMetadata(updates);
+  
+  if (
+    updates.notes !== undefined ||
+    updates.paymentReceiptUrl !== undefined ||
+    updates.paymentReceiptUrl2 !== undefined ||
+    updates.paymentTerms !== undefined
+  ) {
+    corePayload.notes = encodeOrderNotesAndMetadata(updates);
+  }
+
+  if (Object.keys(corePayload).length === 0) return updates as any;
 
   try {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (isUuid) {
+      await supabase.from('orders').update(corePayload).eq('id', id);
+    }
+
     const { error } = await supabase
       .from('orders')
       .update(corePayload)

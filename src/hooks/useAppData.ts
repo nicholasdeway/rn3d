@@ -197,18 +197,35 @@ export function useAppData() {
           fetchConsignments(),
         ]);
         if (!isMounted) return;
+        setProducts((prev) => (prev && prev.length === dbProducts.length && JSON.stringify(prev) === JSON.stringify(dbProducts) ? prev : dbProducts));
+        setClients((prev) => (prev && prev.length === dbClients.length && JSON.stringify(prev) === JSON.stringify(dbClients) ? prev : dbClients));
+        setQuotes((prev) => (prev && prev.length === dbQuotes.length && JSON.stringify(prev) === JSON.stringify(dbQuotes) ? prev : dbQuotes));
         setOrders((prev) => {
           if (!prev || prev.length === 0) return dbOrders;
-          const dbMap = new Map(dbOrders.map((o) => [o.id.toLowerCase().trim(), o]));
+          const dbSet = new Set(
+            dbOrders.flatMap((o) => [
+              o.id.toLowerCase().trim(),
+              o.id.replace(/^PED-/, '').toLowerCase().trim(),
+              `ped-${o.id.replace(/^PED-/, '').toLowerCase().trim()}`,
+            ])
+          );
+
           const merged = dbOrders.map((dbOrder) => {
+            const cleanDb = dbOrder.id.replace(/^PED-/, '').toLowerCase().trim();
             const local = prev.find(
-              (l) => l.id.toLowerCase().trim() === dbOrder.id.toLowerCase().trim() || l.id.replace(/^PED-/, '').toLowerCase().trim() === dbOrder.id.replace(/^PED-/, '').toLowerCase().trim()
+              (l) =>
+                l.id.toLowerCase().trim() === dbOrder.id.toLowerCase().trim() ||
+                l.id.replace(/^PED-/, '').toLowerCase().trim() === cleanDb
             );
-            if (local && (local.paidAmount || 0) > (dbOrder.paidAmount || 0)) {
+            if (local) {
+              const useLocalProgress = (local.productionProgressPct || 0) > (dbOrder.productionProgressPct || 0);
+              const useLocalPaid = (local.paidAmount || 0) > (dbOrder.paidAmount || 0);
               return {
                 ...dbOrder,
-                paidAmount: local.paidAmount,
-                paymentStatusText: local.paymentStatusText,
+                productionProgressPct: useLocalProgress ? local.productionProgressPct : dbOrder.productionProgressPct,
+                status: useLocalProgress ? local.status : dbOrder.status,
+                paidAmount: useLocalPaid ? local.paidAmount : dbOrder.paidAmount,
+                paymentStatusText: useLocalPaid ? local.paymentStatusText : dbOrder.paymentStatusText,
                 paymentReceiptUrl: local.paymentReceiptUrl || dbOrder.paymentReceiptUrl,
                 paymentReceiptUrl2: local.paymentReceiptUrl2 || dbOrder.paymentReceiptUrl2,
                 paymentReceiptName: local.paymentReceiptName || dbOrder.paymentReceiptName,
@@ -217,9 +234,12 @@ export function useAppData() {
             }
             return dbOrder;
           });
-          const extraLocal = prev.filter(
-            (l) => !dbMap.has(l.id.toLowerCase().trim()) && !dbMap.has(`PED-${l.id.replace(/^PED-/, '')}`.toLowerCase().trim())
-          );
+
+          const extraLocal = prev.filter((l) => {
+            const cleanL = l.id.replace(/^PED-/, '').toLowerCase().trim();
+            return !dbSet.has(l.id.toLowerCase().trim()) && !dbSet.has(cleanL) && !dbSet.has(`ped-${cleanL}`);
+          });
+
           return [...merged, ...extraLocal];
         });
         if (dbConsignments && dbConsignments.length > 0) {

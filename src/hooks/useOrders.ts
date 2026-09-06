@@ -18,22 +18,19 @@ export function useOrders(
   setVisits?: any,
   setTransactions?: any
 ) {
-  const [orders, setOrders] = useState<Order[]>(() => {
-    if (!isSupabaseConfigured()) {
-      return getStorageParsed<Order[]>('rn3d_orders', [], true).filter(
-        (o) =>
-          !o.id?.startsWith('SYS_') &&
-          !o.clientName?.startsWith('SISTEMA_') &&
-          !o.id?.startsWith('REM-')
-      );
-    }
-    return [];
-  });
+  const [orders, setOrders] = useState<Order[]>(() =>
+    getStorageParsed<Order[]>('rn3d_orders', [], true).filter(
+      (o) =>
+        !o.id?.startsWith('SYS_') &&
+        !o.clientName?.startsWith('SISTEMA_') &&
+        !o.id?.startsWith('REM-')
+    )
+  );
 
   const toast = typeof showToastOrQuotes === 'function' ? showToastOrQuotes : showToast || (() => { });
 
   useEffect(() => {
-    if (!isSupabaseConfigured() && orders && orders.length > 0) {
+    if (orders && orders.length > 0) {
       const cleanOrders = orders.filter(
         (o) =>
           !o.id?.startsWith('SYS_') &&
