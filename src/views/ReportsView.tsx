@@ -19,7 +19,7 @@ import {
 import { MonthlyComparisonChart } from '../components/charts/MonthlyComparisonChart';
 import { BalanceEvolutionChart } from '../components/charts/BalanceEvolutionChart';
 import { computeMonthlyAnalyticsData } from '../utils/analyticsHelper';
-import { formatDateBR } from '../utils/formatters';
+import { formatDateBR, parseBRDate } from '../utils/formatters';
 
 interface ReportsViewProps {
   products: Product[];
@@ -46,23 +46,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
 
   // Auxiliary Date Parser (Handles ISO, YYYY-MM-DD, DD/MM/YYYY)
-  const parseToDate = (dateStr?: string | null): Date | null => {
-    if (!dateStr) return null;
-    if (dateStr.includes('/')) {
-      const parts = dateStr.split('/');
-      if (parts.length === 3) {
-        return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
-      }
-    } else if (dateStr.includes('-')) {
-      const cleanStr = dateStr.split('T')[0];
-      const parts = cleanStr.split('-');
-      if (parts.length === 3) {
-        return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      }
-    }
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
-  };
+  const parseToDate = parseBRDate;
 
   // Compute Active Date Range Window
   const { dateRangeStart, dateRangeEnd, labelPeriodText } = useMemo(() => {

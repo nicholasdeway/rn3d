@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Order } from '../types';
+import { formatDateBR, normalizeToIsoDate, getTodayBR } from '../utils/formatters';
 
 /**
  * 100% Direct Supabase Postgres Fetch — Zero LocalStorage Caching
@@ -34,7 +35,7 @@ export async function fetchOrders(): Promise<Order[]> {
         id: row.order_code || row.id,
         clientId: row.client_id || '',
         clientName: row.client_name,
-        date: row.date || new Date().toISOString().split('T')[0],
+        date: formatDateBR(row.date) || formatDateBR(row.created_at) || getTodayBR(),
         createdAt: row.created_at || undefined,
         itemsCount: row.items_count || (row.order_items ? row.order_items.length : 0),
         totalValue: Number(row.total_value) || 0,

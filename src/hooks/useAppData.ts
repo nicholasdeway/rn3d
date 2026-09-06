@@ -23,6 +23,7 @@ import { syncMissingClientsToSupabase } from '../services/clientsService';
 import { syncMissingOrdersToSupabase } from '../services/ordersService';
 import { syncMissingQuotesToSupabase } from '../services/quotesService';
 import { syncMissingExpensesToSupabase, createExpense } from '../services/expensesService';
+import { parseBRDate, formatDateBR } from '../utils/formatters';
 
 export function useAppData() {
   const { user } = useAuth();
@@ -284,17 +285,9 @@ export function useAppData() {
 
         if (dates.length > 0) {
           dates.sort((a, b) => {
-            const parseD = (str: string) => {
-              if (str.includes('/')) {
-                const parts = str.split('/');
-                if (parts.length === 3) return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
-              } else if (str.includes('-')) {
-                const parts = str.split('-');
-                if (parts.length >= 3) return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime();
-              }
-              return 0;
-            };
-            return parseD(b) - parseD(a);
+            const timeA = parseBRDate(a)?.getTime() || 0;
+            const timeB = parseBRDate(b)?.getTime() || 0;
+            return timeB - timeA;
           });
           latestVisitDateStr = dates[0];
         }
@@ -308,18 +301,9 @@ export function useAppData() {
         if (pendingVisits.length > 0) {
           // Sort by scheduledDate ascending (earliest scheduled visit first)
           pendingVisits.sort((a, b) => {
-            const parseD = (str: string) => {
-              if (!str) return 0;
-              if (str.includes('/')) {
-                const parts = str.split('/');
-                if (parts.length === 3) return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
-              } else if (str.includes('-')) {
-                const parts = str.split('-');
-                if (parts.length >= 3) return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime();
-              }
-              return 0;
-            };
-            return parseD(a.scheduledDate) - parseD(b.scheduledDate);
+            const timeA = parseBRDate(a.scheduledDate)?.getTime() || 0;
+            const timeB = parseBRDate(b.scheduledDate)?.getTime() || 0;
+            return timeA - timeB;
           });
 
           const nextScheduled = pendingVisits[0];
@@ -328,19 +312,7 @@ export function useAppData() {
           const now = new Date();
           const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
-          const parseDateToTimestamp = (str?: string) => {
-            if (!str) return 0;
-            if (str.includes('/')) {
-              const parts = str.split('/');
-              if (parts.length === 3) return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0])).getTime();
-            } else if (str.includes('-')) {
-              const parts = str.split('-');
-              if (parts.length >= 3) return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime();
-            }
-            return 0;
-          };
-
-          const schedTime = parseDateToTimestamp(nextScheduled.scheduledDate);
+          const schedTime = parseBRDate(nextScheduled.scheduledDate)?.getTime() || 0;
 
           if (schedTime > 0) {
             if (schedTime === todayMidnight || nextScheduled.scheduledDate === todayStr) {
