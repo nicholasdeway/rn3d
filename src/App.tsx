@@ -666,6 +666,8 @@ export function App() {
                   orders={appData.orders}
                   consignments={appData.consignments}
                   expenses={appData.expenses}
+                  clients={appData.clients}
+                  products={appData.products}
                   onUpdateOrderPayment={appData.handleUpdateOrderPayment}
                   onRecordPayment={appData.handleUpdateOrderPayment}
                 />
@@ -678,6 +680,9 @@ export function App() {
                   accountBalance={appData.accountBalance}
                   autoOpenModal={autoOpenExpenseModal}
                   isLoading={appData.dataLoading}
+                  orders={appData.orders}
+                  clients={appData.clients}
+                  products={appData.products}
                   onCreateExpense={appData.handleCreateExpense}
                   onExecuteTransfer={appData.handleExecuteTransfer}
                   onUpdateExpense={appData.handleUpdateExpense}

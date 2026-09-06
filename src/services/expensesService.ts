@@ -32,6 +32,9 @@ function encodeNotesAndMetadata(item: Partial<ExpenseItem>): string {
     timestamp: item.timestamp,
     sourceAccount: item.sourceAccount,
     destinationAccount: item.destinationAccount,
+    receiptUrl2: item.receiptUrl2,
+    receiptType2: item.receiptType2,
+    receiptName2: item.receiptName2,
   };
   return `[META:${JSON.stringify(meta)}]${userNotes}`;
 }
@@ -43,6 +46,9 @@ function decodeNotesAndMetadata(row: any): {
   timestamp: string;
   sourceAccount?: any;
   destinationAccount?: any;
+  receiptUrl2?: string;
+  receiptType2?: 'image' | 'pdf';
+  receiptName2?: string;
 } {
   let notes = row.notes || '';
   let category = row.category as ExpenseCategory;
@@ -50,6 +56,9 @@ function decodeNotesAndMetadata(row: any): {
   let timestamp = formatTimeOnly(row.timestamp || row.created_at || new Date().toLocaleTimeString('pt-BR'));
   let sourceAccount = row.source_account;
   let destinationAccount = row.destination_account;
+  let receiptUrl2 = row.receipt_url2 || '';
+  let receiptType2 = row.receipt_type2 || 'image';
+  let receiptName2 = row.receipt_name2 || '';
 
   if (notes.startsWith('[META:')) {
     const endIdx = notes.indexOf(']');
@@ -62,12 +71,15 @@ function decodeNotesAndMetadata(row: any): {
         if (meta.timestamp) timestamp = formatTimeOnly(meta.timestamp);
         if (meta.sourceAccount) sourceAccount = meta.sourceAccount;
         if (meta.destinationAccount) destinationAccount = meta.destinationAccount;
+        if (meta.receiptUrl2) receiptUrl2 = meta.receiptUrl2;
+        if (meta.receiptType2) receiptType2 = meta.receiptType2;
+        if (meta.receiptName2) receiptName2 = meta.receiptName2;
         notes = meta.userNotes !== undefined ? meta.userNotes : notes.substring(endIdx + 1);
       } catch (e) {}
     }
   }
 
-  return { notes, category, createdBy, timestamp, sourceAccount, destinationAccount };
+  return { notes, category, createdBy, timestamp, sourceAccount, destinationAccount, receiptUrl2, receiptType2, receiptName2 };
 }
 
 /**
@@ -195,6 +207,9 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
       receiptUrl: row.receipt_url || '',
       receiptType: row.receipt_type || (row.receipt_url?.startsWith('data:application/pdf') ? 'pdf' : 'image'),
       receiptName: row.receipt_name || '',
+      receiptUrl2: decoded.receiptUrl2 || row.receipt_url2 || '',
+      receiptType2: decoded.receiptType2 || row.receipt_type2 || 'image',
+      receiptName2: decoded.receiptName2 || row.receipt_name2 || '',
       isAutoReplicated: row.is_auto_replicated ?? false,
       referenceCode: row.reference_code || '',
       notes: decoded.notes,

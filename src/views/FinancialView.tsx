@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { SaleTransaction, Consignment, Order, ExpenseItem } from '../types';
+import { SaleTransaction, Consignment, Order, ExpenseItem, Client, Product } from '../types';
+import { OrderPdfViewerModal } from '../components/OrderPdfViewerModal';
 import {
   DollarSign,
   Wallet,
@@ -19,6 +20,7 @@ import {
   Filter,
   ArrowRight,
   Tag,
+  FileText,
 } from 'lucide-react';
 import { formatDateBR } from '../utils/formatters';
 
@@ -27,6 +29,8 @@ interface FinancialViewProps {
   consignments?: Consignment[];
   orders?: Order[];
   expenses?: ExpenseItem[];
+  clients?: Client[];
+  products?: Product[];
   onUpdateOrderPayment?: (
     orderId: string,
     additionalAmount: number,
@@ -48,6 +52,8 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   consignments = [],
   orders = [],
   expenses = [],
+  clients = [],
+  products = [],
   onUpdateOrderPayment,
   onRecordPayment,
 }) => {
@@ -62,6 +68,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   const [movementType, setMovementType] = useState<'todos' | 'entradas' | 'saidas'>('todos');
 
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<Order | null>(null);
+  const [selectedOrderForPdfModal, setSelectedOrderForPdfModal] = useState<Order | null>(null);
   const [paymentAmountInput, setPaymentAmountInput] = useState<string>('');
   const [paymentReceiptUrl, setPaymentReceiptUrl] = useState<string>('');
   const [paymentReceiptType, setPaymentReceiptType] = useState<'image' | 'pdf'>('image');
@@ -750,11 +757,18 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                           </div>
                         </div>
 
-                        <div className="flex items-center justify-end pt-1">
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrderForPdfModal(o)}
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-indigo-500" /> PDF do Pedido
+                          </button>
                           {!isFullyPaid ? (
                             <button
                               onClick={() => handleOpenPaymentModal(o)}
-                              className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                              className="py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                             >
                               <HandCoins className="w-4 h-4" /> Registrar Recebimento
                             </button>
@@ -859,6 +873,14 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                             </td>
                             <td className="p-4 text-right whitespace-nowrap">
                               <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrderForPdfModal(o)}
+                                  className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-bold text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+                                  title="Visualizar PDF do Pedido em A4"
+                                >
+                                  <FileText className="w-3.5 h-3.5 text-indigo-500" /> Ver PDF
+                                </button>
                                 {!isFullyPaid ? (
                                   <button
                                     onClick={() => handleOpenPaymentModal(o)}
@@ -1422,6 +1444,16 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODAL: VISUALIZADOR DE PDF DO PEDIDO */}
+      {selectedOrderForPdfModal && (
+        <OrderPdfViewerModal
+          order={selectedOrderForPdfModal}
+          clients={clients}
+          products={products}
+          onClose={() => setSelectedOrderForPdfModal(null)}
+        />
       )}
     </div>
   );

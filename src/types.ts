@@ -261,6 +261,9 @@ export interface Order {
   paymentReceiptUrl?: string;
   paymentReceiptType?: 'image' | 'pdf';
   paymentReceiptName?: string;
+  paymentReceiptUrl2?: string;
+  paymentReceiptType2?: 'image' | 'pdf';
+  paymentReceiptName2?: string;
   notes?: string;
   paymentTerms?: string;
   items: {
@@ -351,6 +354,9 @@ export interface ExpenseItem {
   receiptUrl?: string; // Comprovante em Base64 ou URL
   receiptType?: 'image' | 'pdf';
   receiptName?: string;
+  receiptUrl2?: string;
+  receiptType2?: 'image' | 'pdf';
+  receiptName2?: string;
   isAutoReplicated?: boolean; // Réplica automática de logística ou pagamento de pedido
   referenceCode?: string; // ex: PED-000081, VIS-000052
   notes?: string;

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { ExpenseItem, ExpenseCategory, AccountBalances, MarketplaceAccount, RecurringBill, RecurringBillAlertStatus } from '../types';
+import { ExpenseItem, ExpenseCategory, AccountBalances, MarketplaceAccount, RecurringBill, RecurringBillAlertStatus, Order, Client, Product } from '../types';
 import { ReceiptViewerModal } from '../components/ReceiptViewerModal';
+import { OrderPdfViewerModal } from '../components/OrderPdfViewerModal';
 import { uploadToSupabaseStorage } from '../services/storageService';
 import {
   TrendingDown,
@@ -51,6 +52,9 @@ interface ExpensesViewProps {
   isLoading?: boolean;
   recurringBills?: RecurringBill[];
   billAlerts?: RecurringBillAlertStatus[];
+  orders?: Order[];
+  clients?: Client[];
+  products?: Product[];
   onCreateExpense: (expense: ExpenseItem) => void;
   onExecuteTransfer?: (
     source: MarketplaceAccount,
@@ -97,6 +101,9 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
   isLoading = false,
   recurringBills = [],
   billAlerts = [],
+  orders = [],
+  clients = [],
+  products = [],
   onCreateExpense,
   onExecuteTransfer,
   onUpdateExpense,
@@ -111,6 +118,8 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('Todas');
   const [statusFilter, setStatusFilter] = useState<string>('Todos');
+
+  const [selectedOrderForPdfModal, setSelectedOrderForPdfModal] = useState<Order | null>(null);
 
   // Modals state
   const [isNewExpenseModalOpen, setIsNewExpenseModalOpen] = useState(false);
@@ -982,9 +991,24 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                 </span>
               </div>
 
-              {/* Footer Actions: Receipt + Delete */}
-              <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/60">
-                <div className="flex items-center gap-1.5">
+              {/* Footer Actions: Receipt + Order PDF + Delete */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/60">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {(() => {
+                    const matchingOrder = orders.find((o) => o.id === exp.referenceCode || (exp.description && exp.description.includes(o.id)));
+                    return matchingOrder ? (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedOrderForPdfModal(matchingOrder)}
+                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                        title="Visualizar PDF do Pedido"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Ver PDF</span>
+                      </button>
+                    ) : null;
+                  })()}
+
                   {exp.receiptUrl ? (
                     <>
                       <button
@@ -1000,8 +1024,25 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                         className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900"
                       >
                         <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>Ver Comprovante</span>
+                        <span>Comprovante {exp.receiptUrl2 ? '1' : ''}</span>
                       </button>
+                      {exp.receiptUrl2 && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedReceipt({
+                              url: exp.receiptUrl2!,
+                              type: exp.receiptType2 || 'image',
+                              name: exp.receiptName2 || 'Comprovante 2',
+                              title: `${exp.description} (Quitação)`,
+                            })
+                          }
+                          className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-900"
+                        >
+                          <Paperclip className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Comprovante 2</span>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => {
@@ -1149,7 +1190,22 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                       </span>
                     </td>
                     <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-1">
+                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                        {(() => {
+                          const matchingOrder = orders.find((o) => o.id === exp.referenceCode || (exp.description && exp.description.includes(o.id)));
+                          return matchingOrder ? (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrderForPdfModal(matchingOrder)}
+                              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                              title="Visualizar PDF do Pedido em A4"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>Ver PDF</span>
+                            </button>
+                          ) : null;
+                        })()}
+
                         {exp.receiptUrl ? (
                           <>
                             <button
@@ -1165,8 +1221,25 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                               className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900"
                             >
                               <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
-                              <span>Ver Comprovante</span>
+                              <span>Comprovante {exp.receiptUrl2 ? '1' : ''}</span>
                             </button>
+                            {exp.receiptUrl2 && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedReceipt({
+                                    url: exp.receiptUrl2!,
+                                    type: exp.receiptType2 || 'image',
+                                    name: exp.receiptName2 || 'Comprovante 2',
+                                    title: `${exp.description} (Quitação)`,
+                                  })
+                                }
+                                className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-900"
+                              >
+                                <Paperclip className="w-3.5 h-3.5 text-emerald-500" />
+                                <span>Comprovante 2</span>
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => {
@@ -1896,7 +1969,15 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
       {/* MODAL: VISUALIZADOR DE COMPROVANTE COM ZOOM INTERATIVO */}
       <ReceiptViewerModal receipt={selectedReceipt} onClose={() => setSelectedReceipt(null)} />
 
-
+      {/* MODAL: VISUALIZADOR DE PDF DO PEDIDO */}
+      {selectedOrderForPdfModal && (
+        <OrderPdfViewerModal
+          order={selectedOrderForPdfModal}
+          clients={clients}
+          products={products}
+          onClose={() => setSelectedOrderForPdfModal(null)}
+        />
+      )}
     </div>
   );
 };

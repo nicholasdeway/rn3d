@@ -136,7 +136,8 @@ export function useOrders(
     addedAmount: number,
     receiptUrl?: string,
     receiptType?: 'image' | 'pdf',
-    receiptName?: string
+    receiptName?: string,
+    receiptIndex?: 1 | 2
   ) => {
     let updatedOrderObj: Order | undefined;
 
@@ -151,17 +152,38 @@ export function useOrders(
               ? 'Parcial'
               : 'Pendente';
 
-          const finalReceiptUrl = receiptUrl !== undefined ? receiptUrl : o.paymentReceiptUrl;
-          const finalReceiptType = receiptType !== undefined ? receiptType : o.paymentReceiptType;
-          const finalReceiptName = receiptName !== undefined ? receiptName : o.paymentReceiptName;
+          const targetIndex = receiptIndex || (o.paymentReceiptUrl && receiptUrl && o.paymentReceiptUrl !== receiptUrl ? 2 : 1);
+
+          let finalReceiptUrl1 = o.paymentReceiptUrl;
+          let finalReceiptType1 = o.paymentReceiptType;
+          let finalReceiptName1 = o.paymentReceiptName;
+
+          let finalReceiptUrl2 = o.paymentReceiptUrl2;
+          let finalReceiptType2 = o.paymentReceiptType2;
+          let finalReceiptName2 = o.paymentReceiptName2;
+
+          if (receiptUrl !== undefined) {
+            if (targetIndex === 2) {
+              finalReceiptUrl2 = receiptUrl;
+              finalReceiptType2 = receiptType || 'image';
+              finalReceiptName2 = receiptName || '';
+            } else {
+              finalReceiptUrl1 = receiptUrl;
+              finalReceiptType1 = receiptType || 'image';
+              finalReceiptName1 = receiptName || '';
+            }
+          }
 
           updatedOrderObj = {
             ...o,
             paidAmount: newPaid,
             paymentStatusText: newStatus,
-            paymentReceiptUrl: finalReceiptUrl,
-            paymentReceiptType: finalReceiptType,
-            paymentReceiptName: finalReceiptName,
+            paymentReceiptUrl: finalReceiptUrl1,
+            paymentReceiptType: finalReceiptType1,
+            paymentReceiptName: finalReceiptName1,
+            paymentReceiptUrl2: finalReceiptUrl2,
+            paymentReceiptType2: finalReceiptType2,
+            paymentReceiptName2: finalReceiptName2,
           };
 
           return updatedOrderObj;
@@ -181,6 +203,12 @@ export function useOrders(
         await updateOrder(orderId, {
           paidAmount: updatedOrderObj.paidAmount,
           paymentStatusText: updatedOrderObj.paymentStatusText,
+          paymentReceiptUrl: updatedOrderObj.paymentReceiptUrl,
+          paymentReceiptType: updatedOrderObj.paymentReceiptType,
+          paymentReceiptName: updatedOrderObj.paymentReceiptName,
+          paymentReceiptUrl2: updatedOrderObj.paymentReceiptUrl2,
+          paymentReceiptType2: updatedOrderObj.paymentReceiptType2,
+          paymentReceiptName2: updatedOrderObj.paymentReceiptName2,
         });
       }
     } catch (err) {

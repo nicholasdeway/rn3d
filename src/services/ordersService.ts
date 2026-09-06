@@ -49,6 +49,11 @@ export async function fetchOrders(): Promise<Order[]> {
         paymentReceiptUrl: row.payment_receipt_url || '',
         paymentReceiptType: row.payment_receipt_type || 'image',
         paymentReceiptName: row.payment_receipt_name || '',
+        paymentReceiptUrl2: row.payment_receipt_url2 || '',
+        paymentReceiptType2: row.payment_receipt_type2 || 'image',
+        paymentReceiptName2: row.payment_receipt_name2 || '',
+        paymentTerms: row.payment_terms || row.payment_method || '',
+        notes: row.notes || '',
         items: (row.order_items || []).map((item: any) => ({
           productName: item.product_name,
           quantity: item.quantity,
@@ -97,18 +102,24 @@ export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promi
         production_progress_pct: o.productionProgressPct || 0,
         internal_logistics_type: o.internalLogisticsType || 'combustivel',
         internal_logistics_cost: o.internalLogisticsCost || 0,
+        payment_terms: o.paymentTerms || o.paymentMethod || '',
       };
       if (o.paymentReceiptUrl) {
         rowPayload.payment_receipt_url = o.paymentReceiptUrl;
         rowPayload.payment_receipt_type = o.paymentReceiptType || 'image';
         rowPayload.payment_receipt_name = o.paymentReceiptName || '';
       }
+      if (o.paymentReceiptUrl2) {
+        rowPayload.payment_receipt_url2 = o.paymentReceiptUrl2;
+        rowPayload.payment_receipt_type2 = o.paymentReceiptType2 || 'image';
+        rowPayload.payment_receipt_name2 = o.paymentReceiptName2 || '';
+      }
       return rowPayload;
     });
 
     let { error } = await supabase.from('orders').insert(rows);
     if (error && error.message.includes('column')) {
-      const fallbackRows = rows.map(({ payment_receipt_url, payment_receipt_type, payment_receipt_name, ...rest }: any) => rest);
+      const fallbackRows = rows.map(({ payment_receipt_url, payment_receipt_type, payment_receipt_name, payment_receipt_url2, payment_receipt_type2, payment_receipt_name2, payment_terms, ...rest }: any) => rest);
       const retry = await supabase.from('orders').insert(fallbackRows);
       error = retry.error;
     }
@@ -139,12 +150,19 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     paid_amount: order.paidAmount || 0,
     payment_status_text: order.paymentStatusText || (order.paidAmount && order.totalValue && order.paidAmount >= order.totalValue ? 'Pago Total' : 'Pendente'),
     status: order.status || 'Novo',
+    payment_terms: order.paymentTerms || order.paymentMethod || '',
   };
 
   if (order.paymentReceiptUrl) {
     payload.payment_receipt_url = order.paymentReceiptUrl;
     payload.payment_receipt_type = order.paymentReceiptType || 'image';
     payload.payment_receipt_name = order.paymentReceiptName || '';
+  }
+
+  if (order.paymentReceiptUrl2) {
+    payload.payment_receipt_url2 = order.paymentReceiptUrl2;
+    payload.payment_receipt_type2 = order.paymentReceiptType2 || 'image';
+    payload.payment_receipt_name2 = order.paymentReceiptName2 || '';
   }
 
   if (order.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.clientId)) {
@@ -161,6 +179,10 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     delete payload.payment_receipt_url;
     delete payload.payment_receipt_type;
     delete payload.payment_receipt_name;
+    delete payload.payment_receipt_url2;
+    delete payload.payment_receipt_type2;
+    delete payload.payment_receipt_name2;
+    delete payload.payment_terms;
     const retry = await supabase.from('orders').insert([payload]).select().single();
     data = retry.data;
     error = retry.error;
@@ -200,9 +222,13 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (updates.productionProgressPct !== undefined) payload.production_progress_pct = updates.productionProgressPct;
   if (updates.internalLogisticsType !== undefined) payload.internal_logistics_type = updates.internalLogisticsType;
   if (updates.internalLogisticsCost !== undefined) payload.internal_logistics_cost = updates.internalLogisticsCost;
+  if (updates.paymentTerms !== undefined) payload.payment_terms = updates.paymentTerms;
   if (updates.paymentReceiptUrl !== undefined) payload.payment_receipt_url = updates.paymentReceiptUrl;
   if (updates.paymentReceiptType !== undefined) payload.payment_receipt_type = updates.paymentReceiptType;
   if (updates.paymentReceiptName !== undefined) payload.payment_receipt_name = updates.paymentReceiptName;
+  if (updates.paymentReceiptUrl2 !== undefined) payload.payment_receipt_url2 = updates.paymentReceiptUrl2;
+  if (updates.paymentReceiptType2 !== undefined) payload.payment_receipt_type2 = updates.paymentReceiptType2;
+  if (updates.paymentReceiptName2 !== undefined) payload.payment_receipt_name2 = updates.paymentReceiptName2;
 
   const isLocalId = !id || id.startsWith('PED-') || id.length < 30;
 

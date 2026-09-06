@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Order, Product, Client } from '../types';
-import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles, ChevronDown, ChevronUp, Paperclip, Eye, Trash2 } from 'lucide-react';
+import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles, ChevronDown, ChevronUp, Paperclip, Eye, Trash2, HandCoins } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 import { ReceiptViewerModal } from '../components/ReceiptViewerModal';
+import { OrderPdfViewerModal } from '../components/OrderPdfViewerModal';
 import { uploadToSupabaseStorage } from '../services/storageService';
 import { formatDateBR } from '../utils/formatters';
 
@@ -18,7 +19,8 @@ interface OrdersViewProps {
     additionalAmount: number,
     receiptUrl?: string,
     receiptType?: 'image' | 'pdf',
-    receiptName?: string
+    receiptName?: string,
+    receiptIndex?: 1 | 2
   ) => void;
   onDeleteOrder?: (orderId: string) => void;
 }
@@ -40,6 +42,8 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   const [editingReceiptOrder, setEditingReceiptOrder] = useState<Order | null>(null);
   const [receiptFile, setReceiptFile] = useState<{ url: string; type: 'image' | 'pdf'; name: string } | null>(null);
   const [selectedReceiptViewer, setSelectedReceiptViewer] = useState<{ url: string; type?: 'image' | 'pdf'; name?: string; title: string } | null>(null);
+  const [customPaymentAmountInput, setCustomPaymentAmountInput] = useState<string>('');
+  const [selectedReceiptSlot, setSelectedReceiptSlot] = useState<1 | 2>(1);
 
   const filteredOrders = orders.filter((o) => {
     if (!searchQuery || searchQuery.trim() === '') return true;
@@ -730,296 +734,14 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         </>
       )}
 
-      {/* Printable PDF Modal Overlay for Order */}
+      {/* MODAL DE PDF DO PEDIDO */}
       {previewPdfOrder && (
-        <div className="printable-quote-modal fixed inset-0 z-[100] bg-slate-900/60 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-          {/* Print CSS Rules - Ensures ONLY the selected order PDF is printed on single Page 1 */}
-          <style>{`
-            @media print {
-              @page {
-                size: A4 portrait;
-                margin: 10mm 12mm;
-              }
-
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white !important;
-                color: black !important;
-                height: auto !important;
-                min-height: 0 !important;
-                overflow: visible !important;
-              }
-
-              /* Hide web elements completely so they take 0px height */
-              header, nav, aside, footer, .no-print, [role="alert"] {
-                display: none !important;
-              }
-
-              #root, #root > div, main {
-                display: block !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                height: auto !important;
-                min-height: 0 !important;
-                max-height: none !important;
-                overflow: visible !important;
-                background: white !important;
-              }
-
-              /* Hide all siblings inside OrdersView content area */
-              main > div > *:not(.printable-quote-modal) {
-                display: none !important;
-              }
-
-              .printable-quote-modal {
-                position: absolute !important;
-                left: 0 !important;
-                top: 0 !important;
-                width: 100% !important;
-                height: auto !important;
-                min-height: 0 !important;
-                max-height: none !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white !important;
-                overflow: visible !important;
-                display: block !important;
-                z-index: 999999 !important;
-              }
-
-              .print-container {
-                position: static !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                height: auto !important;
-                border: none !important;
-                border-radius: 0 !important;
-                box-shadow: none !important;
-                max-height: none !important;
-                overflow: visible !important;
-                display: block !important;
-                background: white !important;
-                color: black !important;
-              }
-
-              .print-sheet {
-                padding: 0 !important;
-                margin: 0 !important;
-                height: auto !important;
-                max-height: none !important;
-                overflow: visible !important;
-                background: white !important;
-                color: black !important;
-                display: block !important;
-              }
-
-              tr {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-              }
-
-              .print-avoid-break {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-              }
-            }
-          `}</style>
-
-          <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[92vh]">
-            {/* Modal Top Header (Hidden on Print) */}
-            <div className="no-print p-4 bg-slate-800 dark:bg-[#181c26] text-white flex items-center justify-between border-b border-slate-700 dark:border-[#202531]">
-              <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
-                <Printer className="w-4 h-4 text-emerald-400" /> Preview do Documento PDF do Pedido (Formato A4)
-              </span>
-              <button
-                onClick={() => setPreviewPdfOrder(null)}
-                className="p-1 hover:bg-slate-700 dark:hover:bg-slate-800 rounded-lg text-slate-300 cursor-pointer transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* A4 Sheet Rendering */}
-            <div className="print-sheet p-5 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white dark:bg-[#12151c] text-slate-900 dark:text-slate-100 font-sans">
-              {/* PDF Header with Company Info & CNPJ */}
-              <div className="flex flex-col sm:flex-row justify-between items-start border-b-2 border-slate-900 dark:border-slate-700 pb-5 gap-3">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">RN 3D Soluções</h2>
-                  <p className="text-xs font-black text-slate-900 dark:text-slate-200 mt-1">CNPJ: 67.570.155/0001-34</p>
-                  <p className="text-[11px] text-slate-700 dark:text-slate-400 font-semibold mt-1">
-                    WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
-                  </p>
-                </div>
-                <div className="text-left sm:text-right">
-                  <span className="px-3 py-1 bg-slate-900 dark:bg-indigo-600 text-white font-mono font-bold rounded-md text-xs inline-block whitespace-nowrap shadow-xs">
-                    PEDIDO DE VENDA #{previewPdfOrder.id}
-                  </span>
-                  <p className="text-slate-500 dark:text-slate-400 mt-2 text-xs">Data: {formatDateBR(previewPdfOrder.date)}</p>
-                  <p className="text-emerald-600 dark:text-emerald-400 font-bold text-xs mt-0.5">
-                    Status: {previewPdfOrder.status} ({previewPdfOrder.productionProgressPct}%)
-                  </p>
-                </div>
-              </div>
-
-              {/* Client & Payment Info Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Cliente Destinatário</span>
-                  <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">{previewPdfOrder.clientName}</p>
-                  {(() => {
-                    const matchedCli = clients.find((c) => c.id === previewPdfOrder.clientId || c.name === previewPdfOrder.clientName);
-                    return matchedCli?.documentNumber ? (
-                      <p className="text-slate-600 dark:text-slate-400 font-medium">CPF/CNPJ: {matchedCli.documentNumber}</p>
-                    ) : null;
-                  })()}
-                  <p className="text-slate-500 dark:text-slate-400">
-                    Modalidade: {previewPdfOrder.attendanceMode === 'online' ? 'Atendimento Online / WhatsApp' : 'Visita Presencial'}
-                  </p>
-                </div>
-
-                <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-1">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block">Informações de Pagamento</span>
-                  <p className="text-slate-900 dark:text-slate-100 font-bold text-xs">
-                    Forma de Pagamento: {previewPdfOrder.paymentTerms || previewPdfOrder.paymentMethod || 'PIX / Cartão / A combinar'}
-                  </p>
-                  <p className="text-indigo-600 dark:text-indigo-400 font-bold text-xs">
-                    Situação Financeira: {previewPdfOrder.paymentStatusText}
-                  </p>
-                  {(previewPdfOrder.productionSlaDate || previewPdfOrder.estimatedDeliveryDate) && (
-                    <p className="text-slate-500 dark:text-slate-400">
-                      Previsão de Entrega: {formatDateBR(previewPdfOrder.productionSlaDate || previewPdfOrder.estimatedDeliveryDate)}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Table of Products in PDF */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[320px]">
-                  <thead>
-                    <tr className="border-b-2 border-slate-200 dark:border-[#202531] text-slate-600 dark:text-slate-400 font-bold uppercase text-[10px]">
-                      <th className="py-2.5 px-1.5 sm:px-3">Item / Descrição do Produto</th>
-                      <th className="py-2.5 px-1.5 sm:px-3 text-center whitespace-nowrap">Qtd</th>
-                      <th className="py-2.5 px-1.5 sm:px-3 text-right whitespace-nowrap">Preço Un.</th>
-                      <th className="py-2.5 px-1.5 sm:px-3 text-right whitespace-nowrap">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
-                    {previewPdfOrder.items.map((it, idx) => {
-                      const matchingProduct = products.find(
-                        (p) =>
-                          p.name.toLowerCase() === it.productName.toLowerCase() ||
-                          it.productName.toLowerCase().includes(p.name.toLowerCase()) ||
-                          p.name.toLowerCase().includes(it.productName.toLowerCase()) ||
-                          (p.id && (it as any).productId && p.id === (it as any).productId)
-                      );
-
-                      return (
-                        <tr key={idx}>
-                          <td className="py-2.5 px-1.5 sm:px-3 font-medium">
-                            <div className="flex items-center gap-2.5">
-                              {matchingProduct?.imageUrl ? (
-                                <img
-                                  src={matchingProduct.imageUrl}
-                                  alt=""
-                                  className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0"
-                                />
-                              ) : (
-                                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
-                                  3D
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <p className="font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm">{it.productName}</p>
-                                {matchingProduct?.storageCapacity && (
-                                  <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold">
-                                    Cap: {matchingProduct.storageCapacity}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-2.5 px-1.5 sm:px-3 text-center font-semibold text-slate-700 dark:text-slate-400 whitespace-nowrap">{it.quantity}</td>
-                          <td className="py-2.5 px-1.5 sm:px-3 text-right text-slate-600 dark:text-slate-400 whitespace-nowrap">
-                            R$ {(it.unitPrice ?? (it.subtotal / it.quantity)).toFixed(2).replace('.', ',')}
-                          </td>
-                          <td className="py-2.5 px-1.5 sm:px-3 text-right font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">
-                            R$ {it.subtotal.toFixed(2).replace('.', ',')}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* PDF Totals & Notes */}
-              <div className="print-avoid-break border-t-2 border-slate-200 dark:border-[#202531] pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-                <div className="space-y-1 text-[11px] max-w-md">
-                  {previewPdfOrder.notes && (
-                    <p className="text-slate-500 dark:text-slate-400 italic font-medium">Observações: {previewPdfOrder.notes}</p>
-                  )}
-                  <p className="text-slate-500 dark:text-slate-400">
-                    SLA de Fabricação: {previewPdfOrder.productionProgressPct === 100 ? 'Produção Concluída (100%)' : `Em andamento (${previewPdfOrder.productionProgressPct}%)`}
-                  </p>
-                </div>
-
-                <div className="text-left sm:text-right space-y-1 w-full sm:w-auto border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-2 sm:pt-0">
-                  {previewPdfOrder.paidAmount > 0 && (
-                    <p className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                      Valor Pago: R$ {previewPdfOrder.paidAmount.toFixed(2).replace('.', ',')}
-                    </p>
-                  )}
-                  {previewPdfOrder.totalValue - previewPdfOrder.paidAmount > 0 && (
-                    <p className="text-rose-600 dark:text-rose-400 font-semibold">
-                      Saldo Restante: R$ {(previewPdfOrder.totalValue - previewPdfOrder.paidAmount).toFixed(2).replace('.', ',')}
-                    </p>
-                  )}
-                  <p className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 pt-1 border-t border-slate-300 dark:border-slate-700">
-                    TOTAL: R$ {previewPdfOrder.totalValue.toFixed(2).replace('.', ',')}
-                  </p>
-                </div>
-              </div>
-
-              {/* Professional Footer */}
-              <div className="print-avoid-break pt-6 border-t border-slate-200 dark:border-[#202531] text-center text-[10px] text-slate-600 dark:text-slate-400 space-y-1">
-                <p className="font-bold text-slate-900 dark:text-slate-200">
-                  RN 3D Soluções • CNPJ: 67.570.155/0001-34 • WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
-                </p>
-                <p>Obrigado pela preferência e confiança em nosso trabalho!</p>
-              </div>
-            </div>
-
-            {/* Modal Bottom Actions (Hidden on Print) */}
-            <div className="no-print p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-100 dark:border-[#202531] flex items-center justify-between">
-              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Formato A4 Profissional • Pronto para Impressão ou Salvar PDF</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setPreviewPdfOrder(null)}
-                  className="px-4 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs cursor-pointer transition-colors"
-                >
-                  Fechar
-                </button>
-                <button
-                  onClick={() => {
-                    const originalTitle = document.title;
-                    document.title = `${previewPdfOrder.id} - ${previewPdfOrder.clientName} - RN 3D`;
-                    window.print();
-                    setTimeout(() => {
-                      document.title = originalTitle;
-                    }, 1000);
-                  }}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs inline-flex items-center gap-1.5 transition-all"
-                >
-                  <Printer className="w-4 h-4" /> Baixar / Imprimir PDF
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <OrderPdfViewerModal
+          order={previewPdfOrder}
+          clients={clients}
+          products={products}
+          onClose={() => setPreviewPdfOrder(null)}
+        />
       )}
 
       {/* Lightbox para ampliar imagem do produto */}
@@ -1031,16 +753,17 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         />
       )}
 
-      {/* MODAL: GERENCIAR / ANEXAR COMPROVANTE DO PEDIDO */}
+      {/* MODAL: REGISTRAR RECEBIMENTO E GERENCIAR COMPROVANTES (1 E 2) */}
       {editingReceiptOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 my-auto">
+            {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <Paperclip className="w-5 h-5 text-indigo-500" />
+                <HandCoins className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                 <div>
                   <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                    Comprovante do Pedido #{editingReceiptOrder.id}
+                    Registrar Pagamento / Comprovante #{editingReceiptOrder.id}
                   </h3>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
                     Cliente: {editingReceiptOrder.clientName}
@@ -1059,46 +782,137 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
               </button>
             </div>
 
-            {/* Existing or New Receipt State */}
-            <div className="space-y-4 text-xs">
-              {editingReceiptOrder.paymentReceiptUrl || receiptFile?.url ? (
-                <div className="p-3.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" /> Comprovante Anexado
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSelectedReceiptViewer({
-                          url: receiptFile?.url || editingReceiptOrder.paymentReceiptUrl!,
-                          type: receiptFile?.type || editingReceiptOrder.paymentReceiptType || 'image',
-                          name: receiptFile?.name || editingReceiptOrder.paymentReceiptName || 'Comprovante',
-                          title: `Comprovante de Pagamento (${editingReceiptOrder.id})`,
-                        })
-                      }
-                      className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 rounded-lg font-bold text-[11px] inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <Eye className="w-3.5 h-3.5" /> Visualizar / Zoom
-                    </button>
-                  </div>
-
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                    Arquivo: <strong>{receiptFile?.name || editingReceiptOrder.paymentReceiptName || 'Comprovante de Recebimento'}</strong>
-                  </p>
+            {/* Financial Summary Box */}
+            <div className="p-3.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl space-y-2 text-xs">
+              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-semibold">
+                <span>Forma de Pagamento:</span>
+                <strong className="text-slate-900 dark:text-slate-100">
+                  {editingReceiptOrder.paymentTerms || editingReceiptOrder.paymentMethod || 'À vista / PIX'}
+                </strong>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800 text-[11px] text-center">
+                <div>
+                  <span className="text-slate-400 block font-medium">Total Pedido</span>
+                  <strong className="text-slate-900 dark:text-slate-100">R$ {editingReceiptOrder.totalValue.toFixed(2).replace('.', ',')}</strong>
                 </div>
-              ) : (
-                <div className="p-4 bg-slate-50 dark:bg-[#181c26] border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl text-center space-y-2">
-                  <Paperclip className="w-8 h-8 text-slate-400 mx-auto" />
-                  <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">Nenhum comprovante anexado a este pedido</p>
-                  <p className="text-[11px] text-slate-400">Selecione uma imagem (PNG/JPG) ou PDF do comprovante bancário.</p>
+                <div>
+                  <span className="text-slate-400 block font-medium">Já Recebido</span>
+                  <strong className="text-emerald-600 dark:text-emerald-400">R$ {editingReceiptOrder.paidAmount.toFixed(2).replace('.', ',')}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Pendente</span>
+                  <strong className="text-rose-600 dark:text-rose-400">
+                    R$ {Math.max(0, editingReceiptOrder.totalValue - editingReceiptOrder.paidAmount).toFixed(2).replace('.', ',')}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Custom Payment Amount Input */}
+            <div className="space-y-1.5 text-xs">
+              <label className="block font-bold text-slate-700 dark:text-slate-300">
+                Valor do Recebimento Atual (R$)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400">R$</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={customPaymentAmountInput}
+                  onChange={(e) => setCustomPaymentAmountInput(e.target.value.replace(/[^0-9.,]/g, ''))}
+                  placeholder="0,00"
+                  className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-bold text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+              <p className="text-[10px] text-slate-400">
+                Altere o valor acima se o cliente pagou uma quantia diferente (ex: R$ 60,00 de entrada).
+              </p>
+            </div>
+
+            {/* Receipt Slot Selectors (Comprovante 1 vs Comprovante 2) */}
+            <div className="space-y-3 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-slate-700 dark:text-slate-300">Selecione o Comprovante:</span>
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedReceiptSlot(1)}
+                    className={
+                      selectedReceiptSlot === 1
+                        ? 'px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer bg-indigo-600 text-white shadow-xs'
+                        : 'px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }
+                  >
+                    1 - Comprovante (Entrada)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedReceiptSlot(2)}
+                    className={
+                      selectedReceiptSlot === 2
+                        ? 'px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer bg-indigo-600 text-white shadow-xs'
+                        : 'px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900'
+                    }
+                  >
+                    2 - Comprovante (Entrega)
+                  </button>
+                </div>
+              </div>
+
+              {/* Slot 1 Status */}
+              {editingReceiptOrder.paymentReceiptUrl && (
+                <div className="p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/80 dark:border-[#202531] flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span className="truncate">1 - Comprovante: <strong>{editingReceiptOrder.paymentReceiptName || 'Comprovante 1'}</strong></span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedReceiptViewer({
+                        url: editingReceiptOrder.paymentReceiptUrl!,
+                        type: editingReceiptOrder.paymentReceiptType || 'image',
+                        name: editingReceiptOrder.paymentReceiptName || 'Comprovante 1',
+                        title: 'Comprovante 1 de Pagamento (' + editingReceiptOrder.id + ')',
+                      })
+                    }
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-indigo-600 dark:text-indigo-400 cursor-pointer shrink-0"
+                    title="Visualizar 1 - Comprovante"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
 
-              {/* Upload Input Field */}
+              {/* Slot 2 Status */}
+              {editingReceiptOrder.paymentReceiptUrl2 && (
+                <div className="p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/80 dark:border-[#202531] flex items-center justify-between text-[11px]">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span className="truncate">2 - Comprovante: <strong>{editingReceiptOrder.paymentReceiptName2 || 'Comprovante 2'}</strong></span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedReceiptViewer({
+                        url: editingReceiptOrder.paymentReceiptUrl2!,
+                        type: editingReceiptOrder.paymentReceiptType2 || 'image',
+                        name: editingReceiptOrder.paymentReceiptName2 || 'Comprovante 2',
+                        title: 'Comprovante 2 de Pagamento (' + editingReceiptOrder.id + ')',
+                      })
+                    }
+                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-indigo-600 dark:text-indigo-400 cursor-pointer shrink-0"
+                    title="Visualizar 2 - Comprovante"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Upload Input Field for selected slot */}
               <div>
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {editingReceiptOrder.paymentReceiptUrl || receiptFile?.url ? 'Substituir por Novo Comprovante' : 'Selecionar Comprovante'}
+                  Anexar Arquivo para o {selectedReceiptSlot}o Comprovante
                 </label>
                 <input
                   type="file"
@@ -1113,27 +927,16 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                         const base64 = reader.result as string;
                         let uploadedUrl = base64;
                         if (base64 && base64.startsWith('data:')) {
-                          uploadedUrl = await uploadToSupabaseStorage(base64, 'receipts', `order_pay_${editingReceiptOrder.id}`);
+                          uploadedUrl = await uploadToSupabaseStorage(base64, 'receipts', 'order_pay_' + editingReceiptOrder.id + '_' + selectedReceiptSlot);
                         }
                         const finalUrl = uploadedUrl || base64;
-                        const receiptObj = {
+                        setReceiptFile({
                           url: finalUrl,
-                          type: isPdf ? ('pdf' as const) : ('image' as const),
+                          type: isPdf ? 'pdf' : 'image',
                           name: file.name,
-                        };
-                        setReceiptFile(receiptObj);
-
-                        if (onUpdateOrderPayment) {
-                          onUpdateOrderPayment(
-                            editingReceiptOrder.id,
-                            0,
-                            finalUrl,
-                            receiptObj.type,
-                            receiptObj.name
-                          );
-                        }
+                        });
                       } catch (err) {
-                        console.error('Erro ao enviar comprovante do pedido:', err);
+                        console.error('Erro ao enviar comprovante:', err);
                       }
                     };
                     reader.readAsDataURL(file);
@@ -1144,35 +947,40 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
             </div>
 
             {/* Modal Bottom Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 gap-2">
-              {editingReceiptOrder.paymentReceiptUrl || receiptFile?.url ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onUpdateOrderPayment) {
-                      onUpdateOrderPayment(editingReceiptOrder.id, 0, '', 'image', '');
-                    }
-                    setEditingReceiptOrder(null);
-                    setReceiptFile(null);
-                  }}
-                  className="px-3 py-2 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-xl font-bold text-xs cursor-pointer"
-                >
-                  Remover
-                </button>
-              ) : <div />}
+            <div className="flex items-center justify-end pt-3 border-t border-slate-100 dark:border-slate-800 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingReceiptOrder(null);
+                  setReceiptFile(null);
+                }}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (onUpdateOrderPayment && editingReceiptOrder) {
+                    const parsedStr = customPaymentAmountInput.replace(/\./g, '').replace(',', '.');
+                    const amountVal = parseFloat(parsedStr) || 0;
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingReceiptOrder(null);
-                    setReceiptFile(null);
-                  }}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
-                >
-                  Concluído
-                </button>
-              </div>
+                    await onUpdateOrderPayment(
+                      editingReceiptOrder.id,
+                      amountVal,
+                      receiptFile?.url,
+                      receiptFile?.type,
+                      receiptFile?.name,
+                      selectedReceiptSlot
+                    );
+                  }
+                  setEditingReceiptOrder(null);
+                  setReceiptFile(null);
+                }}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-colors"
+              >
+                Confirmar Recebimento
+              </button>
             </div>
           </div>
         </div>

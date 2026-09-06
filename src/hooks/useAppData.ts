@@ -396,14 +396,21 @@ export function useAppData() {
         if (exp.referenceCode && exp.referenceCode.startsWith('PED-PAY-')) {
           const orderId = exp.referenceCode.replace('PED-PAY-', '');
           const matchedOrder = orders.find((o) => o.id === orderId);
-          if (matchedOrder && matchedOrder.paymentReceiptUrl && !exp.receiptUrl) {
-            changed = true;
-            return {
-              ...exp,
-              receiptUrl: matchedOrder.paymentReceiptUrl,
-              receiptType: matchedOrder.paymentReceiptType || 'image',
-              receiptName: matchedOrder.paymentReceiptName || 'Comprovante de Pagamento',
-            };
+          if (matchedOrder) {
+            const hasNewReceipt1 = matchedOrder.paymentReceiptUrl && exp.receiptUrl !== matchedOrder.paymentReceiptUrl;
+            const hasNewReceipt2 = matchedOrder.paymentReceiptUrl2 && exp.receiptUrl2 !== matchedOrder.paymentReceiptUrl2;
+            if (hasNewReceipt1 || hasNewReceipt2) {
+              changed = true;
+              return {
+                ...exp,
+                receiptUrl: matchedOrder.paymentReceiptUrl || exp.receiptUrl || '',
+                receiptType: matchedOrder.paymentReceiptType || exp.receiptType || 'image',
+                receiptName: matchedOrder.paymentReceiptName || exp.receiptName || 'Comprovante 1',
+                receiptUrl2: matchedOrder.paymentReceiptUrl2 || exp.receiptUrl2 || '',
+                receiptType2: matchedOrder.paymentReceiptType2 || exp.receiptType2 || 'image',
+                receiptName2: matchedOrder.paymentReceiptName2 || exp.receiptName2 || 'Comprovante 2',
+              };
+            }
           }
         }
         return exp;
@@ -431,8 +438,11 @@ export function useAppData() {
               referenceCode: refCode,
               receiptUrl: o.paymentReceiptUrl || '',
               receiptType: o.paymentReceiptType || 'image',
-              receiptName: o.paymentReceiptName || (o.paymentReceiptUrl ? 'Comprovante de Pagamento' : ''),
-              notes: `Pagamento de ${o.paymentMethod || 'PIX'} referente ao pedido ${o.id}`,
+              receiptName: o.paymentReceiptName || (o.paymentReceiptUrl ? 'Comprovante 1' : ''),
+              receiptUrl2: o.paymentReceiptUrl2 || '',
+              receiptType2: o.paymentReceiptType2 || 'image',
+              receiptName2: o.paymentReceiptName2 || (o.paymentReceiptUrl2 ? 'Comprovante 2' : ''),
+              notes: `Pagamento de ${o.paymentTerms || o.paymentMethod || 'PIX'} referente ao pedido ${o.id}`,
             };
             newPaymentEntries.push(newExpItem);
           }
@@ -448,15 +458,34 @@ export function useAppData() {
     addedAmount: number,
     receiptUrl?: string,
     receiptType?: 'image' | 'pdf',
-    receiptName?: string
+    receiptName?: string,
+    receiptIndex?: 1 | 2
   ) => {
-    await handleUpdateOrderPayment(orderId, addedAmount, receiptUrl, receiptType, receiptName);
+    await handleUpdateOrderPayment(orderId, addedAmount, receiptUrl, receiptType, receiptName, receiptIndex);
 
     const targetOrder = orders.find((o) => o.id === orderId);
     const clientName = targetOrder ? targetOrder.clientName : 'Cliente Local';
-    const finalReceiptUrl = receiptUrl || (targetOrder ? targetOrder.paymentReceiptUrl : '');
-    const finalReceiptType = receiptType || (targetOrder ? targetOrder.paymentReceiptType : 'image');
-    const finalReceiptName = receiptName || (targetOrder ? targetOrder.paymentReceiptName : '');
+    const terms = targetOrder?.paymentTerms || targetOrder?.paymentMethod || 'PIX';
+
+    let rUrl1 = targetOrder?.paymentReceiptUrl || '';
+    let rType1 = targetOrder?.paymentReceiptType || 'image';
+    let rName1 = targetOrder?.paymentReceiptName || '';
+
+    let rUrl2 = targetOrder?.paymentReceiptUrl2 || '';
+    let rType2 = targetOrder?.paymentReceiptType2 || 'image';
+    let rName2 = targetOrder?.paymentReceiptName2 || '';
+
+    if (receiptUrl) {
+      if (receiptIndex === 2 || (rUrl1 && rUrl1 !== receiptUrl)) {
+        rUrl2 = receiptUrl;
+        rType2 = receiptType || 'image';
+        rName2 = receiptName || 'Comprovante 2';
+      } else {
+        rUrl1 = receiptUrl;
+        rType1 = receiptType || 'image';
+        rName1 = receiptName || 'Comprovante 1';
+      }
+    }
 
     const paymentExpenseItem: ExpenseItem = {
       id: `exp-pay-${orderId}-${Date.now()}`,
@@ -471,10 +500,13 @@ export function useAppData() {
       destinationAccount: 'Nubank',
       isAutoReplicated: true,
       referenceCode: `PED-PAY-${orderId}`,
-      receiptUrl: finalReceiptUrl,
-      receiptType: finalReceiptType,
-      receiptName: finalReceiptName,
-      notes: `Pagamento de R$ ${addedAmount.toFixed(2).replace('.', ',')} referente ao pedido ${orderId}`,
+      receiptUrl: rUrl1,
+      receiptType: rType1 as any,
+      receiptName: rName1,
+      receiptUrl2: rUrl2,
+      receiptType2: rType2 as any,
+      receiptName2: rName2,
+      notes: `Pagamento de R$ ${addedAmount.toFixed(2).replace('.', ',')} (${terms}) referente ao pedido ${orderId}`,
     };
 
     await handleCreateExpense(paymentExpenseItem);
