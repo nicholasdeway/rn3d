@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { Order, Product, Client } from '../types';
-import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles, ChevronDown, ChevronUp, Paperclip, Eye, Trash2, HandCoins } from 'lucide-react';
+import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
-import { ReceiptViewerModal } from '../components/ReceiptViewerModal';
 import { OrderPdfViewerModal } from '../components/OrderPdfViewerModal';
-import { uploadToSupabaseStorage } from '../services/storageService';
 import { formatDateBR } from '../utils/formatters';
 
 interface OrdersViewProps {
@@ -39,11 +37,6 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
   const [previewPdfOrder, setPreviewPdfOrder] = useState<Order | null>(null);
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
-  const [editingReceiptOrder, setEditingReceiptOrder] = useState<Order | null>(null);
-  const [receiptFile, setReceiptFile] = useState<{ url: string; type: 'image' | 'pdf'; name: string } | null>(null);
-  const [selectedReceiptViewer, setSelectedReceiptViewer] = useState<{ url: string; type?: 'image' | 'pdf'; name?: string; title: string } | null>(null);
-  const [customPaymentAmountInput, setCustomPaymentAmountInput] = useState<string>('');
-  const [selectedReceiptSlot, setSelectedReceiptSlot] = useState<1 | 2>(1);
 
   const filteredOrders = orders.filter((o) => {
     if (!searchQuery || searchQuery.trim() === '') return true;
@@ -493,20 +486,6 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     </label>
 
                     <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingReceiptOrder(o);
-                          setReceiptFile(null);
-                        }}
-                        className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors"
-                        title="Anexar ou editar comprovante de pagamento"
-                      >
-                        <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>{o.paymentReceiptUrl ? 'Comprovante' : 'Anexar'}</span>
-                      </button>
-
                       {onDeleteOrder && (
                         <button
                           type="button"
@@ -659,18 +638,6 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setEditingReceiptOrder(o);
-                                  setReceiptFile(null);
-                                }}
-                                className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/80 text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/80 dark:border-slate-700/80 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
-                                title="Anexar ou alterar comprovante de pagamento"
-                              >
-                                <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
-                                <span>{o.paymentReceiptUrl ? 'Comprovante' : 'Anexar'}</span>
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
                                   setPreviewPdfOrder(o);
                                 }}
                                 className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
@@ -752,242 +719,6 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           onClose={() => setZoomImage(null)}
         />
       )}
-
-      {/* MODAL: REGISTRAR RECEBIMENTO E GERENCIAR COMPROVANTES (1 E 2) */}
-      {editingReceiptOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-white dark:bg-[#12151c] border border-slate-200/80 dark:border-[#202531] rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-5 my-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <HandCoins className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                <div>
-                  <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                    Registrar Pagamento / Comprovante #{editingReceiptOrder.id}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Cliente: {editingReceiptOrder.clientName}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingReceiptOrder(null);
-                  setReceiptFile(null);
-                }}
-                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 rounded-lg cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Financial Summary Box */}
-            <div className="p-3.5 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl space-y-2 text-xs">
-              <div className="flex items-center justify-between text-slate-600 dark:text-slate-400 font-semibold">
-                <span>Forma de Pagamento:</span>
-                <strong className="text-slate-900 dark:text-slate-100">
-                  {editingReceiptOrder.paymentTerms || editingReceiptOrder.paymentMethod || 'À vista / PIX'}
-                </strong>
-              </div>
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200/60 dark:border-slate-800 text-[11px] text-center">
-                <div>
-                  <span className="text-slate-400 block font-medium">Total Pedido</span>
-                  <strong className="text-slate-900 dark:text-slate-100">R$ {editingReceiptOrder.totalValue.toFixed(2).replace('.', ',')}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-400 block font-medium">Já Recebido</span>
-                  <strong className="text-emerald-600 dark:text-emerald-400">R$ {editingReceiptOrder.paidAmount.toFixed(2).replace('.', ',')}</strong>
-                </div>
-                <div>
-                  <span className="text-slate-400 block font-medium">Pendente</span>
-                  <strong className="text-rose-600 dark:text-rose-400">
-                    R$ {Math.max(0, editingReceiptOrder.totalValue - editingReceiptOrder.paidAmount).toFixed(2).replace('.', ',')}
-                  </strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Custom Payment Amount Input */}
-            <div className="space-y-1.5 text-xs">
-              <label className="block font-bold text-slate-700 dark:text-slate-300">
-                Valor do Recebimento Atual (R$)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-slate-400">R$</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={customPaymentAmountInput}
-                  onChange={(e) => setCustomPaymentAmountInput(e.target.value.replace(/[^0-9.,]/g, ''))}
-                  placeholder="0,00"
-                  className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-bold text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-              <p className="text-[10px] text-slate-400">
-                Altere o valor acima se o cliente pagou uma quantia diferente (ex: R$ 60,00 de entrada).
-              </p>
-            </div>
-
-            {/* Receipt Slot Selectors (Comprovante 1 vs Comprovante 2) */}
-            <div className="space-y-3 text-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-700 dark:text-slate-300">Selecione o Comprovante:</span>
-                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedReceiptSlot(1)}
-                    className={
-                      selectedReceiptSlot === 1
-                        ? 'px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer bg-indigo-600 text-white shadow-xs'
-                        : 'px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                    }
-                  >
-                    1 - Comprovante (Entrada)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedReceiptSlot(2)}
-                    className={
-                      selectedReceiptSlot === 2
-                        ? 'px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer bg-indigo-600 text-white shadow-xs'
-                        : 'px-2.5 py-1 rounded-lg font-bold text-[11px] transition-colors cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                    }
-                  >
-                    2 - Comprovante (Entrega)
-                  </button>
-                </div>
-              </div>
-
-              {/* Slot 1 Status */}
-              {editingReceiptOrder.paymentReceiptUrl && (
-                <div className="p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/80 dark:border-[#202531] flex items-center justify-between text-[11px]">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span className="truncate">1 - Comprovante: <strong>{editingReceiptOrder.paymentReceiptName || 'Comprovante 1'}</strong></span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSelectedReceiptViewer({
-                        url: editingReceiptOrder.paymentReceiptUrl!,
-                        type: editingReceiptOrder.paymentReceiptType || 'image',
-                        name: editingReceiptOrder.paymentReceiptName || 'Comprovante 1',
-                        title: 'Comprovante 1 de Pagamento (' + editingReceiptOrder.id + ')',
-                      })
-                    }
-                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-indigo-600 dark:text-indigo-400 cursor-pointer shrink-0"
-                    title="Visualizar 1 - Comprovante"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
-              {/* Slot 2 Status */}
-              {editingReceiptOrder.paymentReceiptUrl2 && (
-                <div className="p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/80 dark:border-[#202531] flex items-center justify-between text-[11px]">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span className="truncate">2 - Comprovante: <strong>{editingReceiptOrder.paymentReceiptName2 || 'Comprovante 2'}</strong></span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSelectedReceiptViewer({
-                        url: editingReceiptOrder.paymentReceiptUrl2!,
-                        type: editingReceiptOrder.paymentReceiptType2 || 'image',
-                        name: editingReceiptOrder.paymentReceiptName2 || 'Comprovante 2',
-                        title: 'Comprovante 2 de Pagamento (' + editingReceiptOrder.id + ')',
-                      })
-                    }
-                    className="p-1 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-indigo-600 dark:text-indigo-400 cursor-pointer shrink-0"
-                    title="Visualizar 2 - Comprovante"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
-              {/* Upload Input Field for selected slot */}
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Anexar Arquivo para o {selectedReceiptSlot}o Comprovante
-                </label>
-                <input
-                  type="file"
-                  accept="image/*,.pdf,application/pdf"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const isPdf = file.type === 'application/pdf' || file.type.toLowerCase().includes('pdf') || file.name.toLowerCase().endsWith('.pdf');
-                    const reader = new FileReader();
-                    reader.onloadend = async () => {
-                      try {
-                        const base64 = reader.result as string;
-                        let uploadedUrl = base64;
-                        if (base64 && base64.startsWith('data:')) {
-                          uploadedUrl = await uploadToSupabaseStorage(base64, 'receipts', 'order_pay_' + editingReceiptOrder.id + '_' + selectedReceiptSlot);
-                        }
-                        const finalUrl = uploadedUrl || base64;
-                        setReceiptFile({
-                          url: finalUrl,
-                          type: isPdf ? 'pdf' : 'image',
-                          name: file.name,
-                        });
-                      } catch (err) {
-                        console.error('Erro ao enviar comprovante:', err);
-                      }
-                    };
-                    reader.readAsDataURL(file);
-                  }}
-                  className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-950 dark:file:text-indigo-300 hover:file:bg-indigo-100 cursor-pointer"
-                />
-              </div>
-            </div>
-
-            {/* Modal Bottom Actions */}
-            <div className="flex items-center justify-end pt-3 border-t border-slate-100 dark:border-slate-800 gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingReceiptOrder(null);
-                  setReceiptFile(null);
-                }}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (onUpdateOrderPayment && editingReceiptOrder) {
-                    const parsedStr = customPaymentAmountInput.replace(/\./g, '').replace(',', '.');
-                    const amountVal = parseFloat(parsedStr) || 0;
-
-                    await onUpdateOrderPayment(
-                      editingReceiptOrder.id,
-                      amountVal,
-                      receiptFile?.url,
-                      receiptFile?.type,
-                      receiptFile?.name,
-                      selectedReceiptSlot
-                    );
-                  }
-                  setEditingReceiptOrder(null);
-                  setReceiptFile(null);
-                }}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs transition-colors"
-              >
-                Confirmar Recebimento
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Visualizador HD de Comprovante com Zoom */}
-      <ReceiptViewerModal receipt={selectedReceiptViewer} onClose={() => setSelectedReceiptViewer(null)} />
 
       {/* Confirmation Modal for Order Deletion */}
       {deletingOrderId && (
