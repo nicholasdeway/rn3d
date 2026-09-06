@@ -260,7 +260,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     });
   }, [transactions, cleanExpenses, orders]);
 
-  // Extrato Entries: Entradas & Saídas combinadas (Apenas movimentações efetivadas em caixa)
+  // Extrato Entries: Entradas, Saídas e Contas a Receber pendentes
   const allExtratoEntries = useMemo(() => {
     // 1. Transaction Entries (Entradas Balcão)
     const txEntries = filteredTransactions
@@ -302,8 +302,26 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         };
       });
 
-    // Combined realized entries (excludes open order contracts which belong exclusively to Contas a Receber)
-    const combined = [...txEntries, ...expenseEntries];
+    // 3. Pending Order Entries (Contas a Receber pendentes exibidos também no Extrato Completo)
+    const pendingOrderEntries = orders
+      .filter((o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_'))
+      .filter((o) => o.totalValue > (o.paidAmount || 0))
+      .filter((o) => isDateInRange(o.date || o.createdAt))
+      .map((o) => ({
+        type: 'order' as const,
+        direction: 'entrada' as const,
+        data: o,
+        id: o.id,
+        date: o.date || o.createdAt || '',
+        title: `Pedido #${o.id}`,
+        clientOrCategory: o.clientName,
+        amount: o.totalValue - (o.paidAmount || 0),
+        paidAmount: o.paidAmount || 0,
+        totalValue: o.totalValue || 0,
+        status: o.paymentStatusText || (o.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
+      }));
+
+    const combined = [...txEntries, ...expenseEntries, ...pendingOrderEntries];
 
     // Search term filtering
     const searchFiltered = combined.filter((item) => {
@@ -324,7 +342,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
       const timeB = parseToDate(b.date)?.getTime() || 0;
       return timeB - timeA;
     });
-  }, [filteredTransactions, cleanExpenses, dateRangeStart, dateRangeEnd, searchTerm, movementType]);
+  }, [orders, filteredTransactions, cleanExpenses, dateRangeStart, dateRangeEnd, searchTerm, movementType]);
 
   // Calculate Filtered Summary Metrics for Header KPI cards (Only count actual realized entries, not pending order balances)
   const periodEntradas = useMemo(() => {
