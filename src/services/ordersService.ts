@@ -2,6 +2,70 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Order } from '../types';
 import { formatDateBR, normalizeToIsoDate, getTodayBR } from '../utils/formatters';
 
+function encodeOrderNotesAndMetadata(order: Partial<Order>): string {
+  const userNotes = order.notes || '';
+  const meta = {
+    userNotes,
+    paymentReceiptUrl: order.paymentReceiptUrl,
+    paymentReceiptType: order.paymentReceiptType,
+    paymentReceiptName: order.paymentReceiptName,
+    paymentReceiptUrl2: order.paymentReceiptUrl2,
+    paymentReceiptType2: order.paymentReceiptType2,
+    paymentReceiptName2: order.paymentReceiptName2,
+    paymentTerms: order.paymentTerms,
+  };
+  return `[META:${JSON.stringify(meta)}]${userNotes}`;
+}
+
+function decodeOrderNotesAndMetadata(row: any): {
+  notes: string;
+  paymentReceiptUrl: string;
+  paymentReceiptType: 'image' | 'pdf';
+  paymentReceiptName: string;
+  paymentReceiptUrl2: string;
+  paymentReceiptType2: 'image' | 'pdf';
+  paymentReceiptName2: string;
+  paymentTerms: string;
+} {
+  let notes = row.notes || '';
+  let paymentReceiptUrl = row.payment_receipt_url || '';
+  let paymentReceiptType = (row.payment_receipt_type || 'image') as any;
+  let paymentReceiptName = row.payment_receipt_name || '';
+  let paymentReceiptUrl2 = row.payment_receipt_url2 || '';
+  let paymentReceiptType2 = (row.payment_receipt_type2 || 'image') as any;
+  let paymentReceiptName2 = row.payment_receipt_name2 || '';
+  let paymentTerms = row.payment_terms || row.payment_method || '';
+
+  if (notes.startsWith('[META:')) {
+    const endIdx = notes.indexOf(']');
+    if (endIdx > 6) {
+      try {
+        const jsonStr = notes.substring(6, endIdx);
+        const meta = JSON.parse(jsonStr);
+        if (meta.paymentReceiptUrl) paymentReceiptUrl = meta.paymentReceiptUrl;
+        if (meta.paymentReceiptType) paymentReceiptType = meta.paymentReceiptType;
+        if (meta.paymentReceiptName) paymentReceiptName = meta.paymentReceiptName;
+        if (meta.paymentReceiptUrl2) paymentReceiptUrl2 = meta.paymentReceiptUrl2;
+        if (meta.paymentReceiptType2) paymentReceiptType2 = meta.paymentReceiptType2;
+        if (meta.paymentReceiptName2) paymentReceiptName2 = meta.paymentReceiptName2;
+        if (meta.paymentTerms) paymentTerms = meta.paymentTerms;
+        notes = meta.userNotes !== undefined ? meta.userNotes : notes.substring(endIdx + 1);
+      } catch (e) {}
+    }
+  }
+
+  return {
+    notes,
+    paymentReceiptUrl,
+    paymentReceiptType,
+    paymentReceiptName,
+    paymentReceiptUrl2,
+    paymentReceiptType2,
+    paymentReceiptName2,
+    paymentTerms,
+  };
+}
+
 /**
  * 100% Direct Supabase Postgres Fetch — Zero LocalStorage Caching
  */
@@ -30,6 +94,7 @@ export async function fetchOrders(): Promise<Order[]> {
     .map((row) => {
       let clientCost = Number(row.internal_logistics_cost) || 0;
       let clientType = row.internal_logistics_type || 'combustivel';
+      const decoded = decodeOrderNotesAndMetadata(row);
 
       return {
         id: row.order_code || row.id,
@@ -47,14 +112,14 @@ export async function fetchOrders(): Promise<Order[]> {
         estimatedDeliveryDate: row.estimated_delivery_date || '',
         internalLogisticsType: clientType as any,
         internalLogisticsCost: clientCost,
-        paymentReceiptUrl: row.payment_receipt_url || '',
-        paymentReceiptType: row.payment_receipt_type || 'image',
-        paymentReceiptName: row.payment_receipt_name || '',
-        paymentReceiptUrl2: row.payment_receipt_url2 || '',
-        paymentReceiptType2: row.payment_receipt_type2 || 'image',
-        paymentReceiptName2: row.payment_receipt_name2 || '',
-        paymentTerms: row.payment_terms || row.payment_method || '',
-        notes: row.notes || '',
+        paymentReceiptUrl: decoded.paymentReceiptUrl,
+        paymentReceiptType: decoded.paymentReceiptType,
+        paymentReceiptName: decoded.paymentReceiptName,
+        paymentReceiptUrl2: decoded.paymentReceiptUrl2,
+        paymentReceiptType2: decoded.paymentReceiptType2,
+        paymentReceiptName2: decoded.paymentReceiptName2,
+        paymentTerms: decoded.paymentTerms,
+        notes: decoded.notes,
         items: (row.order_items || []).map((item: any) => ({
           productName: item.product_name,
           quantity: item.quantity,
@@ -102,13 +167,7 @@ export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promi
       production_progress_pct: o.productionProgressPct || 0,
       internal_logistics_type: o.internalLogisticsType || 'combustivel',
       internal_logistics_cost: o.internalLogisticsCost || 0,
-      payment_receipt_url: o.paymentReceiptUrl || '',
-      payment_receipt_type: o.paymentReceiptType || 'image',
-      payment_receipt_name: o.paymentReceiptName || '',
-      payment_receipt_url2: o.paymentReceiptUrl2 || '',
-      payment_receipt_type2: o.paymentReceiptType2 || 'image',
-      payment_receipt_name2: o.paymentReceiptName2 || '',
-      payment_terms: o.paymentTerms || '',
+      notes: encodeOrderNotesAndMetadata(o),
     }));
 
     const { error } = await supabase.from('orders').insert(rows);
@@ -139,13 +198,7 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     paid_amount: order.paidAmount || 0,
     payment_status_text: order.paymentStatusText || (order.paidAmount && order.totalValue && order.paidAmount >= order.totalValue ? 'Pago Total' : order.paidAmount && order.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
     status: order.status || 'Novo',
-    payment_receipt_url: order.paymentReceiptUrl || '',
-    payment_receipt_type: order.paymentReceiptType || 'image',
-    payment_receipt_name: order.paymentReceiptName || '',
-    payment_receipt_url2: order.paymentReceiptUrl2 || '',
-    payment_receipt_type2: order.paymentReceiptType2 || 'image',
-    payment_receipt_name2: order.paymentReceiptName2 || '',
-    payment_terms: order.paymentTerms || '',
+    notes: encodeOrderNotesAndMetadata(order),
   };
 
   if (order.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.clientId)) {
@@ -183,12 +236,7 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   }
 
   const cleanId = id.replace(/^PED-/, '').replace(/^ORC-/, '');
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-  const targetIdFilter = isUuid
-    ? `id.eq.${id},order_code.eq.${id},order_code.eq.${cleanId}`
-    : `order_code.eq.${id},order_code.eq.${cleanId}`;
 
-  // 1. Core payload: colunas garantidas da tabela orders no Supabase
   const corePayload: any = {};
   if (updates.clientName !== undefined) corePayload.client_name = updates.clientName;
   if (updates.totalValue !== undefined) corePayload.total_value = Number(updates.totalValue) || 0;
@@ -198,48 +246,22 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (updates.productionProgressPct !== undefined) corePayload.production_progress_pct = updates.productionProgressPct;
   if (updates.internalLogisticsType !== undefined) corePayload.internal_logistics_type = updates.internalLogisticsType;
   if (updates.internalLogisticsCost !== undefined) corePayload.internal_logistics_cost = updates.internalLogisticsCost;
+  corePayload.notes = encodeOrderNotesAndMetadata(updates);
 
-  if (Object.keys(corePayload).length > 0) {
-    try {
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .update(corePayload)
+      .eq('order_code', id);
+
+    if (error) {
       await supabase
         .from('orders')
         .update(corePayload)
-        .or(targetIdFilter);
-    } catch (e) {
-      console.error('Erro ao atualizar pedido no Supabase:', e);
+        .eq('order_code', cleanId);
     }
-  }
-
-  // 2. Atualização isolada e não-bloqueante de colunas opcionais (se existirem na tabela)
-  const optionalPayload: any = {};
-  if (updates.paymentReceiptUrl !== undefined) optionalPayload.payment_receipt_url = updates.paymentReceiptUrl;
-  if (updates.paymentReceiptType !== undefined) optionalPayload.payment_receipt_type = updates.paymentReceiptType;
-  if (updates.paymentReceiptName !== undefined) optionalPayload.payment_receipt_name = updates.paymentReceiptName;
-  if (updates.paymentReceiptUrl2 !== undefined) optionalPayload.payment_receipt_url2 = updates.paymentReceiptUrl2;
-  if (updates.paymentReceiptType2 !== undefined) optionalPayload.payment_receipt_type2 = updates.paymentReceiptType2;
-  if (updates.paymentReceiptName2 !== undefined) optionalPayload.payment_receipt_name2 = updates.paymentReceiptName2;
-  if (updates.paymentTerms !== undefined) optionalPayload.payment_terms = updates.paymentTerms;
-
-  if (Object.keys(optionalPayload).length > 0) {
-    try {
-      await supabase
-        .from('orders')
-        .update(optionalPayload)
-        .or(targetIdFilter);
-    } catch (e) {
-      // Ignora variação de esquema nas colunas opcionais de comprovante
-    }
-  }
-
-  if (Object.keys(optionalPayload).length > 0) {
-    try {
-      await supabase
-        .from('orders')
-        .update(optionalPayload)
-        .or(targetIdFilter);
-    } catch (e) {
-      // Ignora variação de esquema nas colunas opcionais de comprovante
-    }
+  } catch (e) {
+    console.error('Erro ao atualizar pedido no Supabase:', e);
   }
 
   return updates as any;
@@ -250,14 +272,19 @@ export async function deleteOrder(id: string): Promise<boolean> {
   try {
     const cleanId = id.replace(/^PED-/, '').replace(/^ORC-/, '');
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    const targetIdFilter = isUuid
-      ? `id.eq.${id},order_code.eq.${id},order_code.eq.${cleanId}`
-      : `order_code.eq.${id},order_code.eq.${cleanId}`;
-    await supabase.from('orders').delete().or(targetIdFilter);
+    if (isUuid) {
+      await supabase.from('orders').delete().eq('id', id);
+    } else {
+      const { error } = await supabase.from('orders').delete().eq('order_code', id);
+      if (error) {
+        await supabase.from('orders').delete().eq('order_code', cleanId);
+      }
+    }
     return true;
   } catch (e) {
     console.error('Erro ao deletar pedido no Supabase:', e);
     return false;
   }
 }
+
 

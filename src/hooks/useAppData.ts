@@ -197,10 +197,31 @@ export function useAppData() {
           fetchConsignments(),
         ]);
         if (!isMounted) return;
-        setProducts((prev) => (prev && prev.length === dbProducts.length && JSON.stringify(prev) === JSON.stringify(dbProducts) ? prev : dbProducts));
-        setClients((prev) => (prev && prev.length === dbClients.length && JSON.stringify(prev) === JSON.stringify(dbClients) ? prev : dbClients));
-        setOrders((prev) => (prev && prev.length === dbOrders.length && JSON.stringify(prev) === JSON.stringify(dbOrders) ? prev : dbOrders));
-        setQuotes((prev) => (prev && prev.length === dbQuotes.length && JSON.stringify(prev) === JSON.stringify(dbQuotes) ? prev : dbQuotes));
+        setOrders((prev) => {
+          if (!prev || prev.length === 0) return dbOrders;
+          const dbMap = new Map(dbOrders.map((o) => [o.id.toLowerCase().trim(), o]));
+          const merged = dbOrders.map((dbOrder) => {
+            const local = prev.find(
+              (l) => l.id.toLowerCase().trim() === dbOrder.id.toLowerCase().trim() || l.id.replace(/^PED-/, '').toLowerCase().trim() === dbOrder.id.replace(/^PED-/, '').toLowerCase().trim()
+            );
+            if (local && (local.paidAmount || 0) > (dbOrder.paidAmount || 0)) {
+              return {
+                ...dbOrder,
+                paidAmount: local.paidAmount,
+                paymentStatusText: local.paymentStatusText,
+                paymentReceiptUrl: local.paymentReceiptUrl || dbOrder.paymentReceiptUrl,
+                paymentReceiptUrl2: local.paymentReceiptUrl2 || dbOrder.paymentReceiptUrl2,
+                paymentReceiptName: local.paymentReceiptName || dbOrder.paymentReceiptName,
+                paymentReceiptName2: local.paymentReceiptName2 || dbOrder.paymentReceiptName2,
+              };
+            }
+            return dbOrder;
+          });
+          const extraLocal = prev.filter(
+            (l) => !dbMap.has(l.id.toLowerCase().trim()) && !dbMap.has(`PED-${l.id.replace(/^PED-/, '')}`.toLowerCase().trim())
+          );
+          return [...merged, ...extraLocal];
+        });
         if (dbConsignments && dbConsignments.length > 0) {
           setConsignments((prev) => {
             const map = new Map<string, any>();
@@ -457,30 +478,46 @@ export function useAppData() {
 
     const isSecondPayment = (targetOrder?.paidAmount || 0) >= (targetOrder?.totalValue || 0) && (targetOrder?.paidAmount || 0) > addedAmount;
     const paymentIdx = receiptIndex || (isSecondPayment ? 2 : 1);
+    const refCode = `PED-PAY-${orderId}-${paymentIdx}`;
 
-    const paymentExpenseItem: ExpenseItem = {
-      id: `exp-pay-${orderId}-${paymentIdx}-${Date.now()}`,
-      description: `Entrada / Pagamento de Pedido (${orderId} - ${clientName})`,
-      category: 'Entrada de Pedido',
-      amount: addedAmount,
-      date: new Date().toISOString().split('T')[0],
-      timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      paymentStatus: 'Pago',
-      beneficiary: clientName,
-      createdBy: 'Sistema RN 3D',
-      destinationAccount: 'Nubank',
-      isAutoReplicated: true,
-      referenceCode: `PED-PAY-${orderId}-${paymentIdx}`,
-      receiptUrl: receiptUrl || (paymentIdx === 2 ? targetOrder?.paymentReceiptUrl2 : targetOrder?.paymentReceiptUrl) || '',
-      receiptType: (receiptType || (paymentIdx === 2 ? targetOrder?.paymentReceiptType2 : targetOrder?.paymentReceiptType) || 'image') as any,
-      receiptName: receiptName || (paymentIdx === 2 ? targetOrder?.paymentReceiptName2 : targetOrder?.paymentReceiptName) || '',
-      receiptUrl2: targetOrder?.paymentReceiptUrl2 || '',
-      receiptType2: (targetOrder?.paymentReceiptType2 || 'image') as any,
-      receiptName2: targetOrder?.paymentReceiptName2 || '',
-      notes: `Pagamento de R$ ${addedAmount.toFixed(2).replace('.', ',')} (${terms}) referente ao pedido ${orderId}`,
-    };
+    const existingExp = expenses.find((e) => e.referenceCode === refCode);
 
-    await handleCreateExpense(paymentExpenseItem);
+    if (existingExp) {
+      await handleUpdateExpense({
+        ...existingExp,
+        amount: addedAmount,
+        receiptUrl: receiptUrl || (paymentIdx === 2 ? targetOrder?.paymentReceiptUrl2 : targetOrder?.paymentReceiptUrl) || existingExp.receiptUrl,
+        receiptType: (receiptType || (paymentIdx === 2 ? targetOrder?.paymentReceiptType2 : targetOrder?.paymentReceiptType) || existingExp.receiptType || 'image') as any,
+        receiptName: receiptName || (paymentIdx === 2 ? targetOrder?.paymentReceiptName2 : targetOrder?.paymentReceiptName) || existingExp.receiptName,
+        receiptUrl2: targetOrder?.paymentReceiptUrl2 || existingExp.receiptUrl2,
+        receiptType2: (targetOrder?.paymentReceiptType2 || existingExp.receiptType2 || 'image') as any,
+        receiptName2: targetOrder?.paymentReceiptName2 || existingExp.receiptName2,
+      });
+    } else {
+      const paymentExpenseItem: ExpenseItem = {
+        id: `exp-pay-${orderId}-${paymentIdx}`,
+        description: `Entrada / Pagamento de Pedido (${orderId} - ${clientName})`,
+        category: 'Entrada de Pedido',
+        amount: addedAmount,
+        date: new Date().toISOString().split('T')[0],
+        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        paymentStatus: 'Pago',
+        beneficiary: clientName,
+        createdBy: 'Sistema RN 3D',
+        destinationAccount: 'Nubank',
+        isAutoReplicated: true,
+        referenceCode: refCode,
+        receiptUrl: receiptUrl || (paymentIdx === 2 ? targetOrder?.paymentReceiptUrl2 : targetOrder?.paymentReceiptUrl) || '',
+        receiptType: (receiptType || (paymentIdx === 2 ? targetOrder?.paymentReceiptType2 : targetOrder?.paymentReceiptType) || 'image') as any,
+        receiptName: receiptName || (paymentIdx === 2 ? targetOrder?.paymentReceiptName2 : targetOrder?.paymentReceiptName) || '',
+        receiptUrl2: targetOrder?.paymentReceiptUrl2 || '',
+        receiptType2: (targetOrder?.paymentReceiptType2 || 'image') as any,
+        receiptName2: targetOrder?.paymentReceiptName2 || '',
+        notes: `Pagamento de R$ ${addedAmount.toFixed(2).replace('.', ',')} (${terms}) referente ao pedido ${orderId}`,
+      };
+
+      await handleCreateExpense(paymentExpenseItem);
+    }
   };
 
   const activeConversionsRef = useState(() => new Set<string>())[0];
