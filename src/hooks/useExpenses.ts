@@ -14,13 +14,19 @@ export function useExpenses(
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void
 ) {
   const [expenses, setExpenses] = useState<ExpenseItem[]>(() => {
-    try {
-      const saved = localStorage.getItem('rn3d_expenses_cache');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
+    if (!isSupabaseConfigured()) {
+      try {
+        const saved = localStorage.getItem('rn3d_expenses_cache');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    } else {
+      try {
+        localStorage.removeItem('rn3d_expenses_cache');
+      } catch (e) {}
+    }
     return [];
   });
 

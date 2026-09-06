@@ -421,8 +421,12 @@ export function useAppData() {
       orders.forEach((o) => {
         const paid = Number(o.paidAmount) || 0;
         if (paid > 0) {
-          const refPrefix = `PED-PAY-${o.id}`;
-          const alreadyExists = updatedPrev.some((e) => e.referenceCode && e.referenceCode.startsWith(refPrefix));
+          const cleanId = o.id.replace(/^PED-/, '');
+          const alreadyExists = updatedPrev.some((e) => {
+            if (!e.referenceCode) return false;
+            const refLower = e.referenceCode.toLowerCase();
+            return refLower.includes(o.id.toLowerCase()) || refLower.includes(cleanId.toLowerCase());
+          });
           if (!alreadyExists) {
             changed = true;
             const newExpItem: ExpenseItem = {
@@ -437,7 +441,7 @@ export function useAppData() {
               createdBy: 'Sistema RN 3D',
               destinationAccount: 'Nubank',
               isAutoReplicated: true,
-              referenceCode: `${refPrefix}-1`,
+              referenceCode: `PED-PAY-${o.id}-1`,
               receiptUrl: o.paymentReceiptUrl || '',
               receiptType: o.paymentReceiptType || 'image',
               receiptName: o.paymentReceiptName || (o.paymentReceiptUrl ? 'Comprovante 1' : ''),
@@ -447,6 +451,7 @@ export function useAppData() {
               notes: `Pagamento de ${o.paymentTerms || 'PIX'} referente ao pedido ${o.id}`,
             };
             newPaymentEntries.push(newExpItem);
+            createExpense(newExpItem).catch(() => {});
           }
         }
       });

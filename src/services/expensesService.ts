@@ -174,13 +174,6 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
       seenRefCodes.add(row.reference_code);
     }
 
-    const signature = `${row.description}_${row.amount}_${row.date}_${row.receipt_url || ''}`;
-    if (seenSignatures.has(signature)) {
-      duplicateIdsToDelete.push(row.id);
-      return false;
-    }
-    seenSignatures.add(signature);
-
     return true;
   });
 
