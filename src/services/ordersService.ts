@@ -168,6 +168,9 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
     return null;
   }
 
+  const cleanId = id.replace(/^PED-/, '').replace(/^ORC-/, '');
+  const targetIdFilter = `order_code.eq.${id},order_code.eq.${cleanId},id.eq.${id},id.eq.${cleanId}`;
+
   // 1. Core payload: colunas garantidas da tabela orders no Supabase
   const corePayload: any = {};
   if (updates.clientName !== undefined) corePayload.client_name = updates.clientName;
@@ -182,19 +185,11 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (Object.keys(corePayload).length === 0) return null;
 
   try {
-    // Atualização direta por order_code (sem .select() para evitar erros de RETURNING *)
-    const { error: err1 } = await supabase
+    // Atualização com filtro .or() abrangendo order_code e id com/sem prefixo
+    await supabase
       .from('orders')
       .update(corePayload)
-      .eq('order_code', id);
-
-    if (err1) {
-      // Fallback: Atualização direta por id
-      await supabase
-        .from('orders')
-        .update(corePayload)
-        .eq('id', id);
-    }
+      .or(targetIdFilter);
   } catch (e) {
     console.error('Erro ao atualizar pedido no Supabase:', e);
   }
@@ -210,7 +205,7 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
       await supabase
         .from('orders')
         .update(optionalPayload)
-        .eq('order_code', id);
+        .or(targetIdFilter);
     } catch (e) {
       // Ignora variação de esquema nas colunas opcionais de comprovante
     }
@@ -222,12 +217,9 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
 export async function deleteOrder(id: string): Promise<boolean> {
   if (!isSupabaseConfigured()) return true;
   try {
-    const isLocalId = !id || id.startsWith('PED-') || id.length < 30;
-    if (isLocalId) {
-      await supabase.from('orders').delete().eq('order_code', id);
-    } else {
-      await supabase.from('orders').delete().eq('id', id);
-    }
+    const cleanId = id.replace(/^PED-/, '').replace(/^ORC-/, '');
+    const targetIdFilter = `order_code.eq.${id},order_code.eq.${cleanId},id.eq.${id},id.eq.${cleanId}`;
+    await supabase.from('orders').delete().or(targetIdFilter);
     return true;
   } catch (e) {
     console.error('Erro ao deletar pedido no Supabase:', e);

@@ -26,7 +26,7 @@ export function useOrders(
     )
   );
 
-  const toast = typeof showToastOrQuotes === 'function' ? showToastOrQuotes : showToast || (() => {});
+  const toast = typeof showToastOrQuotes === 'function' ? showToastOrQuotes : showToast || (() => { });
 
   useEffect(() => {
     if (orders && orders.length > 0) {
@@ -49,9 +49,40 @@ export function useOrders(
       .then((dbOrders) => {
         if (isMounted && Array.isArray(dbOrders) && dbOrders.length > 0) {
           setOrders((prev) => {
-            const dbIds = new Set(dbOrders.map((o) => o.id));
-            const extraLocal = prev.filter((o) => !dbIds.has(o.id));
-            return [...dbOrders, ...extraLocal];
+            const dbIds = new Set(
+              dbOrders.flatMap((o) => [
+                o.id,
+                o.id.replace(/^PED-/, ''),
+                `PED-${o.id.replace(/^PED-/, '')}`,
+              ])
+            );
+            const extraLocal = prev.filter(
+              (o) =>
+                !dbIds.has(o.id) &&
+                !dbIds.has(o.id.replace(/^PED-/, '')) &&
+                !dbIds.has(`PED-${o.id.replace(/^PED-/, '')}`)
+            );
+
+            const merged = dbOrders.map((dbOrder) => {
+              const localMatch = prev.find(
+                (l) =>
+                  l.id === dbOrder.id ||
+                  l.id.replace(/^PED-/, '') === dbOrder.id.replace(/^PED-/, '')
+              );
+
+              if (localMatch && (localMatch.paidAmount || 0) > (dbOrder.paidAmount || 0)) {
+                return {
+                  ...dbOrder,
+                  paidAmount: localMatch.paidAmount,
+                  paymentStatusText: localMatch.paymentStatusText,
+                  paymentReceiptUrl: localMatch.paymentReceiptUrl || dbOrder.paymentReceiptUrl,
+                  paymentReceiptUrl2: localMatch.paymentReceiptUrl2 || dbOrder.paymentReceiptUrl2,
+                };
+              }
+              return dbOrder;
+            });
+
+            return [...merged, ...extraLocal];
           });
         }
       })
@@ -80,10 +111,10 @@ export function useOrders(
             newStatus === 'Entregue' || newStatus === 'Concluído'
               ? 100
               : newStatus === 'Pronto'
-              ? 90
-              : newStatus === 'Em produção'
-              ? 50
-              : 10;
+                ? 90
+                : newStatus === 'Em produção'
+                  ? 50
+                  : 10;
           return {
             ...o,
             status: newStatus,
@@ -101,10 +132,10 @@ export function useOrders(
         newStatus === 'Entregue' || newStatus === 'Concluído'
           ? 100
           : newStatus === 'Pronto'
-          ? 90
-          : newStatus === 'Em produção'
-          ? 50
-          : 10;
+            ? 90
+            : newStatus === 'Em produção'
+              ? 50
+              : 10;
 
       await updateOrder(orderId, { status: newStatus, productionProgressPct: progress });
     } catch (err) {
@@ -150,14 +181,14 @@ export function useOrders(
 
     setOrders((prev) =>
       prev.map((o) => {
-        if (o.id === orderId) {
+        if (o.id === orderId || o.id.replace(/^PED-/, '') === orderId.replace(/^PED-/, '')) {
           const newPaid = Math.min(o.totalValue, o.paidAmount + addedAmount);
           const newStatus =
             newPaid >= o.totalValue
               ? 'Pago Total'
               : newPaid > 0
-              ? 'Adiantamento'
-              : 'Pendente';
+                ? 'Adiantamento'
+                : 'Pendente';
 
           const targetIndex = receiptIndex || (o.paymentReceiptUrl && processedReceiptUrl && o.paymentReceiptUrl !== processedReceiptUrl ? 2 : 1);
 
