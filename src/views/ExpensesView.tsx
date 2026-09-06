@@ -1091,12 +1091,12 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
               <tr>
                 <th className="p-4">Data & Horário Exato</th>
                 <th className="p-4">Descrição do Lançamento</th>
-                <th className="p-4">Categoria</th>
-                <th className="p-4">Responsável</th>
+                <th className="p-4 text-center">Categoria</th>
+                <th className="p-4 text-center">Responsável</th>
                 <th className="p-4 text-right">Valor (R$)</th>
-                <th className="p-4">Status</th>
+                <th className="p-4 text-center">Status</th>
                 <th className="p-4 text-center">Comprovante</th>
-                <th className="p-4 text-right">Ação</th>
+                <th className="p-4 text-center">Ação</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -1144,27 +1144,31 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                         </div>
                       </div>
                     </td>
-                    <td className="p-4">
-                      <span
-                        className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border ${exp.category === 'Retirada'
-                          ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900'
-                          : exp.category === 'Aporte / Reembolso de Sócio'
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
-                            : exp.category === 'Transferência de Marketplace'
-                              ? 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-900'
-                              : exp.category === 'Entrada de Pedido'
-                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
-                                : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                          }`}
-                      >
-                        {exp.category}
-                      </span>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center w-full">
+                        <span
+                          className={`inline-flex items-center justify-center text-center px-3 py-1.5 rounded-2xl text-[10px] font-bold border max-w-[140px] leading-tight ${exp.category === 'Retirada'
+                            ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900'
+                            : exp.category === 'Aporte / Reembolso de Sócio'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
+                              : exp.category === 'Transferência de Marketplace'
+                                ? 'bg-cyan-50 text-cyan-800 border-cyan-200 dark:bg-cyan-950/60 dark:text-cyan-300 dark:border-cyan-900'
+                                : exp.category === 'Entrada de Pedido'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-900'
+                                  : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
+                            }`}
+                        >
+                          {exp.category}
+                        </span>
+                      </div>
                     </td>
-                    <td className="p-4 font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-bold border border-indigo-100 dark:border-indigo-900/50">
-                        <UserCheck className="w-3.5 h-3.5" />
-                        {exp.createdBy || exp.beneficiary || 'Nicholas'}
-                      </span>
+                    <td className="p-4 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center w-full">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-bold border border-indigo-100 dark:border-indigo-900/50">
+                          <UserCheck className="w-3.5 h-3.5" />
+                          {exp.createdBy || exp.beneficiary || 'Nicholas'}
+                        </span>
+                      </div>
                     </td>
                     <td className="p-4 text-right font-black text-sm whitespace-nowrap">
                       <span
@@ -1178,26 +1182,28 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                         {exp.amount.toFixed(2).replace('.', ',')}
                       </span>
                     </td>
-                    <td className="p-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${exp.paymentStatus === 'Pago'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300'
-                          }`}
-                      >
-                        {exp.paymentStatus === 'Pago' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
-                        {exp.paymentStatus}
-                      </span>
+                    <td className="p-4 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center w-full">
+                        <span
+                          className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${exp.paymentStatus === 'Pago'
+                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300'
+                            : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300'
+                            }`}
+                        >
+                          {exp.paymentStatus === 'Pago' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                          {exp.paymentStatus}
+                        </span>
+                      </div>
                     </td>
-                    <td className="p-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                    <td className="p-4 text-center whitespace-nowrap">
+                      <div className="flex flex-col items-center justify-center gap-1.5 w-full">
                         {(() => {
                           const matchingOrder = orders.find((o) => o.id === exp.referenceCode || (exp.description && exp.description.includes(o.id)));
                           return matchingOrder ? (
                             <button
                               type="button"
                               onClick={() => setSelectedOrderForPdfModal(matchingOrder)}
-                              className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                              className="w-28 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-xs"
                               title="Visualizar PDF do Pedido em A4"
                             >
                               <FileText className="w-3.5 h-3.5" />
@@ -1208,21 +1214,34 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
                         {exp.receiptUrl ? (
                           <>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setSelectedReceipt({
-                                  url: exp.receiptUrl!,
-                                  type: exp.receiptType,
-                                  name: exp.receiptName,
-                                  title: exp.description,
-                                })
-                              }
-                              className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900"
-                            >
-                              <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
-                              <span>Comprovante {exp.receiptUrl2 ? '1' : ''}</span>
-                            </button>
+                            <div className="flex items-center justify-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedReceipt({
+                                    url: exp.receiptUrl!,
+                                    type: exp.receiptType,
+                                    name: exp.receiptName,
+                                    title: exp.description,
+                                  })
+                                }
+                                className="w-28 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900"
+                              >
+                                <Paperclip className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                                <span className="truncate">Comprovante {exp.receiptUrl2 ? '1' : ''}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingReceiptExpense(exp);
+                                  setExpenseReceiptFile(null);
+                                }}
+                                className="p-1 text-slate-400 hover:text-indigo-500 rounded-lg cursor-pointer shrink-0"
+                                title="Substituir comprovante"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                             {exp.receiptUrl2 && (
                               <button
                                 type="button"
@@ -1234,23 +1253,12 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                                     title: `${exp.description} (Quitação)`,
                                   })
                                 }
-                                className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-900"
+                                className="w-28 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-900"
                               >
-                                <Paperclip className="w-3.5 h-3.5 text-emerald-500" />
-                                <span>Comprovante 2</span>
+                                <Paperclip className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                <span className="truncate">Comprovante 2</span>
                               </button>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingReceiptExpense(exp);
-                                setExpenseReceiptFile(null);
-                              }}
-                              className="p-1 text-slate-400 hover:text-indigo-500 rounded-lg cursor-pointer"
-                              title="Substituir comprovante"
-                            >
-                              <Edit2 className="w-3.5 h-3.5" />
-                            </button>
                           </>
                         ) : (
                           <button
@@ -1259,22 +1267,24 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                               setEditingReceiptExpense(exp);
                               setExpenseReceiptFile(null);
                             }}
-                            className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                            className="w-28 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
                           >
-                            <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
-                            <span>Anexar Comprovante</span>
+                            <Paperclip className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                            <span>Anexar</span>
                           </button>
                         )}
                       </div>
                     </td>
-                    <td className="p-4 text-right">
-                      <button
-                        onClick={() => setDeletingExpense(exp)}
-                        className="p-1.5 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-lg font-bold transition-colors cursor-pointer"
-                        title="Excluir movimentação"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <td className="p-4 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center w-full">
+                        <button
+                          onClick={() => setDeletingExpense(exp)}
+                          className="p-1.5 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-lg font-bold transition-colors cursor-pointer"
+                          title="Excluir movimentação"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
