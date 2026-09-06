@@ -178,11 +178,7 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (updates.internalLogisticsType !== undefined) payload.internal_logistics_type = updates.internalLogisticsType;
   if (updates.internalLogisticsCost !== undefined) payload.internal_logistics_cost = updates.internalLogisticsCost;
   if (updates.paymentReceiptUrl !== undefined) payload.payment_receipt_url = updates.paymentReceiptUrl;
-  if (updates.paymentReceiptType !== undefined) payload.payment_receipt_type = updates.paymentReceiptType;
-  if (updates.paymentReceiptName !== undefined) payload.payment_receipt_name = updates.paymentReceiptName;
   if (updates.paymentReceiptUrl2 !== undefined) payload.payment_receipt_url2 = updates.paymentReceiptUrl2;
-  if (updates.paymentReceiptType2 !== undefined) payload.payment_receipt_type2 = updates.paymentReceiptType2;
-  if (updates.paymentReceiptName2 !== undefined) payload.payment_receipt_name2 = updates.paymentReceiptName2;
   if (updates.paymentTerms !== undefined) payload.payment_terms = updates.paymentTerms;
 
   if (Object.keys(payload).length === 0) return null;
@@ -205,12 +201,33 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
     .eq('id', id)
     .select();
 
-  if (idErr) {
-    console.warn('Aviso ao atualizar pedido no Supabase:', idErr.message);
-    return null;
+  if (!idErr && idData && idData.length > 0) {
+    return idData[0] as any;
   }
 
-  return idData && idData[0] ? (idData[0] as any) : null;
+  // Resilient Fallback: If payload failed due to optional columns, try updating only core payment fields
+  const corePayload: any = {};
+  if (updates.paidAmount !== undefined) corePayload.paid_amount = updates.paidAmount;
+  if (updates.paymentStatusText !== undefined) corePayload.payment_status_text = updates.paymentStatusText;
+  if (updates.paymentReceiptUrl !== undefined) corePayload.payment_receipt_url = updates.paymentReceiptUrl;
+  if (updates.paymentReceiptUrl2 !== undefined) corePayload.payment_receipt_url2 = updates.paymentReceiptUrl2;
+
+  if (Object.keys(corePayload).length > 0) {
+    const { data: fallbackData } = await supabase
+      .from('orders')
+      .update(corePayload)
+      .or(`order_code.eq.${id},id.eq.${id}`)
+      .select();
+    if (fallbackData && fallbackData.length > 0) {
+      return fallbackData[0] as any;
+    }
+  }
+
+  if (codeErr || idErr) {
+    console.warn('Aviso ao atualizar pedido no Supabase:', codeErr?.message || idErr?.message);
+  }
+
+  return null;
 }
 
 export async function deleteOrder(id: string): Promise<boolean> {

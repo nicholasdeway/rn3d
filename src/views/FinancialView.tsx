@@ -21,6 +21,7 @@ import {
   ArrowRight,
   Tag,
   FileText,
+  Loader2,
 } from 'lucide-react';
 import { formatDateBR, parseBRDate } from '../utils/formatters';
 
@@ -366,25 +367,32 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     setPaymentReceiptName('');
   };
 
-  const handleConfirmPayment = (e: React.FormEvent) => {
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+
+  const handleConfirmPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedOrderForPayment || !handlePayment) return;
+    if (!selectedOrderForPayment || !handlePayment || isSubmittingPayment) return;
     const cleanStr = paymentAmountInput.replace(/\./g, '').replace(',', '.');
     const val = parseFloat(cleanStr);
     if (isNaN(val) || val <= 0) return;
 
-    handlePayment(
-      selectedOrderForPayment.id,
-      val,
-      paymentReceiptUrl || undefined,
-      paymentReceiptType,
-      paymentReceiptName || undefined
-    );
-    setSelectedOrderForPayment(null);
-    setPaymentAmountInput('');
-    setPaymentReceiptUrl('');
-    setPaymentReceiptType('image');
-    setPaymentReceiptName('');
+    setIsSubmittingPayment(true);
+    try {
+      await handlePayment(
+        selectedOrderForPayment.id,
+        val,
+        paymentReceiptUrl || undefined,
+        paymentReceiptType,
+        paymentReceiptName || undefined
+      );
+      setSelectedOrderForPayment(null);
+      setPaymentAmountInput('');
+      setPaymentReceiptUrl('');
+      setPaymentReceiptType('image');
+      setPaymentReceiptName('');
+    } finally {
+      setIsSubmittingPayment(false);
+    }
   };
 
   return (
@@ -1429,16 +1437,26 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
               <div className="pt-3 border-t border-slate-100 dark:border-[#202531] flex items-center justify-end gap-2">
                 <button
                   type="button"
+                  disabled={isSubmittingPayment}
                   onClick={() => setSelectedOrderForPayment(null)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-50 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+                  disabled={isSubmittingPayment}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-xl font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
                 >
-                  <HandCoins className="w-4 h-4" /> Confirmar Recebimento
+                  {isSubmittingPayment ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Registrando...
+                    </>
+                  ) : (
+                    <>
+                      <HandCoins className="w-4 h-4" /> Confirmar Recebimento
+                    </>
+                  )}
                 </button>
               </div>
             </form>

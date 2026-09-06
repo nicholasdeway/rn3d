@@ -488,17 +488,23 @@ export function useAppData() {
     await handleCreateExpense(paymentExpenseItem);
   };
 
+  const activeConversionsRef = useState(() => new Set<string>())[0];
+
   const handleConvertQuoteToOrder = useCallback(
     async (quote: Quote) => {
-      await handleUpdateQuoteStatus(quote.id, 'Convertido em Pedido');
+      if (!quote || activeConversionsRef.has(quote.id)) return;
+      activeConversionsRef.add(quote.id);
 
-      const orderId = quote.id.startsWith('ORC-')
-        ? `PED-${quote.id.replace('ORC-', '')}`
-        : `PED-${quote.id}`;
+      try {
+        await handleUpdateQuoteStatus(quote.id, 'Convertido em Pedido');
 
-      const existingOrder = orders.find(
-        (o) => o.id.toLowerCase() === orderId.toLowerCase() || o.id.toLowerCase() === quote.id.toLowerCase()
-      );
+        const orderId = quote.id.startsWith('ORC-')
+          ? `PED-${quote.id.replace('ORC-', '')}`
+          : `PED-${quote.id}`;
+
+        const existingOrder = orders.find(
+          (o) => o.id.toLowerCase() === orderId.toLowerCase() || o.id.toLowerCase() === quote.id.toLowerCase()
+        );
 
       if (!existingOrder) {
         const itemsCount = (quote.items || []).reduce(
@@ -549,6 +555,9 @@ export function useAppData() {
         showToast(`Orçamento #${quote.id} convertido no Pedido #${newOrder.id} com sucesso!`, 'success');
       } else {
         showToast(`Pedido #${orderId} já existia no sistema. Status atualizado.`, 'info');
+      }
+      } finally {
+        activeConversionsRef.delete(quote.id);
       }
     },
     [handleUpdateQuoteStatus, orders, handleCreateOrder, showToast]
