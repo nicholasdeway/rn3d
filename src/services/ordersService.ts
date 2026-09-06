@@ -168,66 +168,63 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
     return null;
   }
 
-  const payload: any = {};
-  if (updates.clientName !== undefined) payload.client_name = updates.clientName;
-  if (updates.totalValue !== undefined) payload.total_value = updates.totalValue;
-  if (updates.paidAmount !== undefined) payload.paid_amount = updates.paidAmount;
-  if (updates.paymentStatusText !== undefined) payload.payment_status_text = updates.paymentStatusText;
-  if (updates.status !== undefined) payload.status = updates.status;
-  if (updates.productionProgressPct !== undefined) payload.production_progress_pct = updates.productionProgressPct;
-  if (updates.internalLogisticsType !== undefined) payload.internal_logistics_type = updates.internalLogisticsType;
-  if (updates.internalLogisticsCost !== undefined) payload.internal_logistics_cost = updates.internalLogisticsCost;
-  if (updates.paymentReceiptUrl !== undefined) payload.payment_receipt_url = updates.paymentReceiptUrl;
-  if (updates.paymentReceiptUrl2 !== undefined) payload.payment_receipt_url2 = updates.paymentReceiptUrl2;
-  if (updates.paymentTerms !== undefined) payload.payment_terms = updates.paymentTerms;
+  // 1. Core payload: colunas garantidas da tabela orders no Supabase
+  const corePayload: any = {};
+  if (updates.clientName !== undefined) corePayload.client_name = updates.clientName;
+  if (updates.totalValue !== undefined) corePayload.total_value = updates.totalValue;
+  if (updates.paidAmount !== undefined) corePayload.paid_amount = updates.paidAmount;
+  if (updates.paymentStatusText !== undefined) corePayload.payment_status_text = updates.paymentStatusText;
+  if (updates.status !== undefined) corePayload.status = updates.status;
+  if (updates.productionProgressPct !== undefined) corePayload.production_progress_pct = updates.productionProgressPct;
+  if (updates.internalLogisticsType !== undefined) corePayload.internal_logistics_type = updates.internalLogisticsType;
+  if (updates.internalLogisticsCost !== undefined) corePayload.internal_logistics_cost = updates.internalLogisticsCost;
 
-  if (Object.keys(payload).length === 0) return null;
+  if (Object.keys(corePayload).length === 0) return null;
 
-  // Try updating by order_code first
+  let resultData: any = null;
+
+  // Atualização dos campos vitais por order_code
   const { data: codeData, error: codeErr } = await supabase
     .from('orders')
-    .update(payload)
+    .update(corePayload)
     .eq('order_code', id)
     .select();
 
   if (!codeErr && codeData && codeData.length > 0) {
-    return codeData[0] as any;
-  }
-
-  // Fallback: Try updating by id
-  const { data: idData, error: idErr } = await supabase
-    .from('orders')
-    .update(payload)
-    .eq('id', id)
-    .select();
-
-  if (!idErr && idData && idData.length > 0) {
-    return idData[0] as any;
-  }
-
-  // Resilient Fallback: If payload failed due to optional columns, try updating only core payment fields
-  const corePayload: any = {};
-  if (updates.paidAmount !== undefined) corePayload.paid_amount = updates.paidAmount;
-  if (updates.paymentStatusText !== undefined) corePayload.payment_status_text = updates.paymentStatusText;
-  if (updates.paymentReceiptUrl !== undefined) corePayload.payment_receipt_url = updates.paymentReceiptUrl;
-  if (updates.paymentReceiptUrl2 !== undefined) corePayload.payment_receipt_url2 = updates.paymentReceiptUrl2;
-
-  if (Object.keys(corePayload).length > 0) {
-    const { data: fallbackData } = await supabase
+    resultData = codeData[0];
+  } else {
+    // Fallback: Atualização por id
+    const { data: idData, error: idErr } = await supabase
       .from('orders')
       .update(corePayload)
-      .or(`order_code.eq.${id},id.eq.${id}`)
+      .eq('id', id)
       .select();
-    if (fallbackData && fallbackData.length > 0) {
-      return fallbackData[0] as any;
+
+    if (!idErr && idData && idData.length > 0) {
+      resultData = idData[0];
+    } else if (codeErr || idErr) {
+      console.warn('Aviso ao atualizar pedido no Supabase:', codeErr?.message || idErr?.message);
     }
   }
 
-  if (codeErr || idErr) {
-    console.warn('Aviso ao atualizar pedido no Supabase:', codeErr?.message || idErr?.message);
+  // 2. Atualização isolada e não-bloqueante de colunas opcionais (se existirem na tabela)
+  const optionalPayload: any = {};
+  if (updates.paymentReceiptUrl !== undefined) optionalPayload.payment_receipt_url = updates.paymentReceiptUrl;
+  if (updates.paymentReceiptUrl2 !== undefined) optionalPayload.payment_receipt_url2 = updates.paymentReceiptUrl2;
+  if (updates.paymentTerms !== undefined) optionalPayload.payment_terms = updates.paymentTerms;
+
+  if (Object.keys(optionalPayload).length > 0) {
+    try {
+      await supabase
+        .from('orders')
+        .update(optionalPayload)
+        .eq('order_code', id);
+    } catch (e) {
+      // Ignora variação de esquema nas colunas opcionais de comprovante
+    }
   }
 
-  return null;
+  return resultData as any;
 }
 
 export async function deleteOrder(id: string): Promise<boolean> {
