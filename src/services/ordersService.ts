@@ -171,8 +171,8 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   // 1. Core payload: colunas garantidas da tabela orders no Supabase
   const corePayload: any = {};
   if (updates.clientName !== undefined) corePayload.client_name = updates.clientName;
-  if (updates.totalValue !== undefined) corePayload.total_value = updates.totalValue;
-  if (updates.paidAmount !== undefined) corePayload.paid_amount = updates.paidAmount;
+  if (updates.totalValue !== undefined) corePayload.total_value = Number(updates.totalValue) || 0;
+  if (updates.paidAmount !== undefined) corePayload.paid_amount = Number(updates.paidAmount) || 0;
   if (updates.paymentStatusText !== undefined) corePayload.payment_status_text = updates.paymentStatusText;
   if (updates.status !== undefined) corePayload.status = updates.status;
   if (updates.productionProgressPct !== undefined) corePayload.production_progress_pct = updates.productionProgressPct;
@@ -181,30 +181,22 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
 
   if (Object.keys(corePayload).length === 0) return null;
 
-  let resultData: any = null;
-
-  // Atualização dos campos vitais por order_code
-  const { data: codeData, error: codeErr } = await supabase
-    .from('orders')
-    .update(corePayload)
-    .eq('order_code', id)
-    .select();
-
-  if (!codeErr && codeData && codeData.length > 0) {
-    resultData = codeData[0];
-  } else {
-    // Fallback: Atualização por id
-    const { data: idData, error: idErr } = await supabase
+  try {
+    // Atualização direta por order_code (sem .select() para evitar erros de RETURNING *)
+    const { error: err1 } = await supabase
       .from('orders')
       .update(corePayload)
-      .eq('id', id)
-      .select();
+      .eq('order_code', id);
 
-    if (!idErr && idData && idData.length > 0) {
-      resultData = idData[0];
-    } else if (codeErr || idErr) {
-      console.warn('Aviso ao atualizar pedido no Supabase:', codeErr?.message || idErr?.message);
+    if (err1) {
+      // Fallback: Atualização direta por id
+      await supabase
+        .from('orders')
+        .update(corePayload)
+        .eq('id', id);
     }
+  } catch (e) {
+    console.error('Erro ao atualizar pedido no Supabase:', e);
   }
 
   // 2. Atualização isolada e não-bloqueante de colunas opcionais (se existirem na tabela)
@@ -224,7 +216,7 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
     }
   }
 
-  return resultData as any;
+  return updates as any;
 }
 
 export async function deleteOrder(id: string): Promise<boolean> {

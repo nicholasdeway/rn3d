@@ -156,7 +156,7 @@ export function useOrders(
             newPaid >= o.totalValue
               ? 'Pago Total'
               : newPaid > 0
-              ? 'Parcial'
+              ? 'Adiantamento'
               : 'Pendente';
 
           const targetIndex = receiptIndex || (o.paymentReceiptUrl && processedReceiptUrl && o.paymentReceiptUrl !== processedReceiptUrl ? 2 : 1);

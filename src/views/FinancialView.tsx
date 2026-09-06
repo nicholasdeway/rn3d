@@ -1196,12 +1196,22 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                 {paginatedReceber.map((entry) => {
                   if (entry.type === 'order') {
                     const o = entry.data as Order;
-                    const remaining = o.totalValue - (o.paidAmount || 0);
+                    const paid = o.paidAmount || 0;
+                    const remaining = o.totalValue - paid;
+                    const isPartial = paid > 0 && paid < o.totalValue;
+
                     return (
                       <div key={o.id} className="p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">{o.clientName}</span>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
+                            {isPartial && (
+                              <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                Adiantamento
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">{o.clientName}</span>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/60 dark:border-[#202531] text-[11px]">
@@ -1211,7 +1221,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                           </div>
                           <div>
                             <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Já Pago</span>
-                            <span className="font-bold text-emerald-600 dark:text-emerald-400">R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}</span>
+                            <span className="font-bold text-emerald-600 dark:text-emerald-400">R$ {paid.toFixed(2).replace('.', ',')}</span>
                           </div>
                           <div>
                             <span className="text-slate-400 dark:text-slate-500 block text-[10px]">Pendente</span>
@@ -1223,7 +1233,8 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                           onClick={() => handleOpenPaymentModal(o)}
                           className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
                         >
-                          <HandCoins className="w-4 h-4" /> Dar Baixa / Quitar
+                          <HandCoins className="w-4 h-4" />
+                          {paid > 0 ? `Quitar Saldo Restante (R$ ${remaining.toFixed(2).replace('.', ',')})` : 'Dar Baixa / Registrar Entrada'}
                         </button>
                       </div>
                     );
@@ -1262,16 +1273,28 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     {paginatedReceber.map((entry) => {
                       if (entry.type === 'order') {
                         const o = entry.data as Order;
-                        const remaining = o.totalValue - (o.paidAmount || 0);
+                        const paid = o.paidAmount || 0;
+                        const remaining = o.totalValue - paid;
+                        const isPartial = paid > 0 && paid < o.totalValue;
+
                         return (
                           <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                            <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{o.id}</td>
+                            <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <span>{o.id}</span>
+                                {isPartial && (
+                                  <span className="px-2 py-0.5 text-[10px] font-extrabold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                    Adiantamento
+                                  </span>
+                                )}
+                              </div>
+                            </td>
                             <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{o.clientName}</td>
                             <td className="p-4 text-right font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                               R$ {o.totalValue.toFixed(2).replace('.', ',')}
                             </td>
                             <td className="p-4 text-right font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                              R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}
+                              R$ {paid.toFixed(2).replace('.', ',')}
                             </td>
                             <td className="p-4 text-right font-extrabold text-rose-600 dark:text-rose-400 whitespace-nowrap">
                               R$ {remaining.toFixed(2).replace('.', ',')}
@@ -1282,7 +1305,8 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                                   onClick={() => handleOpenPaymentModal(o)}
                                   className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0 whitespace-nowrap"
                                 >
-                                  <HandCoins className="w-3.5 h-3.5" /> Dar Baixa / Quitar
+                                  <HandCoins className="w-3.5 h-3.5" />
+                                  {paid > 0 ? `Quitar Saldo (R$ ${remaining.toFixed(2).replace('.', ',')})` : 'Dar Baixa / Quitar'}
                                 </button>
                               </div>
                             </td>
@@ -1383,29 +1407,51 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
             </div>
 
             <form onSubmit={handleConfirmPayment} className="p-6 space-y-4 text-xs">
-              <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-1">
-                <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">Cliente: {selectedOrderForPayment.clientName}</p>
-                <p className="text-slate-600 dark:text-slate-400">
-                  Forma de Pagamento Combinada:{' '}
-                  <span className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
-                    {selectedOrderForPayment.paymentTerms || 'A combinar / Não informada'}
+              <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">Cliente: {selectedOrderForPayment.clientName}</p>
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800 text-[11px]">
+                    {selectedOrderForPayment.paymentTerms || 'A combinar'}
                   </span>
-                </p>
-                <p className="text-slate-600 dark:text-slate-400 pt-1">
-                  Valor Total do Pedido: <strong>R$ {selectedOrderForPayment.totalValue.toFixed(2).replace('.', ',')}</strong>
-                </p>
-                <p className="text-emerald-700 dark:text-emerald-400 font-semibold">
-                  Valor Já Pago: <strong>R$ {(selectedOrderForPayment.paidAmount || 0).toFixed(2).replace('.', ',')}</strong>
-                </p>
-                <p className="text-rose-600 dark:text-rose-400 font-bold">
-                  Saldo Restante: <strong>R$ {(selectedOrderForPayment.totalValue - (selectedOrderForPayment.paidAmount || 0)).toFixed(2).replace('.', ',')}</strong>
-                </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 pt-1 border-t border-slate-200/60 dark:border-[#202531]">
+                  <div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block">Valor Total</span>
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
+                      R$ {selectedOrderForPayment.totalValue.toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block">1º Pag. (Adiantado)</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      R$ {(selectedOrderForPayment.paidAmount || 0).toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block">Saldo Restante</span>
+                    <span className="font-extrabold text-rose-600 dark:text-rose-400">
+                      R$ {(selectedOrderForPayment.totalValue - (selectedOrderForPayment.paidAmount || 0)).toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
+                </div>
+
+                {selectedOrderForPayment.paymentReceiptName && (
+                  <div className="p-2 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-lg border border-emerald-200 dark:border-emerald-900 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+                    <span className="flex items-center gap-1 font-semibold">
+                      <Paperclip className="w-3.5 h-3.5 text-emerald-600" /> 1º Comprovante (Entrada):
+                    </span>
+                    <span className="font-bold truncate max-w-[180px]">{selectedOrderForPayment.paymentReceiptName}</span>
+                  </div>
+                )}
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="block font-bold text-slate-800 dark:text-slate-200">
-                    Valor Entrado em Caixa (R$) *
+                    {(selectedOrderForPayment.paidAmount || 0) > 0
+                      ? 'Valor da Quitação / Saldo Restante (R$) *'
+                      : 'Valor Entrado em Caixa (R$) *'}
                   </label>
                   <span className="text-[11px] text-slate-400">Pode ajustar o valor pago</span>
                 </div>
@@ -1435,7 +1481,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     onClick={() => setPaymentAmountInput((selectedOrderForPayment.totalValue - (selectedOrderForPayment.paidAmount || 0)).toFixed(2).replace('.', ','))}
                     className="px-2.5 py-1 bg-slate-100 dark:bg-[#202531] hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-300 rounded-lg font-bold text-[11px] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                   >
-                    {(selectedOrderForPayment.paidAmount || 0) > 0 ? 'Quitar Restante' : '100%'} (R$ {(selectedOrderForPayment.totalValue - (selectedOrderForPayment.paidAmount || 0)).toFixed(2).replace('.', ',')})
+                    {(selectedOrderForPayment.paidAmount || 0) > 0 ? 'Quitar Saldo Restante' : '100%'} (R$ {(selectedOrderForPayment.totalValue - (selectedOrderForPayment.paidAmount || 0)).toFixed(2).replace('.', ',')})
                   </button>
                 </div>
               </div>
@@ -1480,7 +1526,8 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     </>
                   ) : (
                     <>
-                      <HandCoins className="w-4 h-4" /> Confirmar Recebimento
+                      <HandCoins className="w-4 h-4" />
+                      {(selectedOrderForPayment.paidAmount || 0) > 0 ? 'Quitar Saldo Restante' : 'Confirmar Recebimento'}
                     </>
                   )}
                 </button>
