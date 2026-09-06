@@ -198,20 +198,54 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     reader.readAsDataURL(file);
   };
 
-  // Filter out standalone transactions auto-created for orders and system sync items
-  const filteredTransactions = transactions.filter(
-    (t) =>
-      !(
-        t.type === 'Recebimento de Pedido' ||
-        (t.notes && typeof t.notes === 'string' && t.notes.toLowerCase().includes('referente ao pedido')) ||
-        (t.id && String(t.id).startsWith('PAG-') && orders.some((o) => o.clientName === t.clientName && Math.abs(o.totalValue - t.amount) < 0.01))
-      )
-  );
-
   // Clean expenses (exclude SYS_ internal balance rows)
-  const cleanExpenses = expenses.filter(
-    (exp) => !exp.referenceCode?.startsWith('SYS_') && exp.category !== 'Transferência de Marketplace'
-  );
+  const cleanExpenses = useMemo(() => {
+    return expenses.filter(
+      (exp) => !exp.referenceCode?.startsWith('SYS_') && exp.category !== 'Transferência de Marketplace'
+    );
+  }, [expenses]);
+
+  // Filter out standalone transactions auto-created for orders and system sync items to prevent duplication with order expense entries
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((t) => {
+      if (!t) return false;
+      if (t.type === 'Recebimento de Pedido') return false;
+      if (t.notes && typeof t.notes === 'string' && t.notes.toLowerCase().includes('referente ao pedido')) return false;
+
+      // Check if this transaction matches an auto-mirrored order payment expense
+      const matchesOrderExpense = cleanExpenses.some((exp) => {
+        if (exp.category !== 'Entrada de Pedido' && (!exp.referenceCode || !exp.referenceCode.startsWith('PED-PAY-'))) {
+          return false;
+        }
+        const expAmount = exp.amount || 0;
+        const txAmount = t.amount || 0;
+        if (Math.abs(expAmount - txAmount) > 0.01) return false;
+
+        const client1 = (t.clientName || '').toLowerCase().trim();
+        const client2 = (exp.beneficiary || '').toLowerCase().trim();
+        const desc = (exp.description || '').toLowerCase();
+
+        if (client1 && client2 && (client1.includes(client2) || client2.includes(client1))) return true;
+        if (client1 && desc.includes(client1)) return true;
+        return false;
+      });
+      if (matchesOrderExpense) return false;
+
+      // Check if transaction ID starts with PAG- and matches order total/paid
+      if (t.id && String(t.id).startsWith('PAG-')) {
+        const matchesOrder = orders.some(
+          (o) =>
+            o.clientName &&
+            t.clientName &&
+            o.clientName.toLowerCase() === t.clientName.toLowerCase() &&
+            (Math.abs(o.totalValue - t.amount) < 0.01 || Math.abs((o.paidAmount || 0) - t.amount) < 0.01)
+        );
+        if (matchesOrder) return false;
+      }
+
+      return true;
+    });
+  }, [transactions, cleanExpenses, orders]);
 
   // Extrato Entries: Entradas & Saídas combinadas (Transações de Caixa e Lançamentos)
   const allExtratoEntries = useMemo(() => {
@@ -297,10 +331,10 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     });
   }, [orders, filteredTransactions, cleanExpenses, dateRangeStart, dateRangeEnd, searchTerm, movementType]);
 
-  // Calculate Filtered Summary Metrics for Header KPI cards
+  // Calculate Filtered Summary Metrics for Header KPI cards (Only count actual realized entries, not pending order balances)
   const periodEntradas = useMemo(() => {
     return allExtratoEntries
-      .filter((e) => e.direction === 'entrada')
+      .filter((e) => e.direction === 'entrada' && e.type !== 'order')
       .reduce((acc, e) => acc + e.amount, 0);
   }, [allExtratoEntries]);
 
@@ -328,9 +362,9 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     return allExtratoEntries.slice(start, start + ITEMS_PER_PAGE);
   }, [allExtratoEntries, currentPage]);
 
-  // TAB 2 Data: Entradas em Caixa
+  // TAB 2 Data: Entradas em Caixa (Apenas entradas efetivadas / recebidas, excluindo saldos pendentes de pedidos)
   const allEntradasEntries = useMemo(() => {
-    return allExtratoEntries.filter((e) => e.direction === 'entrada');
+    return allExtratoEntries.filter((e) => e.direction === 'entrada' && e.type !== 'order');
   }, [allExtratoEntries]);
 
   const entradasTotalPages = Math.ceil(allEntradasEntries.length / ITEMS_PER_PAGE) || 1;
