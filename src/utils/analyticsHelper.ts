@@ -126,7 +126,11 @@ export function computeMonthlyAnalyticsData(
 
     if (key && monthlyMap.has(key)) {
       const cur = monthlyMap.get(key)!;
-      if (exp.category === 'Aporte / Reembolso de Sócio') {
+      if (
+        (exp.category as string) === 'Aporte / Reembolso de Sócio' ||
+        (exp.category as string) === 'Entrada de Pedido' ||
+        (exp.category as string) === 'Transferência de Marketplace'
+      ) {
         cur.receitas += amt;
       } else if (exp.paymentStatus === 'Pago') {
         cur.despesas += amt;

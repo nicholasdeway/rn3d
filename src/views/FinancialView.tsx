@@ -22,6 +22,7 @@ import {
   Tag,
   FileText,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import { formatDateBR, parseBRDate } from '../utils/formatters';
 
@@ -46,6 +47,7 @@ interface FinancialViewProps {
     receiptType?: 'image' | 'pdf',
     receiptName?: string
   ) => void;
+  onDeleteExpense?: (id: string) => void;
 }
 
 export const FinancialView: React.FC<FinancialViewProps> = ({
@@ -57,6 +59,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   products = [],
   onUpdateOrderPayment,
   onRecordPayment,
+  onDeleteExpense,
 }) => {
   const handlePayment = onUpdateOrderPayment || onRecordPayment;
 
@@ -247,22 +250,28 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         status: t.status || 'Recebido',
       }));
 
-    // 3. Expense Entries (Saídas)
+    // 3. Expense Entries (Saídas e Entradas de Pedido)
     const expenseEntries = cleanExpenses
       .filter((exp) => isDateInRange(exp.date || exp.timestamp))
-      .map((exp) => ({
-        type: 'expense' as const,
-        direction: (exp.category === 'Aporte / Reembolso de Sócio' ? 'entrada' : 'saida') as 'entrada' | 'saida',
-        data: exp,
-        id: exp.id,
-        date: exp.date || exp.timestamp || '',
-        title: exp.description || 'Despesa Operacional',
-        clientOrCategory: exp.category,
-        amount: exp.amount || 0,
-        paidAmount: exp.paymentStatus === 'Pago' ? exp.amount : 0,
-        totalValue: exp.amount || 0,
-        status: exp.paymentStatus || 'Pago',
-      }));
+      .map((exp) => {
+        const isEntrada =
+          exp.category === 'Entrada de Pedido' ||
+          exp.category === 'Transferência de Marketplace' ||
+          exp.category === 'Aporte / Reembolso de Sócio';
+        return {
+          type: 'expense' as const,
+          direction: (isEntrada ? 'entrada' : 'saida') as 'entrada' | 'saida',
+          data: exp,
+          id: exp.id,
+          date: exp.date || exp.timestamp || '',
+          title: exp.description || 'Despesa Operacional',
+          clientOrCategory: exp.category,
+          amount: exp.amount || 0,
+          paidAmount: exp.paymentStatus === 'Pago' ? exp.amount : 0,
+          totalValue: exp.amount || 0,
+          status: exp.paymentStatus || 'Pago',
+        };
+      });
 
     const combined = [...orderEntries, ...txEntries, ...expenseEntries];
 
@@ -914,7 +923,24 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                               </span>
                             </td>
                             <td className="p-4 text-right whitespace-nowrap">
-                              <span className="text-[11px] font-semibold text-slate-400">Registrado em Despesas</span>
+                              <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                                <span className="text-[11px] font-semibold text-slate-400">
+                                  {isEntrada ? 'Registrado em Entradas' : 'Registrado em Despesas'}
+                                </span>
+                                {onDeleteExpense && (
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm(`Deseja apagar este lançamento ("${exp.description}")?`)) {
+                                        onDeleteExpense(exp.id);
+                                      }
+                                    }}
+                                    title="Excluir este lançamento"
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition-colors cursor-pointer"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );

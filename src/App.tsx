@@ -670,6 +670,7 @@ export function App() {
                   products={appData.products}
                   onUpdateOrderPayment={appData.handleUpdateOrderPayment}
                   onRecordPayment={appData.handleUpdateOrderPayment}
+                  onDeleteExpense={appData.handleDeleteExpense}
                 />
               )}
 
