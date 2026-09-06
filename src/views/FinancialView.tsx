@@ -1440,9 +1440,17 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                 {selectedOrderForPayment.paymentReceiptName && (
                   <div className="p-2 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-lg border border-emerald-200 dark:border-emerald-900 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
                     <span className="flex items-center gap-1 font-semibold">
-                      <Paperclip className="w-3.5 h-3.5 text-emerald-600" /> 1º Comprovante (Entrada):
+                      <Paperclip className="w-3.5 h-3.5 text-emerald-600" /> 1º Comprovante (Adiantamento):
                     </span>
                     <span className="font-bold truncate max-w-[180px]">{selectedOrderForPayment.paymentReceiptName}</span>
+                  </div>
+                )}
+                {selectedOrderForPayment.paymentReceiptName2 && (
+                  <div className="p-2 bg-emerald-50/70 dark:bg-emerald-950/40 rounded-lg border border-emerald-200 dark:border-emerald-900 text-[11px] text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+                    <span className="flex items-center gap-1 font-semibold">
+                      <Paperclip className="w-3.5 h-3.5 text-emerald-600" /> 2º Comprovante (Quitação):
+                    </span>
+                    <span className="font-bold truncate max-w-[180px]">{selectedOrderForPayment.paymentReceiptName2}</span>
                   </div>
                 )}
               </div>

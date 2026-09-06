@@ -374,8 +374,9 @@ export function useAppData() {
 
       const updatedPrev = prevExpenses.map((exp) => {
         if (exp.referenceCode && exp.referenceCode.startsWith('PED-PAY-')) {
-          const orderId = exp.referenceCode.replace('PED-PAY-', '');
-          const matchedOrder = orders.find((o) => o.id === orderId);
+          const parts = exp.referenceCode.split('-');
+          const orderId = parts.length >= 4 ? `${parts[2]}-${parts[3]}` : exp.referenceCode.replace('PED-PAY-', '');
+          const matchedOrder = orders.find((o) => o.id === orderId || o.id.replace(/^PED-/, '') === orderId.replace(/^PED-/, ''));
           if (matchedOrder) {
             const hasNewReceipt1 = matchedOrder.paymentReceiptUrl && exp.receiptUrl !== matchedOrder.paymentReceiptUrl;
             const hasNewReceipt2 = matchedOrder.paymentReceiptUrl2 && exp.receiptUrl2 !== matchedOrder.paymentReceiptUrl2;
@@ -399,12 +400,12 @@ export function useAppData() {
       orders.forEach((o) => {
         const paid = Number(o.paidAmount) || 0;
         if (paid > 0) {
-          const refCode = `PED-PAY-${o.id}`;
-          const alreadyExists = updatedPrev.some((e) => e.referenceCode === refCode);
+          const refPrefix = `PED-PAY-${o.id}`;
+          const alreadyExists = updatedPrev.some((e) => e.referenceCode && e.referenceCode.startsWith(refPrefix));
           if (!alreadyExists) {
             changed = true;
             const newExpItem: ExpenseItem = {
-              id: `exp-pay-${o.id}`,
+              id: `exp-pay-${o.id}-1`,
               description: `Entrada / Pagamento de Pedido (${o.id} - ${o.clientName})`,
               category: 'Entrada de Pedido',
               amount: paid,
@@ -415,14 +416,14 @@ export function useAppData() {
               createdBy: 'Sistema RN 3D',
               destinationAccount: 'Nubank',
               isAutoReplicated: true,
-              referenceCode: refCode,
+              referenceCode: `${refPrefix}-1`,
               receiptUrl: o.paymentReceiptUrl || '',
               receiptType: o.paymentReceiptType || 'image',
               receiptName: o.paymentReceiptName || (o.paymentReceiptUrl ? 'Comprovante 1' : ''),
               receiptUrl2: o.paymentReceiptUrl2 || '',
               receiptType2: o.paymentReceiptType2 || 'image',
               receiptName2: o.paymentReceiptName2 || (o.paymentReceiptUrl2 ? 'Comprovante 2' : ''),
-              notes: `Pagamento de ${o.paymentTerms || o.paymentMethod || 'PIX'} referente ao pedido ${o.id}`,
+              notes: `Pagamento de ${o.paymentTerms || 'PIX'} referente ao pedido ${o.id}`,
             };
             newPaymentEntries.push(newExpItem);
           }
@@ -441,38 +442,24 @@ export function useAppData() {
     receiptName?: string,
     receiptIndex?: 1 | 2
   ) => {
-    await handleUpdateOrderPayment(orderId, addedAmount, receiptUrl, receiptType, receiptName, receiptIndex);
+    const updatedOrderObj = await handleUpdateOrderPayment(
+      orderId,
+      addedAmount,
+      receiptUrl,
+      receiptType,
+      receiptName,
+      receiptIndex
+    );
 
-    const targetOrder = orders.find((o) => o.id === orderId);
+    const targetOrder = updatedOrderObj || orders.find((o) => o.id === orderId);
     const clientName = targetOrder ? targetOrder.clientName : 'Cliente Local';
-    const terms = targetOrder?.paymentTerms || targetOrder?.paymentMethod || 'PIX';
+    const terms = targetOrder?.paymentTerms || 'PIX';
 
-    let rUrl1 = targetOrder?.paymentReceiptUrl || '';
-    let rType1 = targetOrder?.paymentReceiptType || 'image';
-    let rName1 = targetOrder?.paymentReceiptName || '';
-
-    let rUrl2 = targetOrder?.paymentReceiptUrl2 || '';
-    let rType2 = targetOrder?.paymentReceiptType2 || 'image';
-    let rName2 = targetOrder?.paymentReceiptName2 || '';
-
-    if (receiptUrl) {
-      if (receiptIndex === 2 || (rUrl1 && rUrl1 !== receiptUrl)) {
-        rUrl2 = receiptUrl;
-        rType2 = receiptType || 'image';
-        rName2 = receiptName || 'Comprovante 2';
-      } else {
-        rUrl1 = receiptUrl;
-        rType1 = receiptType || 'image';
-        rName1 = receiptName || 'Comprovante 1';
-      }
-    }
-
-    const currentReceiptUrl = receiptUrl || (receiptIndex === 2 ? rUrl2 : rUrl1);
-    const currentReceiptType = receiptType || (receiptIndex === 2 ? rType2 : rType1);
-    const currentReceiptName = receiptName || (receiptIndex === 2 ? rName2 : rName1);
+    const isSecondPayment = (targetOrder?.paidAmount || 0) >= (targetOrder?.totalValue || 0) && (targetOrder?.paidAmount || 0) > addedAmount;
+    const paymentIdx = receiptIndex || (isSecondPayment ? 2 : 1);
 
     const paymentExpenseItem: ExpenseItem = {
-      id: `exp-pay-${orderId}-${Date.now()}`,
+      id: `exp-pay-${orderId}-${paymentIdx}-${Date.now()}`,
       description: `Entrada / Pagamento de Pedido (${orderId} - ${clientName})`,
       category: 'Entrada de Pedido',
       amount: addedAmount,
@@ -483,13 +470,13 @@ export function useAppData() {
       createdBy: 'Sistema RN 3D',
       destinationAccount: 'Nubank',
       isAutoReplicated: true,
-      referenceCode: `PED-PAY-${orderId}-${receiptIndex || (targetOrder?.paidAmount && targetOrder.paidAmount > 0 ? 2 : 1)}`,
-      receiptUrl: currentReceiptUrl,
-      receiptType: currentReceiptType as any,
-      receiptName: currentReceiptName,
-      receiptUrl2: rUrl2,
-      receiptType2: rType2 as any,
-      receiptName2: rName2,
+      referenceCode: `PED-PAY-${orderId}-${paymentIdx}`,
+      receiptUrl: receiptUrl || (paymentIdx === 2 ? targetOrder?.paymentReceiptUrl2 : targetOrder?.paymentReceiptUrl) || '',
+      receiptType: (receiptType || (paymentIdx === 2 ? targetOrder?.paymentReceiptType2 : targetOrder?.paymentReceiptType) || 'image') as any,
+      receiptName: receiptName || (paymentIdx === 2 ? targetOrder?.paymentReceiptName2 : targetOrder?.paymentReceiptName) || '',
+      receiptUrl2: targetOrder?.paymentReceiptUrl2 || '',
+      receiptType2: (targetOrder?.paymentReceiptType2 || 'image') as any,
+      receiptName2: targetOrder?.paymentReceiptName2 || '',
       notes: `Pagamento de R$ ${addedAmount.toFixed(2).replace('.', ',')} (${terms}) referente ao pedido ${orderId}`,
     };
 
@@ -530,7 +517,7 @@ export function useAppData() {
           id: orderId,
           clientId: quote.clientId || '',
           clientName: quote.clientName || 'Cliente Local',
-          date: normalizeToIsoDate(quote.date),
+          date: new Date().toISOString().split('T')[0],
           createdAt: new Date().toISOString(),
           itemsCount: itemsCount,
           totalValue: totalVal,

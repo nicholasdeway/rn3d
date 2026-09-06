@@ -97,11 +97,18 @@ export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promi
       items_count: o.itemsCount || (o.items ? o.items.length : 0),
       total_value: o.totalValue,
       paid_amount: o.paidAmount,
-      payment_status_text: o.paymentStatusText || (o.paidAmount >= o.totalValue ? 'Pago Total' : o.paidAmount > 0 ? 'Parcial' : 'Pendente'),
+      payment_status_text: o.paymentStatusText || (o.paidAmount >= o.totalValue ? 'Pago Total' : o.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
       status: o.status || 'Novo',
       production_progress_pct: o.productionProgressPct || 0,
       internal_logistics_type: o.internalLogisticsType || 'combustivel',
       internal_logistics_cost: o.internalLogisticsCost || 0,
+      payment_receipt_url: o.paymentReceiptUrl || '',
+      payment_receipt_type: o.paymentReceiptType || 'image',
+      payment_receipt_name: o.paymentReceiptName || '',
+      payment_receipt_url2: o.paymentReceiptUrl2 || '',
+      payment_receipt_type2: o.paymentReceiptType2 || 'image',
+      payment_receipt_name2: o.paymentReceiptName2 || '',
+      payment_terms: o.paymentTerms || '',
     }));
 
     const { error } = await supabase.from('orders').insert(rows);
@@ -130,8 +137,15 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     items_count: order.itemsCount || (order.items ? order.items.length : 0),
     total_value: order.totalValue || 0,
     paid_amount: order.paidAmount || 0,
-    payment_status_text: order.paymentStatusText || (order.paidAmount && order.totalValue && order.paidAmount >= order.totalValue ? 'Pago Total' : order.paidAmount && order.paidAmount > 0 ? 'Parcial' : 'Pendente'),
+    payment_status_text: order.paymentStatusText || (order.paidAmount && order.totalValue && order.paidAmount >= order.totalValue ? 'Pago Total' : order.paidAmount && order.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
     status: order.status || 'Novo',
+    payment_receipt_url: order.paymentReceiptUrl || '',
+    payment_receipt_type: order.paymentReceiptType || 'image',
+    payment_receipt_name: order.paymentReceiptName || '',
+    payment_receipt_url2: order.paymentReceiptUrl2 || '',
+    payment_receipt_type2: order.paymentReceiptType2 || 'image',
+    payment_receipt_name2: order.paymentReceiptName2 || '',
+    payment_terms: order.paymentTerms || '',
   };
 
   if (order.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.clientId)) {
@@ -185,22 +199,37 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (updates.internalLogisticsType !== undefined) corePayload.internal_logistics_type = updates.internalLogisticsType;
   if (updates.internalLogisticsCost !== undefined) corePayload.internal_logistics_cost = updates.internalLogisticsCost;
 
-  if (Object.keys(corePayload).length === 0) return null;
-
-  try {
-    await supabase
-      .from('orders')
-      .update(corePayload)
-      .or(targetIdFilter);
-  } catch (e) {
-    console.error('Erro ao atualizar pedido no Supabase:', e);
+  if (Object.keys(corePayload).length > 0) {
+    try {
+      await supabase
+        .from('orders')
+        .update(corePayload)
+        .or(targetIdFilter);
+    } catch (e) {
+      console.error('Erro ao atualizar pedido no Supabase:', e);
+    }
   }
 
   // 2. Atualização isolada e não-bloqueante de colunas opcionais (se existirem na tabela)
   const optionalPayload: any = {};
   if (updates.paymentReceiptUrl !== undefined) optionalPayload.payment_receipt_url = updates.paymentReceiptUrl;
+  if (updates.paymentReceiptType !== undefined) optionalPayload.payment_receipt_type = updates.paymentReceiptType;
+  if (updates.paymentReceiptName !== undefined) optionalPayload.payment_receipt_name = updates.paymentReceiptName;
   if (updates.paymentReceiptUrl2 !== undefined) optionalPayload.payment_receipt_url2 = updates.paymentReceiptUrl2;
+  if (updates.paymentReceiptType2 !== undefined) optionalPayload.payment_receipt_type2 = updates.paymentReceiptType2;
+  if (updates.paymentReceiptName2 !== undefined) optionalPayload.payment_receipt_name2 = updates.paymentReceiptName2;
   if (updates.paymentTerms !== undefined) optionalPayload.payment_terms = updates.paymentTerms;
+
+  if (Object.keys(optionalPayload).length > 0) {
+    try {
+      await supabase
+        .from('orders')
+        .update(optionalPayload)
+        .or(targetIdFilter);
+    } catch (e) {
+      // Ignora variação de esquema nas colunas opcionais de comprovante
+    }
+  }
 
   if (Object.keys(optionalPayload).length > 0) {
     try {

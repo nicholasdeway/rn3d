@@ -252,6 +252,8 @@ export function useOrders(
     } catch (err) {
       console.error('Erro ao atualizar pagamento do pedido no Supabase:', err);
     }
+
+    return updatedOrderObj;
   };
 
   return {
