@@ -425,7 +425,7 @@ export async function updateExpense(id: string, updates: Partial<ExpenseItem>): 
 /**
  * Exclui uma despesa diretamente do Supabase Postgres
  */
-export async function deleteExpense(id: string): Promise<boolean> {
+export async function deleteExpense(id: string, referenceCode?: string): Promise<boolean> {
   if (!isSupabaseConfigured() || !id) return true;
 
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -433,14 +433,22 @@ export async function deleteExpense(id: string): Promise<boolean> {
   try {
     if (isUuid) {
       const { error } = await supabase.from('expenses').delete().eq('id', id);
-      if (error) console.error('Erro ao excluir despesa por UUID no Supabase:', error.message);
-    } else {
-      const { error } = await supabase.from('expenses').delete().eq('reference_code', id);
-      if (error) {
-        // Fallback: Tenta deletar por notas/descrição
-        await supabase.from('expenses').delete().or(`reference_code.eq.${id},description.cs.${id}`);
-      }
+      if (!error) return true;
     }
+
+    if (referenceCode) {
+      const { error: refErr } = await supabase.from('expenses').delete().eq('reference_code', referenceCode);
+      if (!refErr) return true;
+    }
+
+    const { error: idRefErr } = await supabase.from('expenses').delete().eq('reference_code', id);
+    if (!idRefErr) return true;
+
+    const cleanCode = (referenceCode || id).replace(/^exp-pay-/, '').replace(/^exp-/, '');
+    if (cleanCode && cleanCode.length > 3) {
+      await supabase.from('expenses').delete().or(`reference_code.ilike.%${cleanCode}%,description.ilike.%${cleanCode}%`);
+    }
+
     return true;
   } catch (e) {
     console.error('Erro ao excluir despesa no Supabase:', e);

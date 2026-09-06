@@ -265,8 +265,8 @@ export function useExpenses(
   };
 
   const handleDeleteExpense = async (expenseId: string) => {
-    const exp = expenses.find((e) => e.id === expenseId);
-    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+    const exp = expenses.find((e) => e.id === expenseId || (e.referenceCode && e.referenceCode === expenseId));
+    setExpenses((prev) => prev.filter((e) => e.id !== expenseId && e.referenceCode !== expenseId));
     showToast(`Lançamento "${exp?.description || expenseId}" excluído com sucesso!`, 'success');
 
     if (exp) {
@@ -290,7 +290,7 @@ export function useExpenses(
     }
 
     try {
-      await deleteExpense(expenseId);
+      await deleteExpense(expenseId, exp?.referenceCode);
     } catch (err) {
       console.error('Erro ao excluir despesa no Supabase:', err);
     }

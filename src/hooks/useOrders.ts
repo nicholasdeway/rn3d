@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Order, OrderStatus } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
+import { isSupabaseConfigured } from '../lib/supabase';
 import {
   fetchOrders,
   createOrder,
@@ -17,19 +18,22 @@ export function useOrders(
   setVisits?: any,
   setTransactions?: any
 ) {
-  const [orders, setOrders] = useState<Order[]>(() =>
-    getStorageParsed<Order[]>('rn3d_orders', [], true).filter(
-      (o) =>
-        !o.id?.startsWith('SYS_') &&
-        !o.clientName?.startsWith('SISTEMA_') &&
-        !o.id?.startsWith('REM-')
-    )
-  );
+  const [orders, setOrders] = useState<Order[]>(() => {
+    if (!isSupabaseConfigured()) {
+      return getStorageParsed<Order[]>('rn3d_orders', [], true).filter(
+        (o) =>
+          !o.id?.startsWith('SYS_') &&
+          !o.clientName?.startsWith('SISTEMA_') &&
+          !o.id?.startsWith('REM-')
+      );
+    }
+    return [];
+  });
 
   const toast = typeof showToastOrQuotes === 'function' ? showToastOrQuotes : showToast || (() => { });
 
   useEffect(() => {
-    if (orders && orders.length > 0) {
+    if (!isSupabaseConfigured() && orders && orders.length > 0) {
       const cleanOrders = orders.filter(
         (o) =>
           !o.id?.startsWith('SYS_') &&
