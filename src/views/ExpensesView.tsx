@@ -1203,7 +1203,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                             <button
                               type="button"
                               onClick={() => setSelectedOrderForPdfModal(matchingOrder)}
-                              className="w-28 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-xs"
+                              className="min-w-[135px] px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs whitespace-nowrap"
                               title="Visualizar PDF do Pedido em A4"
                             >
                               <FileText className="w-3.5 h-3.5" />
@@ -1214,7 +1214,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
 
                         {exp.receiptUrl ? (
                           <>
-                            <div className="flex items-center justify-center gap-1">
+                            <div className="relative inline-flex items-center justify-center">
                               <button
                                 type="button"
                                 onClick={() =>
@@ -1225,10 +1225,10 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                                     title: exp.description,
                                   })
                                 }
-                                className="w-28 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900"
+                                className="min-w-[135px] px-3 py-1 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900 whitespace-nowrap shadow-xs"
                               >
                                 <Paperclip className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                                <span className="truncate">Comprovante {exp.receiptUrl2 ? '1' : ''}</span>
+                                <span>Comprovante {exp.receiptUrl2 ? '1' : ''}</span>
                               </button>
                               <button
                                 type="button"
@@ -1236,7 +1236,7 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                                   setEditingReceiptExpense(exp);
                                   setExpenseReceiptFile(null);
                                 }}
-                                className="p-1 text-slate-400 hover:text-indigo-500 rounded-lg cursor-pointer shrink-0"
+                                className="absolute left-full ml-1 p-1 text-slate-400 hover:text-indigo-500 rounded-lg cursor-pointer transition-colors"
                                 title="Substituir comprovante"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
@@ -1253,10 +1253,10 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                                     title: `${exp.description} (Quitação)`,
                                   })
                                 }
-                                className="w-28 px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1 transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-900"
+                                className="min-w-[135px] px-3 py-1 bg-emerald-50 dark:bg-emerald-950/80 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-emerald-200 dark:border-emerald-900 whitespace-nowrap shadow-xs"
                               >
                                 <Paperclip className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                                <span className="truncate">Comprovante 2</span>
+                                <span>Comprovante 2</span>
                               </button>
                             )}
                           </>
@@ -1267,10 +1267,10 @@ export const ExpensesView: React.FC<ExpensesViewProps> = ({
                               setEditingReceiptExpense(exp);
                               setExpenseReceiptFile(null);
                             }}
-                            className="w-28 px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-colors cursor-pointer"
+                            className="min-w-[135px] px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
                           >
                             <Paperclip className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                            <span>Anexar</span>
+                            <span>Anexar Comprovante</span>
                           </button>
                         )}
                       </div>
