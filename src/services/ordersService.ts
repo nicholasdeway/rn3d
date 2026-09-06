@@ -2,7 +2,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Order } from '../types';
 import { formatDateBR, normalizeToIsoDate, getTodayBR } from '../utils/formatters';
 
-function encodeOrderNotesAndMetadata(order: Partial<Order>): string {
+function encodeStatusWithMeta(statusText: string, order: Partial<Order>): string {
   const userNotes = order.notes || '';
   const meta = {
     userNotes,
@@ -17,10 +17,23 @@ function encodeOrderNotesAndMetadata(order: Partial<Order>): string {
     internalLogisticsType: order.internalLogisticsType,
     internalLogisticsCost: order.internalLogisticsCost,
   };
-  return `[META:${JSON.stringify(meta)}]${userNotes}`;
+
+  const hasMeta =
+    Boolean(userNotes) ||
+    Boolean(order.paymentReceiptUrl) ||
+    Boolean(order.paymentReceiptUrl2) ||
+    Boolean(order.paymentTerms) ||
+    order.productionProgressPct !== undefined ||
+    Boolean(order.internalLogisticsType) ||
+    order.internalLogisticsCost !== undefined;
+
+  const baseStatus = statusText || 'Pendente';
+  if (!hasMeta) return baseStatus;
+  return `${baseStatus} [META:${JSON.stringify(meta)}]`;
 }
 
-function decodeOrderNotesAndMetadata(row: any): {
+function decodeOrderRow(row: any): {
+  paymentStatusText: string;
   notes: string;
   paymentReceiptUrl: string;
   paymentReceiptType: 'image' | 'pdf';
@@ -33,6 +46,8 @@ function decodeOrderNotesAndMetadata(row: any): {
   internalLogisticsType: 'combustivel' | 'transporte' | 'entrega_propria';
   internalLogisticsCost: number;
 } {
+  let rawText = (row.notes || '') + ' ' + (row.payment_status_text || '');
+  let paymentStatusText = row.payment_status_text || 'Pendente';
   let notes = row.notes || '';
   let paymentReceiptUrl = row.payment_receipt_url || '';
   let paymentReceiptType = (row.payment_receipt_type || 'image') as any;
@@ -45,11 +60,12 @@ function decodeOrderNotesAndMetadata(row: any): {
   let internalLogisticsType = (row.internal_logistics_type || 'combustivel') as any;
   let internalLogisticsCost = Number(row.internal_logistics_cost) || 0;
 
-  if (notes.startsWith('[META:')) {
-    const endIdx = notes.indexOf(']');
-    if (endIdx > 6) {
+  if (rawText.includes('[META:')) {
+    const startIdx = rawText.indexOf('[META:');
+    const endIdx = rawText.indexOf(']', startIdx);
+    if (startIdx !== -1 && endIdx > startIdx + 6) {
       try {
-        const jsonStr = notes.substring(6, endIdx);
+        const jsonStr = rawText.substring(startIdx + 6, endIdx);
         const meta = JSON.parse(jsonStr);
         if (meta.paymentReceiptUrl) paymentReceiptUrl = meta.paymentReceiptUrl;
         if (meta.paymentReceiptType) paymentReceiptType = meta.paymentReceiptType;
@@ -61,12 +77,17 @@ function decodeOrderNotesAndMetadata(row: any): {
         if (meta.productionProgressPct !== undefined) productionProgressPct = Number(meta.productionProgressPct) || 0;
         if (meta.internalLogisticsType) internalLogisticsType = meta.internalLogisticsType;
         if (meta.internalLogisticsCost !== undefined) internalLogisticsCost = Number(meta.internalLogisticsCost) || 0;
-        notes = meta.userNotes !== undefined ? meta.userNotes : notes.substring(endIdx + 1);
+        if (meta.userNotes !== undefined) notes = meta.userNotes;
       } catch (e) {}
+    }
+
+    if (paymentStatusText.includes('[META:')) {
+      paymentStatusText = paymentStatusText.substring(0, paymentStatusText.indexOf('[META:')).trim() || 'Pendente';
     }
   }
 
   return {
+    paymentStatusText,
     notes,
     paymentReceiptUrl,
     paymentReceiptType,
@@ -107,7 +128,7 @@ export async function fetchOrders(): Promise<Order[]> {
         !(row.order_code && row.order_code.startsWith('REM-'))
     )
     .map((row) => {
-      const decoded = decodeOrderNotesAndMetadata(row);
+      const decoded = decodeOrderRow(row);
       let clientCost = decoded.internalLogisticsCost || Number(row.internal_logistics_cost) || 0;
       let clientType = decoded.internalLogisticsType || row.internal_logistics_type || 'combustivel';
       let progressPct = decoded.productionProgressPct || Number(row.production_progress_pct) || 0;
@@ -121,7 +142,7 @@ export async function fetchOrders(): Promise<Order[]> {
         itemsCount: row.items_count || (row.order_items ? row.order_items.length : 0),
         totalValue: Number(row.total_value) || 0,
         paidAmount: Number(row.paid_amount) || 0,
-        paymentStatusText: row.payment_status_text || 'Pendente',
+        paymentStatusText: decoded.paymentStatusText,
         status: row.status as Order['status'],
         productionProgressPct: progressPct,
         productionSlaDate: row.production_sla_date || '',
@@ -178,9 +199,11 @@ export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promi
       items_count: o.itemsCount || (o.items ? o.items.length : 0),
       total_value: o.totalValue,
       paid_amount: o.paidAmount,
-      payment_status_text: o.paymentStatusText || (o.paidAmount >= o.totalValue ? 'Pago Total' : o.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
+      payment_status_text: encodeStatusWithMeta(
+        o.paymentStatusText || (o.paidAmount >= o.totalValue ? 'Pago Total' : o.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
+        o
+      ),
       status: o.status || 'Novo',
-      notes: encodeOrderNotesAndMetadata(o),
     }));
 
     const { error } = await supabase.from('orders').insert(rows);
@@ -202,6 +225,14 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     return null;
   }
 
+  const baseStatusText =
+    order.paymentStatusText ||
+    (order.paidAmount && order.totalValue && order.paidAmount >= order.totalValue
+      ? 'Pago Total'
+      : order.paidAmount && order.paidAmount > 0
+        ? 'Adiantamento'
+        : 'Pendente');
+
   const payload: any = {
     order_code: order.id,
     client_name: order.clientName,
@@ -209,9 +240,8 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     items_count: order.itemsCount || (order.items ? order.items.length : 0),
     total_value: order.totalValue || 0,
     paid_amount: order.paidAmount || 0,
-    payment_status_text: order.paymentStatusText || (order.paidAmount && order.totalValue && order.paidAmount >= order.totalValue ? 'Pago Total' : order.paidAmount && order.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
+    payment_status_text: encodeStatusWithMeta(baseStatusText, order),
     status: order.status || 'Novo',
-    notes: encodeOrderNotesAndMetadata(order),
   };
 
   if (order.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.clientId)) {
@@ -254,10 +284,10 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (updates.clientName !== undefined) corePayload.client_name = updates.clientName;
   if (updates.totalValue !== undefined) corePayload.total_value = Number(updates.totalValue) || 0;
   if (updates.paidAmount !== undefined) corePayload.paid_amount = Number(updates.paidAmount) || 0;
-  if (updates.paymentStatusText !== undefined) corePayload.payment_status_text = updates.paymentStatusText;
   if (updates.status !== undefined) corePayload.status = updates.status;
 
   if (
+    updates.paymentStatusText !== undefined ||
     updates.notes !== undefined ||
     updates.paymentReceiptUrl !== undefined ||
     updates.paymentReceiptUrl2 !== undefined ||
@@ -266,7 +296,8 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
     updates.internalLogisticsType !== undefined ||
     updates.internalLogisticsCost !== undefined
   ) {
-    corePayload.notes = encodeOrderNotesAndMetadata(updates);
+    const statusText = updates.paymentStatusText || 'Pendente';
+    corePayload.payment_status_text = encodeStatusWithMeta(statusText, updates);
   }
 
   if (Object.keys(corePayload).length === 0) return updates as any;
