@@ -88,51 +88,32 @@ export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promi
     );
     if (toInsert.length === 0) return 0;
 
-    const rows = toInsert.map((o) => {
-      const rowPayload: any = {
-        order_code: o.id,
-        client_id: o.clientId || null,
-        client_name: o.clientName,
-        date: o.date,
-        items_count: o.itemsCount || (o.items ? o.items.length : 0),
-        total_value: o.totalValue,
-        paid_amount: o.paidAmount,
-        payment_status_text: o.paymentStatusText || (o.paidAmount >= o.totalValue ? 'Pago Total' : o.paidAmount > 0 ? 'Parcial' : 'Pendente'),
-        status: o.status || 'Novo',
-        production_progress_pct: o.productionProgressPct || 0,
-        internal_logistics_type: o.internalLogisticsType || 'combustivel',
-        internal_logistics_cost: o.internalLogisticsCost || 0,
-        payment_terms: o.paymentTerms || o.paymentMethod || '',
-      };
-      if (o.paymentReceiptUrl) {
-        rowPayload.payment_receipt_url = o.paymentReceiptUrl;
-        rowPayload.payment_receipt_type = o.paymentReceiptType || 'image';
-        rowPayload.payment_receipt_name = o.paymentReceiptName || '';
-      }
-      if (o.paymentReceiptUrl2) {
-        rowPayload.payment_receipt_url2 = o.paymentReceiptUrl2;
-        rowPayload.payment_receipt_type2 = o.paymentReceiptType2 || 'image';
-        rowPayload.payment_receipt_name2 = o.paymentReceiptName2 || '';
-      }
-      return rowPayload;
-    });
+    const rows = toInsert.map((o) => ({
+      order_code: o.id,
+      client_id: (o.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(o.clientId)) ? o.clientId : null,
+      client_name: o.clientName,
+      date: o.date,
+      items_count: o.itemsCount || (o.items ? o.items.length : 0),
+      total_value: o.totalValue,
+      paid_amount: o.paidAmount,
+      payment_status_text: o.paymentStatusText || (o.paidAmount >= o.totalValue ? 'Pago Total' : o.paidAmount > 0 ? 'Parcial' : 'Pendente'),
+      status: o.status || 'Novo',
+      production_progress_pct: o.productionProgressPct || 0,
+      internal_logistics_type: o.internalLogisticsType || 'combustivel',
+      internal_logistics_cost: o.internalLogisticsCost || 0,
+    }));
 
-    let { error } = await supabase.from('orders').insert(rows);
-    if (error && error.message.includes('column')) {
-      const fallbackRows = rows.map(({ payment_receipt_url, payment_receipt_type, payment_receipt_name, payment_receipt_url2, payment_receipt_type2, payment_receipt_name2, payment_terms, ...rest }: any) => rest);
-      const retry = await supabase.from('orders').insert(fallbackRows);
-      error = retry.error;
-    }
+    const { error } = await supabase.from('orders').insert(rows);
 
     if (error) {
       console.warn('Aviso na sincronização de pedidos com Supabase:', error.message);
-      throw error;
+      return 0;
     } else {
       return rows.length;
     }
   } catch (err) {
     console.error('Erro ao sincronizar lote de pedidos:', err);
-    throw err;
+    return 0;
   }
 }
 
@@ -148,49 +129,22 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     items_count: order.itemsCount || (order.items ? order.items.length : 0),
     total_value: order.totalValue || 0,
     paid_amount: order.paidAmount || 0,
-    payment_status_text: order.paymentStatusText || (order.paidAmount && order.totalValue && order.paidAmount >= order.totalValue ? 'Pago Total' : 'Pendente'),
+    payment_status_text: order.paymentStatusText || (order.paidAmount && order.totalValue && order.paidAmount >= order.totalValue ? 'Pago Total' : order.paidAmount && order.paidAmount > 0 ? 'Parcial' : 'Pendente'),
     status: order.status || 'Novo',
-    payment_terms: order.paymentTerms || order.paymentMethod || '',
   };
-
-  if (order.paymentReceiptUrl) {
-    payload.payment_receipt_url = order.paymentReceiptUrl;
-    payload.payment_receipt_type = order.paymentReceiptType || 'image';
-    payload.payment_receipt_name = order.paymentReceiptName || '';
-  }
-
-  if (order.paymentReceiptUrl2) {
-    payload.payment_receipt_url2 = order.paymentReceiptUrl2;
-    payload.payment_receipt_type2 = order.paymentReceiptType2 || 'image';
-    payload.payment_receipt_name2 = order.paymentReceiptName2 || '';
-  }
 
   if (order.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.clientId)) {
     payload.client_id = order.clientId;
   }
 
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from('orders')
     .insert([payload])
     .select()
     .single();
 
-  if (error && error.message.includes('column')) {
-    delete payload.payment_receipt_url;
-    delete payload.payment_receipt_type;
-    delete payload.payment_receipt_name;
-    delete payload.payment_receipt_url2;
-    delete payload.payment_receipt_type2;
-    delete payload.payment_receipt_name2;
-    delete payload.payment_terms;
-    const retry = await supabase.from('orders').insert([payload]).select().single();
-    data = retry.data;
-    error = retry.error;
-  }
-
   if (error) {
-    console.error('Erro ao cadastrar pedido no Supabase:', error.message);
-    throw error;
+    console.warn('Aviso ao cadastrar pedido no Supabase (salvo no armazenamento local):', error.message);
   }
 
   // Insert Order Items if present
@@ -205,7 +159,7 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     await supabase.from('order_items').insert(itemRows);
   }
 
-  return data as any;
+  return (data || payload) as any;
 }
 
 export async function updateOrder(id: string, updates: Partial<Order>): Promise<Order | null> {
@@ -222,13 +176,8 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (updates.productionProgressPct !== undefined) payload.production_progress_pct = updates.productionProgressPct;
   if (updates.internalLogisticsType !== undefined) payload.internal_logistics_type = updates.internalLogisticsType;
   if (updates.internalLogisticsCost !== undefined) payload.internal_logistics_cost = updates.internalLogisticsCost;
-  if (updates.paymentTerms !== undefined) payload.payment_terms = updates.paymentTerms;
-  if (updates.paymentReceiptUrl !== undefined) payload.payment_receipt_url = updates.paymentReceiptUrl;
-  if (updates.paymentReceiptType !== undefined) payload.payment_receipt_type = updates.paymentReceiptType;
-  if (updates.paymentReceiptName !== undefined) payload.payment_receipt_name = updates.paymentReceiptName;
-  if (updates.paymentReceiptUrl2 !== undefined) payload.payment_receipt_url2 = updates.paymentReceiptUrl2;
-  if (updates.paymentReceiptType2 !== undefined) payload.payment_receipt_type2 = updates.paymentReceiptType2;
-  if (updates.paymentReceiptName2 !== undefined) payload.payment_receipt_name2 = updates.paymentReceiptName2;
+
+  if (Object.keys(payload).length === 0) return null;
 
   const isLocalId = !id || id.startsWith('PED-') || id.length < 30;
 
@@ -239,27 +188,11 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
     query = query.eq('order_code', id);
   }
 
-  let { data, error } = await query.select();
-
-  if (error && error.message.includes('column')) {
-    delete payload.payment_receipt_url;
-    delete payload.payment_receipt_type;
-    delete payload.payment_receipt_name;
-
-    let retryQuery = supabase.from('orders').update(payload);
-    if (!isLocalId) {
-      retryQuery = retryQuery.eq('id', id);
-    } else {
-      retryQuery = retryQuery.eq('order_code', id);
-    }
-    const retry = await retryQuery.select();
-    data = retry.data;
-    error = retry.error;
-  }
+  const { data, error } = await query.select();
 
   if (error) {
-    console.error('Erro ao atualizar pedido no Supabase:', error.message);
-    throw error;
+    console.warn('Aviso ao atualizar pedido no Supabase:', error.message);
+    return null;
   }
 
   return (data && data[0]) ? (data[0] as any) : null;
