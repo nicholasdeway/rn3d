@@ -475,7 +475,7 @@ export function useAppData() {
       createdBy: 'Sistema RN 3D',
       destinationAccount: 'Nubank',
       isAutoReplicated: true,
-      referenceCode: `PED-PAY-${orderId}`,
+      referenceCode: `PED-PAY-${orderId}-${receiptIndex || (targetOrder?.paidAmount && targetOrder.paidAmount > 0 ? 2 : 1)}`,
       receiptUrl: currentReceiptUrl,
       receiptType: currentReceiptType as any,
       receiptName: currentReceiptName,

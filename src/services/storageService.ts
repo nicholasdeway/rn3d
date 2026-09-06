@@ -75,10 +75,10 @@ export async function uploadToSupabaseStorage(
   if (fileOrBase64.startsWith('data:image/')) {
     try {
       if (folder === 'receipts') {
-        // Preserva nitidez e alta definição (1920px max, qualidade 0.92) para leitura clara de números e textos de comprovantes
-        preparedBase64 = await compressImage(fileOrBase64, 1920, 1920, 0.92);
+        // Compacta para tamanho ultraleve (~35KB a 50KB) mantendo legibilidade total dos valores do comprovante
+        preparedBase64 = await compressImage(fileOrBase64, 850, 850, 0.75);
       } else {
-        preparedBase64 = await compressImage(fileOrBase64, 600, 600, 0.82);
+        preparedBase64 = await compressImage(fileOrBase64, 600, 600, 0.75);
       }
     } catch (e) {
       // Ignora erro de compressão

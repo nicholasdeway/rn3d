@@ -8,6 +8,8 @@ import {
   deleteOrder,
 } from '../services/ordersService';
 
+import { uploadToSupabaseStorage } from '../services/storageService';
+
 export function useOrders(
   user: any,
   showToastOrQuotes?: any,
@@ -139,6 +141,11 @@ export function useOrders(
     receiptName?: string,
     receiptIndex?: 1 | 2
   ) => {
+    let processedReceiptUrl = receiptUrl;
+    if (processedReceiptUrl && processedReceiptUrl.startsWith('data:')) {
+      processedReceiptUrl = await uploadToSupabaseStorage(processedReceiptUrl, 'receipts', `pedido_${orderId}`);
+    }
+
     let updatedOrderObj: Order | undefined;
 
     setOrders((prev) =>
@@ -152,7 +159,7 @@ export function useOrders(
               ? 'Parcial'
               : 'Pendente';
 
-          const targetIndex = receiptIndex || (o.paymentReceiptUrl && receiptUrl && o.paymentReceiptUrl !== receiptUrl ? 2 : 1);
+          const targetIndex = receiptIndex || (o.paymentReceiptUrl && processedReceiptUrl && o.paymentReceiptUrl !== processedReceiptUrl ? 2 : 1);
 
           let finalReceiptUrl1 = o.paymentReceiptUrl;
           let finalReceiptType1 = o.paymentReceiptType;
@@ -162,13 +169,13 @@ export function useOrders(
           let finalReceiptType2 = o.paymentReceiptType2;
           let finalReceiptName2 = o.paymentReceiptName2;
 
-          if (receiptUrl !== undefined) {
+          if (processedReceiptUrl !== undefined) {
             if (targetIndex === 2) {
-              finalReceiptUrl2 = receiptUrl;
+              finalReceiptUrl2 = processedReceiptUrl;
               finalReceiptType2 = receiptType || 'image';
               finalReceiptName2 = receiptName || '';
             } else {
-              finalReceiptUrl1 = receiptUrl;
+              finalReceiptUrl1 = processedReceiptUrl;
               finalReceiptType1 = receiptType || 'image';
               finalReceiptName1 = receiptName || '';
             }

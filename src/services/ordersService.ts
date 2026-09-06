@@ -164,7 +164,7 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
 }
 
 export async function updateOrder(id: string, updates: Partial<Order>): Promise<Order | null> {
-  if (!isSupabaseConfigured()) {
+  if (!isSupabaseConfigured() || !id) {
     return null;
   }
 
@@ -177,26 +177,40 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (updates.productionProgressPct !== undefined) payload.production_progress_pct = updates.productionProgressPct;
   if (updates.internalLogisticsType !== undefined) payload.internal_logistics_type = updates.internalLogisticsType;
   if (updates.internalLogisticsCost !== undefined) payload.internal_logistics_cost = updates.internalLogisticsCost;
+  if (updates.paymentReceiptUrl !== undefined) payload.payment_receipt_url = updates.paymentReceiptUrl;
+  if (updates.paymentReceiptType !== undefined) payload.payment_receipt_type = updates.paymentReceiptType;
+  if (updates.paymentReceiptName !== undefined) payload.payment_receipt_name = updates.paymentReceiptName;
+  if (updates.paymentReceiptUrl2 !== undefined) payload.payment_receipt_url2 = updates.paymentReceiptUrl2;
+  if (updates.paymentReceiptType2 !== undefined) payload.payment_receipt_type2 = updates.paymentReceiptType2;
+  if (updates.paymentReceiptName2 !== undefined) payload.payment_receipt_name2 = updates.paymentReceiptName2;
+  if (updates.paymentTerms !== undefined) payload.payment_terms = updates.paymentTerms;
 
   if (Object.keys(payload).length === 0) return null;
 
-  const isLocalId = !id || id.startsWith('PED-') || id.length < 30;
+  // Try updating by order_code first
+  const { data: codeData, error: codeErr } = await supabase
+    .from('orders')
+    .update(payload)
+    .eq('order_code', id)
+    .select();
 
-  let query = supabase.from('orders').update(payload);
-  if (!isLocalId) {
-    query = query.eq('id', id);
-  } else {
-    query = query.eq('order_code', id);
+  if (!codeErr && codeData && codeData.length > 0) {
+    return codeData[0] as any;
   }
 
-  const { data, error } = await query.select();
+  // Fallback: Try updating by id
+  const { data: idData, error: idErr } = await supabase
+    .from('orders')
+    .update(payload)
+    .eq('id', id)
+    .select();
 
-  if (error) {
-    console.warn('Aviso ao atualizar pedido no Supabase:', error.message);
+  if (idErr) {
+    console.warn('Aviso ao atualizar pedido no Supabase:', idErr.message);
     return null;
   }
 
-  return (data && data[0]) ? (data[0] as any) : null;
+  return idData && idData[0] ? (idData[0] as any) : null;
 }
 
 export async function deleteOrder(id: string): Promise<boolean> {
