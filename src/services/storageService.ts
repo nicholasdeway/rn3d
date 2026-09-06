@@ -113,10 +113,8 @@ export async function uploadToSupabaseStorage(
       });
 
     if (uploadError) {
-      if (uploadError.message.includes('not found') || uploadError.message.includes('Bucket')) {
-        storageBucketMissing = true;
-        console.warn(`[Storage] Bucket '${BUCKET_NAME}' não encontrado no Supabase. Salvando no PostgreSQL como DataURL.`);
-      }
+      storageBucketMissing = true;
+      console.warn(`[Storage] Armazenamento do Supabase indisponível (${uploadError.message}). Salvando arquivo no PostgreSQL.`);
       return preparedBase64;
     }
 

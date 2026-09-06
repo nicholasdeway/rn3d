@@ -487,6 +487,10 @@ export function useAppData() {
       }
     }
 
+    const currentReceiptUrl = receiptUrl || (receiptIndex === 2 ? rUrl2 : rUrl1);
+    const currentReceiptType = receiptType || (receiptIndex === 2 ? rType2 : rType1);
+    const currentReceiptName = receiptName || (receiptIndex === 2 ? rName2 : rName1);
+
     const paymentExpenseItem: ExpenseItem = {
       id: `exp-pay-${orderId}-${Date.now()}`,
       description: `Entrada / Pagamento de Pedido (${orderId} - ${clientName})`,
@@ -500,9 +504,9 @@ export function useAppData() {
       destinationAccount: 'Nubank',
       isAutoReplicated: true,
       referenceCode: `PED-PAY-${orderId}`,
-      receiptUrl: rUrl1,
-      receiptType: rType1 as any,
-      receiptName: rName1,
+      receiptUrl: currentReceiptUrl,
+      receiptType: currentReceiptType as any,
+      receiptName: currentReceiptName,
       receiptUrl2: rUrl2,
       receiptType2: rType2 as any,
       receiptName2: rName2,
@@ -535,18 +539,6 @@ export function useAppData() {
         const productionSlaDateStr = `${slaDateObj.getFullYear()}-${String(slaDateObj.getMonth() + 1).padStart(2, '0')}-${String(slaDateObj.getDate()).padStart(2, '0')}`;
 
         const totalVal = Number(quote.total) || Number(quote.subtotal) || 0;
-        const termsStr = (quote.paymentTerms || '').toLowerCase();
-
-        let initialPaidAmount = 0;
-        let initialPaymentStatusText = 'Pendente';
-
-        if (termsStr.includes('50%') || termsStr.includes('sinal') || termsStr.includes('50/50')) {
-          initialPaidAmount = totalVal * 0.5;
-          initialPaymentStatusText = 'Parcial';
-        } else if (termsStr.includes('100%') || termsStr.includes('à vista') || termsStr.includes('a vista')) {
-          initialPaidAmount = totalVal;
-          initialPaymentStatusText = 'Pago Total';
-        }
 
         const newOrder: Order = {
           id: orderId,
@@ -556,8 +548,8 @@ export function useAppData() {
           createdAt: new Date().toISOString(),
           itemsCount: itemsCount,
           totalValue: totalVal,
-          paidAmount: initialPaidAmount,
-          paymentStatusText: initialPaymentStatusText,
+          paidAmount: 0,
+          paymentStatusText: 'Pendente',
           status: 'Novo',
           productionProgressPct: 0,
           productionSlaDate: productionSlaDateStr,
@@ -582,33 +574,12 @@ export function useAppData() {
         };
 
         await handleCreateOrder(newOrder);
-
-        // Se houver valor inicial pago (ex: 50% de sinal no 50/50), gera automaticamente o lançamento no Vendas e Pagamentos / Financeiro
-        if (initialPaidAmount > 0) {
-          const initExpense: ExpenseItem = {
-            id: `exp-pay-${orderId}-init`,
-            description: `Entrada / Sinal (50%) do Pedido #${orderId} (${quote.clientName || 'Cliente Local'})`,
-            category: 'Entrada de Pedido',
-            amount: initialPaidAmount,
-            date: new Date().toISOString().split('T')[0],
-            timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            paymentStatus: 'Pago',
-            beneficiary: quote.clientName || 'Cliente Local',
-            createdBy: 'Sistema RN 3D',
-            destinationAccount: 'Nubank',
-            isAutoReplicated: true,
-            referenceCode: `PED-PAY-${orderId}`,
-            notes: `Sinal (50%) de R$ ${initialPaidAmount.toFixed(2).replace('.', ',')} (${quote.paymentTerms || '50/50'}) referente ao pedido ${orderId}`,
-          };
-          await handleCreateExpense(initExpense);
-        }
-
         showToast(`Orçamento #${quote.id} convertido no Pedido #${newOrder.id} com sucesso!`, 'success');
       } else {
         showToast(`Pedido #${orderId} já existia no sistema. Status atualizado.`, 'info');
       }
     },
-    [handleUpdateQuoteStatus, orders, handleCreateOrder, handleCreateExpense, showToast]
+    [handleUpdateQuoteStatus, orders, handleCreateOrder, showToast]
   );
 
   const handleSyncProductsToSupabase = async () => {
