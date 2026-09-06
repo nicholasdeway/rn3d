@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ExpenseItem, AccountBalances, MarketplaceAccount } from '../types';
+import { safeSetLocalStorage } from '../utils/storage';
 import {
   fetchExpenses,
   createExpense,
@@ -260,7 +261,14 @@ export function useExpenses(
 
   const handleDeleteExpense = async (expenseId: string) => {
     const exp = expenses.find((e) => e.id === expenseId || (e.referenceCode && e.referenceCode === expenseId));
-    setExpenses((prev) => prev.filter((e) => e.id !== expenseId && e.referenceCode !== expenseId));
+    setExpenses((prev) => {
+      const updated = prev.filter((e) => e.id !== expenseId && e.referenceCode !== expenseId);
+      safeSetLocalStorage('rn3d_expenses', JSON.stringify(updated));
+      try {
+        localStorage.setItem('rn3d_expenses_cache', JSON.stringify(updated.slice(0, 200)));
+      } catch (err) {}
+      return updated;
+    });
     showToast(`Lançamento "${exp?.description || expenseId}" excluído com sucesso!`, 'success');
 
     if (exp) {

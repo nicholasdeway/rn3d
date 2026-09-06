@@ -41,30 +41,22 @@ export function useOrders(
     }
   }, [orders]);
 
-  // Load directly from Supabase on mount and merge cleanly
+  // Load directly from Supabase on mount and set authoritative state
   useEffect(() => {
     if (!user) return;
     let isMounted = true;
 
     fetchOrders()
       .then((dbOrders) => {
-        if (isMounted && Array.isArray(dbOrders) && dbOrders.length > 0) {
+        if (isMounted && Array.isArray(dbOrders)) {
           setOrders((prev) => {
-            const dbIds = new Set(
-              dbOrders.flatMap((o) => [
-                o.id,
-                o.id.replace(/^PED-/, ''),
-                `PED-${o.id.replace(/^PED-/, '')}`,
-              ])
-            );
-            const extraLocal = prev.filter(
+            const cleanDb = dbOrders.filter(
               (o) =>
-                !dbIds.has(o.id) &&
-                !dbIds.has(o.id.replace(/^PED-/, '')) &&
-                !dbIds.has(`PED-${o.id.replace(/^PED-/, '')}`)
+                !o.id?.startsWith('SYS_') &&
+                !o.clientName?.startsWith('SISTEMA_') &&
+                !o.id?.startsWith('REM-')
             );
-
-            const merged = dbOrders.map((dbOrder) => {
+            const merged = cleanDb.map((dbOrder) => {
               const localMatch = prev.find(
                 (l) =>
                   l.id === dbOrder.id ||
@@ -83,7 +75,8 @@ export function useOrders(
               return dbOrder;
             });
 
-            return [...merged, ...extraLocal];
+            safeSetLocalStorage('rn3d_orders', JSON.stringify(merged));
+            return merged;
           });
         }
       })
@@ -156,7 +149,18 @@ export function useOrders(
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    const cleanId = orderId.replace(/^PED-/, '').replace(/^ORC-/, '');
+    setOrders((prev) => {
+      const updated = prev.filter(
+        (o) =>
+          o.id !== orderId &&
+          o.id !== cleanId &&
+          o.id !== `PED-${cleanId}` &&
+          o.id.replace(/^PED-/, '') !== cleanId
+      );
+      safeSetLocalStorage('rn3d_orders', JSON.stringify(updated));
+      return updated;
+    });
     toast(`Pedido #${orderId} removido!`, 'success');
     try {
       await deleteOrder(orderId);

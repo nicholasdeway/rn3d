@@ -289,13 +289,26 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
 }
 
 export async function deleteOrder(id: string): Promise<boolean> {
-  if (!isSupabaseConfigured()) return true;
+  if (!isSupabaseConfigured() || !id) return true;
   try {
     const cleanId = id.replace(/^PED-/, '').replace(/^ORC-/, '');
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
     if (isUuid) {
+      await supabase.from('order_items').delete().eq('order_id', id);
       await supabase.from('orders').delete().eq('id', id);
     } else {
+      const { data: matched } = await supabase
+        .from('orders')
+        .select('id, order_code')
+        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId}`);
+
+      if (matched && matched.length > 0) {
+        const uuids = matched.map((m) => m.id);
+        await supabase.from('order_items').delete().in('order_id', uuids);
+        await supabase.from('orders').delete().in('id', uuids);
+      }
+
       await supabase
         .from('orders')
         .delete()
