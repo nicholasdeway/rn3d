@@ -13,6 +13,9 @@ function encodeOrderNotesAndMetadata(order: Partial<Order>): string {
     paymentReceiptType2: order.paymentReceiptType2,
     paymentReceiptName2: order.paymentReceiptName2,
     paymentTerms: order.paymentTerms,
+    productionProgressPct: order.productionProgressPct,
+    internalLogisticsType: order.internalLogisticsType,
+    internalLogisticsCost: order.internalLogisticsCost,
   };
   return `[META:${JSON.stringify(meta)}]${userNotes}`;
 }
@@ -26,6 +29,9 @@ function decodeOrderNotesAndMetadata(row: any): {
   paymentReceiptType2: 'image' | 'pdf';
   paymentReceiptName2: string;
   paymentTerms: string;
+  productionProgressPct: number;
+  internalLogisticsType: 'combustivel' | 'transporte' | 'entrega_propria';
+  internalLogisticsCost: number;
 } {
   let notes = row.notes || '';
   let paymentReceiptUrl = row.payment_receipt_url || '';
@@ -35,6 +41,9 @@ function decodeOrderNotesAndMetadata(row: any): {
   let paymentReceiptType2 = (row.payment_receipt_type2 || 'image') as any;
   let paymentReceiptName2 = row.payment_receipt_name2 || '';
   let paymentTerms = row.payment_terms || row.payment_method || '';
+  let productionProgressPct = Number(row.production_progress_pct) || 0;
+  let internalLogisticsType = (row.internal_logistics_type || 'combustivel') as any;
+  let internalLogisticsCost = Number(row.internal_logistics_cost) || 0;
 
   if (notes.startsWith('[META:')) {
     const endIdx = notes.indexOf(']');
@@ -49,6 +58,9 @@ function decodeOrderNotesAndMetadata(row: any): {
         if (meta.paymentReceiptType2) paymentReceiptType2 = meta.paymentReceiptType2;
         if (meta.paymentReceiptName2) paymentReceiptName2 = meta.paymentReceiptName2;
         if (meta.paymentTerms) paymentTerms = meta.paymentTerms;
+        if (meta.productionProgressPct !== undefined) productionProgressPct = Number(meta.productionProgressPct) || 0;
+        if (meta.internalLogisticsType) internalLogisticsType = meta.internalLogisticsType;
+        if (meta.internalLogisticsCost !== undefined) internalLogisticsCost = Number(meta.internalLogisticsCost) || 0;
         notes = meta.userNotes !== undefined ? meta.userNotes : notes.substring(endIdx + 1);
       } catch (e) {}
     }
@@ -63,6 +75,9 @@ function decodeOrderNotesAndMetadata(row: any): {
     paymentReceiptType2,
     paymentReceiptName2,
     paymentTerms,
+    productionProgressPct,
+    internalLogisticsType,
+    internalLogisticsCost,
   };
 }
 
@@ -92,9 +107,10 @@ export async function fetchOrders(): Promise<Order[]> {
         !(row.order_code && row.order_code.startsWith('REM-'))
     )
     .map((row) => {
-      let clientCost = Number(row.internal_logistics_cost) || 0;
-      let clientType = row.internal_logistics_type || 'combustivel';
       const decoded = decodeOrderNotesAndMetadata(row);
+      let clientCost = decoded.internalLogisticsCost || Number(row.internal_logistics_cost) || 0;
+      let clientType = decoded.internalLogisticsType || row.internal_logistics_type || 'combustivel';
+      let progressPct = decoded.productionProgressPct || Number(row.production_progress_pct) || 0;
 
       return {
         id: row.order_code || row.id,
@@ -107,7 +123,7 @@ export async function fetchOrders(): Promise<Order[]> {
         paidAmount: Number(row.paid_amount) || 0,
         paymentStatusText: row.payment_status_text || 'Pendente',
         status: row.status as Order['status'],
-        productionProgressPct: row.production_progress_pct || 0,
+        productionProgressPct: progressPct,
         productionSlaDate: row.production_sla_date || '',
         estimatedDeliveryDate: row.estimated_delivery_date || '',
         internalLogisticsType: clientType as any,
@@ -164,9 +180,6 @@ export async function syncMissingOrdersToSupabase(missingOrders: Order[]): Promi
       paid_amount: o.paidAmount,
       payment_status_text: o.paymentStatusText || (o.paidAmount >= o.totalValue ? 'Pago Total' : o.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
       status: o.status || 'Novo',
-      production_progress_pct: o.productionProgressPct || 0,
-      internal_logistics_type: o.internalLogisticsType || 'combustivel',
-      internal_logistics_cost: o.internalLogisticsCost || 0,
       notes: encodeOrderNotesAndMetadata(o),
     }));
 
@@ -243,15 +256,15 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (updates.paidAmount !== undefined) corePayload.paid_amount = Number(updates.paidAmount) || 0;
   if (updates.paymentStatusText !== undefined) corePayload.payment_status_text = updates.paymentStatusText;
   if (updates.status !== undefined) corePayload.status = updates.status;
-  if (updates.productionProgressPct !== undefined) corePayload.production_progress_pct = updates.productionProgressPct;
-  if (updates.internalLogisticsType !== undefined) corePayload.internal_logistics_type = updates.internalLogisticsType;
-  if (updates.internalLogisticsCost !== undefined) corePayload.internal_logistics_cost = updates.internalLogisticsCost;
-  
+
   if (
     updates.notes !== undefined ||
     updates.paymentReceiptUrl !== undefined ||
     updates.paymentReceiptUrl2 !== undefined ||
-    updates.paymentTerms !== undefined
+    updates.paymentTerms !== undefined ||
+    updates.productionProgressPct !== undefined ||
+    updates.internalLogisticsType !== undefined ||
+    updates.internalLogisticsCost !== undefined
   ) {
     corePayload.notes = encodeOrderNotesAndMetadata(updates);
   }
@@ -262,18 +275,11 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     if (isUuid) {
       await supabase.from('orders').update(corePayload).eq('id', id);
-    }
-
-    const { error } = await supabase
-      .from('orders')
-      .update(corePayload)
-      .eq('order_code', id);
-
-    if (error) {
+    } else {
       await supabase
         .from('orders')
         .update(corePayload)
-        .eq('order_code', cleanId);
+        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId}`);
     }
   } catch (e) {
     console.error('Erro ao atualizar pedido no Supabase:', e);
@@ -290,10 +296,10 @@ export async function deleteOrder(id: string): Promise<boolean> {
     if (isUuid) {
       await supabase.from('orders').delete().eq('id', id);
     } else {
-      const { error } = await supabase.from('orders').delete().eq('order_code', id);
-      if (error) {
-        await supabase.from('orders').delete().eq('order_code', cleanId);
-      }
+      await supabase
+        .from('orders')
+        .delete()
+        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId}`);
     }
     return true;
   } catch (e) {
