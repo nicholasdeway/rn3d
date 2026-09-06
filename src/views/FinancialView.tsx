@@ -255,7 +255,26 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         };
       });
 
-    const combined = [...txEntries, ...expenseEntries];
+    // 3. Pending Order Entries (Contas a Receber pendentes)
+    const pendingOrderEntries = orders
+      .filter((o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_'))
+      .filter((o) => o.totalValue > (o.paidAmount || 0))
+      .filter((o) => isDateInRange(o.date || o.createdAt))
+      .map((o) => ({
+        type: 'order' as const,
+        direction: 'entrada' as const,
+        data: o,
+        id: o.id,
+        date: o.date || o.createdAt || '',
+        title: `Pedido #${o.id}`,
+        clientOrCategory: o.clientName,
+        amount: o.totalValue - (o.paidAmount || 0),
+        paidAmount: o.paidAmount || 0,
+        totalValue: o.totalValue || 0,
+        status: o.paymentStatusText || (o.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
+      }));
+
+    const combined = [...txEntries, ...expenseEntries, ...pendingOrderEntries];
 
     // Search term filtering
     const searchFiltered = combined.filter((item) => {

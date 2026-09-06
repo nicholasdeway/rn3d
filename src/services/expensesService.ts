@@ -433,12 +433,24 @@ export async function updateExpense(id: string, updates: Partial<ExpenseItem>): 
  * Exclui uma despesa diretamente do Supabase Postgres
  */
 export async function deleteExpense(id: string): Promise<boolean> {
-  if (!isSupabaseConfigured()) return true;
+  if (!isSupabaseConfigured() || !id) return true;
 
-  const { error } = await supabase.from('expenses').delete().eq('id', id);
-  if (error) {
-    console.error('Erro ao excluir despesa no Supabase:', error.message);
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  
+  try {
+    if (isUuid) {
+      const { error } = await supabase.from('expenses').delete().eq('id', id);
+      if (error) console.error('Erro ao excluir despesa por UUID no Supabase:', error.message);
+    } else {
+      const { error } = await supabase.from('expenses').delete().eq('reference_code', id);
+      if (error) {
+        // Fallback: Tenta deletar por notas/descrição
+        await supabase.from('expenses').delete().or(`reference_code.eq.${id},description.cs.${id}`);
+      }
+    }
+    return true;
+  } catch (e) {
+    console.error('Erro ao excluir despesa no Supabase:', e);
     return false;
   }
-  return true;
 }

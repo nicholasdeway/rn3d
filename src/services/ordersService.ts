@@ -169,7 +169,10 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   }
 
   const cleanId = id.replace(/^PED-/, '').replace(/^ORC-/, '');
-  const targetIdFilter = `order_code.eq.${id},order_code.eq.${cleanId},id.eq.${id},id.eq.${cleanId}`;
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  const targetIdFilter = isUuid
+    ? `id.eq.${id},order_code.eq.${id},order_code.eq.${cleanId}`
+    : `order_code.eq.${id},order_code.eq.${cleanId}`;
 
   // 1. Core payload: colunas garantidas da tabela orders no Supabase
   const corePayload: any = {};
@@ -185,7 +188,6 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (Object.keys(corePayload).length === 0) return null;
 
   try {
-    // Atualização com filtro .or() abrangendo order_code e id com/sem prefixo
     await supabase
       .from('orders')
       .update(corePayload)
@@ -218,7 +220,10 @@ export async function deleteOrder(id: string): Promise<boolean> {
   if (!isSupabaseConfigured()) return true;
   try {
     const cleanId = id.replace(/^PED-/, '').replace(/^ORC-/, '');
-    const targetIdFilter = `order_code.eq.${id},order_code.eq.${cleanId},id.eq.${id},id.eq.${cleanId}`;
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const targetIdFilter = isUuid
+      ? `id.eq.${id},order_code.eq.${id},order_code.eq.${cleanId}`
+      : `order_code.eq.${id},order_code.eq.${cleanId}`;
     await supabase.from('orders').delete().or(targetIdFilter);
     return true;
   } catch (e) {
