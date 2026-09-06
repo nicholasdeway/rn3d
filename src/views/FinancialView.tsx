@@ -391,8 +391,16 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
   const handleOpenPaymentModal = (order: Order) => {
     setSelectedOrderForPayment(order);
-    const remaining = Math.max(0, order.totalValue - (order.paidAmount || 0));
-    setPaymentAmountInput(remaining.toFixed(2).replace('.', ','));
+    const paid = order.paidAmount || 0;
+    const remaining = Math.max(0, order.totalValue - paid);
+    
+    // Sugere 50% se for primeira parcela de contrato 50/50, senão sugere o saldo restante
+    let defaultInput = remaining;
+    if (paid === 0 && order.paymentTerms && (order.paymentTerms.includes('50%') || order.paymentTerms.includes('50/50'))) {
+      defaultInput = order.totalValue * 0.5;
+    }
+
+    setPaymentAmountInput(defaultInput.toFixed(2).replace('.', ','));
     setPaymentReceiptUrl('');
     setPaymentReceiptType('image');
     setPaymentReceiptName('');
@@ -1384,6 +1392,12 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
               <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-1">
                 <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">Cliente: {selectedOrderForPayment.clientName}</p>
                 <p className="text-slate-600 dark:text-slate-400">
+                  Forma de Pagamento Combinada:{' '}
+                  <span className="font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
+                    {selectedOrderForPayment.paymentTerms || 'A combinar / Não informada'}
+                  </span>
+                </p>
+                <p className="text-slate-600 dark:text-slate-400 pt-1">
                   Valor Total do Pedido: <strong>R$ {selectedOrderForPayment.totalValue.toFixed(2).replace('.', ',')}</strong>
                 </p>
                 <p className="text-emerald-700 dark:text-emerald-400 font-semibold">
@@ -1395,22 +1409,48 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1">
-                  Valor Entrado em Caixa (R$) *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-bold text-slate-800 dark:text-slate-200">
+                    Valor Entrado em Caixa (R$) *
+                  </label>
+                  <span className="text-[11px] text-slate-400">Pode ajustar o valor pago</span>
+                </div>
                 <input
                   type="text"
                   required
                   value={paymentAmountInput}
                   onChange={(e) => setPaymentAmountInput(e.target.value)}
-                  placeholder="Ex: 27,50"
+                  placeholder="Ex: 60,00"
                   className="w-full px-3 py-2 bg-white dark:bg-[#181c26] border border-slate-200 dark:border-[#202531] rounded-xl font-extrabold text-emerald-600 dark:text-emerald-400 text-base focus:outline-none focus:border-indigo-500"
                 />
+
+                {/* Preset suggestions */}
+                <div className="flex items-center gap-1.5 mt-2">
+                  <span className="text-[11px] text-slate-500 font-medium">Sugerir:</span>
+                  {(selectedOrderForPayment.paidAmount || 0) === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setPaymentAmountInput((selectedOrderForPayment.totalValue * 0.5).toFixed(2).replace('.', ','))}
+                      className="px-2.5 py-1 bg-slate-100 dark:bg-[#202531] hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-indigo-950/60 dark:hover:text-indigo-300 rounded-lg font-bold text-[11px] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                    >
+                      50% (R$ {(selectedOrderForPayment.totalValue * 0.5).toFixed(2).replace('.', ',')})
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setPaymentAmountInput((selectedOrderForPayment.totalValue - (selectedOrderForPayment.paidAmount || 0)).toFixed(2).replace('.', ','))}
+                    className="px-2.5 py-1 bg-slate-100 dark:bg-[#202531] hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/60 dark:hover:text-emerald-300 rounded-lg font-bold text-[11px] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                  >
+                    {(selectedOrderForPayment.paidAmount || 0) > 0 ? 'Quitar Restante' : '100%'} (R$ {(selectedOrderForPayment.totalValue - (selectedOrderForPayment.paidAmount || 0)).toFixed(2).replace('.', ',')})
+                  </button>
+                </div>
               </div>
 
               <div>
                 <label className="block font-bold text-slate-800 dark:text-slate-200 mb-1">
-                  Comprovante de Recebimento (Opcional - PNG/JPG ou PDF)
+                  {(selectedOrderForPayment.paidAmount || 0) === 0
+                    ? 'Comprovante 1 (Entrada - Opcional PNG/JPG ou PDF)'
+                    : 'Comprovante 2 (Quitação/Saldo - Opcional PNG/JPG ou PDF)'}
                 </label>
                 <input
                   type="file"
