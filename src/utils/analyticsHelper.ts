@@ -76,18 +76,7 @@ export function computeMonthlyAnalyticsData(
     return null;
   };
 
-  // 1. Pedidos Faturados / Recebidos
-  orders.forEach((o) => {
-    if (o.id?.startsWith('SYS_') || o.clientName?.startsWith('SISTEMA_')) return;
-    const key = parseDateToMonthKey(o.date);
-    const revenue = Number(o.paidAmount) || Number(o.totalValue) || 0;
-    if (key && monthlyMap.has(key)) {
-      const cur = monthlyMap.get(key)!;
-      cur.receitas += revenue;
-    }
-  });
-
-  // 2. Transações de Caixa / Vendas
+  // 1. Transações de Caixa / Vendas Balcão
   transactions.forEach((t) => {
     const key = parseDateToMonthKey(t.date);
     const amt = Number(t.amount) || 0;

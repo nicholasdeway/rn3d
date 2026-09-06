@@ -213,27 +213,9 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     (exp) => !exp.referenceCode?.startsWith('SYS_') && exp.category !== 'Transferência de Marketplace'
   );
 
-  // Extrato Entries: Entradas & Saídas combinadas
+  // Extrato Entries: Entradas & Saídas combinadas (Transações de Caixa e Lançamentos)
   const allExtratoEntries = useMemo(() => {
-    // 1. Order Entries (Entradas)
-    const orderEntries = orders
-      .filter((o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_'))
-      .filter((o) => isDateInRange(o.date || o.createdAt))
-      .map((o) => ({
-        type: 'order' as const,
-        direction: 'entrada' as const,
-        data: o,
-        id: o.id,
-        date: o.date || o.createdAt || '',
-        title: `Pedido #${o.id}`,
-        clientOrCategory: o.clientName,
-        amount: o.paidAmount || o.totalValue || 0,
-        paidAmount: o.paidAmount || 0,
-        totalValue: o.totalValue || 0,
-        status: o.paymentStatusText || (o.paidAmount >= o.totalValue ? 'Pago Total' : 'Pendente'),
-      }));
-
-    // 2. Transaction Entries (Entradas)
+    // 1. Transaction Entries (Entradas Balcão)
     const txEntries = filteredTransactions
       .filter((t) => isDateInRange(t.timestamp || t.date || t.dueDate))
       .map((t) => ({
@@ -250,7 +232,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         status: t.status || 'Recebido',
       }));
 
-    // 3. Expense Entries (Saídas e Entradas de Pedido)
+    // 2. Expense Entries (Saídas e Entradas de Pedido / Aportes / Transferências)
     const expenseEntries = cleanExpenses
       .filter((exp) => isDateInRange(exp.date || exp.timestamp))
       .map((exp) => {
@@ -273,7 +255,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         };
       });
 
-    const combined = [...orderEntries, ...txEntries, ...expenseEntries];
+    const combined = [...txEntries, ...expenseEntries];
 
     // Search term filtering
     const searchFiltered = combined.filter((item) => {
