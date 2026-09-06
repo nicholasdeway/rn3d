@@ -413,6 +413,7 @@ export function useAppData() {
       let changed = false;
       const newPaymentEntries: ExpenseItem[] = [];
 
+      // 1. Sync receipts for existing payment expenses
       const updatedPrev = prevExpenses.map((exp) => {
         if (exp.referenceCode && exp.referenceCode.startsWith('PED-PAY-')) {
           const parts = exp.referenceCode.split('-');
@@ -438,15 +439,27 @@ export function useAppData() {
         return exp;
       });
 
+      // 2. Ensure orders with paidAmount > 0 have an expense entry without creating duplicates
       orders.forEach((o) => {
         const paid = Number(o.paidAmount) || 0;
         if (paid > 0) {
           const cleanId = o.id.replace(/^PED-/, '');
           const alreadyExists = updatedPrev.some((e) => {
-            if (!e.referenceCode) return false;
-            const refLower = e.referenceCode.toLowerCase();
-            return refLower.includes(o.id.toLowerCase()) || refLower.includes(cleanId.toLowerCase());
+            const refLower = (e.referenceCode || '').toLowerCase();
+            const idLower = (e.id || '').toLowerCase();
+            const descLower = (e.description || '').toLowerCase();
+            const oIdLower = o.id.toLowerCase();
+            const cleanIdLower = cleanId.toLowerCase();
+
+            return (
+              refLower.includes(oIdLower) ||
+              refLower.includes(cleanIdLower) ||
+              idLower.includes(oIdLower) ||
+              idLower.includes(cleanIdLower) ||
+              (e.category === 'Entrada de Pedido' && (descLower.includes(oIdLower) || descLower.includes(cleanIdLower)))
+            );
           });
+
           if (!alreadyExists) {
             changed = true;
             const newExpItem: ExpenseItem = {
@@ -497,15 +510,22 @@ export function useAppData() {
       receiptIndex
     );
 
-    const targetOrder = updatedOrderObj || orders.find((o) => o.id === orderId);
+    const targetOrder = updatedOrderObj || orders.find((o) => o.id === orderId || o.id.replace(/^PED-/, '') === orderId.replace(/^PED-/, ''));
     const clientName = targetOrder ? targetOrder.clientName : 'Cliente Local';
     const terms = targetOrder?.paymentTerms || 'PIX';
+    const cleanId = orderId.replace(/^PED-/, '');
 
     const isSecondPayment = (targetOrder?.paidAmount || 0) >= (targetOrder?.totalValue || 0) && (targetOrder?.paidAmount || 0) > addedAmount;
     const paymentIdx = receiptIndex || (isSecondPayment ? 2 : 1);
     const refCode = `PED-PAY-${orderId}-${paymentIdx}`;
 
-    const existingExp = expenses.find((e) => e.referenceCode === refCode);
+    const existingExp = expenses.find(
+      (e) =>
+        e.referenceCode === refCode ||
+        e.referenceCode === `PED-PAY-${cleanId}-${paymentIdx}` ||
+        e.id === `exp-pay-${orderId}-${paymentIdx}` ||
+        e.id === `exp-pay-${cleanId}-${paymentIdx}`
+    );
 
     if (existingExp) {
       await handleUpdateExpense({

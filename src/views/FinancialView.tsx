@@ -198,11 +198,24 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     reader.readAsDataURL(file);
   };
 
-  // Clean expenses (exclude SYS_ internal balance rows)
+  // Clean expenses (exclude SYS_ internal balance rows and deduplicate identical order payment entries)
   const cleanExpenses = useMemo(() => {
-    return expenses.filter(
+    const raw = expenses.filter(
       (exp) => !exp.referenceCode?.startsWith('SYS_') && exp.category !== 'Transferência de Marketplace'
     );
+
+    const seen = new Set<string>();
+    return raw.filter((exp) => {
+      let key = exp.id;
+      if (exp.referenceCode) {
+        key = exp.referenceCode;
+      } else if (exp.category === 'Entrada de Pedido' && exp.description && exp.amount) {
+        key = `${exp.description.toLowerCase().trim()}_${exp.amount.toFixed(2)}`;
+      }
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }, [expenses]);
 
   // Filter out standalone transactions auto-created for orders and system sync items to prevent duplication with order expense entries
@@ -247,7 +260,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     });
   }, [transactions, cleanExpenses, orders]);
 
-  // Extrato Entries: Entradas & Saídas combinadas (Transações de Caixa e Lançamentos)
+  // Extrato Entries: Entradas & Saídas combinadas (Apenas movimentações efetivadas em caixa)
   const allExtratoEntries = useMemo(() => {
     // 1. Transaction Entries (Entradas Balcão)
     const txEntries = filteredTransactions
@@ -289,26 +302,8 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         };
       });
 
-    // 3. Pending Order Entries (Contas a Receber pendentes)
-    const pendingOrderEntries = orders
-      .filter((o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_'))
-      .filter((o) => o.totalValue > (o.paidAmount || 0))
-      .filter((o) => isDateInRange(o.date || o.createdAt))
-      .map((o) => ({
-        type: 'order' as const,
-        direction: 'entrada' as const,
-        data: o,
-        id: o.id,
-        date: o.date || o.createdAt || '',
-        title: `Pedido #${o.id}`,
-        clientOrCategory: o.clientName,
-        amount: o.totalValue - (o.paidAmount || 0),
-        paidAmount: o.paidAmount || 0,
-        totalValue: o.totalValue || 0,
-        status: o.paymentStatusText || (o.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
-      }));
-
-    const combined = [...txEntries, ...expenseEntries, ...pendingOrderEntries];
+    // Combined realized entries (excludes open order contracts which belong exclusively to Contas a Receber)
+    const combined = [...txEntries, ...expenseEntries];
 
     // Search term filtering
     const searchFiltered = combined.filter((item) => {
@@ -329,7 +324,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
       const timeB = parseToDate(b.date)?.getTime() || 0;
       return timeB - timeA;
     });
-  }, [orders, filteredTransactions, cleanExpenses, dateRangeStart, dateRangeEnd, searchTerm, movementType]);
+  }, [filteredTransactions, cleanExpenses, dateRangeStart, dateRangeEnd, searchTerm, movementType]);
 
   // Calculate Filtered Summary Metrics for Header KPI cards (Only count actual realized entries, not pending order balances)
   const periodEntradas = useMemo(() => {
