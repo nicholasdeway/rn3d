@@ -99,15 +99,25 @@ export const ReceiptViewerModal: React.FC<ReceiptViewerModalProps> = ({ receipt,
     }
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
-    if (isPdf) return;
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      handleZoomIn();
-    } else {
-      handleZoomOut();
-    }
-  };
+  // Non-passive wheel event listener for smooth zooming without browser passive event warning
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container || isPdf) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        handleZoomIn();
+      } else {
+        handleZoomOut();
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [isPdf]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isPdf || scale <= 1) return;
@@ -231,7 +241,6 @@ export const ReceiptViewerModal: React.FC<ReceiptViewerModalProps> = ({ receipt,
         {/* Viewer Main Viewport Container */}
         <div
           ref={containerRef}
-          onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
