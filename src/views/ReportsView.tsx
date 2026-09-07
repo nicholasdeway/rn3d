@@ -203,11 +203,6 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         }
       });
 
-      const unitCost = p.estimatedCost > 0 ? p.estimatedCost : p.standardPrice * 0.35;
-      const totalCost = salesCount * unitCost;
-      const netProfit = Math.max(0, totalRevenue - totalCost);
-      const marginPct = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
-
       return {
         id: p.id,
         name: p.name,
@@ -216,17 +211,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         standardPrice: p.standardPrice,
         salesCount,
         totalRevenue: totalRevenue || salesCount * p.standardPrice,
-        unitCost,
-        totalCost,
-        netProfit: netProfit || salesCount * (p.standardPrice - unitCost),
-        marginPct: marginPct || 65,
       };
     });
   }, [products, filteredOrders, filteredConsignments]);
 
-  // Sorted product rankings
+  // Sorted product rankings by total faturamento
   const allProductsRanked = useMemo(() => {
-    return [...productProfitability].sort((a, b) => b.netProfit - a.netProfit);
+    return [...productProfitability].sort((a, b) => b.totalRevenue - a.totalRevenue);
   }, [productProfitability]);
 
   const top5Products = useMemo(() => {
@@ -319,10 +310,10 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             </button>
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <Trophy className="w-6 h-6 text-amber-500" />
-              Ranking Completo de Rentabilidade de Produtos
+              Ranking Completo de Vendas de Produtos
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Lista ordenada por Lucro Líquido gerado (Preço de Venda – Custo de Impressão)
+              Lista ordenada por Faturamento Total gerado
             </p>
           </div>
 
@@ -361,10 +352,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                   <th className="p-4">Produto</th>
                   <th className="p-4">Categoria</th>
                   <th className="p-4 text-right">Qtd Vendida</th>
-                  <th className="p-4 text-right">Faturamento Total</th>
-                  <th className="p-4 text-right">Custo Estimado</th>
-                  <th className="p-4 text-right">Lucro Líquido (R$)</th>
-                  <th className="p-4 text-right">Margem (%)</th>
+                  <th className="p-4 text-right">Faturamento Total (R$)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
@@ -391,15 +379,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                     </td>
                     <td className="p-4 font-semibold text-slate-600 dark:text-slate-400">{prod.category}</td>
                     <td className="p-4 text-right font-bold text-slate-900 dark:text-slate-100">{prod.salesCount} un</td>
-                    <td className="p-4 text-right font-bold text-slate-900 dark:text-slate-100">{formatCurrency(prod.totalRevenue)}</td>
-                    <td className="p-4 text-right text-rose-600 dark:text-rose-400 font-semibold">{formatCurrency(prod.totalCost)}</td>
-                    <td className="p-4 text-right font-black text-emerald-600 dark:text-emerald-400 text-sm">
-                      {formatCurrency(prod.netProfit)}
-                    </td>
-                    <td className="p-4 text-right">
-                      <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-lg text-xs font-extrabold border border-emerald-200 dark:border-emerald-900/50">
-                        {prod.marginPct.toFixed(0)}%
-                      </span>
+                    <td className="p-4 text-right font-black text-indigo-600 dark:text-indigo-400 text-sm">
+                      {formatCurrency(prod.totalRevenue)}
                     </td>
                   </tr>
                 ))}
@@ -527,7 +508,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
               Relatórios e Inteligência de Vendas
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
-              <span>Análise de curva ABC, margens de lucro por modelo e ranking de clientes.</span>
+              <span>Análise de desempenho de vendas, faturamento por produto e ranking de clientes.</span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-extrabold rounded-full border border-indigo-200 dark:border-indigo-800 text-[11px]">
                 {labelPeriodText}
               </span>
@@ -638,13 +619,13 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
       {/* Top 5 Rankings Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* CARD 1: TOP 5 PRODUTOS MAIS LUCRATIVOS */}
+        {/* CARD 1: TOP 5 PRODUTOS MAIS VENDIDOS */}
         <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] p-6 shadow-xs space-y-4 flex flex-col justify-between">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
                 <Trophy className="w-4.5 h-4.5 text-amber-500 shrink-0" />
-                <span>Top 5 Produtos Mais Lucrativos (Rentabilidade)</span>
+                <span>Top 5 Produtos Mais Vendidos (Faturamento)</span>
               </h3>
               <span className="text-xs font-semibold text-slate-400 shrink-0">{period}</span>
             </div>
@@ -654,7 +635,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 <Package className="w-10 h-10 text-slate-300 mx-auto" />
                 <p className="font-bold text-slate-700 dark:text-slate-300 text-xs">Nenhuma venda registrada no período</p>
                 <p className="text-[11px] text-slate-400">
-                  Os produtos com maior rentabilidade aparecerão aqui conforme pedidos forem concluídos.
+                  Os produtos mais vendidos aparecerão aqui conforme pedidos forem concluídos.
                 </p>
               </div>
             ) : (
@@ -662,7 +643,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 {top5Products.map((prod, idx) => (
                   <div
                     key={prod.id}
-                    className="p-3 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-100 dark:border-[#202531] flex items-center justify-between transition-all hover:border-emerald-300/50"
+                    className="p-3 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-100 dark:border-[#202531] flex items-center justify-between transition-all hover:border-indigo-300/50"
                   >
                     <div className="flex items-center gap-3">
                       <span
@@ -681,15 +662,15 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                       <div>
                         <p className="font-bold text-slate-900 dark:text-slate-100 text-xs">{prod.name}</p>
                         <p className="text-[10px] text-slate-400">
-                          {prod.salesCount} un vendidas • Fat: {formatCurrency(prod.totalRevenue)}
+                          {prod.salesCount} un vendidas
                         </p>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[10px] text-slate-400 block font-medium">Lucro Líquido</span>
-                      <span className="font-black text-emerald-600 dark:text-emerald-400 text-xs">
-                        {formatCurrency(prod.netProfit)}
+                      <span className="text-[10px] text-slate-400 block font-medium">Faturamento</span>
+                      <span className="font-black text-indigo-600 dark:text-indigo-400 text-xs">
+                        {formatCurrency(prod.totalRevenue)}
                       </span>
                     </div>
                   </div>
