@@ -45,7 +45,7 @@ function base64ToBlob(base64Data: string): { blob: Blob; contentType: string; ex
   }
 }
 
-let storageBucketMissing = false;
+let bucketNotFound = false;
 
 /**
  * Envia um arquivo ou string Base64 para o Supabase Storage e retorna a URL pública.
@@ -85,8 +85,8 @@ export async function uploadToSupabaseStorage(
     }
   }
 
-  // Se o Supabase não estiver configurado, retorna o DataURL direto
-  if (!isSupabaseConfigured()) {
+  // Se o Supabase não estiver configurado ou o bucket sabidamente não existir no projeto, retorna o DataURL (comprimido)
+  if (!isSupabaseConfigured() || bucketNotFound) {
     return preparedBase64;
   }
 
@@ -114,7 +114,13 @@ export async function uploadToSupabaseStorage(
       });
 
     if (uploadError) {
-      console.warn(`[Storage] Upload no Supabase falhou (${uploadError.message}). Usando fallback local.`);
+      const errMsg = uploadError.message?.toLowerCase() || '';
+      if (errMsg.includes('bucket not found') || errMsg.includes('bucket_not_found') || (uploadError as any).error === 'Bucket not found') {
+        bucketNotFound = true;
+        console.warn(`[Storage] O bucket "${BUCKET_NAME}" não existe no seu projeto Supabase. Os arquivos serão salvos como DataURL no PostgreSQL.`);
+      } else {
+        console.warn(`[Storage] Upload no Supabase falhou (${uploadError.message}). Usando fallback local.`);
+      }
       return preparedBase64;
     }
 
