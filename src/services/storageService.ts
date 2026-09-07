@@ -49,7 +49,7 @@ let storageBucketMissing = false;
 
 /**
  * Envia um arquivo ou string Base64 para o Supabase Storage e retorna a URL pública.
- * Se o Supabase não estiver configurado ou o bucket não existir, retorna o DataURL para o Postgres.
+ * Se o Supabase não estiver configurado ou ocorrer falha, retorna o DataURL (comprimido) como fallback.
  */
 export async function uploadToSupabaseStorage(
   fileOrBase64: string,
@@ -70,23 +70,23 @@ export async function uploadToSupabaseStorage(
     return fileOrBase64;
   }
 
-  // Tenta compactar/otimizar imagem Base64 mantendo alta definição para comprovantes
+  // Tenta compactar/otimizar imagem Base64 mantendo alta definição e legibilidade dos comprovantes
   let preparedBase64 = fileOrBase64;
   if (fileOrBase64.startsWith('data:image/')) {
     try {
       if (folder === 'receipts') {
-        // Compacta para tamanho ultraleve (~35KB a 50KB) mantendo legibilidade total dos valores do comprovante
-        preparedBase64 = await compressImage(fileOrBase64, 850, 850, 0.75);
+        // Compressão para comprovantes: até 1600px com qualidade 0.8 (garante legibilidade de letras pequenas)
+        preparedBase64 = await compressImage(fileOrBase64, 1600, 1600, 0.8);
       } else {
-        preparedBase64 = await compressImage(fileOrBase64, 600, 600, 0.75);
+        preparedBase64 = await compressImage(fileOrBase64, 800, 800, 0.75);
       }
     } catch (e) {
-      // Ignora erro de compressão
+      console.warn('[Storage] Falha ao comprimir imagem, usando original:', e);
     }
   }
 
-  // Se o Supabase não estiver configurado ou se o bucket for sabidamente ausente, usa o DataURL direto no Postgres
-  if (!isSupabaseConfigured() || storageBucketMissing) {
+  // Se o Supabase não estiver configurado, retorna o DataURL direto
+  if (!isSupabaseConfigured()) {
     return preparedBase64;
   }
 
@@ -102,7 +102,8 @@ export async function uploadToSupabaseStorage(
       .replace(/^_+|_+$/g, '')
       .substring(0, 25) || 'file';
 
-    const path = `${folder}/${cleanPrefix}_${Date.now()}.${extension}`;
+    const uniqueTag = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const path = `${folder}/${cleanPrefix}_${uniqueTag}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from(BUCKET_NAME)
@@ -113,15 +114,14 @@ export async function uploadToSupabaseStorage(
       });
 
     if (uploadError) {
-      storageBucketMissing = true;
-      console.warn(`[Storage] Armazenamento do Supabase indisponível (${uploadError.message}). Salvando arquivo no PostgreSQL.`);
+      console.warn(`[Storage] Upload no Supabase falhou (${uploadError.message}). Usando fallback local.`);
       return preparedBase64;
     }
 
     const { data: publicUrlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
     return publicUrlData?.publicUrl || preparedBase64;
   } catch (err: any) {
-    storageBucketMissing = true;
+    console.warn(`[Storage] Exceção no upload para Supabase:`, err);
     return preparedBase64;
   }
 }

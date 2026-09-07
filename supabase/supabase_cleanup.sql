@@ -21,12 +21,20 @@ ON CONFLICT (id) DO UPDATE SET public = true;
 -- 1.2 Políticas RLS do Storage
 DROP POLICY IF EXISTS "Public Storage Upload Access" ON storage.objects;
 DROP POLICY IF EXISTS "Public Storage Select Access" ON storage.objects;
+DROP POLICY IF EXISTS "Public Storage Update Access" ON storage.objects;
+DROP POLICY IF EXISTS "Public Storage Delete Access" ON storage.objects;
 
 CREATE POLICY "Public Storage Upload Access" ON storage.objects
   FOR INSERT WITH CHECK (bucket_id = 'rn3d_attachments');
 
 CREATE POLICY "Public Storage Select Access" ON storage.objects
   FOR SELECT USING (bucket_id = 'rn3d_attachments');
+
+CREATE POLICY "Public Storage Update Access" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'rn3d_attachments');
+
+CREATE POLICY "Public Storage Delete Access" ON storage.objects
+  FOR DELETE USING (bucket_id = 'rn3d_attachments');
 
 -- 1.3 Zerar strings Base64 das colunas de texto (libera a origem do bloat)
 UPDATE products SET image_url = '' WHERE image_url LIKE 'data:%';
