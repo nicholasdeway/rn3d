@@ -32,43 +32,6 @@ export const ReceiptViewerModal: React.FC<ReceiptViewerModalProps> = ({ receipt,
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Reset zoom & pan when receipt changes
-  useEffect(() => {
-    setScale(1);
-    setRotation(0);
-    setPosition({ x: 0, y: 0 });
-    setIsFullscreen(false);
-  }, [receipt]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!receipt) return;
-      if (e.key === 'Escape') {
-        onClose();
-      } else if (e.key === '+' || e.key === '=') {
-        handleZoomIn();
-      } else if (e.key === '-') {
-        handleZoomOut();
-      } else if (e.key === '0') {
-        handleReset();
-      } else if (e.key === 'r' || e.key === 'R') {
-        handleRotate();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [receipt, scale, rotation]);
-
-  if (!receipt) return null;
-
-  const isPdf =
-    receipt.type === 'pdf' ||
-    receipt.url.startsWith('data:application/pdf') ||
-    receipt.url.toLowerCase().includes('.pdf') ||
-    (receipt.name && receipt.name.toLowerCase().endsWith('.pdf'));
-
   const handleZoomIn = () => {
     setScale((prev) => Math.min(4, Math.round((prev + 0.25) * 100) / 100));
   };
@@ -99,10 +62,47 @@ export const ReceiptViewerModal: React.FC<ReceiptViewerModalProps> = ({ receipt,
     }
   };
 
+  // Reset zoom & pan when receipt changes
+  useEffect(() => {
+    setScale(1);
+    setRotation(0);
+    setPosition({ x: 0, y: 0 });
+    setIsFullscreen(false);
+  }, [receipt]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!receipt) return;
+      if (e.key === 'Escape') {
+        onClose();
+      } else if (e.key === '+' || e.key === '=') {
+        handleZoomIn();
+      } else if (e.key === '-') {
+        handleZoomOut();
+      } else if (e.key === '0') {
+        handleReset();
+      } else if (e.key === 'r' || e.key === 'R') {
+        handleRotate();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [receipt, scale, rotation]);
+
   // Non-passive wheel event listener for smooth zooming without browser passive event warning
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || isPdf) return;
+    if (!container || !receipt) return;
+
+    const isPdfDoc =
+      receipt.type === 'pdf' ||
+      receipt.url.startsWith('data:application/pdf') ||
+      receipt.url.toLowerCase().includes('.pdf') ||
+      (receipt.name && receipt.name.toLowerCase().endsWith('.pdf'));
+
+    if (isPdfDoc) return;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -117,7 +117,15 @@ export const ReceiptViewerModal: React.FC<ReceiptViewerModalProps> = ({ receipt,
     return () => {
       container.removeEventListener('wheel', handleWheel);
     };
-  }, [isPdf]);
+  }, [receipt]);
+
+  if (!receipt) return null;
+
+  const isPdf =
+    receipt.type === 'pdf' ||
+    receipt.url.startsWith('data:application/pdf') ||
+    receipt.url.toLowerCase().includes('.pdf') ||
+    (receipt.name && receipt.name.toLowerCase().endsWith('.pdf'));
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isPdf || scale <= 1) return;
