@@ -34,8 +34,101 @@ export const OrderPdfViewerModal: React.FC<OrderPdfViewerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50 animate-in fade-in duration-150 no-print-bg overflow-y-auto">
-      <div className="bg-white dark:bg-[#12151c] rounded-2xl max-w-3xl w-full border border-slate-200 dark:border-[#202531] shadow-2xl overflow-hidden my-auto flex flex-col max-h-[92vh]">
+    <div className="printable-quote-modal fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 print:p-0 print:bg-white overflow-y-auto">
+      {/* Print CSS Rules */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 10mm 12mm;
+          }
+
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            color: black !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+          }
+
+          header, nav, aside, footer, .no-print, [role="alert"] {
+            display: none !important;
+          }
+
+          #root, #root > div, main {
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            background: white !important;
+          }
+
+          main > div > *:not(.printable-quote-modal) {
+            display: none !important;
+          }
+
+          .printable-quote-modal {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            overflow: visible !important;
+            display: block !important;
+            z-index: 999999 !important;
+          }
+
+          .print-container {
+            position: static !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            height: auto !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            max-height: none !important;
+            overflow: visible !important;
+            display: block !important;
+            background: white !important;
+            color: black !important;
+          }
+
+          .print-sheet {
+            padding: 0 !important;
+            margin: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            background: white !important;
+            color: black !important;
+            display: block !important;
+          }
+
+          tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          .print-avoid-break {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+        }
+      `}</style>
+
+      <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-200 dark:border-[#202531] shadow-2xl overflow-hidden my-auto flex flex-col max-h-[92vh]">
         {/* Modal Top Header (Hidden on Print) */}
         <div className="no-print p-4 bg-slate-50 dark:bg-[#181c26] border-b border-slate-100 dark:border-[#202531] flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -54,7 +147,7 @@ export const OrderPdfViewerModal: React.FC<OrderPdfViewerModalProps> = ({
         </div>
 
         {/* Printable PDF Area */}
-        <div className="p-4 sm:p-8 space-y-6 overflow-y-auto print-area text-xs bg-white dark:bg-[#12151c] flex-1">
+        <div className="print-sheet p-5 sm:p-10 space-y-6 overflow-y-auto text-xs bg-white dark:bg-[#12151c] text-slate-900 dark:text-slate-100 font-sans flex-1">
           {/* Header Branding */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b-2 border-slate-200 dark:border-[#202531] gap-4">
             <div>
@@ -192,6 +285,14 @@ export const OrderPdfViewerModal: React.FC<OrderPdfViewerModalProps> = ({
                 VALOR TOTAL: R$ {order.totalValue.toFixed(2).replace('.', ',')}
               </p>
             </div>
+          </div>
+
+          {/* Footer */}
+          <div className="print-avoid-break pt-6 border-t border-slate-200 dark:border-[#202531] text-center text-[10px] text-slate-600 dark:text-slate-400 space-y-1">
+            <p className="font-bold text-slate-900 dark:text-slate-200">
+              RN 3D Soluções • CNPJ: 67.570.155/0001-34 • WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
+            </p>
+            <p>Obrigado pela preferência e confiança em nosso trabalho!</p>
           </div>
         </div>
 

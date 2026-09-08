@@ -486,6 +486,19 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     </label>
 
                     <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPreviewPdfOrder(o);
+                        }}
+                        className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
+                        title="Ver Documento PDF A4 do Pedido"
+                      >
+                        <Printer className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                        <span>PDF</span>
+                      </button>
+
                       {onDeleteOrder && (
                         <button
                           type="button"
