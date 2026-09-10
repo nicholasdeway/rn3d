@@ -525,6 +525,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     type="number"
                     step="0.01"
                     min="0"
+                    inputMode="decimal"
                     value={inputs.spoolPrice}
                     onChange={(e) => handleInputChange('spoolPrice', parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -542,6 +543,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     type="number"
                     min="100"
                     step="50"
+                    inputMode="numeric"
                     value={inputs.spoolWeightGrams}
                     onChange={(e) => handleInputChange('spoolWeightGrams', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -562,6 +564,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     type="number"
                     min="1"
                     step="1"
+                    inputMode="numeric"
                     value={inputs.printWeightGrams}
                     onChange={(e) => handleInputChange('printWeightGrams', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-indigo-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -576,7 +579,19 @@ Qualquer dúvida estou à disposição! 🚀`;
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center justify-between">
                   <span>Margem de Falha / Suportes</span>
-                  <span className="text-slate-400 text-[11px] font-mono">{inputs.failureRatePct}%</span>
+                  <div className="relative flex items-center gap-1">
+                    <input
+                      type="number"
+                      min="0"
+                      max="50"
+                      step="1"
+                      inputMode="decimal"
+                      value={inputs.failureRatePct}
+                      onChange={(e) => handleInputChange('failureRatePct', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-14 px-1.5 py-0.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 text-right focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono"
+                    />
+                    <span className="text-[11px] font-mono font-bold text-slate-500">%</span>
+                  </div>
                 </label>
                 <div className="relative flex items-center gap-2">
                   <input
@@ -646,6 +661,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     type="number"
                     step="0.01"
                     min="0"
+                    inputMode="decimal"
                     value={inputs.energyKwhCost}
                     onChange={(e) => handleInputChange('energyKwhCost', parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -663,6 +679,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     type="number"
                     step="10"
                     min="50"
+                    inputMode="numeric"
                     value={inputs.printerPowerWatts}
                     onChange={(e) => handleInputChange('printerPowerWatts', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
@@ -683,6 +700,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     <input
                       type="number"
                       min="0"
+                      inputMode="numeric"
                       value={inputs.printHours}
                       onChange={(e) => handleInputChange('printHours', parseInt(e.target.value) || 0)}
                       className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 text-center focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -695,6 +713,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                       type="number"
                       min="0"
                       max="59"
+                      inputMode="numeric"
                       value={inputs.printMinutes}
                       onChange={(e) => handleInputChange('printMinutes', parseInt(e.target.value) || 0)}
                       className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 text-center focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -732,6 +751,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     type="number"
                     step="0.10"
                     min="0"
+                    inputMode="decimal"
                     value={inputs.packagingCost}
                     onChange={(e) => handleInputChange('packagingCost', parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -752,6 +772,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     type="number"
                     step="0.10"
                     min="0"
+                    inputMode="decimal"
                     value={inputs.tagsCardsCost}
                     onChange={(e) => handleInputChange('tagsCardsCost', parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -772,6 +793,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     type="number"
                     step="0.10"
                     min="0"
+                    inputMode="decimal"
                     value={inputs.hardwareCost}
                     onChange={(e) => handleInputChange('hardwareCost', parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -792,6 +814,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     type="number"
                     step="0.50"
                     min="0"
+                    inputMode="decimal"
                     value={inputs.laborPrepCost}
                     onChange={(e) => handleInputChange('laborPrepCost', parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -820,9 +843,26 @@ Qualquer dúvida estou à disposição! 🚀`;
                   <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Margem de Lucro Desejada (Líquida):
                 </label>
-                <span className="text-emerald-700 dark:text-emerald-300 font-mono text-sm font-extrabold bg-white dark:bg-slate-900 px-3 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 shadow-2xs">
-                  {inputs.desiredProfitMarginPct}%
-                </span>
+                <div className="relative flex items-center gap-0.5 bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+                  <input
+                    type="number"
+                    min="0"
+                    max="999"
+                    step="any"
+                    inputMode="decimal"
+                    value={inputs.desiredProfitMarginPct}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      handleInputChange(
+                        'desiredProfitMarginPct',
+                        isNaN(val) ? 0 : Math.max(0, Math.min(999, val))
+                      );
+                    }}
+                    className="w-12 bg-transparent font-mono text-sm font-extrabold text-emerald-700 dark:text-emerald-300 text-right focus:outline-none"
+                    placeholder="0"
+                  />
+                  <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">%</span>
+                </div>
               </div>
 
               {/* Manual input box with -1% and +1% steppers */}
@@ -1036,9 +1076,26 @@ Qualquer dúvida estou à disposição! 🚀`;
                     <Users className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                     Taxa Extra de Afiliados / Desconto (%):
                   </label>
-                  <span className="text-cyan-700 dark:text-cyan-300 font-mono text-sm font-extrabold bg-white dark:bg-slate-900 px-3 py-1 rounded-lg border border-cyan-200 dark:border-cyan-800 shadow-2xs">
-                    {inputs.extraDiscountAffiliatePct}%
-                  </span>
+                  <div className="relative flex items-center gap-0.5 bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-cyan-300 dark:border-cyan-700 shadow-2xs">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="any"
+                      inputMode="decimal"
+                      value={inputs.extraDiscountAffiliatePct}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        handleInputChange(
+                          'extraDiscountAffiliatePct',
+                          isNaN(val) ? 0 : Math.max(0, Math.min(100, val))
+                        );
+                      }}
+                      className="w-12 bg-transparent font-mono text-sm font-extrabold text-cyan-700 dark:text-cyan-300 text-right focus:outline-none"
+                      placeholder="0"
+                    />
+                    <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400">%</span>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-3">
