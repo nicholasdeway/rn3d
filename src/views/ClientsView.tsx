@@ -385,22 +385,22 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                   </div>
                   <div className="shrink-0">
                     {c.visitStatus === 'Hoje' && (
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      <span className="inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-xs">
                         Visitar hoje
                       </span>
                     )}
                     {c.visitStatus === 'Atrasada' && (
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                      <span className="inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 shadow-xs">
                         Atrasada
                       </span>
                     )}
                     {c.visitStatus === 'Em breve' && (
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                      <span className="inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 shadow-xs">
                         Em breve
                       </span>
                     )}
                     {(c.visitStatus === 'Última visita' || c.visitStatus === 'Concluída' || (!c.visitStatus && c.lastVisitDate)) && (
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                      <span className="inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 shadow-xs">
                         Última visita {c.lastVisitDate && c.lastVisitDate !== 'Sem visitas' && c.lastVisitDate !== 'N/A' ? `(${formatDateBR(c.lastVisitDate)})` : ''}
                       </span>
                     )}
@@ -522,26 +522,26 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                       <td className="p-4 text-right font-bold text-emerald-600">
                         R$ {c.receivableBalance.toFixed(2).replace('.', ',')}
                       </td>
-                      <td className="p-4 text-slate-500">{formatDateBR(c.lastVisitDate)}</td>
-                      <td className="p-4 text-slate-700 font-medium">{formatDateBR(c.nextVisitDate)}</td>
-                      <td className="p-4">
+                      <td className="p-4 text-slate-500 whitespace-nowrap">{formatDateBR(c.lastVisitDate)}</td>
+                      <td className="p-4 text-slate-700 font-medium whitespace-nowrap">{formatDateBR(c.nextVisitDate)}</td>
+                      <td className="p-4 whitespace-nowrap">
                         {c.visitStatus === 'Hoje' && (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          <span className="inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 shadow-xs">
                             Visitar hoje
                           </span>
                         )}
                         {c.visitStatus === 'Atrasada' && (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                          <span className="inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 shadow-xs">
                             Atrasada
                           </span>
                         )}
                         {c.visitStatus === 'Em breve' && (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                          <span className="inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 shadow-xs">
                             Em breve
                           </span>
                         )}
                         {(c.visitStatus === 'Última visita' || c.visitStatus === 'Concluída' || (!c.visitStatus && c.lastVisitDate)) && (
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center justify-center whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 shadow-xs">
                             Última visita {c.lastVisitDate && c.lastVisitDate !== 'Sem visitas' && c.lastVisitDate !== 'N/A' ? `(${formatDateBR(c.lastVisitDate)})` : ''}
                           </span>
                         )}
