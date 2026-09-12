@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Client } from '../types';
 import { formatDateBR } from '../utils/formatters';
 import { fetchAddressByCep } from '../services/viaCepService';
+import { fetchCompanyByCnpj } from '../services/cnpjService';
 import { formatPhone, formatDocument } from '../utils/formatters';
 import {
   Users,
@@ -68,6 +69,8 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
 
   const [isSearchingCep, setIsSearchingCep] = useState(false);
   const [cepStatusMessage, setCepStatusMessage] = useState('');
+  const [isSearchingCnpj, setIsSearchingCnpj] = useState(false);
+  const [cnpjStatusMessage, setCnpjStatusMessage] = useState('');
 
   const handleCepChange = async (inputCep: string) => {
     const numeric = inputCep.replace(/\D/g, '').slice(0, 8);
@@ -98,6 +101,42 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
       }
     } else {
       setCepStatusMessage('');
+    }
+  };
+
+  const handleCnpjChange = async (inputDoc: string) => {
+    const formatted = formatDocument(inputDoc);
+    setFormData((prev) => ({ ...prev, document: formatted }));
+
+    const numeric = inputDoc.replace(/\D/g, '');
+    if (numeric.length === 14) {
+      setIsSearchingCnpj(true);
+      setCnpjStatusMessage('Buscando dados da empresa no CNPJ...');
+      const company = await fetchCompanyByCnpj(numeric);
+      setIsSearchingCnpj(false);
+      if (company && company.razao_social) {
+        setFormData((prev) => ({
+          ...prev,
+          name: company.razao_social || prev.name,
+          fantasyName: company.nome_fantasia || prev.fantasyName || company.razao_social,
+          responsible: company.responsible || prev.responsible || company.razao_social,
+          phone: company.phone ? formatPhone(company.phone) : prev.phone,
+          whatsapp: company.phone ? formatPhone(company.phone) : prev.whatsapp,
+          email: company.email || prev.email,
+          cep: company.cep ? (company.cep.length === 8 ? `${company.cep.slice(0, 5)}-${company.cep.slice(5)}` : company.cep) : prev.cep,
+          street: company.logradouro || prev.street,
+          number: company.numero || prev.number,
+          complement: company.complemento || prev.complement,
+          neighborhood: company.bairro || prev.neighborhood,
+          city: company.municipio || prev.city,
+          state: company.uf || prev.state,
+        }));
+        setCnpjStatusMessage('✅ Dados da empresa carregados automaticamente!');
+      } else {
+        setCnpjStatusMessage('⚠️ CNPJ não localizado na Receita Federal');
+      }
+    } else {
+      setCnpjStatusMessage('');
     }
   };
 
@@ -877,14 +916,31 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">CNPJ / CPF</label>
-                      <input
-                        type="text"
-                        value={formData.document}
-                        onChange={(e) => setFormData({ ...formData, document: formatDocument(e.target.value) })}
-                        placeholder="00.000.000/0001-00"
-                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#12151c] font-medium text-slate-900 dark:text-slate-100 placeholder-slate-400 font-mono"
-                      />
+                      <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+                        <span>CNPJ / CPF</span>
+                        <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-normal">Busca automát. (14 dígitos)</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={formData.document}
+                          onChange={(e) => handleCnpjChange(e.target.value)}
+                          placeholder="00.000.000/0001-00"
+                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#12151c] font-medium text-slate-900 dark:text-slate-100 placeholder-slate-400 font-mono"
+                        />
+                        {isSearchingCnpj && (
+                          <div className="absolute right-2.5 top-2.5">
+                            <Loader2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                      {cnpjStatusMessage && (
+                        <p className={`text-[11px] font-bold mt-1 flex items-center gap-1 ${
+                          isSearchingCnpj ? 'text-indigo-600 dark:text-indigo-400 animate-pulse' : cnpjStatusMessage.includes('✅') ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                        }`}>
+                          {cnpjStatusMessage}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Nome do Responsável *</label>
