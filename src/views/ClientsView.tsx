@@ -495,8 +495,8 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
 
       {/* MODAL ETAPA 1: POPUP DE ESCOLHA DA CATEGORIA (CLIENTE FINAL OU EMPRESA) */}
       {clientModalStep === 'selection' && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#12151c] w-full max-w-lg rounded-3xl border border-slate-200 dark:border-[#202531] shadow-2xl p-6 sm:p-7 space-y-6 animate-in fade-in zoom-in-95 duration-150 relative">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-lg rounded-3xl border border-slate-200 dark:border-[#202531] p-6 sm:p-7 space-y-6 animate-in fade-in zoom-in-95 duration-150 relative">
             <button
               type="button"
               onClick={() => setClientModalStep(null)}
@@ -507,7 +507,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
             </button>
 
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto border border-indigo-100 dark:border-indigo-900/50 shadow-inner">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto border border-indigo-100 dark:border-indigo-900/50">
                 <Users className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">
@@ -543,7 +543,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                   });
                   setClientModalStep('form');
                 }}
-                className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 dark:hover:border-emerald-500 bg-white dark:bg-[#181c26] hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 text-left transition-all duration-200 group flex items-start gap-4 cursor-pointer shadow-xs active:scale-[0.99]"
+                className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 dark:hover:border-emerald-500 bg-white dark:bg-[#181c26] hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 text-left transition-all duration-200 group flex items-start gap-4 cursor-pointer active:scale-[0.99]"
               >
                 <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform">
                   <User className="w-6 h-6" />
@@ -593,7 +593,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                   });
                   setClientModalStep('form');
                 }}
-                className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 bg-white dark:bg-[#181c26] hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 text-left transition-all duration-200 group flex items-start gap-4 cursor-pointer shadow-xs active:scale-[0.99]"
+                className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 bg-white dark:bg-[#181c26] hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 text-left transition-all duration-200 group flex items-start gap-4 cursor-pointer active:scale-[0.99]"
               >
                 <div className="p-3 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 shrink-0 group-hover:scale-110 transition-transform">
                   <Building2 className="w-6 h-6" />
@@ -629,7 +629,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
 
       {/* MODAL ETAPA 2: FORMULÁRIO PERSONALIZADO DE ACORDO COM O TIPO */}
       {clientModalStep === 'form' && (
-        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
           <div className={`bg-white dark:bg-[#12151c] w-full ${clientCategoryMode === 'b2c' ? 'max-w-xl' : 'max-w-3xl'} rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150`}>
             {/* Header */}
             <div className={`p-5 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between ${clientCategoryMode === 'b2c' ? 'bg-emerald-50/80 dark:bg-emerald-950/40' : 'bg-slate-50 dark:bg-[#181c26]'}`}>
