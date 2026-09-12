@@ -1075,25 +1075,25 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                   </div>
 
                   {/* Editable Client Profile Type & Commercial Settings */}
-                  <div className="sm:col-span-2 p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-2xl space-y-3">
+                  <div className="sm:col-span-2 p-4 bg-slate-50 dark:bg-[#12151c] border border-slate-200 dark:border-[#202531] rounded-2xl space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                      <span className="font-bold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5">
                         🏷️ Perfil de Cliente & Termos Comerciais
                       </span>
-                      <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 text-[10px] font-bold rounded-full">
+                      <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 text-[10px] font-bold rounded-full">
                         Alteração de Tipo
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
-                        <label className="block font-bold text-slate-800 text-[11px] mb-1">
+                        <label className="block font-semibold text-slate-700 dark:text-slate-300 text-[11px] mb-1">
                           Tipo / Categoria de Cliente *
                         </label>
                         <select
                           value={editFormData.type || 'Cliente direto'}
                           onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value as any })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-extrabold text-indigo-900 text-xs"
+                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#181c26] text-slate-900 dark:text-slate-100 font-bold text-xs"
                         >
                           <option value="Cliente direto">👤 Cliente Direto / Final (B2C)</option>
                           <option value="Consignação">🏬 Consignado / Ponto de Venda (B2B)</option>
@@ -1103,13 +1103,13 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                       </div>
 
                       <div>
-                        <label className="block font-bold text-slate-800 text-[11px] mb-1">
+                        <label className="block font-semibold text-slate-700 dark:text-slate-300 text-[11px] mb-1">
                           Frequência de Visita
                         </label>
                         <select
                           value={editFormData.visitFrequency || '15 dias'}
                           onChange={(e) => setEditFormData({ ...editFormData, visitFrequency: e.target.value as any })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-bold text-slate-900 text-xs"
+                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#181c26] text-slate-900 dark:text-slate-100 font-bold text-xs"
                         >
                           <option value="Sem visitas">❌ Sem visitas periódicas</option>
                           <option value="7 dias">🗓️ Semanal (7 dias)</option>
@@ -1120,13 +1120,13 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                       </div>
 
                       <div>
-                        <label className="block font-bold text-slate-800 text-[11px] mb-1">
+                        <label className="block font-semibold text-slate-700 dark:text-slate-300 text-[11px] mb-1">
                           Nível de Preço Acordado
                         </label>
                         <select
                           value={editFormData.agreedPriceLevel || 'Padrão'}
                           onChange={(e) => setEditFormData({ ...editFormData, agreedPriceLevel: e.target.value as any })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-bold text-slate-900 text-xs"
+                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-[#181c26] text-slate-900 dark:text-slate-100 font-bold text-xs"
                         >
                           <option value="Padrão">🏷️ Padrão</option>
                           <option value="Atacado">🏷️ Atacado</option>

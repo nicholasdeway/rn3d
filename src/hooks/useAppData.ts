@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ExpenseItem, Quote, Order } from '../types';
+import { ExpenseItem, Quote, Order, Client, Consignment, Visit } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from './useProducts';
 import { useClients } from './useClients';
@@ -198,8 +198,9 @@ export function useAppData() {
           fetchConsignments(),
         ]);
         if (!isMounted) return;
+        const enrichedClients = computeEnrichedClients(dbClients, dbConsignments || [], dbOrders || [], visits || []);
         setProducts((prev) => (prev && prev.length === dbProducts.length && JSON.stringify(prev) === JSON.stringify(dbProducts) ? prev : dbProducts));
-        setClients((prev) => (prev && prev.length === dbClients.length && JSON.stringify(prev) === JSON.stringify(dbClients) ? prev : dbClients));
+        setClients((prev) => (prev && prev.length === enrichedClients.length && JSON.stringify(prev) === JSON.stringify(enrichedClients) ? prev : enrichedClients));
         setQuotes((prev) => (prev && prev.length === dbQuotes.length && JSON.stringify(prev) === JSON.stringify(dbQuotes) ? prev : dbQuotes));
         setOrders((prev) => {
           if (!prev || prev.length === 0) return dbOrders;
@@ -287,119 +288,130 @@ export function useAppData() {
     };
   }, [user, setProducts, setClients, setOrders, setQuotes]);
 
-  // Sync clients' productsOnSiteCount, productsValuation, lastVisitDate, nextVisitDate, and visitStatus dynamically
-  useEffect(() => {
-    if (clients.length === 0) return;
+function computeEnrichedClients(
+  rawClients: Client[],
+  consignments: Consignment[],
+  orders: Order[],
+  visits: Visit[]
+): Client[] {
+  if (!rawClients || rawClients.length === 0) return [];
+  const todayStr = new Date().toLocaleDateString('pt-BR');
 
-    setClients((prevClients) => {
-      let changed = false;
-      const todayStr = new Date().toLocaleDateString('pt-BR');
+  return rawClients.map((cli) => {
+    const matchingConsignments = (consignments || []).filter(
+      (c) =>
+        c.clientId === cli.id ||
+        (c.clientName && c.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())
+    );
 
-      const updated = prevClients.map((cli) => {
-        const matchingConsignments = consignments.filter(
-          (c) =>
-            c.clientId === cli.id ||
-            (c.clientName && c.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())
-        );
+    const totalItemsCount = matchingConsignments.reduce((sum, c) => sum + (c.itemsCount || 0), 0);
+    const totalValuation = matchingConsignments.reduce((sum, c) => sum + (c.totalValue || 0), 0);
 
-        const totalItemsCount = matchingConsignments.reduce((sum, c) => sum + c.itemsCount, 0);
-        const totalValuation = matchingConsignments.reduce((sum, c) => sum + c.totalValue, 0);
+    const matchingVisits = (visits || []).filter(
+      (v) =>
+        v.clientId === cli.id || (v.clientName && v.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())
+    );
 
-        // Find most recent visit date from completed visits or delivered orders
-        const matchingVisits = visits.filter(
-          (v) =>
-            v.clientId === cli.id || (v.clientName && v.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())
-        );
+    const completedVisits = matchingVisits.filter((v) => v.status === 'Concluída');
 
-        const completedVisits = matchingVisits.filter((v) => v.status === 'Concluída');
+    const matchingDeliveredOrders = (orders || []).filter(
+      (o) =>
+        (o.clientId === cli.id || (o.clientName && o.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())) &&
+        (o.status === 'Entregue' || o.status === 'Concluído')
+    );
 
-        const matchingDeliveredOrders = orders.filter(
-          (o) =>
-            (o.clientId === cli.id || (o.clientName && o.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())) &&
-            (o.status === 'Entregue' || o.status === 'Concluído')
-        );
+    let latestVisitDateStr = cli.lastVisitDate || 'Sem visitas';
 
-        let latestVisitDateStr = cli.lastVisitDate || 'Sem visitas';
+    const dates: string[] = [];
+    completedVisits.forEach((v) => {
+      if (v.completedAt) dates.push(v.completedAt.split(' ')[0]);
+      else if (v.lastVisitText && v.lastVisitText !== 'N/A' && v.lastVisitText !== 'Sem visitas') {
+        dates.push(v.lastVisitText.split(' ')[0]);
+      } else if (v.scheduledDate) dates.push(v.scheduledDate);
+    });
 
-        const dates: string[] = [];
-        completedVisits.forEach((v) => {
-          if (v.completedAt) dates.push(v.completedAt.split(' ')[0]);
-          else if (v.lastVisitText && v.lastVisitText !== 'N/A' && v.lastVisitText !== 'Sem visitas') {
-            dates.push(v.lastVisitText.split(' ')[0]);
-          } else if (v.scheduledDate) dates.push(v.scheduledDate);
-        });
+    matchingDeliveredOrders.forEach((o) => {
+      if (o.date) dates.push(o.date);
+    });
 
-        matchingDeliveredOrders.forEach((o) => {
-          if (o.date) dates.push(o.date);
-        });
+    if (dates.length > 0) {
+      dates.sort((a, b) => {
+        const timeA = parseBRDate(a)?.getTime() || 0;
+        const timeB = parseBRDate(b)?.getTime() || 0;
+        return timeB - timeA;
+      });
+      latestVisitDateStr = dates[0];
+    }
 
-        if (dates.length > 0) {
-          dates.sort((a, b) => {
-            const timeA = parseBRDate(a)?.getTime() || 0;
-            const timeB = parseBRDate(b)?.getTime() || 0;
-            return timeB - timeA;
-          });
-          latestVisitDateStr = dates[0];
-        }
+    const pendingVisits = matchingVisits.filter((v) => v.status !== 'Concluída');
 
-        // Find pending scheduled visits for this client
-        const pendingVisits = matchingVisits.filter((v) => v.status !== 'Concluída');
+    let computedNextVisitDate = cli.nextVisitDate || 'A agendar';
+    let computedVisitStatus: 'Hoje' | 'Atrasada' | 'Em breve' | 'Concluída' | 'Última visita' = cli.visitStatus || 'Última visita';
 
-        let computedNextVisitDate = cli.nextVisitDate || 'A agendar';
-        let computedVisitStatus: 'Hoje' | 'Atrasada' | 'Em breve' | 'Concluída' | 'Última visita' = cli.visitStatus || 'Última visita';
-
-        if (pendingVisits.length > 0) {
-          // Sort by scheduledDate ascending (earliest scheduled visit first)
-          pendingVisits.sort((a, b) => {
-            const timeA = parseBRDate(a.scheduledDate)?.getTime() || 0;
-            const timeB = parseBRDate(b.scheduledDate)?.getTime() || 0;
-            return timeA - timeB;
-          });
-
-          const nextScheduled = pendingVisits[0];
-          computedNextVisitDate = nextScheduled.scheduledDate || 'A agendar';
-
-          const now = new Date();
-          const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-
-          const schedTime = parseBRDate(nextScheduled.scheduledDate)?.getTime() || 0;
-
-          if (schedTime > 0) {
-            if (schedTime === todayMidnight || nextScheduled.scheduledDate === todayStr) {
-              computedVisitStatus = 'Hoje';
-            } else if (schedTime < todayMidnight) {
-              computedVisitStatus = 'Atrasada';
-            } else {
-              computedVisitStatus = 'Em breve';
-            }
-          } else {
-            computedVisitStatus = nextScheduled.status === 'Hoje' ? 'Hoje' : nextScheduled.status === 'Atrasada' ? 'Atrasada' : 'Em breve';
-          }
-        } else {
-          computedNextVisitDate = 'A agendar';
-          computedVisitStatus = 'Última visita';
-        }
-
-        const stockChanged = cli.productsOnSiteCount !== totalItemsCount || Math.abs((cli.productsValuation || 0) - totalValuation) > 0.01;
-        const lastVisitChanged = latestVisitDateStr !== cli.lastVisitDate && latestVisitDateStr !== 'Sem visitas' && latestVisitDateStr !== 'N/A';
-        const nextVisitChanged = computedNextVisitDate !== cli.nextVisitDate;
-        const visitStatusChanged = computedVisitStatus !== cli.visitStatus;
-
-        if (stockChanged || lastVisitChanged || nextVisitChanged || visitStatusChanged) {
-          changed = true;
-          return {
-            ...cli,
-            productsOnSiteCount: totalItemsCount,
-            productsValuation: totalValuation,
-            lastVisitDate: lastVisitChanged ? latestVisitDateStr : cli.lastVisitDate,
-            nextVisitDate: computedNextVisitDate,
-            visitStatus: computedVisitStatus,
-          };
-        }
-        return cli;
+    if (pendingVisits.length > 0) {
+      pendingVisits.sort((a, b) => {
+        const timeA = parseBRDate(a.scheduledDate)?.getTime() || 0;
+        const timeB = parseBRDate(b.scheduledDate)?.getTime() || 0;
+        return timeA - timeB;
       });
 
-      return changed ? updated : prevClients;
+      const nextScheduled = pendingVisits[0];
+      computedNextVisitDate = nextScheduled.scheduledDate || 'A agendar';
+
+      const now = new Date();
+      const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+      const schedTime = parseBRDate(nextScheduled.scheduledDate)?.getTime() || 0;
+
+      if (schedTime > 0) {
+        if (schedTime === todayMidnight || nextScheduled.scheduledDate === todayStr) {
+          computedVisitStatus = 'Hoje';
+        } else if (schedTime < todayMidnight) {
+          computedVisitStatus = 'Atrasada';
+        } else {
+          computedVisitStatus = 'Em breve';
+        }
+      } else {
+        computedVisitStatus = nextScheduled.status === 'Hoje' ? 'Hoje' : nextScheduled.status === 'Atrasada' ? 'Atrasada' : 'Em breve';
+      }
+    } else {
+      computedNextVisitDate = 'A agendar';
+      computedVisitStatus = 'Última visita';
+    }
+
+    return {
+      ...cli,
+      productsOnSiteCount: totalItemsCount,
+      productsValuation: totalValuation,
+      lastVisitDate: (latestVisitDateStr && latestVisitDateStr !== 'Sem visitas' && latestVisitDateStr !== 'N/A') ? latestVisitDateStr : cli.lastVisitDate,
+      nextVisitDate: computedNextVisitDate,
+      visitStatus: computedVisitStatus,
+    };
+  });
+}
+
+  // Sync clients' productsOnSiteCount, productsValuation, lastVisitDate, nextVisitDate, and visitStatus dynamically
+  useEffect(() => {
+    if (!clients || clients.length === 0) return;
+
+    setClients((prevClients) => {
+      if (!prevClients || prevClients.length === 0) return prevClients;
+
+      const enriched = computeEnrichedClients(prevClients, consignments || [], orders || [], visits || []);
+      const isIdentical =
+        prevClients.length === enriched.length &&
+        prevClients.every((c, idx) => {
+          const e = enriched[idx];
+          return (
+            c.productsOnSiteCount === e.productsOnSiteCount &&
+            Math.abs((c.productsValuation || 0) - (e.productsValuation || 0)) < 0.01 &&
+            c.lastVisitDate === e.lastVisitDate &&
+            c.nextVisitDate === e.nextVisitDate &&
+            c.visitStatus === e.visitStatus
+          );
+        });
+
+      return isIdentical ? prevClients : enriched;
     });
   }, [consignments, orders, visits]);
 
