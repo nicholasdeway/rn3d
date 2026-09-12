@@ -235,22 +235,47 @@ export function useAppData() {
                 l.id.toLowerCase().trim() === dbOrder.id.toLowerCase().trim() ||
                 l.id.replace(/^PED-/, '').toLowerCase().trim() === cleanDb
             );
+
+            let finalPaid = dbOrder.paidAmount || 0;
+            let finalReceipt1 = dbOrder.paymentReceiptUrl || '';
+            let finalReceipt2 = dbOrder.paymentReceiptUrl2 || '';
+            let finalReceiptName1 = dbOrder.paymentReceiptName || '';
+            let finalReceiptName2 = dbOrder.paymentReceiptName2 || '';
+            let finalProgress = dbOrder.productionProgressPct || 0;
+            let finalStatus = dbOrder.status;
+
             if (local) {
-              const useLocalProgress = (local.productionProgressPct || 0) > (dbOrder.productionProgressPct || 0);
-              const useLocalPaid = (local.paidAmount || 0) > (dbOrder.paidAmount || 0);
-              return {
-                ...dbOrder,
-                productionProgressPct: useLocalProgress ? local.productionProgressPct : dbOrder.productionProgressPct,
-                status: useLocalProgress ? local.status : dbOrder.status,
-                paidAmount: useLocalPaid ? local.paidAmount : dbOrder.paidAmount,
-                paymentStatusText: useLocalPaid ? local.paymentStatusText : dbOrder.paymentStatusText,
-                paymentReceiptUrl: local.paymentReceiptUrl || dbOrder.paymentReceiptUrl,
-                paymentReceiptUrl2: local.paymentReceiptUrl2 || dbOrder.paymentReceiptUrl2,
-                paymentReceiptName: local.paymentReceiptName || dbOrder.paymentReceiptName,
-                paymentReceiptName2: local.paymentReceiptName2 || dbOrder.paymentReceiptName2,
-              };
+              if ((local.paidAmount || 0) > finalPaid) finalPaid = local.paidAmount;
+              if (local.paymentReceiptUrl) finalReceipt1 = local.paymentReceiptUrl;
+              if (local.paymentReceiptUrl2) finalReceipt2 = local.paymentReceiptUrl2;
+              if (local.paymentReceiptName) finalReceiptName1 = local.paymentReceiptName;
+              if (local.paymentReceiptName2) finalReceiptName2 = local.paymentReceiptName2;
+              if ((local.productionProgressPct || 0) > finalProgress) {
+                finalProgress = local.productionProgressPct;
+                finalStatus = local.status;
+              }
             }
-            return dbOrder;
+
+            const hasReceipt = Boolean(finalReceipt1 || finalReceipt2);
+            const isPaidFull = (finalPaid >= dbOrder.totalValue && dbOrder.totalValue > 0) || (hasReceipt && (finalPaid >= dbOrder.totalValue || finalPaid === 0));
+            const calculatedPaid = isPaidFull ? (finalPaid > 0 ? finalPaid : dbOrder.totalValue) : finalPaid;
+            const calculatedStatusText = isPaidFull
+              ? 'Pago Total'
+              : calculatedPaid > 0
+                ? 'Adiantamento'
+                : (dbOrder.paymentStatusText && dbOrder.paymentStatusText !== 'Pendente' ? dbOrder.paymentStatusText : 'Pendente');
+
+            return {
+              ...dbOrder,
+              productionProgressPct: finalProgress,
+              status: finalStatus,
+              paidAmount: calculatedPaid,
+              paymentStatusText: calculatedStatusText,
+              paymentReceiptUrl: finalReceipt1,
+              paymentReceiptUrl2: finalReceipt2,
+              paymentReceiptName: finalReceiptName1,
+              paymentReceiptName2: finalReceiptName2,
+            };
           });
 
           const extraLocal = prev.filter((l) => {

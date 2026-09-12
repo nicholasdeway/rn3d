@@ -188,9 +188,32 @@ export const OrderPdfViewerModal: React.FC<OrderPdfViewerModalProps> = ({
               <p className="text-slate-900 dark:text-slate-100 font-bold text-xs">
                 Forma de Pagamento: <strong className="text-indigo-600 dark:text-indigo-400">{displayPaymentTerms}</strong>
               </p>
-              <p className="text-emerald-600 dark:text-emerald-400 font-bold text-xs">
-                Situação Financeira: {order.paymentStatusText || (order.paidAmount >= order.totalValue ? 'Pago Total' : order.paidAmount > 0 ? 'Parcial' : 'Pendente')}
-              </p>
+              {(() => {
+                const paid = Number(order.paidAmount) || 0;
+                const total = Number(order.totalValue) || 0;
+                const hasReceipt = Boolean(order.paymentReceiptUrl || order.paymentReceiptUrl2);
+                const isPaidFull = (total > 0 && paid >= total) || (hasReceipt && paid >= total) || (hasReceipt && paid === 0);
+                const isPaidPartial = paid > 0 && !isPaidFull;
+
+                let finText = 'Pendente';
+                let finColor = 'text-amber-600 dark:text-amber-400';
+
+                if (isPaidFull || order.paymentStatusText === 'Pago Total' || order.paymentStatusText === 'Quitado') {
+                  finText = 'Pago Total (Quitado)';
+                  finColor = 'text-emerald-600 dark:text-emerald-400';
+                } else if (isPaidPartial) {
+                  finText = `Parcial / Adiantamento (R$ ${paid.toFixed(2).replace('.', ',')} pago)`;
+                  finColor = 'text-indigo-600 dark:text-indigo-400';
+                } else if (order.paymentStatusText && order.paymentStatusText !== 'Pendente') {
+                  finText = order.paymentStatusText;
+                }
+
+                return (
+                  <p className={`font-bold text-xs ${finColor}`}>
+                    Situação Financeira: {finText}
+                  </p>
+                );
+              })()}
               {(order.productionSlaDate || order.estimatedDeliveryDate) && (
                 <p className="text-slate-500 dark:text-slate-400">
                   Previsão de Entrega: {formatDateBR(order.productionSlaDate || order.estimatedDeliveryDate)}
@@ -270,21 +293,32 @@ export const OrderPdfViewerModal: React.FC<OrderPdfViewerModalProps> = ({
               </p>
             </div>
 
-            <div className="text-left sm:text-right space-y-1 w-full sm:w-auto border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-2 sm:pt-0">
-              {order.paidAmount > 0 && (
-                <p className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                  Valor Pago: R$ {order.paidAmount.toFixed(2).replace('.', ',')}
-                </p>
-              )}
-              {order.totalValue - order.paidAmount > 0 && (
-                <p className="text-rose-600 dark:text-rose-400 font-semibold">
-                  Saldo Restante: R$ {(order.totalValue - order.paidAmount).toFixed(2).replace('.', ',')}
-                </p>
-              )}
-              <p className="text-lg font-black text-slate-900 dark:text-slate-100 pt-1">
-                VALOR TOTAL: R$ {order.totalValue.toFixed(2).replace('.', ',')}
-              </p>
-            </div>
+            {(() => {
+              const paid = Number(order.paidAmount) || 0;
+              const total = Number(order.totalValue) || 0;
+              const hasReceipt = Boolean(order.paymentReceiptUrl || order.paymentReceiptUrl2);
+              const isPaidFull = (total > 0 && paid >= total) || (hasReceipt && paid >= total) || (hasReceipt && paid === 0);
+              const effectivePaid = isPaidFull ? total : paid;
+              const remaining = Math.max(0, total - effectivePaid);
+
+              return (
+                <div className="text-left sm:text-right space-y-1 w-full sm:w-auto border-t sm:border-t-0 border-slate-100 dark:border-slate-800 pt-2 sm:pt-0">
+                  {effectivePaid > 0 && (
+                    <p className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                      Valor Pago: R$ {effectivePaid.toFixed(2).replace('.', ',')}
+                    </p>
+                  )}
+                  {remaining > 0 && (
+                    <p className="text-rose-600 dark:text-rose-400 font-semibold">
+                      Saldo Restante: R$ {remaining.toFixed(2).replace('.', ',')}
+                    </p>
+                  )}
+                  <p className="text-lg font-black text-slate-900 dark:text-slate-100 pt-1">
+                    VALOR TOTAL: R$ {total.toFixed(2).replace('.', ',')}
+                  </p>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Footer */}

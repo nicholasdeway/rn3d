@@ -447,9 +447,22 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                           }`}>
                           {o.attendanceMode === 'online' ? '💬 Atendimento Online' : '📍 Visita Presencial'}
                         </span>
-                        <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
-                          Pagamento: <strong className="text-slate-900 dark:text-slate-100">{o.paymentStatusText}</strong>
-                        </span>
+                        {(() => {
+                          const paid = o.paidAmount || 0;
+                          const total = o.totalValue || 0;
+                          const hasReceipt = Boolean(o.paymentReceiptUrl || o.paymentReceiptUrl2);
+                          const isFull = (total > 0 && paid >= total) || (hasReceipt && (paid >= total || paid === 0));
+                          const isPartial = paid > 0 && !isFull;
+
+                          const label = isFull ? 'Pago Total' : isPartial ? `Adiantamento (R$ ${paid.toFixed(2).replace('.', ',')})` : (o.paymentStatusText || 'Pendente');
+                          const color = isFull ? 'text-emerald-600 dark:text-emerald-400 font-bold' : isPartial ? 'text-indigo-600 dark:text-indigo-400 font-bold' : 'text-amber-600 dark:text-amber-400 font-bold';
+
+                          return (
+                            <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                              Pagamento: <strong className={color}>{label}</strong>
+                            </span>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className="text-right">
@@ -583,7 +596,28 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                           <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
                             R$ {o.totalValue.toFixed(2).replace('.', ',')}
                           </td>
-                          <td className="p-4 text-center font-semibold text-slate-700 dark:text-slate-300">{o.paymentStatusText}</td>
+                          <td className="p-4 text-center font-semibold text-slate-700 dark:text-slate-300">
+                            {(() => {
+                              const paid = o.paidAmount || 0;
+                              const total = o.totalValue || 0;
+                              const hasReceipt = Boolean(o.paymentReceiptUrl || o.paymentReceiptUrl2);
+                              const isFull = (total > 0 && paid >= total) || (hasReceipt && (paid >= total || paid === 0));
+                              const isPartial = paid > 0 && !isFull;
+
+                              const label = isFull ? 'Pago Total' : isPartial ? 'Adiantamento' : (o.paymentStatusText || 'Pendente');
+                              const style = isFull
+                                ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800/80'
+                                : isPartial
+                                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900/50'
+                                  : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+
+                              return (
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${style}`}>
+                                  {label}
+                                </span>
+                              );
+                            })()}
+                          </td>
                           <td className="p-4 text-center align-middle">
                             <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                               <button

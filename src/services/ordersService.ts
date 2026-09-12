@@ -133,6 +133,20 @@ export async function fetchOrders(): Promise<Order[]> {
       let clientType = decoded.internalLogisticsType || row.internal_logistics_type || 'combustivel';
       let progressPct = decoded.productionProgressPct || Number(row.production_progress_pct) || 0;
 
+      const totalVal = Number(row.total_value) || 0;
+      let paidVal = Number(row.paid_amount) || 0;
+      const hasReceipt = Boolean(decoded.paymentReceiptUrl || decoded.paymentReceiptUrl2);
+
+      let computedStatusText = decoded.paymentStatusText || 'Pendente';
+      if ((totalVal > 0 && paidVal >= totalVal) || (hasReceipt && (paidVal >= totalVal || paidVal === 0))) {
+        computedStatusText = 'Pago Total';
+        if (paidVal === 0 && totalVal > 0) {
+          paidVal = totalVal;
+        }
+      } else if (paidVal > 0 && (computedStatusText === 'Pendente' || !computedStatusText)) {
+        computedStatusText = 'Adiantamento';
+      }
+
       return {
         id: row.order_code || row.id,
         clientId: row.client_id || '',
@@ -140,9 +154,9 @@ export async function fetchOrders(): Promise<Order[]> {
         date: formatDateBR(row.date) || formatDateBR(row.created_at) || getTodayBR(),
         createdAt: row.created_at || undefined,
         itemsCount: row.items_count || (row.order_items ? row.order_items.length : 0),
-        totalValue: Number(row.total_value) || 0,
-        paidAmount: Number(row.paid_amount) || 0,
-        paymentStatusText: decoded.paymentStatusText,
+        totalValue: totalVal,
+        paidAmount: paidVal,
+        paymentStatusText: computedStatusText,
         status: row.status as Order['status'],
         productionProgressPct: progressPct,
         productionSlaDate: row.production_sla_date || '',
