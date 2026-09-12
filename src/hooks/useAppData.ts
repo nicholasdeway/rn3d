@@ -400,7 +400,7 @@ export function useAppData() {
 
       return changed ? updated : prevClients;
     });
-  }, [consignments, orders, visits, clients]);
+  }, [consignments, orders, visits]);
 
   // Auto-replicate internal logistics costs from orders and visits into expenses (Combustível & Transporte)
 

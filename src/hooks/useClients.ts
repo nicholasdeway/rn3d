@@ -18,33 +18,7 @@ export function useClients(user: any, showToast: (msg: string, type?: 'success' 
     }
   }, [clients]);
 
-  // Load directly from Supabase on mount and merge cleanly
-  useEffect(() => {
-    if (!user) return;
-    let isMounted = true;
 
-    fetchClients()
-      .then((dbClients) => {
-        if (isMounted && Array.isArray(dbClients) && dbClients.length > 0) {
-          setClients((prev) => {
-            // Merge dbClients with any local client not yet in Supabase
-            const dbIds = new Set(dbClients.map((c) => c.id));
-            const dbNames = new Set(dbClients.map((c) => (c.name || '').toLowerCase().trim()));
-
-            const extraLocal = prev.filter(
-              (c) => !dbIds.has(c.id) && !dbNames.has((c.name || '').toLowerCase().trim())
-            );
-
-            return [...dbClients, ...extraLocal];
-          });
-        }
-      })
-      .catch((err) => console.error('Erro ao carregar clientes do Supabase:', err));
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
 
   const handleAddClient = async (newClient: Client) => {
     setClients((prev) => [newClient, ...prev]);

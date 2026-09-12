@@ -173,10 +173,13 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
     setCroppingImageSrc(null);
   };
 
+  const [isSubmittingClient, setIsSubmittingClient] = useState(false);
+
   const handleSubmitNewClient = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) return;
+    if (!formData.name || isSubmittingClient) return;
 
+    setIsSubmittingClient(true);
     const nameTrimmed = formData.name.trim();
     const responsibleTrimmed = formData.responsible?.trim() || nameTrimmed;
 
@@ -213,11 +216,13 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
     };
 
     onAddClient(newClient);
+    setClientModalStep(null);
     setIsModalOpen(false);
+    setIsSubmittingClient(false);
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
         <div>
