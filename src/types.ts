@@ -67,7 +67,7 @@ export interface Product {
 }
 
 export type ClientType = 'Cliente direto' | 'Revendedor' | 'Consignação' | 'Outro';
-export type VisitFrequency = '7 dias' | '15 dias' | '30 dias' | 'Personalizado';
+export type VisitFrequency = 'Sem visitas' | '7 dias' | '15 dias' | '30 dias' | 'Personalizado';
 
 export interface Client {
   id: string;

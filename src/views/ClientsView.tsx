@@ -5,6 +5,7 @@ import { fetchAddressByCep } from '../services/viaCepService';
 import { formatPhone, formatDocument } from '../utils/formatters';
 import {
   Users,
+  User,
   Plus,
   Search,
   Boxes,
@@ -36,6 +37,8 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [clientModalStep, setClientModalStep] = useState<'selection' | 'form' | null>(null);
+  const [clientCategoryMode, setClientCategoryMode] = useState<'b2c' | 'b2b'>('b2b');
   const [croppingImageSrc, setCroppingImageSrc] = useState<string | null>(null);
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
 
@@ -133,28 +136,31 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
 
   const handleSubmitNewClient = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.responsible) return;
+    if (!formData.name) return;
+
+    const nameTrimmed = formData.name.trim();
+    const responsibleTrimmed = formData.responsible?.trim() || nameTrimmed;
 
     const newClient: Client = {
       id: `cli-${Date.now()}`,
-      name: formData.name || 'Novo Cliente',
-      fantasyName: formData.fantasyName || formData.name || '',
+      name: nameTrimmed,
+      fantasyName: formData.fantasyName?.trim() || nameTrimmed,
       avatarUrl: formData.avatarUrl || '',
       document: formData.document || '',
-      responsible: formData.responsible || 'Responsável',
-      phone: formData.phone || '',
-      whatsapp: formData.whatsapp || '',
+      responsible: responsibleTrimmed,
+      phone: formData.phone || formData.whatsapp || '',
+      whatsapp: formData.whatsapp || formData.phone || '',
       email: formData.email || '',
-      cep: formData.cep || '26200-000',
-      street: formData.street || 'Rua Principal',
-      number: formData.number || '100',
+      cep: formData.cep || '',
+      street: formData.street || '',
+      number: formData.number || '',
       complement: formData.complement || '',
-      neighborhood: formData.neighborhood || 'Centro',
+      neighborhood: formData.neighborhood || '',
       city: formData.city || 'Barra de São João',
       state: formData.state || 'RJ',
-      type: formData.type || 'Consignação',
+      type: formData.type || 'Cliente direto',
       agreedPriceLevel: formData.agreedPriceLevel || 'Padrão',
-      visitFrequency: formData.visitFrequency || '15 dias',
+      visitFrequency: formData.visitFrequency || 'Sem visitas',
       defaultLogisticsType: formData.defaultLogisticsType || 'combustivel',
       defaultLogisticsCost: typeof formData.defaultLogisticsCost === 'number' ? formData.defaultLogisticsCost : (Number(formData.defaultLogisticsCost) || 0),
       status: 'Ativo',
@@ -162,8 +168,8 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
       productsValuation: 0,
       receivableBalance: 0,
       lastVisitDate: 'Sem visitas',
-      nextVisitDate: 'Em breve',
-      visitStatus: 'Em breve',
+      nextVisitDate: (formData.visitFrequency || 'Sem visitas') === 'Sem visitas' ? 'Sem visitas' : 'Em breve',
+      visitStatus: (formData.visitFrequency || 'Sem visitas') === 'Sem visitas' ? 'Última visita' : 'Em breve',
       notes: formData.notes || '',
     };
 
@@ -186,8 +192,8 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
         </div>
 
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0"
+          onClick={() => setClientModalStep('selection')}
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Novo Cliente
@@ -276,7 +282,7 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
             Cadastre seus pontos de venda parceiros e clientes comerciais.
           </p>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => setClientModalStep('selection')}
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs cursor-pointer shadow-xs"
           >
             Cadastrar Primeiro Cliente
@@ -487,354 +493,642 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
         </>
       )}
 
-      {/* Modal Cadastrar Cliente */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-3xl rounded-2xl border border-slate-300 overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
-            {/* Modal Header */}
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                <Users className="w-5 h-5 text-indigo-600" />
-                Cadastrar Novo Cliente / Ponto de Venda
+      {/* MODAL ETAPA 1: POPUP DE ESCOLHA DA CATEGORIA (CLIENTE FINAL OU EMPRESA) */}
+      {clientModalStep === 'selection' && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-lg rounded-3xl border border-slate-200 dark:border-[#202531] shadow-2xl p-6 sm:p-7 space-y-6 animate-in fade-in zoom-in-95 duration-150 relative">
+            <button
+              type="button"
+              onClick={() => setClientModalStep(null)}
+              className="absolute top-5 right-5 p-1.5 rounded-full text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Fechar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto border border-indigo-100 dark:border-indigo-900/50 shadow-inner">
+                <Users className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 tracking-tight">
+                Qual tipo de cliente você deseja cadastrar?
               </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                Selecione o perfil para exibir os campos sob medida.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3.5 pt-1">
+              {/* OPÇÃO 1: CLIENTE FINAL / PESSOA FÍSICA (B2C) */}
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer"
+                onClick={() => {
+                  setClientCategoryMode('b2c');
+                  setFormData({
+                    name: '',
+                    responsible: '',
+                    whatsapp: '',
+                    phone: '',
+                    email: '',
+                    document: '',
+                    avatarUrl: '',
+                    type: 'Cliente direto',
+                    visitFrequency: 'Sem visitas',
+                    city: 'Barra de São João',
+                    state: 'RJ',
+                    agreedPriceLevel: 'Padrão',
+                    defaultLogisticsType: 'combustivel',
+                    defaultLogisticsCost: 0,
+                    notes: '',
+                  });
+                  setClientModalStep('form');
+                }}
+                className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-emerald-500 dark:hover:border-emerald-500 bg-white dark:bg-[#181c26] hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 text-left transition-all duration-200 group flex items-start gap-4 cursor-pointer shadow-xs active:scale-[0.99]"
               >
-                <X className="w-5 h-5" />
+                <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform">
+                  <User className="w-6 h-6" />
+                </div>
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                      👤 Cliente Final / Pessoa Física
+                    </h4>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                      Rápido (B2C)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Para vendas diretas, amigos ou consumidores finais. Apenas <b>Nome</b> e <b>Telefone/WhatsApp</b> obrigatórios. Sem exigência de CNPJ, endereço ou visitas periódicas.
+                  </p>
+                </div>
+              </button>
+
+              {/* OPÇÃO 2: EMPRESA / PONTO DE VENDA / PARCEIRO (B2B) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setClientCategoryMode('b2b');
+                  setFormData({
+                    name: '',
+                    fantasyName: '',
+                    avatarUrl: '',
+                    document: '',
+                    responsible: '',
+                    phone: '',
+                    whatsapp: '',
+                    email: '',
+                    cep: '',
+                    street: '',
+                    number: '',
+                    complement: '',
+                    neighborhood: '',
+                    city: '',
+                    state: '',
+                    type: 'Consignação',
+                    agreedPriceLevel: 'Padrão',
+                    visitFrequency: '15 dias',
+                    defaultLogisticsType: 'combustivel',
+                    defaultLogisticsCost: 0,
+                    notes: '',
+                  });
+                  setClientModalStep('form');
+                }}
+                className="p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 bg-white dark:bg-[#181c26] hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 text-left transition-all duration-200 group flex items-start gap-4 cursor-pointer shadow-xs active:scale-[0.99]"
+              >
+                <div className="p-3 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 shrink-0 group-hover:scale-110 transition-transform">
+                  <Building2 className="w-6 h-6" />
+                </div>
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                      🏢 Empresa / Ponto de Venda / Parceiro
+                    </h4>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                      Completo (B2B)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Para lojas, adegas, pontos de consignação ou revendedores. Cadastro completo com CNPJ, Responsável, Endereço ViaCEP, Frequência de Visita e Logística.
+                  </p>
+                </div>
               </button>
             </div>
 
-            {/* Scrollable Form Content */}
-            <form onSubmit={handleSubmitNewClient} className="p-6 overflow-y-auto space-y-5 text-xs">
-              {/* Section 1: Main Identification & Avatar */}
-              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
-                <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5 border-b border-slate-200/80 pb-2">
-                  <Building2 className="w-4 h-4 text-indigo-600" /> Dados do Estabelecimento / Parceiro
-                </h4>
+            <div className="pt-2 text-center">
+              <button
+                type="button"
+                onClick={() => setClientModalStep(null)}
+                className="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-                {/* Avatar / Foto do Cliente */}
-                <div className="space-y-2 p-3.5 bg-white rounded-xl border border-slate-200">
-                  <div className="flex items-center justify-between">
-                    <label className="block font-bold text-slate-900">Logo / Foto do Cliente (Avatar)</label>
-                    {formData.avatarUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, avatarUrl: '' })}
-                        className="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer hover:underline"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" /> Remover Foto
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-slate-100 border border-slate-200 rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-xs relative">
-                      {formData.avatarUrl ? (
-                        <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                      ) : (
-                        <Users className="w-7 h-7 text-slate-400" />
-                      )}
-                    </div>
-                    <div className="space-y-2 flex-1">
-                      <div className="flex flex-wrap gap-2">
-                        <label className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold flex items-center gap-1.5 w-fit cursor-pointer shadow-xs">
-                          <Crop className="w-4 h-4" />
-                          {formData.avatarUrl ? 'Substituir / Recortar Foto' : 'Selecionar e Recortar Foto'}
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageFileChange}
-                            className="hidden"
-                          />
-                        </label>
-                        {formData.avatarUrl && (
-                          <button
-                            type="button"
-                            onClick={() => setFormData({ ...formData, avatarUrl: '' })}
-                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl font-semibold flex items-center gap-1 cursor-pointer border border-rose-200"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" /> Excluir
-                          </button>
-                        )}
-                      </div>
-                      <input
-                        type="url"
-                        value={formData.avatarUrl || ''}
-                        onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
-                        placeholder="Ou cole a URL da imagem (https://...)"
-                        className="w-full px-3 py-1.5 border border-slate-200 rounded-xl bg-slate-50 text-xs"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Razão Social / Nome Oficial *</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Ex: Adega Imperial Ltda"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900 placeholder-slate-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Nome Fantasia / Nome Popular</label>
-                    <input
-                      type="text"
-                      value={formData.fantasyName}
-                      onChange={(e) => setFormData({ ...formData, fantasyName: e.target.value })}
-                      placeholder="Ex: Adega Imperial"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">CPF / CNPJ</label>
-                    <input
-                      type="text"
-                      value={formData.document}
-                      onChange={(e) => setFormData({ ...formData, document: formatDocument(e.target.value) })}
-                      placeholder="00.000.000/0001-00"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Nome do Responsável *</label>
-                    <input
-                      type="text"
-                      required
-                      value={formData.responsible}
-                      onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
-                      placeholder="Ex: Carlos Henrique"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900 placeholder-slate-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Telefone / WhatsApp</label>
-                    <input
-                      type="text"
-                      value={formData.whatsapp}
-                      onChange={(e) => {
-                        const formatted = formatPhone(e.target.value);
-                        setFormData({ ...formData, whatsapp: formatted, phone: formatted });
-                      }}
-                      placeholder="(22) 99754-0815"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">E-mail de Contato</label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="contato@empresa.com"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
-                    />
-                  </div>
+      {/* MODAL ETAPA 2: FORMULÁRIO PERSONALIZADO DE ACORDO COM O TIPO */}
+      {clientModalStep === 'form' && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+          <div className={`bg-white w-full ${clientCategoryMode === 'b2c' ? 'max-w-xl' : 'max-w-3xl'} rounded-2xl border border-slate-300 overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150`}>
+            {/* Header */}
+            <div className={`p-5 border-b border-slate-100 flex items-center justify-between ${clientCategoryMode === 'b2c' ? 'bg-emerald-50/80' : 'bg-slate-50'}`}>
+              <div className="flex items-center gap-2">
+                {clientCategoryMode === 'b2c' ? (
+                  <User className="w-5 h-5 text-emerald-600" />
+                ) : (
+                  <Building2 className="w-5 h-5 text-indigo-600" />
+                )}
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">
+                    {clientCategoryMode === 'b2c' ? 'Cadastrar Cliente Final (Pessoa Física)' : 'Cadastrar Empresa / Ponto de Venda / Parceiro'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {clientCategoryMode === 'b2c' ? 'Venda direta sem exigência de endereço ou visitas' : 'Cadastro comercial completo'}
+                  </p>
                 </div>
               </div>
-
-              {/* Section 2: Address & Location (Optional / Non-Mandatory) */}
-              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
-                  <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-indigo-600" /> Endereço & Localização (Opcional)
-                  </h4>
-                  {cepStatusMessage && (
-                    <span className={`text-[11px] font-bold flex items-center gap-1 ${
-                      isSearchingCep ? 'text-indigo-600 animate-pulse' : cepStatusMessage.includes('✅') ? 'text-emerald-600' : 'text-amber-600'
-                    }`}>
-                      {isSearchingCep && <Loader2 className="w-3 h-3 animate-spin" />}
-                      {cepStatusMessage}
-                    </span>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
-                      <span>CEP (Busca ViaCEP)</span>
-                      <span className="text-[10px] text-slate-400 font-normal">Opcional</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={formData.cep}
-                        onChange={(e) => handleCepChange(e.target.value)}
-                        placeholder="26200-000"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-mono placeholder-slate-400 text-xs font-bold"
-                      />
-                      {isSearchingCep && (
-                        <div className="absolute right-2.5 top-2.5">
-                          <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Cidade</label>
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      placeholder="Casimiro de Abreu"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-semibold text-slate-900 placeholder-slate-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Estado (UF)</label>
-                    <input
-                      type="text"
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      placeholder="RJ"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white uppercase font-bold text-slate-900 placeholder-slate-400"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block font-semibold text-slate-700 mb-1">Rua / Logradouro</label>
-                    <input
-                      type="text"
-                      value={formData.street}
-                      onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                      placeholder="Av. Amaral Peixoto"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Número</label>
-                    <input
-                      type="text"
-                      value={formData.number}
-                      onChange={(e) => setFormData({ ...formData, number: e.target.value })}
-                      placeholder="131"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Bairro</label>
-                    <input
-                      type="text"
-                      value={formData.neighborhood}
-                      onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
-                      placeholder="Centro"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block font-semibold text-slate-700 mb-1">Complemento / Ponto de Referência</label>
-                    <input
-                      type="text"
-                      value={formData.complement}
-                      onChange={(e) => setFormData({ ...formData, complement: e.target.value })}
-                      placeholder="Loja 02 (ao lado do posto)"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 3: Commercial Terms */}
-              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
-                <h4 className="font-bold text-slate-900 text-xs border-b border-slate-200/80 pb-2">
-                  Informações Comerciais & Visitas
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Tipo de Cliente / Modalidade</label>
-                    <select
-                      value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900"
-                    >
-                      <option value="Consignação">🤝 Consignação (Acerto Periódico)</option>
-                      <option value="Revendedor">🏬 Revendedor / Lojista</option>
-                      <option value="Cliente direto">👤 Cliente Direto / Final</option>
-                      <option value="Outro">🌐 Outro</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Periodicidade de Visita</label>
-                    <select
-                      value={formData.visitFrequency}
-                      onChange={(e) => setFormData({ ...formData, visitFrequency: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900"
-                    >
-                      <option value="7 dias">7 dias (Semanal)</option>
-                      <option value="15 dias">15 dias (Quinzenal)</option>
-                      <option value="30 dias">30 dias (Mensal)</option>
-                      <option value="Personalizado">Personalizado</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Section 4: Logistics Memory */}
-              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
-                  <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
-                    <Truck className="w-4 h-4 text-indigo-600" /> Logística e Deslocamento Padrão
-                  </h4>
-                  <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full text-[10px] lowercase font-semibold">
-                    🔒 Uso Interno Oficina
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Modalidade Padrão de Entrega</label>
-                    <select
-                      value={formData.defaultLogisticsType || 'combustivel'}
-                      onChange={(e) => setFormData({ ...formData, defaultLogisticsType: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900"
-                    >
-                      <option value="combustivel">⛽ Combustível (Deslocamento Próprio)</option>
-                      <option value="frete">🚚 Frete / Motoboy / Terceirizado</option>
-                      <option value="retirada">🚗 Sem Custo (Retirada na Oficina)</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">Custo Padrão de Transporte (R$) *</label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      required
-                      value={formData.defaultLogisticsCost === '' || formData.defaultLogisticsCost === undefined || formData.defaultLogisticsCost === null ? '' : formData.defaultLogisticsCost}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFormData({
-                          ...formData,
-                          defaultLogisticsCost: val === '' ? ('' as any) : Number(val),
-                        });
-                      }}
-                      placeholder="Ex: 50.00"
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-black text-rose-600 placeholder-slate-300"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons (Non-Fixed / Scrollable) */}
-              <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="order-2 sm:order-1 px-3.5 py-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl font-semibold text-xs transition-colors cursor-pointer text-center"
+                  onClick={() => setClientCategoryMode(clientCategoryMode === 'b2c' ? 'b2b' : 'b2c')}
+                  className="text-[11px] font-bold px-2.5 py-1 bg-white text-indigo-600 border border-indigo-200 hover:bg-indigo-50 rounded-lg cursor-pointer transition-colors shadow-2xs"
+                  title="Alternar modo de cadastro"
                 >
-                  Cancelar
+                  {clientCategoryMode === 'b2c' ? 'Mudar para Empresa 🏢' : 'Mudar para Cliente Final 👤'}
                 </button>
                 <button
-                  type="submit"
-                  className="order-1 sm:order-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
+                  type="button"
+                  onClick={() => setClientModalStep(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-200 text-slate-600 cursor-pointer"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>Cadastrar Cliente</span>
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-            </form>
+            </div>
+
+            {/* Scrollable Form Content */}
+            {clientCategoryMode === 'b2c' ? (
+              /* FORMULÁRIO B2C SIMPLIFICADO */
+              <form onSubmit={handleSubmitNewClient} className="p-6 overflow-y-auto space-y-5 text-xs">
+                <div className="p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl space-y-4">
+                  <h4 className="font-bold text-emerald-950 text-xs flex items-center gap-1.5 border-b border-emerald-200/80 pb-2">
+                    <User className="w-4 h-4 text-emerald-600" /> Dados Básicos do Cliente Final
+                  </h4>
+
+                  {/* Foto / Avatar */}
+                  <div className="space-y-2 p-3 bg-white rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <label className="block font-bold text-slate-900">Foto do Cliente (Opcional)</label>
+                      {formData.avatarUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, avatarUrl: '' })}
+                          className="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer hover:underline"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Remover Foto
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 bg-slate-100 border border-slate-200 rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-xs relative">
+                        {formData.avatarUrl ? (
+                          <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-6 h-6 text-slate-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <label className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold flex items-center gap-1.5 w-fit cursor-pointer shadow-xs">
+                          <Crop className="w-4 h-4" />
+                          {formData.avatarUrl ? 'Substituir Foto' : 'Selecionar Foto'}
+                          <input type="file" accept="image/*" onChange={handleImageFileChange} className="hidden" />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block font-bold text-slate-900 mb-1">Nome Completo do Cliente *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Ex: Mariana Souza"
+                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-white font-bold text-slate-900 text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-900 mb-1">Telefone / WhatsApp *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.whatsapp}
+                        onChange={(e) => {
+                          const formatted = formatPhone(e.target.value);
+                          setFormData({ ...formData, whatsapp: formatted, phone: formatted });
+                        }}
+                        placeholder="(22) 99754-0815"
+                        className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl bg-white font-bold text-slate-900 font-mono text-sm focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">CPF (Opcional)</label>
+                        <input
+                          type="text"
+                          value={formData.document}
+                          onChange={(e) => setFormData({ ...formData, document: formatDocument(e.target.value) })}
+                          placeholder="000.000.000-00"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-semibold text-slate-700 mb-1">E-mail (Opcional)</label>
+                        <input
+                          type="email"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="mariana@email.com"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Observações / Notas Internas (Opcional)</label>
+                      <textarea
+                        rows={2}
+                        value={formData.notes}
+                        onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                        placeholder="Ex: Amiga de faculdade, cliente avulso..."
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setClientModalStep('selection')}
+                    className="px-4 py-2.5 text-slate-600 hover:bg-slate-100 rounded-xl font-semibold text-xs transition-colors cursor-pointer"
+                  >
+                    ← Voltar à Escolha
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-extrabold text-xs shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <User className="w-4 h-4" />
+                    <span>Cadastrar Cliente Final</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* FORMULÁRIO B2B EMPRESA COMPLETO */
+              <form onSubmit={handleSubmitNewClient} className="p-6 overflow-y-auto space-y-5 text-xs">
+                {/* Section 1: Main Identification & Avatar */}
+                <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                  <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5 border-b border-slate-200/80 pb-2">
+                    <Building2 className="w-4 h-4 text-indigo-600" /> Dados do Estabelecimento / Parceiro
+                  </h4>
+
+                  {/* Avatar / Foto do Cliente */}
+                  <div className="space-y-2 p-3.5 bg-white rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <label className="block font-bold text-slate-900">Logo / Foto do Cliente (Avatar)</label>
+                      {formData.avatarUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, avatarUrl: '' })}
+                          className="text-[11px] font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1 cursor-pointer hover:underline"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Remover Foto
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 bg-slate-100 border border-slate-200 rounded-full overflow-hidden flex items-center justify-center shrink-0 shadow-xs relative">
+                        {formData.avatarUrl ? (
+                          <img src={formData.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <Building2 className="w-7 h-7 text-slate-400" />
+                        )}
+                      </div>
+                      <div className="space-y-2 flex-1">
+                        <div className="flex flex-wrap gap-2">
+                          <label className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold flex items-center gap-1.5 w-fit cursor-pointer shadow-xs">
+                            <Crop className="w-4 h-4" />
+                            {formData.avatarUrl ? 'Substituir / Recortar Foto' : 'Selecionar e Recortar Foto'}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageFileChange}
+                              className="hidden"
+                            />
+                          </label>
+                          {formData.avatarUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setFormData({ ...formData, avatarUrl: '' })}
+                              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl font-semibold flex items-center gap-1 cursor-pointer border border-rose-200"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Excluir
+                            </button>
+                          )}
+                        </div>
+                        <input
+                          type="url"
+                          value={formData.avatarUrl || ''}
+                          onChange={(e) => setFormData({ ...formData, avatarUrl: e.target.value })}
+                          placeholder="Ou cole a URL da imagem (https://...)"
+                          className="w-full px-3 py-1.5 border border-slate-200 rounded-xl bg-slate-50 text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Razão Social / Nome Oficial *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Ex: Adega Imperial Ltda"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900 placeholder-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Nome Fantasia / Nome Popular</label>
+                      <input
+                        type="text"
+                        value={formData.fantasyName}
+                        onChange={(e) => setFormData({ ...formData, fantasyName: e.target.value })}
+                        placeholder="Ex: Adega Imperial"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">CNPJ / CPF</label>
+                      <input
+                        type="text"
+                        value={formData.document}
+                        onChange={(e) => setFormData({ ...formData, document: formatDocument(e.target.value) })}
+                        placeholder="00.000.000/0001-00"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Nome do Responsável *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.responsible}
+                        onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
+                        placeholder="Ex: Carlos Henrique"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900 placeholder-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Telefone / WhatsApp *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.whatsapp}
+                        onChange={(e) => {
+                          const formatted = formatPhone(e.target.value);
+                          setFormData({ ...formData, whatsapp: formatted, phone: formatted });
+                        }}
+                        placeholder="(22) 99754-0815"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">E-mail de Contato</label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="contato@empresa.com"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Address & Location (Optional / Non-Mandatory) */}
+                <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                    <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-indigo-600" /> Endereço & Localização (Opcional)
+                    </h4>
+                    {cepStatusMessage && (
+                      <span className={`text-[11px] font-bold flex items-center gap-1 ${
+                        isSearchingCep ? 'text-indigo-600 animate-pulse' : cepStatusMessage.includes('✅') ? 'text-emerald-600' : 'text-amber-600'
+                      }`}>
+                        {isSearchingCep && <Loader2 className="w-3 h-3 animate-spin" />}
+                        {cepStatusMessage}
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1 flex items-center justify-between">
+                        <span>CEP (Busca ViaCEP)</span>
+                        <span className="text-[10px] text-slate-400 font-normal">Opcional</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={formData.cep}
+                          onChange={(e) => handleCepChange(e.target.value)}
+                          placeholder="26200-000"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-mono placeholder-slate-400 text-xs font-bold"
+                        />
+                        {isSearchingCep && (
+                          <div className="absolute right-2.5 top-2.5">
+                            <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Cidade</label>
+                      <input
+                        type="text"
+                        value={formData.city}
+                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                        placeholder="Casimiro de Abreu"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-semibold text-slate-900 placeholder-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Estado (UF)</label>
+                      <input
+                        type="text"
+                        value={formData.state}
+                        onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                        placeholder="RJ"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white uppercase font-bold text-slate-900 placeholder-slate-400"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block font-semibold text-slate-700 mb-1">Rua / Logradouro</label>
+                      <input
+                        type="text"
+                        value={formData.street}
+                        onChange={(e) => setFormData({ ...formData, street: e.target.value })}
+                        placeholder="Av. Amaral Peixoto"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Número</label>
+                      <input
+                        type="text"
+                        value={formData.number}
+                        onChange={(e) => setFormData({ ...formData, number: e.target.value })}
+                        placeholder="131"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Bairro</label>
+                      <input
+                        type="text"
+                        value={formData.neighborhood}
+                        onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
+                        placeholder="Centro"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block font-semibold text-slate-700 mb-1">Complemento / Ponto de Referência</label>
+                      <input
+                        type="text"
+                        value={formData.complement}
+                        onChange={(e) => setFormData({ ...formData, complement: e.target.value })}
+                        placeholder="Loja 02 (ao lado do posto)"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-medium placeholder-slate-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Commercial Terms */}
+                <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                  <h4 className="font-bold text-slate-900 text-xs border-b border-slate-200/80 pb-2">
+                    Informações Comerciais & Visitas
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Tipo de Cliente / Modalidade</label>
+                      <select
+                        value={formData.type}
+                        onChange={(e) => {
+                          const newType = e.target.value as any;
+                          setFormData((prev) => ({
+                            ...prev,
+                            type: newType,
+                            visitFrequency: newType === 'Cliente direto' ? 'Sem visitas' : prev.visitFrequency === 'Sem visitas' ? '15 dias' : prev.visitFrequency,
+                          }));
+                        }}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900"
+                      >
+                        <option value="Consignação">🤝 Consignação (Acerto Periódico)</option>
+                        <option value="Revendedor">🏬 Revendedor / Lojista</option>
+                        <option value="Cliente direto">👤 Cliente Direto / Final (B2C)</option>
+                        <option value="Outro">🌐 Outro</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Periodicidade de Visita</label>
+                      <select
+                        value={formData.visitFrequency}
+                        onChange={(e) => setFormData({ ...formData, visitFrequency: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900"
+                      >
+                        <option value="15 dias">15 dias (Quinzenal)</option>
+                        <option value="7 dias">7 dias (Semanal)</option>
+                        <option value="30 dias">30 dias (Mensal)</option>
+                        <option value="Personalizado">Personalizado</option>
+                        <option value="Sem visitas">🚫 Sem visitas periódicas</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 4: Logistics Memory */}
+                <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                    <h4 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                      <Truck className="w-4 h-4 text-indigo-600" /> Logística e Deslocamento Padrão
+                    </h4>
+                    <span className="text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full text-[10px] lowercase font-semibold">
+                      🔒 Uso Interno Oficina
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Modalidade Padrão de Entrega</label>
+                      <select
+                        value={formData.defaultLogisticsType || 'combustivel'}
+                        onChange={(e) => setFormData({ ...formData, defaultLogisticsType: e.target.value as any })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-bold text-slate-900"
+                      >
+                        <option value="combustivel">⛽ Combustível (Deslocamento Próprio)</option>
+                        <option value="frete">🚚 Frete / Motoboy / Terceirizado</option>
+                        <option value="retirada">🚗 Sem Custo (Retirada na Oficina)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">Custo Padrão de Transporte (R$)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={formData.defaultLogisticsCost === '' || formData.defaultLogisticsCost === undefined || formData.defaultLogisticsCost === null ? '' : formData.defaultLogisticsCost}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setFormData({
+                            ...formData,
+                            defaultLogisticsCost: val === '' ? ('' as any) : Number(val),
+                          });
+                        }}
+                        placeholder="Ex: 50.00"
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white font-black text-rose-600 placeholder-slate-300"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setClientModalStep('selection')}
+                    className="order-2 sm:order-1 px-3.5 py-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl font-semibold text-xs transition-colors cursor-pointer text-center"
+                  >
+                    ← Voltar à Escolha
+                  </button>
+                  <button
+                    type="submit"
+                    className="order-1 sm:order-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Cadastrar Empresa / Parceiro</span>
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

@@ -185,6 +185,7 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({ onSaveAsProduct 
 
   // Simulator / Manual Price Input
   const [manualPriceInput, setManualPriceInput] = useState<string>('');
+  const [overridePriceInput, setOverridePriceInput] = useState<string | null>(null);
   const [isCopied, setIsCopied] = useState(false);
 
   // Modal State for Saving to Catalog
@@ -328,6 +329,31 @@ export const CalculatorView: React.FC<CalculatorViewProps> = ({ onSaveAsProduct 
       DEFAULT_MARKETPLACES[0]
     );
   }, [allMarketplaces, selectedMarketplaceId]);
+
+  // Reverse calculation: calculate target margin percentage from manual target sale price
+  const handleTargetPriceChange = (targetPrice: number) => {
+    if (isNaN(targetPrice) || targetPrice <= 0) return;
+    const mkt = selectedMarketplace;
+    const cost = totalDirectCost;
+    const fixedDeductions = mkt.fixedFee + mkt.freeShippingCost;
+    const totalPctDeductions =
+      (mkt.commissionPct +
+        mkt.affiliateCommissionPct +
+        mkt.couponDiscountPct +
+        inputs.extraDiscountAffiliatePct) /
+      100;
+
+    const netProfit = targetPrice - (targetPrice * totalPctDeductions + fixedDeductions) - cost;
+    const realProfitMarginPct = (netProfit / targetPrice) * 100;
+
+    // Use 4 decimals of precision in state so that round-trip math returns the exact price
+    const roundedMargin = Math.round(realProfitMarginPct * 10000) / 10000;
+
+    setInputs((prev) => ({
+      ...prev,
+      desiredProfitMarginPct: roundedMargin,
+    }));
+  };
 
   // Metrics for selected marketplace
   const selectedMetrics = useMemo(() => {
@@ -850,7 +876,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     max="999"
                     step="any"
                     inputMode="decimal"
-                    value={inputs.desiredProfitMarginPct}
+                    value={inputs.desiredProfitMarginPct % 1 === 0 ? inputs.desiredProfitMarginPct : Number(inputs.desiredProfitMarginPct.toFixed(2))}
                     onChange={(e) => {
                       const val = parseFloat(e.target.value);
                       handleInputChange(
@@ -888,7 +914,7 @@ Qualquer dúvida estou à disposição! 🚀`;
                     min="0"
                     max="99"
                     step="any"
-                    value={inputs.desiredProfitMarginPct}
+                    value={inputs.desiredProfitMarginPct % 1 === 0 ? inputs.desiredProfitMarginPct : Number(inputs.desiredProfitMarginPct.toFixed(2))}
                     onChange={(e) => {
                       const val = parseFloat(e.target.value);
                       handleInputChange(
@@ -1192,16 +1218,42 @@ Qualquer dúvida estou à disposição! 🚀`;
               </span>
             </div>
 
-            {/* Big Recommended Price Display */}
-            <div className="text-center py-3 bg-gradient-to-b from-indigo-50/70 via-slate-50 to-cyan-50/30 dark:from-indigo-950/60 dark:via-slate-900 dark:to-cyan-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/60 p-4 space-y-1">
-              <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200 uppercase tracking-wide">
-                Preço Recomendado de Venda
-              </span>
-              <div className="text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 my-1 font-mono tracking-tight">
-                R$ {selectedMetrics.recommendedPrice.toFixed(2)}
+            {/* Big Recommended Price Display - EDITABLE */}
+            <div className="text-center py-4 bg-gradient-to-b from-indigo-50/80 via-slate-50 to-cyan-50/40 dark:from-indigo-950/70 dark:via-slate-900 dark:to-cyan-950/50 rounded-2xl border border-indigo-200/80 dark:border-indigo-900/80 p-4 space-y-2 relative shadow-sm">
+              <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-indigo-950 dark:text-indigo-200 uppercase tracking-wide">
+                <span>Preço Recomendado de Venda</span>
+                <span className="text-[10px] lowercase text-indigo-600 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-950 px-2 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800 font-semibold flex items-center gap-1">
+                  ✏️ Digite para alterar
+                </span>
               </div>
+
+              <div className="flex items-center justify-center gap-1 my-1">
+                <span className="text-2xl font-black text-indigo-500 dark:text-indigo-400 font-mono">R$</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  inputMode="decimal"
+                  value={overridePriceInput !== null ? overridePriceInput : selectedMetrics.recommendedPrice.toFixed(2)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setOverridePriceInput(val);
+                    const parsed = parseFloat(val.replace(',', '.'));
+                    if (!isNaN(parsed) && parsed > 0) {
+                      handleTargetPriceChange(parsed);
+                    }
+                  }}
+                  onBlur={() => {
+                    setOverridePriceInput(null);
+                  }}
+                  className="w-44 text-3xl sm:text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 font-mono tracking-tight text-center bg-white/90 dark:bg-slate-900/90 border-2 border-indigo-300/80 dark:border-indigo-700 rounded-xl px-2 py-1 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-600 transition-all shadow-inner"
+                  placeholder="0.00"
+                  title="Digite para definir um valor final e recalcular a operação"
+                />
+              </div>
+
               <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                Garante <span className="font-bold text-emerald-600 dark:text-emerald-400">{inputs.desiredProfitMarginPct}%</span> de lucro líquido real (R$ {selectedMetrics.netProfit.toFixed(2)})
+                Garante <span className="font-bold text-emerald-600 dark:text-emerald-400">{inputs.desiredProfitMarginPct % 1 === 0 ? inputs.desiredProfitMarginPct : Number(inputs.desiredProfitMarginPct.toFixed(2))}%</span> de lucro líquido real (R$ {selectedMetrics.netProfit.toFixed(2)})
               </p>
 
               {inputs.extraDiscountAffiliatePct > 0 && (

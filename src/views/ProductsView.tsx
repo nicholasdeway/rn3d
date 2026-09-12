@@ -841,8 +841,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                <div className="sm:col-span-3">
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Material do Filamento *</label>
                   <select
                     value={editFormData.material || 'PLA'}
@@ -854,7 +854,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     <option value="ABS">ABS</option>
                   </select>
                 </div>
-                <div>
+                <div className="sm:col-span-5">
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Categoria</label>
                   <select
                     value={editFormData.category || 'Case de Munição'}
@@ -866,7 +866,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                     ))}
                   </select>
                 </div>
-                <div>
+                <div className="sm:col-span-4">
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Capacidade de Armazenamento</label>
                   <input
                     type="text"
@@ -1047,8 +1047,10 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                     />
                   </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                  <div className="sm:col-span-3">
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Material do Filamento *</label>
                     <select
                       value={formData.material || 'PLA'}
@@ -1060,7 +1062,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                       <option value="ABS">ABS</option>
                     </select>
                   </div>
-                  <div>
+                  <div className="sm:col-span-5">
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Categoria</label>
                     <select
                       value={formData.category}
@@ -1072,7 +1074,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                       ))}
                     </select>
                   </div>
-                  <div>
+                  <div className="sm:col-span-4">
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Capacidade de Armazenamento</label>
                     <input
                       type="text"
@@ -1082,7 +1084,6 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                       className="w-full px-3 py-2 border border-slate-200 dark:border-[#202531] rounded-xl bg-slate-50 dark:bg-[#181c26] text-slate-900 dark:text-slate-100"
                     />
                   </div>
-                </div>
                 </div>
               </div>
 
