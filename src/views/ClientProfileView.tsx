@@ -156,6 +156,9 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
       ...editFormData,
       name: editFormData.name || currentClientData.name,
       document: editFormData.document || currentClientData.document,
+      type: editFormData.type || currentClientData.type || 'Cliente direto',
+      visitFrequency: editFormData.visitFrequency || currentClientData.visitFrequency || '15 dias',
+      agreedPriceLevel: editFormData.agreedPriceLevel || currentClientData.agreedPriceLevel || 'Padrão',
       defaultLogisticsType: editFormData.defaultLogisticsType || 'combustivel',
       defaultLogisticsCost: editFormData.defaultLogisticsCost ?? 0,
     } as Client;
@@ -1069,6 +1072,68 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({
                       placeholder="(22) 99754-0815"
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl font-mono"
                     />
+                  </div>
+
+                  {/* Editable Client Profile Type & Commercial Settings */}
+                  <div className="sm:col-span-2 p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                        🏷️ Perfil de Cliente & Termos Comerciais
+                      </span>
+                      <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 text-[10px] font-bold rounded-full">
+                        Alteração de Tipo
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-800 text-[11px] mb-1">
+                          Tipo / Categoria de Cliente *
+                        </label>
+                        <select
+                          value={editFormData.type || 'Cliente direto'}
+                          onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value as any })}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-extrabold text-indigo-900 text-xs"
+                        >
+                          <option value="Cliente direto">👤 Cliente Direto / Final (B2C)</option>
+                          <option value="Consignação">🏬 Consignado / Ponto de Venda (B2B)</option>
+                          <option value="Revendedor">🛍️ Revendedor / Atacado (B2B)</option>
+                          <option value="Outro">🏢 Outro Perfil</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-800 text-[11px] mb-1">
+                          Frequência de Visita
+                        </label>
+                        <select
+                          value={editFormData.visitFrequency || '15 dias'}
+                          onChange={(e) => setEditFormData({ ...editFormData, visitFrequency: e.target.value as any })}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-bold text-slate-900 text-xs"
+                        >
+                          <option value="Sem visitas">❌ Sem visitas periódicas</option>
+                          <option value="7 dias">🗓️ Semanal (7 dias)</option>
+                          <option value="15 dias">🗓️ Quinzenal (15 dias)</option>
+                          <option value="30 dias">🗓️ Mensal (30 dias)</option>
+                          <option value="Personalizado">⚙️ Personalizado</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block font-bold text-slate-800 text-[11px] mb-1">
+                          Nível de Preço Acordado
+                        </label>
+                        <select
+                          value={editFormData.agreedPriceLevel || 'Padrão'}
+                          onChange={(e) => setEditFormData({ ...editFormData, agreedPriceLevel: e.target.value as any })}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-xl bg-white font-bold text-slate-900 text-xs"
+                        >
+                          <option value="Padrão">🏷️ Padrão</option>
+                          <option value="Atacado">🏷️ Atacado</option>
+                          <option value="VIP / Parceiro">🏷️ VIP / Parceiro</option>
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
