@@ -59,6 +59,7 @@ export function useAppData() {
     setClients,
     handleAddClient,
     handleUpdateClient,
+    handleDeleteClient,
   } = useClients(user, showToast);
 
   const {
@@ -726,6 +727,7 @@ export function useAppData() {
     handleUpdateStock,
     handleAddClient,
     handleUpdateClient,
+    handleDeleteClient,
     handleAddConsignment,
     handleUpdateConsignment,
     handleDeleteConsignment,

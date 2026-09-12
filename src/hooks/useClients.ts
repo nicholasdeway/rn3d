@@ -5,6 +5,7 @@ import {
   fetchClients,
   createClient,
   updateClient,
+  deleteClient,
 } from '../services/clientsService';
 
 export function useClients(user: any, showToast: (msg: string, type?: 'success' | 'error' | 'info') => void) {
@@ -17,8 +18,6 @@ export function useClients(user: any, showToast: (msg: string, type?: 'success' 
       safeSetLocalStorage('rn3d_clients', JSON.stringify(clients));
     }
   }, [clients]);
-
-
 
   const handleAddClient = async (newClient: Client) => {
     setClients((prev) => [newClient, ...prev]);
@@ -45,10 +44,22 @@ export function useClients(user: any, showToast: (msg: string, type?: 'success' 
     }
   };
 
+  const handleDeleteClient = async (clientId: string) => {
+    const target = clients.find((c) => c.id === clientId);
+    setClients((prev) => prev.filter((c) => c.id !== clientId));
+    showToast(`Cliente "${target?.name || ''}" excluído com sucesso!`, 'info');
+    try {
+      await deleteClient(clientId);
+    } catch (err) {
+      console.error('Erro ao excluir cliente no Supabase:', err);
+    }
+  };
+
   return {
     clients,
     setClients,
     handleAddClient,
     handleUpdateClient,
+    handleDeleteClient,
   };
 }

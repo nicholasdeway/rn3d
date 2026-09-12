@@ -213,3 +213,24 @@ export async function updateClient(id: string, updates: Partial<Client>): Promis
 
   return (data && data[0]) ? (data[0] as any) : null;
 }
+
+export async function deleteClient(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) {
+    return true;
+  }
+
+  const isLocalId = !id || id.startsWith('cli-') || id.length < 30;
+  let query = supabase.from('clients').delete();
+  if (!isLocalId) {
+    query = query.eq('id', id);
+  } else {
+    query = query.eq('id', id);
+  }
+
+  const { error } = await query;
+  if (error) {
+    console.error('Erro ao excluir cliente no Supabase:', error.message);
+    throw error;
+  }
+  return true;
+}

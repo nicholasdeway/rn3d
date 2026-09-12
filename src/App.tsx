@@ -538,6 +538,7 @@ export function App() {
                   onAddClient={appData.handleAddClient}
                   onSelectClient={handleSelectClientProfile}
                   onStartVisit={handleStartVisit}
+                  onDeleteClient={appData.handleDeleteClient}
                 />
               )}
 
@@ -572,6 +573,7 @@ export function App() {
                   onUpdateClient={appData.handleUpdateClient}
                   onUpdateOrderProgress={appData.handleUpdateOrderProgress}
                   onUpdateOrderStatus={appData.handleUpdateOrderStatus}
+                  onDeleteClient={appData.handleDeleteClient}
                 />
               )}
 

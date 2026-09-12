@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Client } from '../types';
 import { formatDateBR } from '../utils/formatters';
 import { fetchAddressByCep } from '../services/viaCepService';
@@ -29,15 +29,18 @@ interface ClientsViewProps {
   clients: Client[];
   onSelectClient: (client: Client) => void;
   onAddClient: (client: Client) => void;
+  onDeleteClient?: (clientId: string) => void;
 }
 
 export const ClientsView: React.FC<ClientsViewProps> = ({
   clients,
   onSelectClient,
   onAddClient,
+  onDeleteClient,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [clientModalStep, setClientModalStep] = useState<'selection' | 'form' | null>(null);
   const [clientCategoryMode, setClientCategoryMode] = useState<'b2c' | 'b2b'>('b2b');
   const [croppingImageSrc, setCroppingImageSrc] = useState<string | null>(null);
@@ -140,22 +143,34 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
     }
   };
 
-  const activeClientsCount = clients.filter((c) => c.status === 'Ativo').length;
-  const totalProductsOnSite = clients.reduce((acc, c) => acc + c.productsOnSiteCount, 0);
-  const totalReceivable = clients.reduce((acc, c) => acc + c.receivableBalance, 0);
-  const pendingVisitsCount = clients.filter(
-    (c) => c.visitStatus === 'Hoje' || c.visitStatus === 'Atrasada'
-  ).length;
+  const activeClientsCount = useMemo(
+    () => clients.filter((c) => c.status === 'Ativo').length,
+    [clients]
+  );
+  const totalProductsOnSite = useMemo(
+    () => clients.reduce((acc, c) => acc + (c.productsOnSiteCount || 0), 0),
+    [clients]
+  );
+  const totalReceivable = useMemo(
+    () => clients.reduce((acc, c) => acc + (c.receivableBalance || 0), 0),
+    [clients]
+  );
+  const pendingVisitsCount = useMemo(
+    () => clients.filter((c) => c.visitStatus === 'Hoje' || c.visitStatus === 'Atrasada').length,
+    [clients]
+  );
 
-  const filteredClients = clients.filter((c) => {
+  const filteredClients = useMemo(() => {
     const term = searchTerm.toLowerCase();
-    return (
-      c.name.toLowerCase().includes(term) ||
-      (c.fantasyName && c.fantasyName.toLowerCase().includes(term)) ||
-      c.responsible.toLowerCase().includes(term) ||
-      c.city.toLowerCase().includes(term)
-    );
-  });
+    return clients.filter((c) => {
+      return (
+        c.name.toLowerCase().includes(term) ||
+        (c.fantasyName && c.fantasyName.toLowerCase().includes(term)) ||
+        (c.responsible && c.responsible.toLowerCase().includes(term)) ||
+        (c.city && c.city.toLowerCase().includes(term))
+      );
+    });
+  }, [clients, searchTerm]);
 
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -414,14 +429,28 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                 </div>
 
                 {/* Card Actions */}
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-end">
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                  {onDeleteClient && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setClientToDelete(c);
+                      }}
+                      className="px-3 py-2 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 rounded-xl font-bold inline-flex items-center gap-1.5 cursor-pointer text-xs transition-colors border border-rose-200/60 dark:border-rose-900/50"
+                      title="Excluir Cliente"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Excluir</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelectClient(c);
                     }}
-                    className="w-full py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
+                    className="flex-1 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer text-xs transition-colors"
                   >
                     <span>Ver Perfil Completo</span>
                     <ArrowRight className="w-4 h-4" />
@@ -518,15 +547,31 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
                         )}
                       </td>
                       <td className="p-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectClient(c);
-                          }}
-                          className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-semibold transition-colors flex items-center gap-1 ml-auto"
-                        >
-                          Perfil <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {onDeleteClient && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setClientToDelete(c);
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition-colors cursor-pointer"
+                              title="Excluir Cliente"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectClient(c);
+                            }}
+                            className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg font-semibold transition-colors flex items-center gap-1"
+                          >
+                            Perfil <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1210,6 +1255,67 @@ export const ClientsView: React.FC<ClientsViewProps> = ({
           title={zoomImage.title}
           onClose={() => setZoomImage(null)}
         />
+      )}
+
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE CLIENTE */}
+      {clientToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-md rounded-3xl border border-slate-200 dark:border-[#202531] p-6 space-y-5 animate-in fade-in zoom-in-95 duration-150 relative">
+            <button
+              type="button"
+              onClick={() => setClientToDelete(null)}
+              className="absolute top-5 right-5 p-1.5 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-200 dark:border-rose-900/50">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                  Excluir Cadastro do Cliente
+                </h3>
+                <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">
+                  {clientToDelete.name}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-slate-50 dark:bg-[#181c26] rounded-2xl border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 space-y-2">
+              <p>
+                Tem certeza que deseja remover <b>{clientToDelete.name}</b> da lista de clientes?
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed bg-white dark:bg-[#12151c] p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                🔒 <b>Preservação Fiscal:</b> O histórico de pedidos, orçamentos, consignações e receitas acumuladas no sistema <b>NÃO será apagado</b> e continuará contabilizado em seus relatórios financeiros.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setClientToDelete(null)}
+                className="px-4 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onDeleteClient && clientToDelete) {
+                    onDeleteClient(clientToDelete.id);
+                  }
+                  setClientToDelete(null);
+                }}
+                className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Sim, Excluir Cliente</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
