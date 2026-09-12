@@ -74,6 +74,14 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<ConsignmentItem[]>([]);
 
+  // Synchronize preselectedClientId whenever prop changes
+  React.useEffect(() => {
+    if (preselectedClientId) {
+      setSelectedClientId(preselectedClientId);
+      setIsWizardOpen(true);
+    }
+  }, [preselectedClientId]);
+
   const selectedClient = clients.find((c) => c.id === selectedClientId);
 
   const filteredConsignments = consignments.filter(

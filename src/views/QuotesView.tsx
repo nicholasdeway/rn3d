@@ -179,37 +179,58 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
   const [quoteItems, setQuoteItems] = useState<QuoteItem[]>([]);
 
+  // Synchronize preselectedClientId whenever prop changes or form opens
+  React.useEffect(() => {
+    if (preselectedClientId) {
+      setSelectedClientId(preselectedClientId);
+      setIsFormOpen(true);
+    }
+  }, [preselectedClientId]);
+
   // LOCAL STORAGE DRAFT AUTO-PERSISTENCE
   const DRAFT_STORAGE_KEY = 'rn3d_quote_form_draft';
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
 
-  // Restore draft on mount
+  // Restore draft on mount ONLY if no explicit preselectedClientId was passed or if draft belongs to preselectedClientId
   React.useEffect(() => {
     try {
       const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
       if (savedDraft) {
         const parsed = JSON.parse(savedDraft);
         if (parsed && typeof parsed === 'object') {
-          if (parsed.selectedClientId) setSelectedClientId(parsed.selectedClientId);
-          if (typeof parsed.validityDays === 'number') setValidityDays(parsed.validityDays);
-          if (typeof parsed.productionSlaDays === 'number') setProductionSlaDays(parsed.productionSlaDays);
-          if (typeof parsed.discount === 'number') setDiscount(parsed.discount);
-          if (typeof parsed.discountPercent === 'number') setDiscountPercent(parsed.discountPercent);
-          if (parsed.paymentTerms) setPaymentTerms(parsed.paymentTerms);
-          if (parsed.notes) setNotes(parsed.notes);
-          if (parsed.attendanceMode) setAttendanceMode(parsed.attendanceMode);
-          if (Array.isArray(parsed.quoteItems) && parsed.quoteItems.length > 0) {
-            setQuoteItems(parsed.quoteItems);
-            setHasRestoredDraft(true);
+          // If preselectedClientId was NOT provided, restore selectedClientId from draft
+          if (!preselectedClientId && parsed.selectedClientId) {
+            setSelectedClientId(parsed.selectedClientId);
+          } else if (preselectedClientId) {
+            setSelectedClientId(preselectedClientId);
           }
-          if (parsed.internalLogisticsType) setInternalLogisticsType(parsed.internalLogisticsType);
-          if (typeof parsed.internalLogisticsCost === 'number') setInternalLogisticsCost(parsed.internalLogisticsCost);
+
+          // Only restore draft items/parameters if draft belongs to the target preselected client or no preselected client is active
+          const isSameClient = !preselectedClientId || (parsed.selectedClientId === preselectedClientId);
+
+          if (isSameClient) {
+            if (typeof parsed.validityDays === 'number') setValidityDays(parsed.validityDays);
+            if (typeof parsed.productionSlaDays === 'number') setProductionSlaDays(parsed.productionSlaDays);
+            if (typeof parsed.discount === 'number') setDiscount(parsed.discount);
+            if (typeof parsed.discountPercent === 'number') setDiscountPercent(parsed.discountPercent);
+            if (parsed.paymentTerms) setPaymentTerms(parsed.paymentTerms);
+            if (parsed.notes) setNotes(parsed.notes);
+            if (parsed.attendanceMode) setAttendanceMode(parsed.attendanceMode);
+            if (Array.isArray(parsed.quoteItems) && parsed.quoteItems.length > 0) {
+              setQuoteItems(parsed.quoteItems);
+              setHasRestoredDraft(true);
+            }
+            if (parsed.internalLogisticsType) setInternalLogisticsType(parsed.internalLogisticsType);
+            if (typeof parsed.internalLogisticsCost === 'number') setInternalLogisticsCost(parsed.internalLogisticsCost);
+          }
         }
+      } else if (preselectedClientId) {
+        setSelectedClientId(preselectedClientId);
       }
     } catch (err) {
       console.error('Erro ao restaurar rascunho de orçamento:', err);
     }
-  }, []);
+  }, [preselectedClientId]);
 
   // Auto-save draft on form changes
   React.useEffect(() => {
