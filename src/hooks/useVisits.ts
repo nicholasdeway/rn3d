@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Visit, Client, Product, Consignment, ExchangeNote } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
+import { fetchVisits, createVisit, updateVisit, deleteVisit } from '../services/visitsService';
 
 export function useVisits(
   clients: Client[],
@@ -10,7 +11,8 @@ export function useVisits(
   setClients: React.Dispatch<React.SetStateAction<Client[]>>,
   setConsignments: React.Dispatch<React.SetStateAction<Consignment[]>>,
   setExchanges: React.Dispatch<React.SetStateAction<ExchangeNote[]>>,
-  setTransactions: React.Dispatch<React.SetStateAction<any[]>>
+  setTransactions: React.Dispatch<React.SetStateAction<any[]>>,
+  user?: any
 ) {
   const [visits, setVisits] = useState<Visit[]>(() =>
     getStorageParsed<Visit[]>('rn3d_visits', [], true)
@@ -22,7 +24,35 @@ export function useVisits(
     }
   }, [visits]);
 
-  const handleScheduleVisit = (newVisitData: {
+  // Sync from Supabase on mount
+  useEffect(() => {
+    if (!user) return;
+    let isMounted = true;
+
+    fetchVisits()
+      .then((dbVisits) => {
+        if (!isMounted || !Array.isArray(dbVisits) || dbVisits.length === 0) return;
+        setVisits((prev) => {
+          const map = new Map<string, Visit>();
+          dbVisits.forEach((v) => map.set(v.id.toLowerCase().trim(), v));
+          (prev || []).forEach((v) => {
+            if (!map.has(v.id.toLowerCase().trim())) {
+              map.set(v.id.toLowerCase().trim(), v);
+            }
+          });
+          const merged = Array.from(map.values());
+          safeSetLocalStorage('rn3d_visits', JSON.stringify(merged));
+          return merged;
+        });
+      })
+      .catch((err) => console.error('Erro ao buscar visitas no Supabase:', err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  const handleScheduleVisit = async (newVisitData: {
     clientId: string;
     scheduledDate: string;
     timeSlot?: string;
@@ -82,18 +112,30 @@ export function useVisits(
     );
 
     showToast(`🗓️ Visita agendada para ${client.name} em ${formattedDate}!`, 'success');
+
+    try {
+      await createVisit(newVisit);
+    } catch (err) {
+      console.error('Erro ao salvar agendamento no Supabase:', err);
+    }
   };
 
-  const handleDeleteVisit = (visitId: string) => {
+  const handleDeleteVisit = async (visitId: string) => {
     setVisits((prev) => {
       const next = prev.filter((v) => v.id !== visitId);
       safeSetLocalStorage('rn3d_visits', JSON.stringify(next));
       return next;
     });
     showToast(`Visita #${visitId} removida com sucesso!`, 'success');
+
+    try {
+      await deleteVisit(visitId);
+    } catch (err) {
+      console.error('Erro ao deletar visita no Supabase:', err);
+    }
   };
 
-  const handleCompleteVisit = (visitData: any) => {
+  const handleCompleteVisit = async (visitData: any) => {
     const client = visitData.client || clients.find((c) => c.id === visitData.clientId);
     if (!client) return;
 
@@ -105,12 +147,6 @@ export function useVisits(
 
     const dateStr = new Date().toLocaleDateString('pt-BR');
     const timeStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-    const nextVisit = new Date(Date.now() + 15 * 86400000);
-    const nextVisitDay = String(nextVisit.getDate()).padStart(2, '0');
-    const nextVisitMonth = String(nextVisit.getMonth() + 1).padStart(2, '0');
-    const nextVisitYear = nextVisit.getFullYear();
-    const nextVisitStr = `${nextVisitDay}/${nextVisitMonth}/${nextVisitYear}`;
 
     if (visitData.auditCalculations && Array.isArray(visitData.auditCalculations)) {
       setClientInventories((prev) => {
@@ -261,24 +297,27 @@ export function useVisits(
       ]);
     }
 
+    let targetVisitToSave: Visit | null = null;
+
     setVisits((prev) => {
       let foundExisting = false;
       const updated = prev.map((v) => {
         if (v.clientId === clientId && v.status !== 'Concluída') {
           foundExisting = true;
-          return {
+          targetVisitToSave = {
             ...v,
             status: 'Concluída' as const,
             productsOnSite: finalStock,
             lastVisitText: `${dateStr} às ${timeStr}`,
             completedAt: `${dateStr} ${timeStr}`,
           };
+          return targetVisitToSave;
         }
         return v;
       });
 
       if (!foundExisting) {
-        updated.unshift({
+        targetVisitToSave = {
           id: visitId,
           clientId: clientId,
           clientName: client.name,
@@ -289,7 +328,8 @@ export function useVisits(
           lastVisitText: `${dateStr} às ${timeStr}`,
           status: 'Concluída',
           completedAt: `${dateStr} ${timeStr}`,
-        });
+        };
+        updated.unshift(targetVisitToSave);
       }
 
       return updated;
@@ -301,6 +341,14 @@ export function useVisits(
       )} atualizados!`,
       'success'
     );
+
+    try {
+      if (targetVisitToSave) {
+        await updateVisit((targetVisitToSave as Visit).id, targetVisitToSave);
+      }
+    } catch (err) {
+      console.error('Erro ao atualizar visita concluída no Supabase:', err);
+    }
   };
 
   return {

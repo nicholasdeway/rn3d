@@ -19,6 +19,7 @@ import { fetchClients } from '../services/clientsService';
 import { fetchOrders } from '../services/ordersService';
 import { fetchQuotes } from '../services/quotesService';
 import { fetchConsignments, syncMissingConsignmentsToSupabase } from '../services/consignmentsService';
+import { fetchVisits, syncMissingVisitsToSupabase } from '../services/visitsService';
 import { syncMissingProductsToSupabase } from '../services/productsService';
 import { syncMissingClientsToSupabase } from '../services/clientsService';
 import { syncMissingOrdersToSupabase } from '../services/ordersService';
@@ -128,7 +129,8 @@ export function useAppData() {
     setClients,
     setConsignments,
     setExchangesRef,
-    setTransactions
+    setTransactions,
+    user
   );
 
   const {
@@ -190,18 +192,32 @@ export function useAppData() {
     const loadAllData = async (showLoadingState = true) => {
       try {
         if (showLoadingState) setDataLoading(true);
-        const [dbProducts, dbClients, dbOrders, dbQuotes, dbConsignments] = await Promise.all([
+        const [dbProducts, dbClients, dbOrders, dbQuotes, dbConsignments, dbVisits] = await Promise.all([
           fetchProducts(),
           fetchClients(),
           fetchOrders(),
           fetchQuotes(),
           fetchConsignments(),
+          fetchVisits(),
         ]);
         if (!isMounted) return;
-        const enrichedClients = computeEnrichedClients(dbClients, dbConsignments || [], dbOrders || [], visits || []);
+        const enrichedClients = computeEnrichedClients(dbClients, dbConsignments || [], dbOrders || [], dbVisits || visits || []);
         setProducts((prev) => (prev && prev.length === dbProducts.length && JSON.stringify(prev) === JSON.stringify(dbProducts) ? prev : dbProducts));
         setClients((prev) => (prev && prev.length === enrichedClients.length && JSON.stringify(prev) === JSON.stringify(enrichedClients) ? prev : enrichedClients));
         setQuotes((prev) => (prev && prev.length === dbQuotes.length && JSON.stringify(prev) === JSON.stringify(dbQuotes) ? prev : dbQuotes));
+        if (dbVisits && dbVisits.length > 0) {
+          setVisits((prev) => {
+            const map = new Map<string, Visit>();
+            dbVisits.forEach((v) => map.set(v.id.toLowerCase().trim(), v));
+            (prev || []).forEach((v) => {
+              if (!map.has(v.id.toLowerCase().trim())) {
+                map.set(v.id.toLowerCase().trim(), v);
+              }
+            });
+            const merged = Array.from(map.values());
+            return prev && prev.length === merged.length && JSON.stringify(prev) === JSON.stringify(merged) ? prev : merged;
+          });
+        }
         setOrders((prev) => {
           if (!prev || prev.length === 0) return dbOrders;
           const dbSet = new Set(
@@ -656,27 +672,41 @@ function computeEnrichedClients(
   const handleSyncProductsToSupabase = async () => {
     try {
       showToast('Sincronizando todo o sistema com o Banco de Dados', 'info');
-      const [pCount, cCount, oCount, qCount, eCount, consCount] = await Promise.all([
+      const [pCount, cCount, oCount, qCount, eCount, consCount, vCount] = await Promise.all([
         syncMissingProductsToSupabase(products),
         syncMissingClientsToSupabase(clients),
         syncMissingOrdersToSupabase(orders),
         syncMissingQuotesToSupabase(quotes),
         syncMissingExpensesToSupabase(expenses),
         syncMissingConsignmentsToSupabase(consignments),
+        syncMissingVisitsToSupabase(visits),
       ]);
 
-      const [dbProds, dbClients, dbOrders, dbQuotes, dbConsignments] = await Promise.all([
+      const [dbProds, dbClients, dbOrders, dbQuotes, dbConsignments, dbVisits] = await Promise.all([
         fetchProducts(),
         fetchClients(),
         fetchOrders(),
         fetchQuotes(),
         fetchConsignments(),
+        fetchVisits(),
       ]);
 
       setProducts(dbProds);
       setClients(dbClients);
       setOrders(dbOrders);
       setQuotes(dbQuotes);
+      if (dbVisits && dbVisits.length > 0) {
+        setVisits((prev) => {
+          const map = new Map<string, Visit>();
+          dbVisits.forEach((v) => map.set(v.id.toLowerCase().trim(), v));
+          (prev || []).forEach((v) => {
+            if (!map.has(v.id.toLowerCase().trim())) {
+              map.set(v.id.toLowerCase().trim(), v);
+            }
+          });
+          return Array.from(map.values());
+        });
+      }
       if (dbConsignments && dbConsignments.length > 0) {
         setConsignments((prev) => {
           const map = new Map<string, any>();
@@ -691,9 +721,9 @@ function computeEnrichedClients(
       }
       if (reloadExpenses) reloadExpenses();
 
-      const totalNew = pCount + cCount + oCount + qCount + eCount + consCount;
+      const totalNew = pCount + cCount + oCount + qCount + eCount + consCount + vCount;
       if (totalNew > 0) {
-        showToast(`✅ Sincronização concluída! (${pCount} prods, ${cCount} clientes, ${oCount} pedidos, ${consCount} consignações)`, 'success');
+        showToast(`✅ Sincronização concluída! (${pCount} prods, ${cCount} clientes, ${oCount} pedidos, ${consCount} consignações, ${vCount} visitas)`, 'success');
       } else {
         showToast('✅ Sistema 100% sincronizado com o Supabase!', 'success');
       }
