@@ -16,19 +16,23 @@ export function formatPhone(val: string): string {
 
 export function formatDocument(val: string): string {
   if (!val) return '';
-  const digits = val.replace(/\D/g, '').slice(0, 14);
+  const digits = val.replace(/\D/g, '');
   if (!digits) return '';
+
   if (digits.length <= 11) {
-    if (digits.length <= 3) return digits;
-    if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
-    if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
-    return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+    const sliced = digits.slice(0, 11);
+    if (sliced.length <= 3) return sliced;
+    if (sliced.length <= 6) return `${sliced.slice(0, 3)}.${sliced.slice(3)}`;
+    if (sliced.length <= 9) return `${sliced.slice(0, 3)}.${sliced.slice(3, 6)}.${sliced.slice(6)}`;
+    return `${sliced.slice(0, 3)}.${sliced.slice(3, 6)}.${sliced.slice(6, 9)}-${sliced.slice(9)}`;
   }
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
-  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
-  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+
+  const sliced = digits.slice(0, 14);
+  if (sliced.length <= 2) return sliced;
+  if (sliced.length <= 5) return `${sliced.slice(0, 2)}.${sliced.slice(2)}`;
+  if (sliced.length <= 8) return `${sliced.slice(0, 2)}.${sliced.slice(2, 5)}.${sliced.slice(5)}`;
+  if (sliced.length <= 12) return `${sliced.slice(0, 2)}.${sliced.slice(2, 5)}.${sliced.slice(5, 8)}/${sliced.slice(8)}`;
+  return `${sliced.slice(0, 2)}.${sliced.slice(2, 5)}.${sliced.slice(5, 8)}/${sliced.slice(8, 12)}-${sliced.slice(12)}`;
 }
 
 export function parseBRDate(dateStr?: string | null): Date | null {
