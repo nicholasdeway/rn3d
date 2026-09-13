@@ -556,17 +556,17 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           <div className="hidden md:block bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
+                <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider text-[11px]">
                   <tr>
-                    <th className="p-4 text-left">Pedido</th>
-                    <th className="p-4 text-left">Cliente</th>
-                    <th className="p-4 text-left">Data</th>
-                    <th className="p-4 text-center">Itens</th>
-                    <th className="p-4 text-right">Valor</th>
-                    <th className="p-4 text-center">Pagamento</th>
-                    <th className="p-4 text-center">Progresso</th>
-                    <th className="p-4 text-center">Status Entrega</th>
-                    <th className="p-4 text-center">Ações</th>
+                    <th className="p-3.5 text-left whitespace-nowrap">Pedido</th>
+                    <th className="p-3.5 text-left whitespace-nowrap">Cliente</th>
+                    <th className="p-3.5 text-left whitespace-nowrap">Data</th>
+                    <th className="p-3.5 text-center whitespace-nowrap">Itens</th>
+                    <th className="p-3.5 text-right whitespace-nowrap">Valor</th>
+                    <th className="p-3.5 text-center whitespace-nowrap">Pagamento</th>
+                    <th className="p-3.5 text-center whitespace-nowrap">Progresso</th>
+                    <th className="p-3.5 text-center whitespace-nowrap">Status Entrega</th>
+                    <th className="p-3.5 text-center whitespace-nowrap">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
@@ -582,21 +582,25 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                             : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'
                             }`}
                         >
-                          <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-1.5">
-                            {isExpanded ? (
-                              <ChevronUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
-                            )}
-                            {o.id}
+                          <td className="p-3.5 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+                              )}
+                              <span>{o.id}</span>
+                            </div>
                           </td>
-                          <td className="p-4 font-bold text-slate-900 dark:text-slate-100">{o.clientName}</td>
-                          <td className="p-4 text-slate-600 dark:text-slate-400">{formatDateBR(o.date)}</td>
-                          <td className="p-4 text-center font-bold text-slate-800 dark:text-slate-200">{o.itemsCount} itens</td>
-                          <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400">
+                          <td className="p-3.5 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap max-w-[200px] truncate" title={o.clientName}>
+                            {o.clientName}
+                          </td>
+                          <td className="p-3.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(o.date)}</td>
+                          <td className="p-3.5 text-center font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">{o.itemsCount} itens</td>
+                          <td className="p-3.5 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                             R$ {o.totalValue.toFixed(2).replace('.', ',')}
                           </td>
-                          <td className="p-4 text-center font-semibold text-slate-700 dark:text-slate-300">
+                          <td className="p-3.5 text-center font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                             {(() => {
                               const paid = o.paidAmount || 0;
                               const total = o.totalValue || 0;
@@ -612,13 +616,13 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                                   : 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
 
                               return (
-                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${style}`}>
+                                <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap shrink-0 ${style}`}>
                                   {label}
                                 </span>
                               );
                             })()}
                           </td>
-                          <td className="p-4 text-center align-middle">
+                          <td className="p-3.5 text-center align-middle whitespace-nowrap">
                             <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                               <button
                                 type="button"
@@ -632,7 +636,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                               >
                                 <Minus className="w-3 h-3 text-rose-500" />
                               </button>
-                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-colors ${o.status === 'Entregue'
+                              <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold border whitespace-nowrap transition-colors ${o.status === 'Entregue'
                                 ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 font-extrabold'
                                 : o.productionProgressPct === 100
                                   ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900'
@@ -654,11 +658,11 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                               </button>
                             </div>
                           </td>
-                          <td className="p-4 text-center align-middle">
+                          <td className="p-3.5 text-center align-middle whitespace-nowrap">
                             <div className="flex items-center justify-center">
                               <label
                                 onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1.5 cursor-pointer bg-slate-50 dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-xs font-semibold select-none transition-colors"
+                                className="inline-flex items-center gap-1.5 cursor-pointer bg-slate-50 dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-xs font-semibold select-none transition-colors whitespace-nowrap"
                               >
                                 <input
                                   type="checkbox"
@@ -680,7 +684,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                               </label>
                             </div>
                           </td>
-                          <td className="p-4 text-center align-middle">
+                          <td className="p-3.5 text-center align-middle whitespace-nowrap">
                             <div className="flex items-center justify-center gap-1.5">
                               <button
                                 onClick={(e) => {
