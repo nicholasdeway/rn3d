@@ -106,9 +106,9 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
           productId: prod.id,
           productName: prod.name,
           sku: prod.sku,
-          quantity: 10,
+          quantity: 1,
           unitPrice: prod.standardPrice,
-          subtotal: 10 * prod.standardPrice,
+          subtotal: 1 * prod.standardPrice,
         },
       ]);
     }
