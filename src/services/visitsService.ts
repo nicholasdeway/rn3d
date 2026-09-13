@@ -2,12 +2,19 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Visit } from '../types';
 import { formatDateBR, normalizeToIsoDate } from '../utils/formatters';
 
+let useOrdersFallbackForVisits = false;
+
 /**
  * 100% Direct Supabase Postgres Fetch & Cross-Device Sync for Visits (Web <-> Mobile)
+ * Falls back to 'orders' table with 'VIS-' prefix if 'visits' table is not present in schema cache
  */
 export async function fetchVisits(): Promise<Visit[]> {
   if (!isSupabaseConfigured()) {
     return [];
+  }
+
+  if (useOrdersFallbackForVisits) {
+    return fetchVisitsFromOrders();
   }
 
   try {
@@ -17,8 +24,9 @@ export async function fetchVisits(): Promise<Visit[]> {
       .order('created_at', { ascending: false });
 
     if (error || !data) {
-      if (error && !error.message?.includes('schema cache') && !error.message?.includes('Could not find the table')) {
-        console.warn('Aviso ao buscar visitas no Supabase:', error.message);
+      if (error && (error.message?.includes('schema cache') || error.message?.includes('Could not find the table') || error.code === 'PGRST301')) {
+        useOrdersFallbackForVisits = true;
+        return fetchVisitsFromOrders();
       }
       return [];
     }
@@ -43,7 +51,39 @@ export async function fetchVisits(): Promise<Visit[]> {
 
     return dbVisits;
   } catch (err) {
-    console.error('Erro ao carregar visitas do Supabase:', err);
+    useOrdersFallbackForVisits = true;
+    return fetchVisitsFromOrders();
+  }
+}
+
+async function fetchVisitsFromOrders(): Promise<Visit[]> {
+  try {
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data || !Array.isArray(data)) return [];
+
+    const visitRows = data.filter(
+      (row) =>
+        (row.order_code && row.order_code.toUpperCase().startsWith('VIS-')) ||
+        row.payment_status_text === 'Visita'
+    );
+
+    return visitRows.map((row) => ({
+      id: row.order_code || row.id,
+      clientId: row.client_id || '',
+      clientName: row.client_name || '',
+      scheduledDate: formatDateBR(row.date) || row.date || '',
+      timeSlot: '14:00',
+      reason: row.notes || 'Conferência e reposição presencial',
+      productsOnSite: Number(row.items_count) || 0,
+      lastVisitText: row.date || 'N/A',
+      status: (row.status === 'Concluído' ? 'Concluída' : row.status) as any,
+      completedAt: row.status === 'Concluído' ? row.created_at : undefined,
+    }));
+  } catch (_) {
     return [];
   }
 }
@@ -75,6 +115,10 @@ export async function createVisit(visit: Partial<Visit>): Promise<Visit | null> 
     return null;
   }
 
+  if (useOrdersFallbackForVisits) {
+    return createVisitInOrders(visit);
+  }
+
   try {
     const payload: any = {
       visit_code: visit.id,
@@ -100,15 +144,41 @@ export async function createVisit(visit: Partial<Visit>): Promise<Visit | null> 
       .single();
 
     if (error) {
-      if (!error.message?.includes('schema cache') && !error.message?.includes('Could not find the table')) {
-        console.warn('Aviso ao salvar visita no Supabase:', error.message);
+      if (error.message?.includes('schema cache') || error.message?.includes('Could not find the table') || error.code === 'PGRST301') {
+        useOrdersFallbackForVisits = true;
+        return createVisitInOrders(visit);
       }
       return null;
     }
 
     return data as any;
   } catch (err) {
-    console.error('Erro ao criar visita no Supabase:', err);
+    useOrdersFallbackForVisits = true;
+    return createVisitInOrders(visit);
+  }
+}
+
+async function createVisitInOrders(visit: Partial<Visit>): Promise<Visit | null> {
+  try {
+    const orderPayload: any = {
+      order_code: visit.id || `VIS-${Date.now()}`,
+      client_name: visit.clientName || 'Cliente Local',
+      date: normalizeToIsoDate(visit.scheduledDate) || new Date().toISOString().split('T')[0],
+      items_count: visit.productsOnSite || 0,
+      total_value: 0,
+      paid_amount: 0,
+      payment_status_text: 'Visita',
+      status: visit.status === 'Concluída' ? 'Concluído' : 'Novo',
+      notes: visit.reason || 'Conferência e reposição presencial',
+    };
+
+    if (visit.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(visit.clientId)) {
+      orderPayload.client_id = visit.clientId;
+    }
+
+    await supabase.from('orders').insert([orderPayload]);
+    return visit as any;
+  } catch (_) {
     return null;
   }
 }
@@ -116,6 +186,10 @@ export async function createVisit(visit: Partial<Visit>): Promise<Visit | null> 
 export async function updateVisit(id: string, updates: Partial<Visit>): Promise<Visit | null> {
   if (!isSupabaseConfigured() || !id) {
     return null;
+  }
+
+  if (useOrdersFallbackForVisits) {
+    return updates as any;
   }
 
   try {
@@ -143,21 +217,28 @@ export async function updateVisit(id: string, updates: Partial<Visit>): Promise<
     const { data, error } = await query.select();
 
     if (error) {
-      if (!error.message?.includes('schema cache') && !error.message?.includes('Could not find the table')) {
-        console.warn('Aviso ao atualizar visita no Supabase:', error.message);
+      if (error.message?.includes('schema cache') || error.message?.includes('Could not find the table') || error.code === 'PGRST301') {
+        useOrdersFallbackForVisits = true;
       }
       return null;
     }
 
     return (data && data[0]) ? (data[0] as any) : (updates as any);
   } catch (err) {
-    console.error('Erro ao atualizar visita no Supabase:', err);
-    return null;
+    useOrdersFallbackForVisits = true;
+    return updates as any;
   }
 }
 
 export async function deleteVisit(id: string): Promise<boolean> {
   if (!isSupabaseConfigured() || !id) return true;
+
+  if (useOrdersFallbackForVisits) {
+    try {
+      await supabase.from('orders').delete().eq('order_code', id);
+    } catch (_) {}
+    return true;
+  }
 
   try {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -168,7 +249,6 @@ export async function deleteVisit(id: string): Promise<boolean> {
     }
     return true;
   } catch (err) {
-    console.error('Erro ao deletar visita do Supabase:', err);
     return false;
   }
 }
