@@ -380,9 +380,6 @@ export function App() {
           }}
           onQuickAction={(action) => {
             switch (action) {
-              case 'sync-all':
-                appData.handleSyncProductsToSupabase();
-                break;
               case 'calculadora-3d':
                 navigateTo('calculator');
                 break;

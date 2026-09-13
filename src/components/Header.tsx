@@ -15,7 +15,6 @@ import {
   User as UserIcon,
   LogOut,
   X,
-  RefreshCw,
   Sun,
   Moon,
   ArrowLeft,
@@ -339,16 +338,6 @@ export const Header: React.FC<HeaderProps> = ({
             title="Buscar no Sistema"
           >
             <Search className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-          </button>
-
-          {/* Sync System Button */}
-          <button
-            onClick={() => onQuickAction('sync-all')}
-            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-2xs"
-            title="Sincronizar todo o sistema com o Supabase (Produtos, Clientes, Pedidos e Orçamentos)"
-          >
-            <RefreshCw className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="hidden md:inline">Sincronizar Sistema</span>
           </button>
 
           {/* Sininho de Notificações de Contas Fixas (7 e 3 Dias) */}
