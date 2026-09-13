@@ -2,68 +2,24 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Visit } from '../types';
 import { formatDateBR, normalizeToIsoDate } from '../utils/formatters';
 
-let useOrdersFallbackForVisits = false;
-
 /**
- * 100% Direct Supabase Postgres Fetch & Cross-Device Sync for Visits (Web <-> Mobile)
- * Falls back to 'orders' table with 'VIS-' prefix if 'visits' table is not present in schema cache
+ * 100% Direct Supabase Postgres Persistence for Visits
+ * Reads and writes directly to 'orders' table with 'VIS-' prefix (matching consignments REM- and exchanges TRC-)
  */
 export async function fetchVisits(): Promise<Visit[]> {
   if (!isSupabaseConfigured()) {
     return [];
   }
 
-  if (useOrdersFallbackForVisits) {
-    return fetchVisitsFromOrders();
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('visits')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error || !data) {
-      if (error && (error.message?.includes('schema cache') || error.message?.includes('Could not find the table') || error.code === 'PGRST301')) {
-        useOrdersFallbackForVisits = true;
-        return fetchVisitsFromOrders();
-      }
-      return [];
-    }
-
-    const dbVisits: Visit[] = data.map((row) => ({
-      id: row.visit_code || row.id,
-      clientId: row.client_id || '',
-      clientName: row.client_name || '',
-      scheduledDate: formatDateBR(row.scheduled_date) || row.scheduled_date || '',
-      timeSlot: row.time_slot || '14:00',
-      reason: row.reason || 'Conferência e reposição presencial',
-      productsOnSite: Number(row.products_on_site) || 0,
-      lastVisitText: row.last_visit_text || 'N/A',
-      status: row.status as Visit['status'],
-      completedAt: row.completed_at || undefined,
-      completedSummary: row.completed_summary
-        ? typeof row.completed_summary === 'string'
-          ? JSON.parse(row.completed_summary)
-          : row.completed_summary
-        : undefined,
-    }));
-
-    return dbVisits;
-  } catch (err) {
-    useOrdersFallbackForVisits = true;
-    return fetchVisitsFromOrders();
-  }
-}
-
-async function fetchVisitsFromOrders(): Promise<Visit[]> {
   try {
     const { data, error } = await supabase
       .from('orders')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error || !data || !Array.isArray(data)) return [];
+    if (error || !data || !Array.isArray(data)) {
+      return [];
+    }
 
     const visitRows = data.filter(
       (row) =>
@@ -83,7 +39,8 @@ async function fetchVisitsFromOrders(): Promise<Visit[]> {
       status: (row.status === 'Concluído' ? 'Concluída' : row.status) as any,
       completedAt: row.status === 'Concluído' ? row.created_at : undefined,
     }));
-  } catch (_) {
+  } catch (err) {
+    console.error('Erro ao carregar visitas do Supabase:', err);
     return [];
   }
 }
@@ -115,50 +72,6 @@ export async function createVisit(visit: Partial<Visit>): Promise<Visit | null> 
     return null;
   }
 
-  if (useOrdersFallbackForVisits) {
-    return createVisitInOrders(visit);
-  }
-
-  try {
-    const payload: any = {
-      visit_code: visit.id,
-      client_name: visit.clientName,
-      scheduled_date: normalizeToIsoDate(visit.scheduledDate),
-      time_slot: visit.timeSlot || '14:00',
-      reason: visit.reason || 'Conferência e reposição presencial',
-      products_on_site: visit.productsOnSite || 0,
-      last_visit_text: visit.lastVisitText || 'N/A',
-      status: visit.status || 'Em breve',
-      completed_at: visit.completedAt || null,
-      completed_summary: visit.completedSummary || null,
-    };
-
-    if (visit.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(visit.clientId)) {
-      payload.client_id = visit.clientId;
-    }
-
-    const { data, error } = await supabase
-      .from('visits')
-      .insert([payload])
-      .select()
-      .single();
-
-    if (error) {
-      if (error.message?.includes('schema cache') || error.message?.includes('Could not find the table') || error.code === 'PGRST301') {
-        useOrdersFallbackForVisits = true;
-        return createVisitInOrders(visit);
-      }
-      return null;
-    }
-
-    return data as any;
-  } catch (err) {
-    useOrdersFallbackForVisits = true;
-    return createVisitInOrders(visit);
-  }
-}
-
-async function createVisitInOrders(visit: Partial<Visit>): Promise<Visit | null> {
   try {
     const orderPayload: any = {
       order_code: visit.id || `VIS-${Date.now()}`,
@@ -168,7 +81,7 @@ async function createVisitInOrders(visit: Partial<Visit>): Promise<Visit | null>
       total_value: 0,
       paid_amount: 0,
       payment_status_text: 'Visita',
-      status: visit.status === 'Concluída' ? 'Concluído' : 'Novo',
+      status: visit.status === 'Concluída' ? 'Concluído' : (visit.status || 'Novo'),
       notes: visit.reason || 'Conferência e reposição presencial',
     };
 
@@ -176,9 +89,20 @@ async function createVisitInOrders(visit: Partial<Visit>): Promise<Visit | null>
       orderPayload.client_id = visit.clientId;
     }
 
-    await supabase.from('orders').insert([orderPayload]);
-    return visit as any;
-  } catch (_) {
+    const { data, error } = await supabase
+      .from('orders')
+      .insert([orderPayload])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao criar visita em orders no Supabase:', error.message);
+      return null;
+    }
+
+    return (data as any) || (visit as any);
+  } catch (err) {
+    console.error('Erro ao criar visita no Supabase:', err);
     return null;
   }
 }
@@ -188,67 +112,59 @@ export async function updateVisit(id: string, updates: Partial<Visit>): Promise<
     return null;
   }
 
-  if (useOrdersFallbackForVisits) {
-    return updates as any;
-  }
-
   try {
     const payload: any = {};
     if (updates.clientName !== undefined) payload.client_name = updates.clientName;
-    if (updates.scheduledDate !== undefined) payload.scheduled_date = normalizeToIsoDate(updates.scheduledDate);
-    if (updates.timeSlot !== undefined) payload.time_slot = updates.timeSlot;
-    if (updates.reason !== undefined) payload.reason = updates.reason;
-    if (updates.productsOnSite !== undefined) payload.products_on_site = updates.productsOnSite;
-    if (updates.lastVisitText !== undefined) payload.last_visit_text = updates.lastVisitText;
-    if (updates.status !== undefined) payload.status = updates.status;
-    if (updates.completedAt !== undefined) payload.completed_at = updates.completedAt;
-    if (updates.completedSummary !== undefined) payload.completed_summary = updates.completedSummary;
+    if (updates.scheduledDate !== undefined) payload.date = normalizeToIsoDate(updates.scheduledDate);
+    if (updates.reason !== undefined) payload.notes = updates.reason;
+    if (updates.productsOnSite !== undefined) payload.items_count = updates.productsOnSite;
+    if (updates.status !== undefined) {
+      payload.status = updates.status === 'Concluída' ? 'Concluído' : updates.status;
+    }
 
     if (Object.keys(payload).length === 0) return updates as any;
 
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    let query = supabase.from('visits').update(payload);
+    let query = supabase.from('orders').update(payload);
     if (isUuid) {
-      query = query.eq('id', id);
+      query = query.or(`order_code.eq.${id},id.eq.${id}`);
     } else {
-      query = query.eq('visit_code', id);
+      query = query.eq('order_code', id);
     }
 
     const { data, error } = await query.select();
-
     if (error) {
-      if (error.message?.includes('schema cache') || error.message?.includes('Could not find the table') || error.code === 'PGRST301') {
-        useOrdersFallbackForVisits = true;
-      }
+      console.error('Erro ao atualizar visita no Supabase:', error.message);
       return null;
     }
 
     return (data && data[0]) ? (data[0] as any) : (updates as any);
   } catch (err) {
-    useOrdersFallbackForVisits = true;
-    return updates as any;
+    console.error('Erro ao atualizar visita no Supabase:', err);
+    return null;
   }
 }
 
 export async function deleteVisit(id: string): Promise<boolean> {
   if (!isSupabaseConfigured() || !id) return true;
 
-  if (useOrdersFallbackForVisits) {
-    try {
-      await supabase.from('orders').delete().eq('order_code', id);
-    } catch (_) {}
-    return true;
-  }
-
   try {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    let query = supabase.from('orders').delete();
     if (isUuid) {
-      await supabase.from('visits').delete().eq('id', id);
+      query = query.or(`order_code.eq.${id},id.eq.${id}`);
     } else {
-      await supabase.from('visits').delete().eq('visit_code', id);
+      query = query.eq('order_code', id);
+    }
+
+    const { error } = await query;
+    if (error) {
+      console.error('Erro ao deletar visita do Supabase:', error.message);
+      return false;
     }
     return true;
   } catch (err) {
+    console.error('Erro ao deletar visita do Supabase:', err);
     return false;
   }
 }
