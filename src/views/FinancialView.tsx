@@ -73,6 +73,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState<Order | null>(null);
   const [selectedOrderForPdfModal, setSelectedOrderForPdfModal] = useState<Order | null>(null);
+  const [selectedReceiptForModal, setSelectedReceiptForModal] = useState<{ url: string; type: 'image' | 'pdf'; name?: string } | null>(null);
   const [paymentAmountInput, setPaymentAmountInput] = useState<string>('');
   const [paymentReceiptUrl, setPaymentReceiptUrl] = useState<string>('');
   const [paymentReceiptType, setPaymentReceiptType] = useState<'image' | 'pdf'>('image');
@@ -260,8 +261,8 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     });
   }, [transactions, cleanExpenses, orders]);
 
-  // Extrato Entries: Entradas, Saídas e Contas a Receber pendentes
-  const allExtratoEntries = useMemo(() => {
+  // Base unfiltered entries for selected date period (used for accurate KPI totals)
+  const unfilteredExtratoEntries = useMemo(() => {
     // 1. Transaction Entries (Entradas Balcão)
     const txEntries = filteredTransactions
       .filter((t) => isDateInRange(t.timestamp || t.date || t.dueDate))
@@ -321,10 +322,12 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         status: o.paymentStatusText || (o.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
       }));
 
-    const combined = [...txEntries, ...expenseEntries, ...pendingOrderEntries];
+    return [...txEntries, ...expenseEntries, ...pendingOrderEntries];
+  }, [orders, filteredTransactions, cleanExpenses, dateRangeStart, dateRangeEnd]);
 
-    // Search term filtering
-    const searchFiltered = combined.filter((item) => {
+  // Extrato Entries filtered by movementType & searchTerm for display
+  const allExtratoEntries = useMemo(() => {
+    const searchFiltered = unfilteredExtratoEntries.filter((item) => {
       if (movementType !== 'todos' && item.direction !== movementType) return false;
       if (!searchTerm.trim()) return true;
       const q = searchTerm.toLowerCase().trim();
@@ -342,20 +345,20 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
       const timeB = parseToDate(b.date)?.getTime() || 0;
       return timeB - timeA;
     });
-  }, [orders, filteredTransactions, cleanExpenses, dateRangeStart, dateRangeEnd, searchTerm, movementType]);
+  }, [unfilteredExtratoEntries, searchTerm, movementType]);
 
-  // Calculate Filtered Summary Metrics for Header KPI cards (Only count actual realized entries, not pending order balances)
+  // Calculate Summary Metrics for Header KPI cards from unfiltered base
   const periodEntradas = useMemo(() => {
-    return allExtratoEntries
+    return unfilteredExtratoEntries
       .filter((e) => e.direction === 'entrada' && e.type !== 'order')
       .reduce((acc, e) => acc + e.amount, 0);
-  }, [allExtratoEntries]);
+  }, [unfilteredExtratoEntries]);
 
   const periodSaidas = useMemo(() => {
-    return allExtratoEntries
+    return unfilteredExtratoEntries
       .filter((e) => e.direction === 'saida')
       .reduce((acc, e) => acc + e.amount, 0);
-  }, [allExtratoEntries]);
+  }, [unfilteredExtratoEntries]);
 
   const periodSaldo = periodEntradas - periodSaidas;
 
@@ -375,10 +378,208 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     return allExtratoEntries.slice(start, start + ITEMS_PER_PAGE);
   }, [allExtratoEntries, currentPage]);
 
-  // TAB 2 Data: Entradas em Caixa (Apenas entradas efetivadas / recebidas, excluindo saldos pendentes de pedidos)
+  // Helper to extract client name for any entry (Order, Expense, Transaction)
+  const getEntryClientName = (entry: any): string => {
+    if (entry.type === 'order') {
+      const o = entry.data as Order;
+      return o.clientName || 'Cliente Balcão';
+    }
+    if (entry.type === 'transaction') {
+      const t = entry.data as SaleTransaction;
+      return t.clientName || 'Cliente Balcão';
+    }
+    if (entry.type === 'expense') {
+      const exp = entry.data as ExpenseItem;
+      if (exp.beneficiary && exp.beneficiary.trim() && exp.beneficiary !== 'Empresa' && exp.beneficiary !== 'Posto') {
+        return exp.beneficiary;
+      }
+      if (exp.referenceCode) {
+        const matched = orders.find(
+          (o) => o.id === exp.referenceCode || o.id.replace(/^PED-/, '') === exp.referenceCode.replace(/^PED-/, '')
+        );
+        if (matched && matched.clientName) return matched.clientName;
+      }
+      if (exp.description && exp.description.includes(' - ')) {
+        const parts = exp.description.split(' - ');
+        const candidate = parts[parts.length - 1].trim();
+        if (candidate && !candidate.toLowerCase().includes('pedido') && !candidate.toLowerCase().includes('entrada')) {
+          return candidate;
+        }
+      }
+      if (exp.description) {
+        const descLower = exp.description.toLowerCase();
+        const matched = orders.find(
+          (o) => o.clientName && descLower.includes(o.clientName.toLowerCase())
+        );
+        if (matched && matched.clientName) return matched.clientName;
+      }
+      return exp.category || 'Cliente Balcão';
+    }
+    return 'Cliente Balcão';
+  };
+
+  // Helper to extract display code for any entry
+  const getEntryFormattedCode = (entry: any): string => {
+    if (entry.type === 'order') {
+      const o = entry.data as Order;
+      return o.id;
+    }
+    if (entry.type === 'transaction') {
+      const t = entry.data as SaleTransaction;
+      return t.id;
+    }
+    if (entry.type === 'expense') {
+      const exp = entry.data as ExpenseItem;
+      if (exp.referenceCode && exp.referenceCode.trim()) {
+        return exp.referenceCode;
+      }
+      const pedMatch = exp.description?.match(/PED-\d+/i) || exp.description?.match(/ORC-\d+/i);
+      if (pedMatch) {
+        return pedMatch[0].toUpperCase();
+      }
+      if (exp.id && exp.id.length > 20) {
+        const prefix = exp.category === 'Entrada de Pedido' ? 'PED' : exp.category === 'Aporte / Reembolso de Sócio' ? 'APT' : 'ENT';
+        return `${prefix}-${exp.id.slice(0, 8).toUpperCase()}`;
+      }
+      return exp.id;
+    }
+    return entry.id;
+  };
+
+  // Helper to find associated Order for PDF view
+  const getEntryLinkedOrder = (entry: any): Order | null => {
+    if (entry.type === 'order') return entry.data as Order;
+
+    const code = getEntryFormattedCode(entry);
+    if (code && (code.startsWith('PED-') || code.startsWith('ORC-'))) {
+      const matched = orders.find((o) => o.id === code || o.id.replace(/^PED-/, '') === code.replace(/^PED-/, ''));
+      if (matched) return matched;
+    }
+
+    if (entry.type === 'expense') {
+      const exp = entry.data as ExpenseItem;
+      if (exp.referenceCode) {
+        const matched = orders.find(
+          (o) => o.id === exp.referenceCode || o.id.replace(/^PED-/, '') === exp.referenceCode.replace(/^PED-/, '')
+        );
+        if (matched) return matched;
+      }
+      const pedMatch = exp.description?.match(/PED-\d+/i);
+      if (pedMatch) {
+        const matched = orders.find(
+          (o) => o.id === pedMatch[0].toUpperCase() || o.id.replace(/^PED-/, '') === pedMatch[0].replace(/^PED-/, '')
+        );
+        if (matched) return matched;
+      }
+    }
+    return null;
+  };
+
+  // Helper to format Date & Time nicely
+  const getEntryDateTime = (entry: any): { dateFormatted: string; timeStr?: string } => {
+    let dateRaw = '';
+    let timeStr: string | undefined = undefined;
+
+    if (entry.type === 'order') {
+      const o = entry.data as Order;
+      dateRaw = o.date || o.createdAt || '';
+    } else if (entry.type === 'transaction') {
+      const t = entry.data as SaleTransaction;
+      dateRaw = t.timestamp || t.dueDate || '';
+    } else if (entry.type === 'expense') {
+      const exp = entry.data as ExpenseItem;
+      dateRaw = exp.date || exp.timestamp || '';
+      if (exp.timestamp && exp.timestamp.includes(':')) {
+        timeStr = exp.timestamp.slice(0, 5);
+      }
+    }
+
+    if (dateRaw && dateRaw.includes('T')) {
+      const parts = dateRaw.split('T');
+      dateRaw = parts[0];
+      if (!timeStr && parts[1]) {
+        timeStr = parts[1].slice(0, 5);
+      }
+    }
+
+    return {
+      dateFormatted: formatDateBR(dateRaw),
+      timeStr,
+    };
+  };
+
+  // Helper to get receipt URL for any entry
+  const getEntryReceiptUrl = (entry: any): { url?: string; type?: 'image' | 'pdf'; name?: string } | null => {
+    if (entry.type === 'expense') {
+      const exp = entry.data as ExpenseItem;
+      if (exp.receiptUrl) {
+        return { url: exp.receiptUrl, type: exp.receiptType || 'image', name: exp.receiptName || 'Comprovante' };
+      }
+    }
+    if (entry.type === 'order') {
+      const o = entry.data as Order;
+      if (o.paymentReceiptUrl) {
+        return { url: o.paymentReceiptUrl, type: o.paymentReceiptType || 'image', name: o.paymentReceiptName || 'Comprovante' };
+      }
+    }
+    const linkedOrder = getEntryLinkedOrder(entry);
+    if (linkedOrder && linkedOrder.paymentReceiptUrl) {
+      return { url: linkedOrder.paymentReceiptUrl, type: linkedOrder.paymentReceiptType || 'image', name: linkedOrder.paymentReceiptName || 'Comprovante' };
+    }
+    return null;
+  };
+
+  // TAB 2 Data: Entradas em Caixa (Apenas entradas efetivadas / recebidas)
   const allEntradasEntries = useMemo(() => {
-    return allExtratoEntries.filter((e) => e.direction === 'entrada' && e.type !== 'order');
-  }, [allExtratoEntries]);
+    const realized = unfilteredExtratoEntries.filter((e) => e.direction === 'entrada' && e.type !== 'order');
+
+    const orderPaidEntries = orders
+      .filter((o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_'))
+      .filter((o) => (o.paidAmount || 0) > 0)
+      .filter((o) => isDateInRange(o.date || o.createdAt))
+      .filter((o) => {
+        const inExpenses = cleanExpenses.some((exp) => {
+          if (exp.referenceCode && (exp.referenceCode === o.id || exp.referenceCode.replace(/^PED-/, '') === o.id.replace(/^PED-/, ''))) return true;
+          if (exp.category === 'Entrada de Pedido' && exp.description && exp.description.toLowerCase().includes(o.id.toLowerCase())) return true;
+          return false;
+        });
+        const inTx = filteredTransactions.some((t) => t.id === o.id || (t.clientName && t.clientName === o.clientName && Math.abs(t.amount - o.paidAmount) < 0.01));
+        return !inExpenses && !inTx;
+      })
+      .map((o) => ({
+        type: 'order' as const,
+        direction: 'entrada' as const,
+        data: o,
+        id: `ENT-${o.id}`,
+        date: o.date || o.createdAt || '',
+        title: `Entrada Pedido #${o.id}`,
+        clientOrCategory: o.clientName,
+        amount: o.paidAmount,
+        paidAmount: o.paidAmount,
+        totalValue: o.totalValue,
+        status: o.paymentStatusText || 'Adiantamento',
+      }));
+
+    const combined = [...realized, ...orderPaidEntries];
+
+    const searchFiltered = combined.filter((item) => {
+      if (!searchTerm.trim()) return true;
+      const q = searchTerm.toLowerCase().trim();
+      const client = getEntryClientName(item).toLowerCase();
+      const code = getEntryFormattedCode(item).toLowerCase();
+      const desc = item.title.toLowerCase();
+      const cat = item.clientOrCategory.toLowerCase();
+      const amountStr = item.amount.toString();
+
+      return code.includes(q) || client.includes(q) || desc.includes(q) || cat.includes(q) || amountStr.includes(q);
+    });
+
+    return searchFiltered.sort((a, b) => {
+      const timeA = parseToDate(a.date)?.getTime() || 0;
+      const timeB = parseToDate(b.date)?.getTime() || 0;
+      return timeB - timeA;
+    });
+  }, [unfilteredExtratoEntries, orders, cleanExpenses, filteredTransactions, dateRangeStart, dateRangeEnd, searchTerm]);
 
   const entradasTotalPages = Math.ceil(allEntradasEntries.length / ITEMS_PER_PAGE) || 1;
   const paginatedEntradas = useMemo(() => {
@@ -667,7 +868,10 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
             Todas
           </button>
           <button
-            onClick={() => setMovementType('entradas')}
+            onClick={() => {
+              setMovementType('entradas');
+              if (tab === 'receber') setTab('extrato');
+            }}
             className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
               movementType === 'entradas'
                 ? 'bg-emerald-600 text-white shadow-2xs'
@@ -677,7 +881,10 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
             <ArrowUpRight className="w-3.5 h-3.5" /> Entradas
           </button>
           <button
-            onClick={() => setMovementType('saidas')}
+            onClick={() => {
+              setMovementType('saidas');
+              if (tab !== 'extrato') setTab('extrato');
+            }}
             className={`flex-1 md:flex-none px-3 py-1.5 rounded-lg transition-all cursor-pointer text-center flex items-center justify-center gap-1 ${
               movementType === 'saidas'
                 ? 'bg-rose-600 text-white shadow-2xs'
@@ -1090,38 +1297,71 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
               {/* Mobile View */}
               <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
                 {paginatedEntradas.map((entry) => {
-                  if (entry.type === 'order') {
+                  const clientName = getEntryClientName(entry);
+                  const displayCode = getEntryFormattedCode(entry);
+                  const { dateFormatted, timeStr } = getEntryDateTime(entry);
+                  const linkedOrder = getEntryLinkedOrder(entry);
+                  const receiptInfo = getEntryReceiptUrl(entry);
+
+                  let totalValue = entry.totalValue || entry.amount;
+                  let paidAmount = entry.amount;
+                  let categoryName = entry.clientOrCategory || 'Entrada de Caixa';
+
+                  if (entry.type === 'expense') {
+                    const exp = entry.data as ExpenseItem;
+                    categoryName = exp.category;
+                  } else if (entry.type === 'order') {
                     const o = entry.data as Order;
-                    return (
-                      <div key={o.id} className="p-4 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{o.id}</span>
-                          <span className="text-slate-500 dark:text-slate-400 text-[11px]">{formatDateBR(o.date)}</span>
+                    totalValue = o.totalValue;
+                    paidAmount = o.paidAmount || o.totalValue;
+                  }
+
+                  return (
+                    <div key={entry.id} className="p-4 space-y-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs">{displayCode}</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
+                            {categoryName === 'Entrada de Pedido' ? '✓ Entrada' : categoryName}
+                          </span>
                         </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{o.clientName}</span>
-                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}</span>
-                        </div>
-                        <span className="inline-block px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold text-[10px]">
-                          ✓ Recebido no Sinal / Entrada
+                        <span className="text-slate-500 dark:text-slate-400 text-[11px] whitespace-nowrap">
+                          {dateFormatted} {timeStr ? `às ${timeStr}` : ''}
                         </span>
                       </div>
-                    );
-                  } else {
-                    const t = entry.data as SaleTransaction;
-                    return (
-                      <div key={t.id} className="p-4 space-y-2 bg-slate-50/40 dark:bg-slate-900/40">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">{t.id}</span>
-                          <span className="text-slate-500 dark:text-slate-400 text-[11px]">{formatDateBR(t.timestamp || t.dueDate)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-slate-900 dark:text-slate-100">{t.clientName}</span>
-                          <span className="font-extrabold text-emerald-600 dark:text-emerald-400">R$ {t.amount.toFixed(2).replace('.', ',')}</span>
+
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="font-bold text-slate-900 dark:text-slate-100">{clientName}</span>
+                        <span className="font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                          + R$ {paidAmount.toFixed(2).replace('.', ',')}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px]">
+                        <span className="text-slate-400">Total: R$ {totalValue.toFixed(2).replace('.', ',')}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {linkedOrder && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrderForPdfModal(linkedOrder)}
+                              className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-bold rounded-lg text-[10px] border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 cursor-pointer"
+                            >
+                              <FileText className="w-3 h-3" /> PDF
+                            </button>
+                          )}
+                          {receiptInfo && receiptInfo.url && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedReceiptForModal({ url: receiptInfo.url!, type: receiptInfo.type || 'image', name: receiptInfo.name })}
+                              className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-bold rounded-lg text-[10px] border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 cursor-pointer"
+                            >
+                              <Paperclip className="w-3 h-3" /> Comprovante
+                            </button>
+                          )}
                         </div>
                       </div>
-                    );
-                  }
+                    </div>
+                  );
                 })}
               </div>
 
@@ -1130,52 +1370,137 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 dark:bg-[#181c26] border-b border-slate-200 dark:border-[#202531] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">
                     <tr>
-                      <th className="p-4 whitespace-nowrap">Origem / Código</th>
-                      <th className="p-4 whitespace-nowrap">Cliente</th>
-                      <th className="p-4 whitespace-nowrap">Data</th>
+                      <th className="p-4 whitespace-nowrap">Código / Tipo</th>
+                      <th className="p-4 whitespace-nowrap">Cliente / Origem</th>
+                      <th className="p-4 whitespace-nowrap">Data &amp; Hora</th>
+                      <th className="p-4 text-right whitespace-nowrap">Valor Total</th>
                       <th className="p-4 text-right whitespace-nowrap">Valor Entrado em Caixa</th>
-                      <th className="p-4 text-center whitespace-nowrap">Status de Confirmação</th>
+                      <th className="p-4 text-center whitespace-nowrap">Status &amp; Forma</th>
+                      <th className="p-4 text-center whitespace-nowrap">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                     {paginatedEntradas.map((entry) => {
-                      if (entry.type === 'order') {
-                        const o = entry.data as Order;
-                        return (
-                          <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                            <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{o.id}</td>
-                            <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{o.clientName}</td>
-                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(o.date)}</td>
-                            <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                              R$ {(o.paidAmount || 0).toFixed(2).replace('.', ',')}
-                            </td>
-                            <td className="p-4 text-center whitespace-nowrap">
-                              <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold text-emerald-700 dark:text-emerald-300 text-[10px] inline-flex items-center justify-center gap-1 whitespace-nowrap">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                <span>Recebido no Sinal / Entrada</span>
-                              </span>
-                            </td>
-                          </tr>
-                        );
-                      } else {
+                      const clientName = getEntryClientName(entry);
+                      const displayCode = getEntryFormattedCode(entry);
+                      const { dateFormatted, timeStr } = getEntryDateTime(entry);
+                      const linkedOrder = getEntryLinkedOrder(entry);
+                      const receiptInfo = getEntryReceiptUrl(entry);
+
+                      let totalValue = entry.totalValue || entry.amount;
+                      let paidAmount = entry.amount;
+                      let categoryName = entry.clientOrCategory || 'Entrada de Caixa';
+                      let methodText = 'PIX / Caixa';
+
+                      if (entry.type === 'expense') {
+                        const exp = entry.data as ExpenseItem;
+                        categoryName = exp.category;
+                        if (exp.notes) methodText = exp.notes;
+                      } else if (entry.type === 'transaction') {
                         const t = entry.data as SaleTransaction;
-                        return (
-                          <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
-                            <td className="p-4 font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{t.id}</td>
-                            <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{t.clientName}</td>
-                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(t.timestamp || t.dueDate)}</td>
-                            <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
-                              R$ {t.amount.toFixed(2).replace('.', ',')}
-                            </td>
-                            <td className="p-4 text-center whitespace-nowrap">
-                              <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold text-emerald-700 dark:text-emerald-300 text-[10px] inline-flex items-center justify-center gap-1 whitespace-nowrap">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                                <span>Venda Confirmada ({t.paymentMethod})</span>
-                              </span>
-                            </td>
-                          </tr>
-                        );
+                        methodText = t.paymentMethod || 'PIX';
+                      } else if (entry.type === 'order') {
+                        const o = entry.data as Order;
+                        totalValue = o.totalValue;
+                        paidAmount = o.paidAmount || o.totalValue;
+                        methodText = o.paymentMethod || 'Entrada Pedido';
                       }
+
+                      return (
+                        <tr key={entry.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                          {/* Código / Tipo */}
+                          <td className="p-4 whitespace-nowrap">
+                            <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 block text-xs">
+                              {displayCode}
+                            </span>
+                            <span className="inline-block mt-0.5 px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60">
+                              {categoryName === 'Entrada de Pedido' ? '✓ Entrada Pedido' : categoryName}
+                            </span>
+                          </td>
+
+                          {/* Cliente / Origem */}
+                          <td className="p-4 whitespace-nowrap">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 block text-xs">
+                              {clientName}
+                            </span>
+                            {entry.type === 'expense' && (entry.data as ExpenseItem).description && (
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 block truncate max-w-xs font-normal">
+                                {(entry.data as ExpenseItem).description}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Data & Hora */}
+                          <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                            <span className="font-semibold block">{dateFormatted}</span>
+                            {timeStr && (
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono block">
+                                às {timeStr}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Valor Total */}
+                          <td className="p-4 text-right font-extrabold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                            R$ {totalValue.toFixed(2).replace('.', ',')}
+                          </td>
+
+                          {/* Valor Entrado em Caixa */}
+                          <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                            R$ {paidAmount.toFixed(2).replace('.', ',')}
+                          </td>
+
+                          {/* Status & Forma */}
+                          <td className="p-4 text-center whitespace-nowrap">
+                            <span className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-900/50 rounded-full font-bold text-emerald-700 dark:text-emerald-300 text-[10px] inline-flex items-center justify-center gap-1 whitespace-nowrap">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              <span>Confirmado ({methodText})</span>
+                            </span>
+                          </td>
+
+                          {/* Ações */}
+                          <td className="p-4 text-center whitespace-nowrap">
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                              {linkedOrder && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrderForPdfModal(linkedOrder)}
+                                  className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:hover:bg-indigo-900/80 text-indigo-700 dark:text-indigo-300 rounded-lg font-bold text-xs inline-flex items-center gap-1 cursor-pointer transition-colors border border-indigo-200 dark:border-indigo-800"
+                                  title="Visualizar PDF do Pedido em A4"
+                                >
+                                  <FileText className="w-3.5 h-3.5" /> PDF
+                                </button>
+                              )}
+
+                              {receiptInfo && receiptInfo.url && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedReceiptForModal({ url: receiptInfo.url!, type: receiptInfo.type || 'image', name: receiptInfo.name })}
+                                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 rounded-lg font-bold text-xs inline-flex items-center gap-1 cursor-pointer transition-colors border border-emerald-200 dark:border-emerald-800"
+                                  title="Ver Comprovante Anexado"
+                                >
+                                  <Paperclip className="w-3.5 h-3.5" /> Comprovante
+                                </button>
+                              )}
+
+                              {entry.type === 'expense' && onDeleteExpense && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (confirm('Deseja realmente excluir esta entrada do caixa?')) {
+                                      onDeleteExpense((entry.data as ExpenseItem).id);
+                                    }
+                                  }}
+                                  className="p-1 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 text-rose-600 dark:text-rose-400 rounded-lg transition-colors cursor-pointer border border-rose-200 dark:border-rose-900"
+                                  title="Excluir lançamento"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
                     })}
                   </tbody>
                 </table>
@@ -1611,6 +1936,42 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
           products={products}
           onClose={() => setSelectedOrderForPdfModal(null)}
         />
+      )}
+
+      {/* MODAL: VISUALIZADOR DE COMPROVANTE */}
+      {selectedReceiptForModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-2xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-4 border-b border-slate-100 dark:border-[#202531] flex items-center justify-between bg-slate-50 dark:bg-[#181c26]">
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm flex items-center gap-2">
+                <Paperclip className="w-4 h-4 text-emerald-500" />
+                {selectedReceiptForModal.name || 'Comprovante em Anexo'}
+              </h3>
+              <button
+                onClick={() => setSelectedReceiptForModal(null)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto flex-1 flex items-center justify-center bg-slate-100 dark:bg-[#0b0d13]">
+              {selectedReceiptForModal.type === 'pdf' || selectedReceiptForModal.url.includes('application/pdf') ? (
+                <iframe
+                  src={selectedReceiptForModal.url}
+                  className="w-full h-[60vh] rounded-xl border border-slate-200 dark:border-slate-800"
+                  title="Comprovante PDF"
+                />
+              ) : (
+                <img
+                  src={selectedReceiptForModal.url}
+                  alt="Comprovante"
+                  className="max-w-full max-h-[65vh] object-contain rounded-xl border border-slate-200 dark:border-slate-800 shadow-md"
+                />
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
