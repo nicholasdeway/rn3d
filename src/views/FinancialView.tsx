@@ -328,7 +328,8 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   // Extrato Entries filtered by movementType & searchTerm for display
   const allExtratoEntries = useMemo(() => {
     const searchFiltered = unfilteredExtratoEntries.filter((item) => {
-      if (movementType !== 'todos' && item.direction !== movementType) return false;
+      if (movementType === 'entradas' && item.direction !== 'entrada') return false;
+      if (movementType === 'saidas' && item.direction !== 'saida') return false;
       if (!searchTerm.trim()) return true;
       const q = searchTerm.toLowerCase().trim();
       return (
