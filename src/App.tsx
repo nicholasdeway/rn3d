@@ -9,7 +9,7 @@ import { useAuth } from './context/AuthContext';
 import { LoginView } from './views/LoginView';
 import { Box } from 'lucide-react';
 import { useAppData } from './hooks/useAppData';
-import { safeSetLocalStorage } from './utils/storage';
+import { safeGetLocalStorage, safeSetLocalStorage } from './utils/storage';
 import { Client, ViewMode } from './types';
 
 // Views
@@ -39,7 +39,7 @@ export function App() {
   const appData = useAppData();
 
   const [currentView, setCurrentView] = useState<ViewMode>(() => {
-    const saved = localStorage.getItem('rn3d_current_view');
+    const saved = safeGetLocalStorage('rn3d_current_view');
     return (saved as ViewMode) || 'dashboard';
   });
 
@@ -53,13 +53,13 @@ export function App() {
 
   // Persistent Theme Mode state ('light' | 'dark') — Default: 'dark'
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    const saved = localStorage.getItem('rn3d_theme');
+    const saved = safeGetLocalStorage('rn3d_theme');
     if (saved === 'light') return 'light';
     return 'dark';
   });
 
   useEffect(() => {
-    localStorage.setItem('rn3d_theme', theme);
+    safeSetLocalStorage('rn3d_theme', theme);
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -146,7 +146,7 @@ export function App() {
   }
 
   const [historyStack, setHistoryStack] = useState<NavigationHistoryEntry[]>(() => {
-    const initialView = (localStorage.getItem('rn3d_current_view') as ViewMode) || 'dashboard';
+    const initialView = (safeGetLocalStorage('rn3d_current_view') as ViewMode) || 'dashboard';
     return [{ view: initialView, activeClientIdForProfile: null, activeVisitClientId: null }];
   });
 

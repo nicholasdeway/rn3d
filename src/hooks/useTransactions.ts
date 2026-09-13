@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
+import { safeSetLocalStorage, safeGetLocalStorage, getStorageParsed } from '../utils/storage';
+import { fetchInventoryMovements, fetchSalesTransactions } from '../services/movementsService';
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<any[]>(() =>
@@ -22,9 +23,44 @@ export function useTransactions() {
     }
   }, [movements]);
 
+  useEffect(() => {
+    let active = true;
+    async function loadCloudData() {
+      const [dbMovements, dbTxs] = await Promise.all([
+        fetchInventoryMovements(),
+        fetchSalesTransactions(),
+      ]);
+      if (!active) return;
+      if (dbMovements && dbMovements.length > 0) {
+        setMovements((prev) => {
+          const map = new Map<string, any>();
+          dbMovements.forEach((m) => map.set(m.id, m));
+          (prev || []).forEach((m) => {
+            if (!map.has(m.id)) map.set(m.id, m);
+          });
+          return Array.from(map.values());
+        });
+      }
+      if (dbTxs && dbTxs.length > 0) {
+        setTransactions((prev) => {
+          const map = new Map<string, any>();
+          dbTxs.forEach((t) => map.set(t.id, t));
+          (prev || []).forEach((t) => {
+            if (!map.has(t.id)) map.set(t.id, t);
+          });
+          return Array.from(map.values());
+        });
+      }
+    }
+    loadCloudData();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const [clientInventories, setClientInventories] = useState<Record<string, any>>(() => {
     try {
-      const saved = localStorage.getItem('rn3d_client_inventories');
+      const saved = safeGetLocalStorage('rn3d_client_inventories');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object') {
@@ -32,7 +68,7 @@ export function useTransactions() {
         }
       }
     } catch (e) {
-      console.error('Error loading clientInventories from localStorage:', e);
+      console.error('Error loading clientInventories from storage:', e);
     }
     return {};
   });
@@ -52,3 +88,4 @@ export function useTransactions() {
     setClientInventories,
   };
 }
+

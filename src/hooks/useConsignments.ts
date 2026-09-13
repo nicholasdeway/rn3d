@@ -8,6 +8,8 @@ import {
   deleteAllConsignments,
 } from '../services/consignmentsService';
 
+import { safeRemoveLocalStorage } from '../utils/storage';
+
 export function useConsignments(
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void,
   setClientInventories: React.Dispatch<React.SetStateAction<Record<string, any>>>,
@@ -22,7 +24,7 @@ export function useConsignments(
     async function loadCloudConsignments() {
       try {
         try {
-          localStorage.removeItem('rn3d_consignments');
+          safeRemoveLocalStorage('rn3d_consignments');
         } catch (_) {}
 
         const dbItems = await fetchConsignments();

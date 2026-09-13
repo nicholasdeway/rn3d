@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Visit, Client, Product, Consignment, ExchangeNote } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import { fetchVisits, createVisit, updateVisit, deleteVisit } from '../services/visitsService';
+import { updateProduct } from '../services/productsService';
 
 export function useVisits(
   clients: Client[],
@@ -181,9 +182,13 @@ export function useVisits(
         prev.map((p) => {
           const restockQty = visitData.restocks[p.id] || visitData.restocks[p.productId] || 0;
           if (restockQty > 0) {
+            const newStock = Math.max(0, p.currentStock - restockQty);
+            updateProduct(p.id, { currentStock: newStock }).catch((err) =>
+              console.error('Erro ao dar baixa no estoque do produto no Supabase:', err)
+            );
             return {
               ...p,
-              currentStock: Math.max(0, p.currentStock - restockQty),
+              currentStock: newStock,
             };
           }
           return p;

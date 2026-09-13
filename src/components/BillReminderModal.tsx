@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Bell, CheckCircle2, X, Calendar, ArrowRight } from 'lucide-react';
 import { RecurringBillAlertStatus, RecurringBill, ViewMode } from '../types';
 
+import { safeGetLocalStorage, safeSetLocalStorage } from '../utils/storage';
+
 interface BillReminderModalProps {
   billAlerts: RecurringBillAlertStatus[];
   onMarkPaid: (bill: RecurringBill) => void;
@@ -24,7 +26,7 @@ export const BillReminderModal: React.FC<BillReminderModalProps> = ({
 
   useEffect(() => {
     // Check if user dismissed reminder today
-    const dismissedDate = localStorage.getItem('rn3d_dismissed_reminders_date');
+    const dismissedDate = safeGetLocalStorage('rn3d_dismissed_reminders_date');
     if (dismissedDate !== todayStr && pendingAlerts.length > 0) {
       setIsOpen(true);
     }
@@ -35,7 +37,7 @@ export const BillReminderModal: React.FC<BillReminderModalProps> = ({
   }
 
   const handleDismissToday = () => {
-    localStorage.setItem('rn3d_dismissed_reminders_date', todayStr);
+    safeSetLocalStorage('rn3d_dismissed_reminders_date', todayStr);
     setIsOpen(false);
   };
 

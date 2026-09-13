@@ -98,7 +98,15 @@ export function useProducts(user: any, showToast: (msg: string, type?: 'success'
 
   const handleUpdateStock = (productId: string, newStock: number) => {
     setProducts((prev) =>
-      prev.map((p) => (p.productId === productId || p.id === productId ? { ...p, currentStock: newStock } : p))
+      prev.map((p) => {
+        if (p.productId === productId || p.id === productId) {
+          updateProduct(p.id, { currentStock: newStock }).catch((err) =>
+            console.error('Erro ao atualizar saldo de estoque no Supabase:', err)
+          );
+          return { ...p, currentStock: newStock };
+        }
+        return p;
+      })
     );
     showToast('Saldo de estoque ajustado com sucesso!', 'success');
   };

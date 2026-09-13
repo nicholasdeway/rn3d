@@ -19,6 +19,8 @@ import {
   Edit,
 } from 'lucide-react';
 
+import { safeGetLocalStorage, safeSetLocalStorage } from '../utils/storage';
+
 interface ConsignmentsViewProps {
   consignments: Consignment[];
   clients: Client[];
@@ -43,12 +45,12 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   preselectedClientId,
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
-    const saved = localStorage.getItem('rn3d_consignments_view_mode');
+    const saved = safeGetLocalStorage('rn3d_consignments_view_mode');
     return saved === 'grid' || saved === 'table' ? saved : 'grid';
   });
 
   React.useEffect(() => {
-    localStorage.setItem('rn3d_consignments_view_mode', viewMode);
+    safeSetLocalStorage('rn3d_consignments_view_mode', viewMode);
   }, [viewMode]);
 
   const [searchTerm, setSearchTerm] = useState('');

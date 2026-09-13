@@ -21,6 +21,7 @@ import {
   Copy,
 } from 'lucide-react';
 import { ImageCropperModal } from '../components/ImageCropperModal';
+import { safeGetLocalStorage, safeSetLocalStorage } from '../utils/storage';
 
 interface ProductsViewProps {
   products: Product[];
@@ -41,12 +42,12 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 }) => {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
-    const saved = localStorage.getItem('rn3d_products_view_mode');
+    const saved = safeGetLocalStorage('rn3d_products_view_mode');
     return saved === 'grid' || saved === 'table' ? saved : 'grid';
   });
 
   React.useEffect(() => {
-    localStorage.setItem('rn3d_products_view_mode', viewMode);
+    safeSetLocalStorage('rn3d_products_view_mode', viewMode);
   }, [viewMode]);
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -113,7 +114,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
   // Dynamic categories state with persistence
   const [customCategories, setCustomCategories] = useState<string[]>(() => {
     try {
-      const saved = localStorage.getItem('rn3d_custom_categories');
+      const saved = safeGetLocalStorage('rn3d_custom_categories');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -140,7 +141,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
     const updated = [...customCategories, trimmed];
     setCustomCategories(updated);
     try {
-      localStorage.setItem('rn3d_custom_categories', JSON.stringify(updated));
+      safeSetLocalStorage('rn3d_custom_categories', JSON.stringify(updated));
     } catch (e) { }
 
     setNewCategoryName('');

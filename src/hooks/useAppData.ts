@@ -20,6 +20,7 @@ import { fetchOrders } from '../services/ordersService';
 import { fetchQuotes } from '../services/quotesService';
 import { fetchConsignments, syncMissingConsignmentsToSupabase } from '../services/consignmentsService';
 import { fetchVisits, syncMissingVisitsToSupabase } from '../services/visitsService';
+import { fetchExchanges, syncMissingExchangesToSupabase } from '../services/exchangesService';
 import { syncMissingProductsToSupabase } from '../services/productsService';
 import { syncMissingClientsToSupabase } from '../services/clientsService';
 import { syncMissingOrdersToSupabase } from '../services/ordersService';
@@ -141,7 +142,7 @@ export function useAppData() {
     handleUpdateOrderProgress,
     handleUpdateOrderStatus,
     handleUpdateOrderPayment,
-  } = useOrders(user, quotes, showToast, setVisits, setTransactions);
+  } = useOrders(user, quotes, showToast, setVisits, setTransactions, setProducts);
 
   const handleDeleteOrderCascade = async (orderId: string) => {
     await handleDeleteOrder(orderId);
@@ -192,19 +193,32 @@ export function useAppData() {
     const loadAllData = async (showLoadingState = true) => {
       try {
         if (showLoadingState) setDataLoading(true);
-        const [dbProducts, dbClients, dbOrders, dbQuotes, dbConsignments, dbVisits] = await Promise.all([
+        const [dbProducts, dbClients, dbOrders, dbQuotes, dbConsignments, dbVisits, dbExchanges] = await Promise.all([
           fetchProducts(),
           fetchClients(),
           fetchOrders(),
           fetchQuotes(),
           fetchConsignments(),
           fetchVisits(),
+          fetchExchanges(),
         ]);
         if (!isMounted) return;
         const enrichedClients = computeEnrichedClients(dbClients, dbConsignments || [], dbOrders || [], dbVisits || visits || []);
         setProducts((prev) => (prev && prev.length === dbProducts.length && JSON.stringify(prev) === JSON.stringify(dbProducts) ? prev : dbProducts));
         setClients((prev) => (prev && prev.length === enrichedClients.length && JSON.stringify(prev) === JSON.stringify(enrichedClients) ? prev : enrichedClients));
         setQuotes((prev) => (prev && prev.length === dbQuotes.length && JSON.stringify(prev) === JSON.stringify(dbQuotes) ? prev : dbQuotes));
+        if (dbExchanges && dbExchanges.length > 0) {
+          setExchanges((prev) => {
+            const map = new Map<string, any>();
+            dbExchanges.forEach((ex) => map.set(ex.id.toLowerCase().trim(), ex));
+            (prev || []).forEach((ex) => {
+              if (!map.has(ex.id.toLowerCase().trim())) {
+                map.set(ex.id.toLowerCase().trim(), ex);
+              }
+            });
+            return Array.from(map.values());
+          });
+        }
         if (dbVisits && dbVisits.length > 0) {
           setVisits((prev) => {
             const map = new Map<string, Visit>();
@@ -697,7 +711,7 @@ function computeEnrichedClients(
   const handleSyncProductsToSupabase = async () => {
     try {
       showToast('Sincronizando todo o sistema com o Banco de Dados', 'info');
-      const [pCount, cCount, oCount, qCount, eCount, consCount, vCount] = await Promise.all([
+      const [pCount, cCount, oCount, qCount, eCount, consCount, vCount, exCount] = await Promise.all([
         syncMissingProductsToSupabase(products),
         syncMissingClientsToSupabase(clients),
         syncMissingOrdersToSupabase(orders),
@@ -705,15 +719,17 @@ function computeEnrichedClients(
         syncMissingExpensesToSupabase(expenses),
         syncMissingConsignmentsToSupabase(consignments),
         syncMissingVisitsToSupabase(visits),
+        syncMissingExchangesToSupabase(exchanges),
       ]);
 
-      const [dbProds, dbClients, dbOrders, dbQuotes, dbConsignments, dbVisits] = await Promise.all([
+      const [dbProds, dbClients, dbOrders, dbQuotes, dbConsignments, dbVisits, dbExchanges] = await Promise.all([
         fetchProducts(),
         fetchClients(),
         fetchOrders(),
         fetchQuotes(),
         fetchConsignments(),
         fetchVisits(),
+        fetchExchanges(),
       ]);
 
       setProducts(dbProds);

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ExchangeNote, Product, Client, Consignment } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
+import { updateProduct } from '../services/productsService';
+import { createExchange, fetchExchanges } from '../services/exchangesService';
+import { createInventoryMovement } from '../services/movementsService';
 
 export function useExchanges(
   products: Product[],
@@ -20,6 +23,26 @@ export function useExchanges(
 
   const handleExecuteExchange = (newExchange: ExchangeNote) => {
     setExchanges((prev) => [newExchange, ...prev]);
+
+    // Persist exchange note directly to Supabase PostgreSQL
+    createExchange(newExchange).catch((err) =>
+      console.error('Erro ao salvar troca no Supabase:', err)
+    );
+
+    // Persist inventory movements for each item
+    (newExchange.itemsRemoved || []).forEach((item) => {
+      createInventoryMovement({
+        id: `mov-trc-${Date.now()}-${item.productId}`,
+        timestamp: new Date().toISOString(),
+        productId: item.productId,
+        productName: item.productName,
+        quantityDelta: newExchange.type === 'recolhimento_oficina' ? item.quantity : -item.quantity,
+        type: 'Troca',
+        clientName: newExchange.clientName,
+        referenceCode: newExchange.id,
+        notes: `Troca / Recolhimento - ${item.reason || 'Devolução/Migração'}`,
+      }).catch((err) => console.error('Erro ao registrar movimentação de troca:', err));
+    });
 
     const sourceId = newExchange.clientId;
     const destId = newExchange.destinationClientId;
@@ -122,9 +145,13 @@ export function useExchanges(
             (r) => r.productId === p.id || r.productName.toLowerCase() === p.name.toLowerCase()
           );
           if (removed) {
+            const newStock = p.currentStock + removed.quantity;
+            updateProduct(p.id, { currentStock: newStock }).catch((err) =>
+              console.error('Erro ao atualizar estoque da oficina no Supabase:', err)
+            );
             return {
               ...p,
-              currentStock: p.currentStock + removed.quantity,
+              currentStock: newStock,
             };
           }
           return p;

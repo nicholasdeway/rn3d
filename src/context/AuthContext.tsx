@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { safeGetLocalStorage, safeSetLocalStorage, safeRemoveLocalStorage } from '../utils/storage';
 
 interface AuthContextType {
   user: User | null;
@@ -22,13 +23,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // 48-Hour Login Session Expiration check (48 * 60 * 60 * 1000 ms)
-    const loginTime = localStorage.getItem('rn3d_login_timestamp');
+    const loginTime = safeGetLocalStorage('rn3d_login_timestamp');
     const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000;
 
     if (loginTime && Date.now() - Number(loginTime) > FORTY_EIGHT_HOURS_MS) {
       console.warn('[Auth Expiration] Sessão de 48 horas expirada. Efetuando logout automático...');
-      localStorage.removeItem('rn3d_login_timestamp');
-      localStorage.removeItem('rn3d_demo_user');
+      safeRemoveLocalStorage('rn3d_login_timestamp');
+      safeRemoveLocalStorage('rn3d_demo_user');
       if (isSupabaseConfigured()) {
         supabase.auth.signOut();
       }
@@ -39,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Check local storage for demo session first
-    const savedDemoUser = localStorage.getItem('rn3d_demo_user');
+    const savedDemoUser = safeGetLocalStorage('rn3d_demo_user');
     if (savedDemoUser) {
       setIsDemo(true);
       setUser(JSON.parse(savedDemoUser));
@@ -56,8 +57,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session && !localStorage.getItem('rn3d_login_timestamp')) {
-        localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
+      if (session && !safeGetLocalStorage('rn3d_login_timestamp')) {
+        safeSetLocalStorage('rn3d_login_timestamp', String(Date.now()));
       }
       setLoading(false);
     });
@@ -67,11 +68,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session) {
-        if (!localStorage.getItem('rn3d_login_timestamp')) {
-          localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
+        if (!safeGetLocalStorage('rn3d_login_timestamp')) {
+          safeSetLocalStorage('rn3d_login_timestamp', String(Date.now()));
         }
       } else {
-        localStorage.removeItem('rn3d_login_timestamp');
+        safeRemoveLocalStorage('rn3d_login_timestamp');
       }
       setLoading(false);
     });
@@ -90,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       password,
     });
     if (!error && data?.session) {
-      localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
+      safeSetLocalStorage('rn3d_login_timestamp', String(Date.now()));
       setSession(data.session);
       setUser(data.session.user ?? data.user ?? null);
     }
@@ -107,15 +108,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       created_at: new Date().toISOString(),
     } as unknown as User;
 
-    localStorage.setItem('rn3d_demo_user', JSON.stringify(demoUser));
-    localStorage.setItem('rn3d_login_timestamp', String(Date.now()));
+    safeSetLocalStorage('rn3d_demo_user', JSON.stringify(demoUser));
+    safeSetLocalStorage('rn3d_login_timestamp', String(Date.now()));
     setIsDemo(true);
     setUser(demoUser);
   };
 
   const signOut = async () => {
+    safeRemoveLocalStorage('rn3d_demo_user');
+    safeRemoveLocalStorage('rn3d_login_timestamp');
     if (isDemo) {
-      localStorage.removeItem('rn3d_demo_user');
       setIsDemo(false);
       setUser(null);
       setSession(null);

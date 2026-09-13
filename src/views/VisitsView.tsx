@@ -16,6 +16,8 @@ import {
   Trash2,
 } from 'lucide-react';
 
+import { safeGetLocalStorage, safeSetLocalStorage } from '../utils/storage';
+
 interface VisitsViewProps {
   visits: Visit[];
   clients?: Client[];
@@ -34,13 +36,13 @@ export const VisitsView: React.FC<VisitsViewProps> = ({
   const [filter, setFilter] = useState<'Todas' | 'Hoje' | 'Atrasadas' | 'Próximas' | 'Concluídas'>('Todas');
   const [deletingVisit, setDeletingVisit] = useState<Visit | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'calendar'>(() => {
-    const saved = localStorage.getItem('rn3d_visits_view_mode');
+    const saved = safeGetLocalStorage('rn3d_visits_view_mode');
     if (saved === 'grid' || saved === 'list' || saved === 'calendar') return saved;
     return 'grid';
   });
 
   React.useEffect(() => {
-    localStorage.setItem('rn3d_visits_view_mode', viewMode);
+    safeSetLocalStorage('rn3d_visits_view_mode', viewMode);
   }, [viewMode]);
 
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);

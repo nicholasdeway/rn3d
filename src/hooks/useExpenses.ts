@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ExpenseItem, AccountBalances, MarketplaceAccount } from '../types';
-import { safeSetLocalStorage } from '../utils/storage';
+import { safeSetLocalStorage, safeGetLocalStorage } from '../utils/storage';
 import {
   fetchExpenses,
   createExpense,
@@ -16,7 +16,7 @@ export function useExpenses(
 ) {
   const [expenses, setExpenses] = useState<ExpenseItem[]>(() => {
     try {
-      const saved = localStorage.getItem('rn3d_expenses_cache');
+      const saved = safeGetLocalStorage('rn3d_expenses_cache');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -27,7 +27,7 @@ export function useExpenses(
 
   const [accountBalances, setAccountBalances] = useState<AccountBalances>(() => {
     try {
-      const saved = localStorage.getItem('rn3d_account_balances');
+      const saved = safeGetLocalStorage('rn3d_account_balances');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed && typeof parsed === 'object' && typeof parsed.nubank === 'number') {
@@ -53,7 +53,7 @@ export function useExpenses(
             return prev;
           }
           try {
-            localStorage.setItem('rn3d_expenses_cache', JSON.stringify(res.expenses.slice(0, 200)));
+            safeSetLocalStorage('rn3d_expenses_cache', JSON.stringify(res.expenses.slice(0, 200)));
           } catch (e) {}
           return res.expenses;
         });
@@ -77,7 +77,7 @@ export function useExpenses(
             return prev;
           }
           try {
-            localStorage.setItem('rn3d_account_balances', JSON.stringify(fixedBalances));
+            safeSetLocalStorage('rn3d_account_balances', JSON.stringify(fixedBalances));
           } catch (e) {}
           return fixedBalances;
         });
@@ -265,7 +265,7 @@ export function useExpenses(
       const updated = prev.filter((e) => e.id !== expenseId && e.referenceCode !== expenseId);
       safeSetLocalStorage('rn3d_expenses', JSON.stringify(updated));
       try {
-        localStorage.setItem('rn3d_expenses_cache', JSON.stringify(updated.slice(0, 200)));
+        safeSetLocalStorage('rn3d_expenses_cache', JSON.stringify(updated.slice(0, 200)));
       } catch (err) {}
       return updated;
     });

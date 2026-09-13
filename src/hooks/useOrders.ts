@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Order, OrderStatus } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Order, OrderStatus, Product } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import { isSupabaseConfigured } from '../lib/supabase';
 import {
@@ -8,6 +8,7 @@ import {
   updateOrder,
   deleteOrder,
 } from '../services/ordersService';
+import { updateProduct } from '../services/productsService';
 
 import { uploadToSupabaseStorage } from '../services/storageService';
 
@@ -16,7 +17,8 @@ export function useOrders(
   showToastOrQuotes?: any,
   showToast?: (msg: string, type?: 'success' | 'error' | 'info') => void,
   setVisits?: any,
-  setTransactions?: any
+  setTransactions?: any,
+  setProducts?: React.Dispatch<React.SetStateAction<Product[]>>
 ) {
   const [orders, setOrders] = useState<Order[]>(() =>
     getStorageParsed<Order[]>('rn3d_orders', [], true).filter(
@@ -90,6 +92,29 @@ export function useOrders(
   const handleAddOrder = async (newOrder: Order) => {
     setOrders((prev) => [newOrder, ...prev]);
     toast(`Pedido #${newOrder.id} gerado com sucesso!`, 'success');
+
+    // Baixa automática no estoque geral para os itens do pedido
+    if (newOrder.items && newOrder.items.length > 0 && setProducts) {
+      setProducts((prevProducts) =>
+        prevProducts.map((p) => {
+          const itemMatch = newOrder.items.find(
+            (i) =>
+              i.productName.toLowerCase().trim() === p.name.toLowerCase().trim() ||
+              (p.sku && i.productName.toLowerCase().includes(p.sku.toLowerCase().trim()))
+          );
+          if (itemMatch) {
+            const qty = Number(itemMatch.quantity) || 1;
+            const newStock = Math.max(0, p.currentStock - qty);
+            updateProduct(p.id, { currentStock: newStock }).catch((err) =>
+              console.error('Erro ao dar baixa no estoque do produto no Supabase:', err)
+            );
+            return { ...p, currentStock: newStock };
+          }
+          return p;
+        })
+      );
+    }
+
     try {
       await createOrder(newOrder);
     } catch (err) {
@@ -150,6 +175,37 @@ export function useOrders(
 
   const handleDeleteOrder = async (orderId: string) => {
     const cleanId = orderId.replace(/^PED-/, '').replace(/^ORC-/, '');
+
+    const targetOrder = orders.find(
+      (o) =>
+        o.id === orderId ||
+        o.id === cleanId ||
+        o.id === `PED-${cleanId}` ||
+        o.id.replace(/^PED-/, '') === cleanId
+    );
+
+    // Estorno do estoque ao excluir pedido
+    if (targetOrder && targetOrder.items && targetOrder.items.length > 0 && setProducts) {
+      setProducts((prevProducts) =>
+        prevProducts.map((p) => {
+          const itemMatch = targetOrder.items.find(
+            (i) =>
+              i.productName.toLowerCase().trim() === p.name.toLowerCase().trim() ||
+              (p.sku && i.productName.toLowerCase().includes(p.sku.toLowerCase().trim()))
+          );
+          if (itemMatch) {
+            const qty = Number(itemMatch.quantity) || 1;
+            const newStock = p.currentStock + qty;
+            updateProduct(p.id, { currentStock: newStock }).catch((err) =>
+              console.error('Erro ao estornar estoque no Supabase:', err)
+            );
+            return { ...p, currentStock: newStock };
+          }
+          return p;
+        })
+      );
+    }
+
     setOrders((prev) => {
       const updated = prev.filter(
         (o) =>

@@ -198,12 +198,14 @@ export async function deleteSingleConsignment(id: string): Promise<boolean> {
   }
 }
 
+import { safeRemoveLocalStorage } from '../utils/storage';
+
 /**
  * Completely wipe out all consignment records from local storage and Supabase Postgres
  */
 export async function deleteAllConsignments(): Promise<boolean> {
   try {
-    localStorage.removeItem('rn3d_consignments');
+    safeRemoveLocalStorage('rn3d_consignments');
   } catch (_) {}
 
   if (!isSupabaseConfigured()) return true;

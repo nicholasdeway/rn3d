@@ -24,6 +24,9 @@ import {
   Edit2,
 } from 'lucide-react';
 
+import { updateClient } from '../services/clientsService';
+import { safeGetLocalStorage, safeSetLocalStorage, safeRemoveLocalStorage } from '../utils/storage';
+
 interface QuotesViewProps {
   quotes: Quote[];
   clients: Client[];
@@ -163,7 +166,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
     if (!cost) {
       try {
-        const saved = localStorage.getItem('rn3d_client_logistics');
+        const saved = safeGetLocalStorage('rn3d_client_logistics');
         if (saved) {
           const parsed = JSON.parse(saved);
           if (selectedClient.id && parsed[selectedClient.id] && parsed[selectedClient.id].cost) {
@@ -194,7 +197,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
   // Restore draft on mount ONLY if no explicit preselectedClientId was passed or if draft belongs to preselectedClientId
   React.useEffect(() => {
     try {
-      const savedDraft = localStorage.getItem(DRAFT_STORAGE_KEY);
+      const savedDraft = safeGetLocalStorage(DRAFT_STORAGE_KEY);
       if (savedDraft) {
         const parsed = JSON.parse(savedDraft);
         if (parsed && typeof parsed === 'object') {
@@ -250,7 +253,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
           internalLogisticsCost,
           updatedAt: new Date().toISOString(),
         };
-        localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
+        safeSetLocalStorage(DRAFT_STORAGE_KEY, JSON.stringify(draftData));
       } catch (err) {
         console.error('Erro ao salvar rascunho de orçamento:', err);
       }
@@ -271,7 +274,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
   const handleClearDraft = () => {
     try {
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      safeRemoveLocalStorage(DRAFT_STORAGE_KEY);
     } catch (e) { }
     setQuoteItems([]);
     setDiscount(0);
@@ -471,12 +474,19 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
       internalLogisticsCost,
     };
 
-    // Save/update client logistics memory in localStorage
+    // Save/update client logistics memory in local storage & Supabase PostgreSQL
     try {
-      const saved = localStorage.getItem('rn3d_client_logistics');
+      const saved = safeGetLocalStorage('rn3d_client_logistics');
       const parsed = saved ? JSON.parse(saved) : {};
       parsed[selectedClient.id] = { type: internalLogisticsType, cost: internalLogisticsCost };
-      localStorage.setItem('rn3d_client_logistics', JSON.stringify(parsed));
+      safeSetLocalStorage('rn3d_client_logistics', JSON.stringify(parsed));
+
+      if (selectedClient && selectedClient.id) {
+        updateClient(selectedClient.id, {
+          defaultLogisticsType: internalLogisticsType,
+          defaultLogisticsCost: internalLogisticsCost,
+        }).catch((err) => console.error('Erro ao atualizar logística do cliente no Supabase:', err));
+      }
     } catch (e) {
       console.error('Error saving client logistics memory:', e);
     }
@@ -497,7 +507,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
     }
 
     try {
-      localStorage.removeItem(DRAFT_STORAGE_KEY);
+      safeRemoveLocalStorage(DRAFT_STORAGE_KEY);
     } catch (e) { }
     setHasRestoredDraft(false);
     setIsFormOpen(false);
