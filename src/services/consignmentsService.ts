@@ -176,10 +176,17 @@ export async function deleteSingleConsignment(id: string): Promise<boolean> {
   if (!isSupabaseConfigured() || !id) return false;
 
   try {
-    const { data: orders } = await supabase
-      .from('orders')
-      .select('id')
-      .eq('order_code', id);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    // 1. Locate and delete order & order_items strictly safely
+    let orderQuery = supabase.from('orders').select('id');
+    if (isUuid) {
+      orderQuery = orderQuery.or(`order_code.eq.${id},id.eq.${id}`);
+    } else {
+      orderQuery = orderQuery.eq('order_code', id);
+    }
+
+    const { data: orders } = await orderQuery;
 
     if (orders && orders.length > 0) {
       const orderIds = orders.map((o) => o.id);
@@ -187,8 +194,13 @@ export async function deleteSingleConsignment(id: string): Promise<boolean> {
       await supabase.from('orders').delete().in('id', orderIds);
     }
 
+    // 2. Safely clean from consignments table if existing
     try {
-      await supabase.from('consignments').delete().eq('code', id);
+      if (isUuid) {
+        await supabase.from('consignments').delete().or(`consignment_code.eq.${id},id.eq.${id}`);
+      } else {
+        await supabase.from('consignments').delete().eq('consignment_code', id);
+      }
     } catch (_) {}
 
     return true;

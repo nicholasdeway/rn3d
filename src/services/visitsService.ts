@@ -17,7 +17,7 @@ export async function fetchVisits(): Promise<Visit[]> {
       .order('created_at', { ascending: false });
 
     if (error || !data) {
-      if (error) {
+      if (error && !error.message?.includes('schema cache') && !error.message?.includes('Could not find the table')) {
         console.warn('Aviso ao buscar visitas no Supabase:', error.message);
       }
       return [];
@@ -100,7 +100,9 @@ export async function createVisit(visit: Partial<Visit>): Promise<Visit | null> 
       .single();
 
     if (error) {
-      console.warn('Aviso ao salvar visita no Supabase:', error.message);
+      if (!error.message?.includes('schema cache') && !error.message?.includes('Could not find the table')) {
+        console.warn('Aviso ao salvar visita no Supabase:', error.message);
+      }
       return null;
     }
 
@@ -141,7 +143,9 @@ export async function updateVisit(id: string, updates: Partial<Visit>): Promise<
     const { data, error } = await query.select();
 
     if (error) {
-      console.warn('Aviso ao atualizar visita no Supabase:', error.message);
+      if (!error.message?.includes('schema cache') && !error.message?.includes('Could not find the table')) {
+        console.warn('Aviso ao atualizar visita no Supabase:', error.message);
+      }
       return null;
     }
 
