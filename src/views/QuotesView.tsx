@@ -1243,7 +1243,8 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                               <span className="text-[10px] text-slate-400 font-medium">Un: R$</span>
                               <input
                                 type="number"
-                                step="0.10"
+                                step="0.01"
+                                inputMode="decimal"
                                 value={item.unitPrice}
                                 onChange={(e) => handleUpdateItem(idx, 'unitPrice', Number(e.target.value))}
                                 className="w-16 px-1.5 py-1 border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-slate-800 dark:text-slate-100 text-xs text-right bg-white dark:bg-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
@@ -1342,7 +1343,8 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                               <td className="p-3 text-right">
                                 <input
                                   type="number"
-                                  step="0.10"
+                                  step="0.01"
+                                  inputMode="decimal"
                                   value={item.unitPrice}
                                   onChange={(e) => handleUpdateItem(idx, 'unitPrice', Number(e.target.value))}
                                   className="w-20 text-right py-1 border border-slate-200 dark:border-slate-700 rounded-lg font-semibold text-slate-900 dark:text-slate-100 bg-white dark:bg-slate-800"

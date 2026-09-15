@@ -884,7 +884,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   <label className="block font-semibold text-slate-700 mb-1">Preço À Vista / 50% (R$)</label>
                   <input
                     type="number"
-                    step="0.50"
+                    step="0.01"
+                    inputMode="decimal"
                     value={editFormData.cashPrice ?? ''}
                     onChange={(e) => setEditFormData({ ...editFormData, cashPrice: e.target.value === '' ? undefined : Number(e.target.value) })}
                     placeholder="Ex: 4.00"
@@ -895,7 +896,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   <label className="block font-semibold text-slate-700 mb-1">Preço Consignado / Faturado (R$) *</label>
                   <input
                     type="number"
-                    step="0.50"
+                    step="0.01"
+                    inputMode="decimal"
                     min="0"
                     required
                     value={editFormData.standardPrice ?? ''}
@@ -1093,7 +1095,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   <label className="block font-semibold text-slate-700 mb-1">Preço À Vista / 50% (R$) *</label>
                   <input
                     type="number"
-                    step="0.50"
+                    step="0.01"
+                    inputMode="decimal"
                     min="0"
                     required
                     value={formData.cashPrice ?? ''}
@@ -1106,7 +1109,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   <label className="block font-semibold text-slate-700 mb-1">Preço Consignado / Faturado (R$) *</label>
                   <input
                     type="number"
-                    step="0.50"
+                    step="0.01"
+                    inputMode="decimal"
                     min="0"
                     required
                     value={formData.standardPrice ?? ''}
