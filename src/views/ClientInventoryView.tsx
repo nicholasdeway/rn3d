@@ -82,8 +82,8 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
       }
     });
 
-    // 2. Fallback to clientInventories state if no consignments exist
-    if (map.size === 0) {
+    // 2. Fallback to clientInventories state if no consignments exist in system
+    if (map.size === 0 && consignments.length === 0) {
       const invFromState = clientInventories[cli.id] || [];
       invFromState.forEach((item) => {
         const key = (item.productName || '').toLowerCase().trim();

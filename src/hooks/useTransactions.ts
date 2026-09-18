@@ -58,26 +58,13 @@ export function useTransactions() {
     };
   }, []);
 
-  const [clientInventories, setClientInventories] = useState<Record<string, any>>(() => {
-    try {
-      const saved = safeGetLocalStorage('rn3d_client_inventories');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          return parsed;
-        }
-      }
-    } catch (e) {
-      console.error('Error loading clientInventories from storage:', e);
-    }
-    return {};
-  });
+  const [clientInventories, setClientInventories] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    if (clientInventories) {
-      safeSetLocalStorage('rn3d_client_inventories', JSON.stringify(clientInventories));
-    }
-  }, [clientInventories]);
+    try {
+      localStorage.removeItem('rn3d_client_inventories');
+    } catch (_) {}
+  }, []);
 
   return {
     transactions,

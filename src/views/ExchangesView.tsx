@@ -105,8 +105,8 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
       }
     });
 
-    // 3. Fallback to clientInventories if no consignments found
-    if (map.size === 0) {
+    // 3. Fallback to clientInventories if no consignments in system
+    if (map.size === 0 && consignments.length === 0) {
       const invFromState = clientInventories[sourceClient.id] || [];
       invFromState.forEach((item) => {
         if (item.quantityOnSite > 0) {
@@ -123,7 +123,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
     const clientCons = consignments.filter(
       (c) => c.clientId === cliId || (c.clientName && c.clientName.toLowerCase().trim() === cliName.toLowerCase().trim())
     );
-    const totalConsQty = clientCons.reduce((acc, c) => acc + c.itemsCount, 0);
+    const totalConsQty = clientCons.reduce((acc, c) => acc + (c.itemsCount || 0), 0);
 
     const clientExchanges = exchanges.filter(
       (e) => e.clientId === cliId || (e.clientName && e.clientName.toLowerCase().trim() === cliName.toLowerCase().trim())
@@ -135,13 +135,18 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
 
     const reconciled = Math.max(0, totalConsQty - totalRemovedQty);
     if (reconciled > 0) return reconciled;
+    if (clientCons.length > 0) return 0;
 
-    const inv = clientInventories[cliId] || [];
-    const invQty = inv.reduce((acc, i) => acc + i.quantityOnSite, 0);
-    const targetCli = clients.find((c) => c.id === cliId);
-    const cliMetric = targetCli?.productsOnSiteCount || 0;
+    if (consignments.length === 0) {
+      const inv = clientInventories[cliId] || [];
+      const invQty = inv.reduce((acc, i) => acc + i.quantityOnSite, 0);
+      const targetCli = clients.find((c) => c.id === cliId);
+      const cliMetric = targetCli?.productsOnSiteCount || 0;
 
-    return Math.max(invQty, cliMetric);
+      return Math.max(invQty, cliMetric);
+    }
+
+    return 0;
   };
 
   // Initialize wizard with preselected client if provided
@@ -226,19 +231,20 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
     setSelectedItems({});
   };
 
-  // Identify clients with stagnant inventory
+  // Identify clients with stagnant inventory (only clients with active allocated stock)
   const stagnantAlerts = clients.map((cli) => {
+    const totalAllocatedQty = getClientAllocatedQty(cli.id, cli.name);
     const inv = clientInventories[cli.id] || [];
     const stagnantItems = inv.filter((item) => item.daysOnSite >= 30 || item.status === 'Alerta (Sem Giro)');
     const totalStagnantQty = stagnantItems.reduce((acc, i) => acc + i.quantityOnSite, 0);
-    const totalAllocatedQty = getClientAllocatedQty(cli.id, cli.name);
     return {
       client: cli,
       stagnantItems,
-      totalStagnantQty: totalStagnantQty || totalAllocatedQty,
+      totalStagnantQty: totalAllocatedQty > 0 ? (totalStagnantQty || totalAllocatedQty) : 0,
+      totalAllocatedQty,
       totalStagnantVal: totalAllocatedQty * 6.0,
     };
-  }).filter((alert) => alert.totalStagnantQty > 0 || alert.client.productsOnSiteCount > 0);
+  }).filter((alert) => alert.totalAllocatedQty > 0);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
