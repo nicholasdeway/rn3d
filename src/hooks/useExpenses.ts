@@ -14,16 +14,7 @@ export function useExpenses(
   user: any,
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void
 ) {
-  const [expenses, setExpenses] = useState<ExpenseItem[]>(() => {
-    try {
-      const saved = safeGetLocalStorage('rn3d_expenses_cache');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {}
-    return [];
-  });
+  const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
 
   const [accountBalances, setAccountBalances] = useState<AccountBalances>(() => {
     try {
@@ -49,13 +40,33 @@ export function useExpenses(
       const res = await fetchExpenses();
       if (res.expenses) {
         setExpenses((prev) => {
-          if (prev && prev.length === res.expenses.length && JSON.stringify(prev) === JSON.stringify(res.expenses)) {
-            return prev;
-          }
-          try {
-            safeSetLocalStorage('rn3d_expenses_cache', JSON.stringify(res.expenses.slice(0, 200)));
-          } catch (e) {}
-          return res.expenses;
+          if (!prev || prev.length === 0) return res.expenses;
+
+          const merged = res.expenses.map((dbExp) => {
+            const localMatch = prev.find(
+              (l) => l.id === dbExp.id || (l.referenceCode && l.referenceCode === dbExp.referenceCode)
+            );
+            if (localMatch) {
+              return {
+                ...dbExp,
+                receiptUrl: dbExp.receiptUrl || localMatch.receiptUrl || '',
+                receiptType: dbExp.receiptType || localMatch.receiptType || 'image',
+                receiptName: dbExp.receiptName || localMatch.receiptName || '',
+                receiptUrl2: dbExp.receiptUrl2 || localMatch.receiptUrl2 || '',
+                receiptType2: dbExp.receiptType2 || localMatch.receiptType2 || 'image',
+                receiptName2: dbExp.receiptName2 || localMatch.receiptName2 || '',
+              };
+            }
+            return dbExp;
+          });
+
+          const dbSet = new Set(res.expenses.map((e) => e.id));
+          const extraLocal = prev.filter(
+            (l) => !dbSet.has(l.id) && l.referenceCode && !res.expenses.some((e) => e.referenceCode === l.referenceCode)
+          );
+
+          const finalMerged = [...merged, ...extraLocal];
+          return prev.length === finalMerged.length && JSON.stringify(prev) === JSON.stringify(finalMerged) ? prev : finalMerged;
         });
       }
       if (res.balances) {
@@ -262,12 +273,7 @@ export function useExpenses(
   const handleDeleteExpense = async (expenseId: string) => {
     const exp = expenses.find((e) => e.id === expenseId || (e.referenceCode && e.referenceCode === expenseId));
     setExpenses((prev) => {
-      const updated = prev.filter((e) => e.id !== expenseId && e.referenceCode !== expenseId);
-      safeSetLocalStorage('rn3d_expenses', JSON.stringify(updated));
-      try {
-        safeSetLocalStorage('rn3d_expenses_cache', JSON.stringify(updated.slice(0, 200)));
-      } catch (err) {}
-      return updated;
+      return prev.filter((e) => e.id !== expenseId && e.referenceCode !== expenseId);
     });
     showToast(`Lançamento "${exp?.description || expenseId}" excluído com sucesso!`, 'success');
 

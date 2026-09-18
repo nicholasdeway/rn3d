@@ -31,18 +31,6 @@ export function useOrders(
 
   const toast = typeof showToastOrQuotes === 'function' ? showToastOrQuotes : showToast || (() => { });
 
-  useEffect(() => {
-    if (orders && orders.length > 0) {
-      const cleanOrders = orders.filter(
-        (o) =>
-          !o.id?.startsWith('SYS_') &&
-          !o.clientName?.startsWith('SISTEMA_') &&
-          !o.id?.startsWith('REM-')
-      );
-      safeSetLocalStorage('rn3d_orders', JSON.stringify(cleanOrders));
-    }
-  }, [orders]);
-
   // Load directly from Supabase on mount and set authoritative state
   useEffect(() => {
     if (!user) return;
@@ -77,7 +65,6 @@ export function useOrders(
               return dbOrder;
             });
 
-            safeSetLocalStorage('rn3d_orders', JSON.stringify(merged));
             return merged;
           });
         }
@@ -207,15 +194,13 @@ export function useOrders(
     }
 
     setOrders((prev) => {
-      const updated = prev.filter(
+      return prev.filter(
         (o) =>
           o.id !== orderId &&
           o.id !== cleanId &&
           o.id !== `PED-${cleanId}` &&
           o.id.replace(/^PED-/, '') !== cleanId
       );
-      safeSetLocalStorage('rn3d_orders', JSON.stringify(updated));
-      return updated;
     });
     toast(`Pedido #${orderId} removido!`, 'success');
     try {

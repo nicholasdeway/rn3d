@@ -20,15 +20,41 @@ function isLocalStorageAvailable(): boolean {
 
 const storageAvailable = isLocalStorageAvailable();
 
+// Limpeza automática de chaves legadas infladas que estouravam a cota de 5MB
+if (typeof window !== 'undefined' && window.localStorage) {
+  try {
+    window.localStorage.removeItem('rn3d_expenses');
+    window.localStorage.removeItem('rn3d_expenses_cache');
+  } catch (e) {}
+}
+
+function stripDataUrls(obj: any): any {
+  if (!obj) return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(stripDataUrls);
+  }
+  if (typeof obj === 'object') {
+    const cleaned: any = {};
+    for (const k of Object.keys(obj)) {
+      const val = obj[k];
+      if (typeof val === 'string' && val.startsWith('data:')) {
+        cleaned[k] = '';
+      } else {
+        cleaned[k] = stripDataUrls(val);
+      }
+    }
+    return cleaned;
+  }
+  return obj;
+}
+
 export function safeGetLocalStorage(key: string): string | null {
   try {
     if (storageAvailable) {
       const val = localStorage.getItem(key);
       if (val !== null) return val;
     }
-  } catch (e) {
-    console.warn(`[Storage] Leitura da chave "${key}" via localStorage falhou, buscando em memória fallback:`, e);
-  }
+  } catch (e) {}
   return memoryStorage.get(key) ?? null;
 }
 
@@ -36,21 +62,33 @@ export function safeSetLocalStorage(key: string, value: string): void {
   // Atualiza sempre o cache em memória
   memoryStorage.set(key, value);
 
+  // Não salva arrays de despesas nem dados inflados com Base64 no LocalStorage para não estourar a cota de 5MB
+  if (key === 'rn3d_expenses' || key === 'rn3d_expenses_cache') {
+    try {
+      if (storageAvailable) localStorage.removeItem(key);
+    } catch (e) {}
+    return;
+  }
+
+  let valueToSave = value;
+  if (value.includes('data:image/') || value.includes('data:application/pdf')) {
+    try {
+      const parsed = JSON.parse(value);
+      valueToSave = JSON.stringify(stripDataUrls(parsed));
+    } catch (e) {}
+  }
+
   try {
     if (storageAvailable) {
-      localStorage.setItem(key, value);
+      localStorage.setItem(key, valueToSave);
     }
   } catch (e: any) {
-    console.warn(`[Storage] Gravação da chave "${key}" via localStorage falhou (Fallback ativo):`, e?.message || e);
-    // Se estourar a cota de 5MB (QuotaExceededError), tenta liberar espaço limpando itens secundários
     if (e?.name === 'QuotaExceededError' || e?.code === 22) {
       try {
         localStorage.removeItem('rn3d_expenses_cache');
+        localStorage.removeItem('rn3d_expenses');
         localStorage.removeItem('rn3d_client_logistics');
-        localStorage.setItem(key, value);
-      } catch (retryErr) {
-        // Se ainda falhar, mantemos com segurança o valor no memoryStorage
-      }
+      } catch (retryErr) {}
     }
   }
 }
