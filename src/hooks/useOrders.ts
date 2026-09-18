@@ -243,7 +243,7 @@ export function useOrders(
     setOrders((prev) =>
       prev.map((o) => {
         if (o.id === orderId || o.id.replace(/^PED-/, '') === orderId.replace(/^PED-/, '')) {
-          const targetIndex = receiptIndex || (o.paymentReceiptUrl && processedReceiptUrl && o.paymentReceiptUrl !== processedReceiptUrl ? 2 : 1);
+          const targetIndex = receiptIndex || ((o.paymentReceiptUrl || (o.paidAmount && o.paidAmount > 0)) ? 2 : 1);
 
           let finalReceiptUrl1 = o.paymentReceiptUrl;
           let finalReceiptType1 = o.paymentReceiptType;
@@ -266,18 +266,18 @@ export function useOrders(
           }
 
           const hasReceipt = Boolean(finalReceiptUrl1 || finalReceiptUrl2);
-          const actualAdded = (addedAmount && addedAmount > 0) ? addedAmount : (hasReceipt ? o.totalValue : 0);
+          const actualAdded = (addedAmount && addedAmount > 0) ? addedAmount : 0;
           let newPaid = Math.min(o.totalValue, (o.paidAmount || 0) + actualAdded);
-          if (hasReceipt && newPaid === 0 && o.totalValue > 0) {
+          if (hasReceipt && newPaid === 0 && o.totalValue > 0 && !addedAmount) {
             newPaid = o.totalValue;
           }
 
-          const newStatus =
-            (newPaid >= o.totalValue || hasReceipt)
-              ? 'Pago Total'
-              : newPaid > 0
-                ? 'Adiantamento'
-                : 'Pendente';
+          const isFullyPaid = (o.totalValue > 0 && newPaid >= (o.totalValue - 0.01));
+          const newStatus = isFullyPaid
+            ? 'Pago Total'
+            : newPaid > 0
+              ? 'Adiantamento'
+              : 'Pendente';
 
           updatedOrderObj = {
             ...o,

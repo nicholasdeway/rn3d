@@ -509,25 +509,41 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
     };
   };
 
-  // Helper to get receipt URL for any entry
-  const getEntryReceiptUrl = (entry: any): { url?: string; type?: 'image' | 'pdf'; name?: string } | null => {
+  // Helper to get all receipt URLs for any entry (Comprovante 1 e 2)
+  const getEntryReceipts = (entry: any): Array<{ url: string; type: 'image' | 'pdf'; name: string }> => {
+    const list: Array<{ url: string; type: 'image' | 'pdf'; name: string }> = [];
+
     if (entry.type === 'expense') {
       const exp = entry.data as ExpenseItem;
       if (exp.receiptUrl) {
-        return { url: exp.receiptUrl, type: exp.receiptType || 'image', name: exp.receiptName || 'Comprovante' };
+        list.push({ url: exp.receiptUrl, type: exp.receiptType || 'image', name: exp.receiptName || 'Comprovante 1' });
+      }
+      if (exp.receiptUrl2) {
+        list.push({ url: exp.receiptUrl2, type: exp.receiptType2 || 'image', name: exp.receiptName2 || 'Comprovante 2' });
       }
     }
+
     if (entry.type === 'order') {
       const o = entry.data as Order;
-      if (o.paymentReceiptUrl) {
-        return { url: o.paymentReceiptUrl, type: o.paymentReceiptType || 'image', name: o.paymentReceiptName || 'Comprovante' };
+      if (o.paymentReceiptUrl && !list.some((r) => r.url === o.paymentReceiptUrl)) {
+        list.push({ url: o.paymentReceiptUrl, type: o.paymentReceiptType || 'image', name: o.paymentReceiptName || 'Comprovante 1' });
+      }
+      if (o.paymentReceiptUrl2 && !list.some((r) => r.url === o.paymentReceiptUrl2)) {
+        list.push({ url: o.paymentReceiptUrl2, type: o.paymentReceiptType2 || 'image', name: o.paymentReceiptName2 || 'Comprovante 2' });
       }
     }
+
     const linkedOrder = getEntryLinkedOrder(entry);
-    if (linkedOrder && linkedOrder.paymentReceiptUrl) {
-      return { url: linkedOrder.paymentReceiptUrl, type: linkedOrder.paymentReceiptType || 'image', name: linkedOrder.paymentReceiptName || 'Comprovante' };
+    if (linkedOrder) {
+      if (linkedOrder.paymentReceiptUrl && !list.some((r) => r.url === linkedOrder.paymentReceiptUrl)) {
+        list.push({ url: linkedOrder.paymentReceiptUrl, type: linkedOrder.paymentReceiptType || 'image', name: linkedOrder.paymentReceiptName || 'Comprovante 1' });
+      }
+      if (linkedOrder.paymentReceiptUrl2 && !list.some((r) => r.url === linkedOrder.paymentReceiptUrl2)) {
+        list.push({ url: linkedOrder.paymentReceiptUrl2, type: linkedOrder.paymentReceiptType2 || 'image', name: linkedOrder.paymentReceiptName2 || 'Comprovante 2' });
+      }
     }
-    return null;
+
+    return list;
   };
 
   // TAB 2 Data: Entradas em Caixa (Apenas entradas efetivadas / recebidas)
@@ -1302,7 +1318,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   const displayCode = getEntryFormattedCode(entry);
                   const { dateFormatted, timeStr } = getEntryDateTime(entry);
                   const linkedOrder = getEntryLinkedOrder(entry);
-                  const receiptInfo = getEntryReceiptUrl(entry);
+                  const receiptsList = getEntryReceipts(entry);
 
                   let totalValue = entry.totalValue || entry.amount;
                   let paidAmount = entry.amount;
@@ -1350,15 +1366,17 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                               <FileText className="w-3 h-3" /> PDF
                             </button>
                           )}
-                          {receiptInfo && receiptInfo.url && (
+                          {receiptsList.map((rec, idx) => (
                             <button
+                              key={idx}
                               type="button"
-                              onClick={() => setSelectedReceiptForModal({ url: receiptInfo.url!, type: receiptInfo.type || 'image', name: receiptInfo.name })}
+                              onClick={() => setSelectedReceiptForModal({ url: rec.url, type: rec.type, name: rec.name })}
                               className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-bold rounded-lg text-[10px] border border-emerald-200 dark:border-emerald-800 flex items-center gap-1 cursor-pointer"
+                              title={`Ver ${rec.name}`}
                             >
-                              <Paperclip className="w-3 h-3" /> Comprovante
+                              <Paperclip className="w-3 h-3" /> {receiptsList.length > 1 ? `Comprovante ${idx + 1}` : 'Comprovante'}
                             </button>
-                          )}
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -1386,7 +1404,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                       const displayCode = getEntryFormattedCode(entry);
                       const { dateFormatted, timeStr } = getEntryDateTime(entry);
                       const linkedOrder = getEntryLinkedOrder(entry);
-                      const receiptInfo = getEntryReceiptUrl(entry);
+                      const receiptsList = getEntryReceipts(entry);
 
                       let totalValue = entry.totalValue || entry.amount;
                       let paidAmount = entry.amount;
@@ -1473,16 +1491,17 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                                 </button>
                               )}
 
-                              {receiptInfo && receiptInfo.url && (
+                              {receiptsList.map((rec, idx) => (
                                 <button
+                                  key={idx}
                                   type="button"
-                                  onClick={() => setSelectedReceiptForModal({ url: receiptInfo.url!, type: receiptInfo.type || 'image', name: receiptInfo.name })}
+                                  onClick={() => setSelectedReceiptForModal({ url: rec.url, type: rec.type, name: rec.name })}
                                   className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 rounded-lg font-bold text-xs inline-flex items-center gap-1 cursor-pointer transition-colors border border-emerald-200 dark:border-emerald-800"
-                                  title="Ver Comprovante Anexado"
+                                  title={`Ver ${rec.name}`}
                                 >
-                                  <Paperclip className="w-3.5 h-3.5" /> Comprovante
+                                  <Paperclip className="w-3.5 h-3.5" /> {receiptsList.length > 1 ? `Comprovante ${idx + 1}` : 'Comprovante'}
                                 </button>
-                              )}
+                              ))}
 
                               {entry.type === 'expense' && onDeleteExpense && (
                                 <button

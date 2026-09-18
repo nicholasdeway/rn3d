@@ -488,19 +488,32 @@ function computeEnrichedClients(
           const orderId = parts.length >= 4 ? `${parts[2]}-${parts[3]}` : exp.referenceCode.replace('PED-PAY-', '');
           const matchedOrder = orders.find((o) => o.id === orderId || o.id.replace(/^PED-/, '') === orderId.replace(/^PED-/, ''));
           if (matchedOrder) {
-            const hasNewReceipt1 = matchedOrder.paymentReceiptUrl && exp.receiptUrl !== matchedOrder.paymentReceiptUrl;
-            const hasNewReceipt2 = matchedOrder.paymentReceiptUrl2 && exp.receiptUrl2 !== matchedOrder.paymentReceiptUrl2;
-            if (hasNewReceipt1 || hasNewReceipt2) {
-              changed = true;
-              return {
-                ...exp,
-                receiptUrl: matchedOrder.paymentReceiptUrl || exp.receiptUrl || '',
-                receiptType: matchedOrder.paymentReceiptType || exp.receiptType || 'image',
-                receiptName: matchedOrder.paymentReceiptName || exp.receiptName || 'Comprovante 1',
-                receiptUrl2: matchedOrder.paymentReceiptUrl2 || exp.receiptUrl2 || '',
-                receiptType2: matchedOrder.paymentReceiptType2 || exp.receiptType2 || 'image',
-                receiptName2: matchedOrder.paymentReceiptName2 || exp.receiptName2 || 'Comprovante 2',
-              };
+            const isSecondExp = exp.referenceCode.endsWith('-2') || exp.id.endsWith('-2');
+            if (isSecondExp) {
+              if (matchedOrder.paymentReceiptUrl2 && exp.receiptUrl !== matchedOrder.paymentReceiptUrl2) {
+                changed = true;
+                return {
+                  ...exp,
+                  receiptUrl: matchedOrder.paymentReceiptUrl2,
+                  receiptType: matchedOrder.paymentReceiptType2 || 'image',
+                  receiptName: matchedOrder.paymentReceiptName2 || 'Comprovante 2',
+                };
+              }
+            } else {
+              const hasNewReceipt1 = matchedOrder.paymentReceiptUrl && exp.receiptUrl !== matchedOrder.paymentReceiptUrl;
+              const hasNewReceipt2 = matchedOrder.paymentReceiptUrl2 && exp.receiptUrl2 !== matchedOrder.paymentReceiptUrl2;
+              if (hasNewReceipt1 || hasNewReceipt2) {
+                changed = true;
+                return {
+                  ...exp,
+                  receiptUrl: matchedOrder.paymentReceiptUrl || exp.receiptUrl || '',
+                  receiptType: matchedOrder.paymentReceiptType || exp.receiptType || 'image',
+                  receiptName: matchedOrder.paymentReceiptName || exp.receiptName || 'Comprovante 1',
+                  receiptUrl2: matchedOrder.paymentReceiptUrl2 || exp.receiptUrl2 || '',
+                  receiptType2: matchedOrder.paymentReceiptType2 || exp.receiptType2 || 'image',
+                  receiptName2: matchedOrder.paymentReceiptName2 || exp.receiptName2 || 'Comprovante 2',
+                };
+              }
             }
           }
         }
@@ -583,7 +596,15 @@ function computeEnrichedClients(
     const terms = targetOrder?.paymentTerms || 'PIX';
     const cleanId = orderId.replace(/^PED-/, '');
 
-    const isSecondPayment = (targetOrder?.paidAmount || 0) >= (targetOrder?.totalValue || 0) && (targetOrder?.paidAmount || 0) > addedAmount;
+    const exp1Exists = expenses.some(
+      (e) =>
+        e.referenceCode === `PED-PAY-${orderId}-1` ||
+        e.referenceCode === `PED-PAY-${cleanId}-1` ||
+        e.id === `exp-pay-${orderId}-1` ||
+        e.id === `exp-pay-${cleanId}-1`
+    );
+
+    const isSecondPayment = receiptIndex === 2 || exp1Exists || (targetOrder && (targetOrder.paidAmount || 0) > (addedAmount + 0.01));
     const paymentIdx = receiptIndex || (isSecondPayment ? 2 : 1);
     const refCode = `PED-PAY-${orderId}-${paymentIdx}`;
 

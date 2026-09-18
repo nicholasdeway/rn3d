@@ -4,12 +4,15 @@ import { formatDateBR, normalizeToIsoDate, getTodayBR } from '../utils/formatter
 
 function encodeStatusWithMeta(statusText: string, order: Partial<Order>): string {
   const userNotes = order.notes || '';
+
+  const sanitizeUrl = (url?: string) => (url && url.startsWith('data:') ? '[DATA_URL]' : url || undefined);
+
   const meta = {
-    userNotes,
-    paymentReceiptUrl: order.paymentReceiptUrl,
+    userNotes: userNotes ? userNotes.substring(0, 80) : undefined,
+    paymentReceiptUrl: sanitizeUrl(order.paymentReceiptUrl),
     paymentReceiptType: order.paymentReceiptType,
     paymentReceiptName: order.paymentReceiptName,
-    paymentReceiptUrl2: order.paymentReceiptUrl2,
+    paymentReceiptUrl2: sanitizeUrl(order.paymentReceiptUrl2),
     paymentReceiptType2: order.paymentReceiptType2,
     paymentReceiptName2: order.paymentReceiptName2,
     paymentTerms: order.paymentTerms,
@@ -29,7 +32,18 @@ function encodeStatusWithMeta(statusText: string, order: Partial<Order>): string
 
   const baseStatus = statusText || 'Pendente';
   if (!hasMeta) return baseStatus;
-  return `${baseStatus} [META:${JSON.stringify(meta)}]`;
+
+  let jsonStr = JSON.stringify(meta);
+  if (jsonStr.length > 220) {
+    const compactMeta = {
+      ...meta,
+      userNotes: userNotes ? userNotes.substring(0, 20) + '...' : undefined,
+    };
+    jsonStr = JSON.stringify(compactMeta);
+  }
+
+  const encoded = `${baseStatus} [META:${jsonStr}]`;
+  return encoded.length > 255 ? baseStatus : encoded;
 }
 
 function decodeOrderRow(row: any): {
