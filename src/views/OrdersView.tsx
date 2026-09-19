@@ -55,7 +55,24 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
     setExpandedOrderId((prev) => (prev === orderId ? null : orderId));
   };
 
-  const renderInlineOrderDetails = (o: Order) => (
+  const renderInlineOrderDetails = (o: Order) => {
+    const matchingClient = clients.find(
+      (c) =>
+        (c.id && o.clientId && c.id === o.clientId) ||
+        (c.name && o.clientName && c.name.trim().toLowerCase() === o.clientName.trim().toLowerCase())
+    );
+
+    const effectiveLogisticsCost =
+      typeof o.internalLogisticsCost === 'number' && o.internalLogisticsCost > 0
+        ? o.internalLogisticsCost
+        : matchingClient && typeof matchingClient.defaultLogisticsCost === 'number'
+        ? matchingClient.defaultLogisticsCost
+        : Number(matchingClient?.defaultLogisticsCost) || 0;
+
+    const effectiveLogisticsType =
+      o.internalLogisticsType || matchingClient?.defaultLogisticsType || 'combustivel';
+
+    return (
     <div className="p-4 sm:p-6 bg-slate-50/90 dark:bg-[#181c26] rounded-2xl border border-slate-200/90 dark:border-[#202531] space-y-5 animate-in fade-in duration-150 my-2 text-left">
       {/* Top Header info */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
@@ -200,52 +217,35 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           <label className="inline-flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs font-bold select-none hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors self-start sm:self-auto">
             <input
               type="checkbox"
-              checked={o.status === 'Entregue'}
+              checked={o.status === 'Entregue' || o.status === 'Concluído'}
               onChange={(e) => {
                 const isChecked = e.target.checked;
-                if (isChecked) {
-                  if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, 'Entregue');
-                } else {
-                  const fallbackStatus = o.productionProgressPct === 100 ? 'Pronto' : o.productionProgressPct > 0 ? 'Em produção' : 'Novo';
-                  if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, fallbackStatus);
-                }
+                const newStatus: Order['status'] = isChecked ? 'Entregue' : 'Pronto';
+                if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, newStatus);
               }}
-              className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+              className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
             />
-            <span className={o.status === 'Entregue' ? 'text-emerald-600 dark:text-emerald-400 font-extrabold' : 'text-slate-700 dark:text-slate-300'}>
-              {o.status === 'Entregue' ? 'Entregue ao Cliente' : 'Pendente (Não entregue)'}
+            <span className={o.status === 'Entregue' || o.status === 'Concluído' ? 'text-emerald-600 dark:text-emerald-400 font-black' : 'text-slate-600 dark:text-slate-400'}>
+              {o.status === 'Entregue' || o.status === 'Concluído' ? '✓ Pedido Entregue ao Cliente' : 'Marcar como Entregue'}
             </span>
           </label>
         </div>
       </div>
 
-      {/* Items do Pedido com Thumbnails Ampliáveis */}
+      {/* Items Table */}
       <div className="space-y-2">
-        <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs">Itens do Pedido ({o.items.length}):</h4>
-        <div className="border border-slate-200 dark:border-[#202531] rounded-2xl overflow-hidden bg-white dark:bg-[#12151c]">
-          <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+        <h4 className="font-bold text-slate-900 dark:text-slate-100 text-xs">Itens do Pedido ({o.itemsCount}):</h4>
+        <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200 dark:border-[#202531] overflow-hidden shadow-xs">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
             {o.items.map((i, idx) => {
               const matchingProduct = products.find(
-                (p) =>
-                  p.name.toLowerCase() === i.productName.toLowerCase() ||
-                  i.productName.toLowerCase().includes(p.name.toLowerCase())
+                (p) => p.name.trim().toLowerCase() === i.productName.trim().toLowerCase()
               );
 
               return (
-                <div key={idx} className="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
+                <div key={idx} className="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                   <div className="flex items-center gap-3 min-w-0">
-                    {/* Product Thumbnail */}
-                    <div
-                      onClick={(e) => {
-                        if (matchingProduct?.imageUrl) {
-                          e.stopPropagation();
-                          setZoomImage({ url: matchingProduct.imageUrl, title: i.productName });
-                        }
-                      }}
-                      className={`w-11 h-11 rounded-xl bg-indigo-100/80 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700 ${matchingProduct?.imageUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
-                        }`}
-                      title={matchingProduct?.imageUrl ? 'Clique para ampliar foto' : undefined}
-                    >
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0 overflow-hidden font-bold text-slate-400 text-xs">
                       {matchingProduct?.imageUrl ? (
                         <img
                           src={matchingProduct.imageUrl}
@@ -307,9 +307,9 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
             <span className="text-[10px] text-slate-400 block font-medium">Modalidade</span>
             <span className="font-bold text-slate-800 dark:text-slate-200">
-              {o.internalLogisticsType === 'frete'
+              {effectiveLogisticsType === 'frete'
                 ? '🚚 Frete / Motoboy'
-                : o.internalLogisticsType === 'retirada'
+                : effectiveLogisticsType === 'retirada'
                   ? '🚗 Retirada na Oficina'
                   : '⛽ Combustível (Deslocamento)'}
             </span>
@@ -318,14 +318,14 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
           <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
             <span className="text-[10px] text-slate-400 block font-medium">Custo de Logística</span>
             <span className="font-extrabold text-rose-600 dark:text-rose-400">
-              R$ {(o.internalLogisticsCost ?? 0).toFixed(2).replace('.', ',')}
+              R$ {effectiveLogisticsCost.toFixed(2).replace('.', ',')}
             </span>
           </div>
 
           <div className="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-200 dark:border-slate-700">
             <span className="text-[10px] text-slate-400 block font-medium">Lucro Líquido Real</span>
             <span className="font-black text-emerald-600 dark:text-emerald-400">
-              R$ {Math.max(0, o.totalValue - (o.internalLogisticsCost ?? 0)).toFixed(2).replace('.', ',')}
+              R$ {Math.max(0, o.totalValue - effectiveLogisticsCost).toFixed(2).replace('.', ',')}
             </span>
           </div>
         </div>
@@ -346,6 +346,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       </div>
     </div>
   );
+};
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">

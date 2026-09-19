@@ -723,6 +723,22 @@ function computeEnrichedClients(
 
         const totalVal = Number(quote.total) || Number(quote.subtotal) || 0;
 
+        const matchingClient = clients.find(
+          (c) =>
+            (c.id && quote.clientId && c.id === quote.clientId) ||
+            (c.name && quote.clientName && c.name.trim().toLowerCase() === quote.clientName.trim().toLowerCase())
+        );
+
+        const effectiveLogisticsCost =
+          typeof quote.internalLogisticsCost === 'number' && quote.internalLogisticsCost > 0
+            ? quote.internalLogisticsCost
+            : matchingClient && typeof matchingClient.defaultLogisticsCost === 'number'
+            ? matchingClient.defaultLogisticsCost
+            : Number(matchingClient?.defaultLogisticsCost) || 0;
+
+        const effectiveLogisticsType =
+          quote.internalLogisticsType || matchingClient?.defaultLogisticsType || 'combustivel';
+
         const newOrder: Order = {
           id: orderId,
           clientId: quote.clientId || '',
@@ -737,8 +753,8 @@ function computeEnrichedClients(
           productionProgressPct: 0,
           productionSlaDate: productionSlaDateStr,
           attendanceMode: quote.attendanceMode,
-          internalLogisticsType: quote.internalLogisticsType,
-          internalLogisticsCost: quote.internalLogisticsCost,
+          internalLogisticsType: effectiveLogisticsType,
+          internalLogisticsCost: effectiveLogisticsCost,
           notes: quote.notes || `Convertido a partir do Orçamento #${quote.id}`,
           paymentTerms: quote.paymentTerms || '',
           items: (quote.items || []).map((item) => ({
