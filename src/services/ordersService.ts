@@ -19,6 +19,7 @@ function encodeStatusWithMeta(statusText: string, order: Partial<Order>): string
     productionProgressPct: order.productionProgressPct,
     internalLogisticsType: order.internalLogisticsType,
     internalLogisticsCost: order.internalLogisticsCost,
+    attendanceMode: order.attendanceMode,
   };
 
   const hasMeta =
@@ -28,7 +29,8 @@ function encodeStatusWithMeta(statusText: string, order: Partial<Order>): string
     Boolean(order.paymentTerms) ||
     order.productionProgressPct !== undefined ||
     Boolean(order.internalLogisticsType) ||
-    order.internalLogisticsCost !== undefined;
+    order.internalLogisticsCost !== undefined ||
+    Boolean(order.attendanceMode);
 
   const baseStatus = statusText || 'Pendente';
   if (!hasMeta) return baseStatus;
@@ -57,8 +59,9 @@ function decodeOrderRow(row: any): {
   paymentReceiptName2: string;
   paymentTerms: string;
   productionProgressPct: number;
-  internalLogisticsType: 'combustivel' | 'transporte' | 'entrega_propria';
+  internalLogisticsType: 'combustivel' | 'frete' | 'retirada';
   internalLogisticsCost: number;
+  attendanceMode?: 'presencial' | 'online';
 } {
   let rawText = (row.notes || '') + ' ' + (row.payment_status_text || '');
   let paymentStatusText = row.payment_status_text || 'Pendente';
@@ -73,6 +76,7 @@ function decodeOrderRow(row: any): {
   let productionProgressPct = Number(row.production_progress_pct) || 0;
   let internalLogisticsType = (row.internal_logistics_type || 'combustivel') as any;
   let internalLogisticsCost = Number(row.internal_logistics_cost) || 0;
+  let attendanceMode = (row.attendance_mode || undefined) as any;
 
   if (rawText.includes('[META:')) {
     const startIdx = rawText.indexOf('[META:');
@@ -91,6 +95,7 @@ function decodeOrderRow(row: any): {
         if (meta.productionProgressPct !== undefined) productionProgressPct = Number(meta.productionProgressPct) || 0;
         if (meta.internalLogisticsType) internalLogisticsType = meta.internalLogisticsType;
         if (meta.internalLogisticsCost !== undefined) internalLogisticsCost = Number(meta.internalLogisticsCost) || 0;
+        if (meta.attendanceMode) attendanceMode = meta.attendanceMode;
         if (meta.userNotes !== undefined) notes = meta.userNotes;
       } catch (e) {}
     }
@@ -113,8 +118,10 @@ function decodeOrderRow(row: any): {
     productionProgressPct,
     internalLogisticsType,
     internalLogisticsCost,
+    attendanceMode,
   };
 }
+
 
 /**
  * 100% Direct Supabase Postgres Fetch — Zero LocalStorage Caching
@@ -175,6 +182,7 @@ export async function fetchOrders(): Promise<Order[]> {
         productionProgressPct: progressPct,
         productionSlaDate: row.production_sla_date || '',
         estimatedDeliveryDate: row.estimated_delivery_date || '',
+        attendanceMode: decoded.attendanceMode || (row.attendance_mode as any) || undefined,
         internalLogisticsType: clientType as any,
         internalLogisticsCost: clientCost,
         paymentReceiptUrl: decoded.paymentReceiptUrl,

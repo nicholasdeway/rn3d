@@ -1760,6 +1760,9 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               <div className="print-avoid-break border-t-2 border-slate-200 dark:border-[#202531] pt-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div className="space-y-1 text-[11px] max-w-md">
                   <p className="dark:text-slate-300">
+                    <strong className="dark:text-slate-100">Modalidade:</strong> {previewPdfQuote.attendanceMode === 'online' ? 'Atendimento Online / WhatsApp' : 'Visita Presencial'}
+                  </p>
+                  <p className="dark:text-slate-300">
                     <strong className="dark:text-slate-100">Condições de Pagamento:</strong> {previewPdfQuote.paymentTerms}
                   </p>
                   <p className="dark:text-slate-300">

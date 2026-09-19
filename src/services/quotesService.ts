@@ -1,6 +1,47 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Quote } from '../types';
 
+function encodeQuoteNotesWithMeta(notes: string, quote: Partial<Quote>): string {
+  const userNotes = notes || '';
+  const meta = {
+    userNotes,
+    attendanceMode: quote.attendanceMode,
+    internalLogisticsType: quote.internalLogisticsType,
+    internalLogisticsCost: quote.internalLogisticsCost,
+  };
+  const hasMeta = Boolean(quote.attendanceMode) || Boolean(quote.internalLogisticsType) || quote.internalLogisticsCost !== undefined;
+  if (!hasMeta) return userNotes;
+  return `[META:${JSON.stringify(meta)}]${userNotes}`;
+}
+
+function decodeQuoteRow(row: any): {
+  notes: string;
+  attendanceMode?: 'presencial' | 'online';
+  internalLogisticsType?: 'combustivel' | 'frete' | 'retirada';
+  internalLogisticsCost?: number;
+} {
+  let notes = row.notes || '';
+  let attendanceMode = (row.attendance_mode || undefined) as any;
+  let internalLogisticsType = (row.internal_logistics_type || undefined) as any;
+  let internalLogisticsCost = row.internal_logistics_cost ? Number(row.internal_logistics_cost) : undefined;
+
+  if (notes && notes.startsWith('[META:')) {
+    const endIdx = notes.indexOf(']');
+    if (endIdx > 6) {
+      try {
+        const jsonStr = notes.substring(6, endIdx);
+        const meta = JSON.parse(jsonStr);
+        if (meta.attendanceMode) attendanceMode = meta.attendanceMode;
+        if (meta.internalLogisticsType) internalLogisticsType = meta.internalLogisticsType;
+        if (meta.internalLogisticsCost !== undefined) internalLogisticsCost = Number(meta.internalLogisticsCost) || 0;
+        if (meta.userNotes !== undefined) notes = meta.userNotes;
+      } catch (e) {}
+    }
+  }
+
+  return { notes, attendanceMode, internalLogisticsType, internalLogisticsCost };
+}
+
 /**
  * 100% Direct Supabase Postgres Fetch — Zero LocalStorage Caching
  */
@@ -19,27 +60,33 @@ export async function fetchQuotes(): Promise<Quote[]> {
     return [];
   }
 
-  const dbQuotes: Quote[] = data.map((row) => ({
-    id: row.quote_code || row.id,
-    clientId: row.client_id || '',
-    clientName: row.client_name,
-    date: row.date || new Date().toISOString().split('T')[0],
-    createdAt: row.created_at || undefined,
-    validityDays: row.validity_days || 15,
-    productionSlaDays: row.production_sla_days || 7,
-    items: (row.quote_items || []).map((item: any) => ({
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice: Number(item.unit_price) || 0,
-      subtotal: Number(item.subtotal) || 0,
-    })),
-    subtotal: Number(row.subtotal) || 0,
-    discount: Number(row.discount) || 0,
-    total: Number(row.total) || 0,
-    paymentTerms: row.payment_terms || '',
-    notes: row.notes || '',
-    status: row.status as Quote['status'],
-  }));
+  const dbQuotes: Quote[] = data.map((row) => {
+    const decoded = decodeQuoteRow(row);
+    return {
+      id: row.quote_code || row.id,
+      clientId: row.client_id || '',
+      clientName: row.client_name,
+      date: row.date || new Date().toISOString().split('T')[0],
+      createdAt: row.created_at || undefined,
+      validityDays: row.validity_days || 15,
+      productionSlaDays: row.production_sla_days || 7,
+      attendanceMode: decoded.attendanceMode || (row.attendance_mode as any) || 'presencial',
+      internalLogisticsType: decoded.internalLogisticsType,
+      internalLogisticsCost: decoded.internalLogisticsCost,
+      items: (row.quote_items || []).map((item: any) => ({
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: Number(item.unit_price) || 0,
+        subtotal: Number(item.subtotal) || 0,
+      })),
+      subtotal: Number(row.subtotal) || 0,
+      discount: Number(row.discount) || 0,
+      total: Number(row.total) || 0,
+      paymentTerms: row.payment_terms || '',
+      notes: decoded.notes,
+      status: row.status as Quote['status'],
+    };
+  });
 
   return dbQuotes;
 }
@@ -78,7 +125,7 @@ export async function syncMissingQuotesToSupabase(missingQuotes: Quote[]): Promi
       discount: q.discount || 0,
       total: q.total,
       payment_terms: q.paymentTerms || '',
-      notes: q.notes || '',
+      notes: encodeQuoteNotesWithMeta(q.notes || '', q),
       status: q.status || 'Rascunho',
     }));
 
@@ -112,7 +159,7 @@ export async function createQuote(quote: Partial<Quote>): Promise<Quote | null> 
     discount: quote.discount || 0,
     total: quote.total || 0,
     payment_terms: quote.paymentTerms || '',
-    notes: quote.notes || '',
+    notes: encodeQuoteNotesWithMeta(quote.notes || '', quote),
     status: quote.status || 'Rascunho',
   };
 
@@ -152,7 +199,10 @@ export async function updateQuote(id: string, updates: Partial<Quote>): Promise<
   if (updates.total !== undefined) payload.total = updates.total;
   if (updates.subtotal !== undefined) payload.subtotal = updates.subtotal;
   if (updates.discount !== undefined) payload.discount = updates.discount;
-  if (updates.notes !== undefined) payload.notes = updates.notes;
+  if (updates.notes !== undefined || updates.attendanceMode !== undefined || updates.internalLogisticsType !== undefined) {
+    payload.notes = encodeQuoteNotesWithMeta(updates.notes || '', updates);
+  }
+
 
   const isLocalId = !id || id.startsWith('ORC-') || id.length < 30;
 

@@ -179,7 +179,11 @@ export const OrderPdfViewerModal: React.FC<OrderPdfViewerModalProps> = ({
                 <p className="text-slate-600 dark:text-slate-400 font-medium">Tel: {matchedCli.phone}</p>
               ) : null}
               <p className="text-slate-500 dark:text-slate-400">
-                Modalidade: {order.attendanceMode === 'online' ? 'Atendimento Online / WhatsApp' : 'Visita Presencial'}
+                Modalidade: <strong className="text-slate-800 dark:text-slate-200">{
+                  order.attendanceMode === 'online' || (order.notes && (order.notes.toLowerCase().includes('online') || order.notes.toLowerCase().includes('whatsapp')))
+                    ? 'Atendimento Online / WhatsApp'
+                    : 'Visita Presencial'
+                }</strong>
               </p>
             </div>
 
