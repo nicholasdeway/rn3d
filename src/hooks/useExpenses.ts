@@ -93,16 +93,35 @@ export function useExpenses(
           return fixedBalances;
         });
       }
+      return res.expenses || [];
     } catch (err) {
       console.error('Erro ao recarregar despesas/saldos do Supabase:', err);
+      return [];
     }
   };
 
   useEffect(() => {
-    if (user) {
-      reloadExpenses();
+    if (!user) return;
+    reloadExpenses();
+
+    if (isSupabaseConfigured()) {
+      const channel = supabase
+        .channel('expenses_realtime_changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'expenses' },
+          () => {
+            reloadExpenses();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
+
 
   const handleCreateExpense = async (newExpense: Partial<ExpenseItem>): Promise<ExpenseItem | null> => {
     const formattedItem: ExpenseItem = {

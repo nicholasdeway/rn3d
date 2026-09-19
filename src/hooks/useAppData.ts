@@ -11,8 +11,7 @@ import { useExchanges } from './useExchanges';
 import { useVisits } from './useVisits';
 import { useExpenses } from './useExpenses';
 import { useRecurringBills } from './useRecurringBills';
-import { normalizeToIsoDate } from '../utils/formatters';
-
+import { normalizeToIsoDate, parseBRDate, formatDateBR, formatTimeOnly } from '../utils/formatters';
 
 import { fetchProducts } from '../services/productsService';
 import { fetchClients } from '../services/clientsService';
@@ -25,8 +24,8 @@ import { syncMissingProductsToSupabase } from '../services/productsService';
 import { syncMissingClientsToSupabase } from '../services/clientsService';
 import { syncMissingOrdersToSupabase } from '../services/ordersService';
 import { syncMissingQuotesToSupabase } from '../services/quotesService';
-import { syncMissingExpensesToSupabase, createExpense } from '../services/expensesService';
-import { parseBRDate, formatDateBR } from '../utils/formatters';
+import { syncMissingExpensesToSupabase, createExpense, fetchExpenses } from '../services/expensesService';
+
 
 export function useAppData() {
   const { user } = useAuth();
@@ -193,7 +192,7 @@ export function useAppData() {
     const loadAllData = async (showLoadingState = true) => {
       try {
         if (showLoadingState) setDataLoading(true);
-        const [dbProducts, dbClients, dbOrders, dbQuotes, dbConsignments, dbVisits, dbExchanges] = await Promise.all([
+        const [dbProducts, dbClients, dbOrders, dbQuotes, dbConsignments, dbVisits, dbExchanges, dbExpensesRes] = await Promise.all([
           fetchProducts(),
           fetchClients(),
           fetchOrders(),
@@ -201,12 +200,41 @@ export function useAppData() {
           fetchConsignments(),
           fetchVisits(),
           fetchExchanges(),
+          fetchExpenses(),
         ]);
         if (!isMounted) return;
         const enrichedClients = computeEnrichedClients(dbClients, dbConsignments || [], dbOrders || [], dbVisits || visits || []);
         setProducts((prev) => (prev && prev.length === dbProducts.length && JSON.stringify(prev) === JSON.stringify(dbProducts) ? prev : dbProducts));
         setClients((prev) => (prev && prev.length === enrichedClients.length && JSON.stringify(prev) === JSON.stringify(enrichedClients) ? prev : enrichedClients));
         setQuotes((prev) => (prev && prev.length === dbQuotes.length && JSON.stringify(prev) === JSON.stringify(dbQuotes) ? prev : dbQuotes));
+        if (dbExpensesRes && dbExpensesRes.expenses) {
+          setExpenses((prev) => {
+            if (!prev || prev.length === 0) return dbExpensesRes.expenses;
+            const dbSet = new Set(dbExpensesRes.expenses.map((e) => e.id));
+            const merged = dbExpensesRes.expenses.map((dbExp) => {
+              const localMatch = prev.find(
+                (l) => l.id === dbExp.id || (l.referenceCode && l.referenceCode === dbExp.referenceCode)
+              );
+              if (localMatch) {
+                return {
+                  ...dbExp,
+                  receiptUrl: dbExp.receiptUrl || localMatch.receiptUrl || '',
+                  receiptType: dbExp.receiptType || localMatch.receiptType || 'image',
+                  receiptName: dbExp.receiptName || localMatch.receiptName || '',
+                  receiptUrl2: dbExp.receiptUrl2 || localMatch.receiptUrl2 || '',
+                  receiptType2: dbExp.receiptType2 || localMatch.receiptType2 || 'image',
+                  receiptName2: dbExp.receiptName2 || localMatch.receiptName2 || '',
+                };
+              }
+              return dbExp;
+            });
+            const extraLocal = prev.filter(
+              (l) => !dbSet.has(l.id) && l.referenceCode && !dbExpensesRes.expenses.some((e) => e.referenceCode === l.referenceCode)
+            );
+            const finalMerged = [...merged, ...extraLocal];
+            return prev.length === finalMerged.length && JSON.stringify(prev) === JSON.stringify(finalMerged) ? prev : finalMerged;
+          });
+        }
         if (dbExchanges && dbExchanges.length > 0) {
           setExchanges((prev) => {
             const map = new Map<string, any>();
@@ -311,8 +339,8 @@ export function useAppData() {
             return Array.from(map.values());
           });
         }
-        if (reloadExpenses) reloadExpenses();
         if (reloadBills) reloadBills();
+
       } catch (err) {
         console.error('Erro ao carregar dados do Supabase:', err);
       } finally {
@@ -475,7 +503,7 @@ function computeEnrichedClients(
 
   // Auto-mirror order local payments (e.g. 50% signal deposit / 50% completion) into expenses/transactions log
   useEffect(() => {
-    if (!orders || orders.length === 0) return;
+    if (!orders || orders.length === 0 || dataLoading) return;
 
     setExpenses((prevExpenses) => {
       let changed = false;
@@ -543,13 +571,19 @@ function computeEnrichedClients(
 
           if (!alreadyExists) {
             changed = true;
+            const orderTime = o.createdAt
+              ? formatTimeOnly(o.createdAt)
+              : (o.timeline && o.timeline.length > 0 && o.timeline[0].date && o.timeline[0].date.includes(' '))
+                ? formatTimeOnly(o.timeline[0].date.split(' ')[1])
+                : formatTimeOnly(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+
             const newExpItem: ExpenseItem = {
               id: `exp-pay-${o.id}-1`,
               description: `Entrada / Pagamento de Pedido (${o.id} - ${o.clientName})`,
               category: 'Entrada de Pedido',
               amount: paid,
-              date: o.date || new Date().toISOString().split('T')[0],
-              timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              date: normalizeToIsoDate(o.date || o.createdAt),
+              timestamp: orderTime,
               paymentStatus: 'Pago',
               beneficiary: o.clientName || 'Cliente Local',
               createdBy: 'Sistema RN 3D',
@@ -572,7 +606,7 @@ function computeEnrichedClients(
 
       return changed ? [...newPaymentEntries, ...updatedPrev] : prevExpenses;
     });
-  }, [orders]);
+  }, [orders, dataLoading]);
 
   const handleUpdateOrderPaymentWrapper = async (
     orderId: string,
@@ -619,7 +653,7 @@ function computeEnrichedClients(
     if (existingExp) {
       await handleUpdateExpense({
         ...existingExp,
-        amount: addedAmount,
+        amount: addedAmount > 0 ? addedAmount : existingExp.amount,
         receiptUrl: receiptUrl || (paymentIdx === 2 ? targetOrder?.paymentReceiptUrl2 : targetOrder?.paymentReceiptUrl) || existingExp.receiptUrl,
         receiptType: (receiptType || (paymentIdx === 2 ? targetOrder?.paymentReceiptType2 : targetOrder?.paymentReceiptType) || existingExp.receiptType || 'image') as any,
         receiptName: receiptName || (paymentIdx === 2 ? targetOrder?.paymentReceiptName2 : targetOrder?.paymentReceiptName) || existingExp.receiptName,
@@ -628,13 +662,17 @@ function computeEnrichedClients(
         receiptName2: targetOrder?.paymentReceiptName2 || existingExp.receiptName2,
       });
     } else {
+      const orderTime = targetOrder?.createdAt
+        ? formatTimeOnly(targetOrder.createdAt)
+        : formatTimeOnly(new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }));
+
       const paymentExpenseItem: ExpenseItem = {
         id: `exp-pay-${orderId}-${paymentIdx}`,
         description: `Entrada / Pagamento de Pedido (${orderId} - ${clientName})`,
         category: 'Entrada de Pedido',
         amount: addedAmount,
-        date: new Date().toISOString().split('T')[0],
-        timestamp: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        date: normalizeToIsoDate(targetOrder?.date || new Date().toISOString().split('T')[0]),
+        timestamp: orderTime,
         paymentStatus: 'Pago',
         beneficiary: clientName,
         createdBy: 'Sistema RN 3D',
@@ -653,6 +691,7 @@ function computeEnrichedClients(
       await handleCreateExpense(paymentExpenseItem);
     }
   };
+
 
   const activeConversionsRef = useState(() => new Set<string>())[0];
 

@@ -163,7 +163,9 @@ export function formatTimeOnly(timeOrIso?: string | null): string {
     try {
       const d = new Date(str);
       if (!isNaN(d.getTime())) {
-        return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        const hours = String(d.getHours()).padStart(2, '0');
+        const minutes = String(d.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
       }
     } catch (e) {}
   }
@@ -171,9 +173,13 @@ export function formatTimeOnly(timeOrIso?: string | null): string {
   if (str.includes(':')) {
     const parts = str.split(':');
     if (parts.length >= 2) {
-      return `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
+      // Remove any trailing seconds or non-digits if present
+      const h = parts[0].replace(/\D/g, '').padStart(2, '0');
+      const m = parts[1].replace(/\D/g, '').slice(0, 2).padStart(2, '0');
+      return `${h}:${m}`;
     }
   }
 
   return str;
 }
+
