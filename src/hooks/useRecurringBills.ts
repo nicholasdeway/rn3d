@@ -7,13 +7,83 @@ import {
   deleteRecurringBill,
 } from '../services/recurringBillsService';
 
-export function calculateBillAlertStatus(bill: RecurringBill): RecurringBillAlertStatus {
+export function calculateBillAlertStatus(
+  bill: RecurringBill,
+  expenses: ExpenseItem[] = []
+): RecurringBillAlertStatus {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonthIdx = now.getMonth(); // 0-indexed
   const currentMonthStr = `${currentYear}-${String(currentMonthIdx + 1).padStart(2, '0')}`;
 
-  const isPaidThisMonth = bill.lastPaidMonth === currentMonthStr;
+  let isPaidThisMonth = bill.lastPaidMonth === currentMonthStr;
+
+  // Cross-reference with registered financial expenses if lastPaidMonth is not explicitly marked
+  if (!isPaidThisMonth && expenses && expenses.length > 0) {
+    const billTitleClean = (bill.title || '').toLowerCase().trim();
+    const billCatClean = (bill.category || '').toLowerCase().trim();
+    const billBeneficiaryClean = (bill.beneficiary || '').toLowerCase().trim();
+
+    const hasMatchingExpense = expenses.some((exp) => {
+      // Only consider paid expenses
+      if (exp.paymentStatus && exp.paymentStatus !== 'Pago') return false;
+
+      // Validate expense date belongs to current year and month
+      let expYearMonth = '';
+      if (exp.date) {
+        if (exp.date.includes('-')) {
+          expYearMonth = exp.date.substring(0, 7); // 'YYYY-MM'
+        } else if (exp.date.includes('/')) {
+          const parts = exp.date.split('/');
+          if (parts.length === 3) {
+            expYearMonth = `${parts[2]}-${parts[1].padStart(2, '0')}`;
+          }
+        }
+      }
+
+      if (expYearMonth !== currentMonthStr) return false;
+
+      const expRefClean = (exp.referenceCode || '').toLowerCase().trim();
+      const expDescClean = (exp.description || '').toLowerCase().trim();
+      const expCatClean = (exp.category || '').toLowerCase().trim();
+
+      // Match 1: Reference code contains bill id
+      if (expRefClean && expRefClean.includes(`rec-bill-${bill.id.toLowerCase()}`)) {
+        return true;
+      }
+
+      // Match 2: Description contains bill title or vice-versa
+      if (billTitleClean.length > 2 && (expDescClean.includes(billTitleClean) || billTitleClean.includes(expDescClean))) {
+        return true;
+      }
+
+      // Match 3: Category match + exact/close amount or keyword match (e.g. DAS)
+      if (expCatClean === billCatClean && billCatClean.length > 0) {
+        // e.g. DAS Imposto vs Impostos (DAS)
+        if (billTitleClean.includes('das') && (expDescClean.includes('das') || expCatClean.includes('das'))) {
+          return true;
+        }
+        if (Math.abs((exp.amount || 0) - (bill.amount || 0)) < 1.0) {
+          return true;
+        }
+      }
+
+      // Match 4: Beneficiary match + Category match
+      if (
+        billBeneficiaryClean &&
+        billBeneficiaryClean.length > 2 &&
+        (expDescClean.includes(billBeneficiaryClean) || (exp.beneficiary && exp.beneficiary.toLowerCase().includes(billBeneficiaryClean)))
+      ) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (hasMatchingExpense) {
+      isPaidThisMonth = true;
+    }
+  }
 
   // Compute target due date for current month
   const maxDaysInMonth = new Date(currentYear, currentMonthIdx + 1, 0).getDate();
@@ -55,6 +125,7 @@ export function calculateBillAlertStatus(bill: RecurringBill): RecurringBillAler
 }
 
 export function useRecurringBills(
+  expenses: ExpenseItem[] = [],
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void,
   handleCreateExpense: (expense: Partial<ExpenseItem>) => Promise<ExpenseItem | null>
 ) {
@@ -77,11 +148,11 @@ export function useRecurringBills(
     reloadBills();
   }, [reloadBills]);
 
-  // Compute real-time alert statuses
+  // Compute real-time alert statuses (passing expenses)
   const billAlerts = useMemo(() => {
     return recurringBills
       .filter((b) => b.status === 'Ativo')
-      .map(calculateBillAlertStatus)
+      .map((b) => calculateBillAlertStatus(b, expenses))
       .sort((a, b) => {
         // Order: Overdue first, then Urgent (<=3d), then Warning (<=7d), then In Time, then Paid
         const getRank = (item: RecurringBillAlertStatus) => {
@@ -96,7 +167,7 @@ export function useRecurringBills(
         if (rankA !== rankB) return rankA - rankB;
         return a.daysRemaining - b.daysRemaining;
       });
-  }, [recurringBills]);
+  }, [recurringBills, expenses]);
 
   const pendingAlertsCount = useMemo(() => {
     return billAlerts.filter((a) => !a.isPaidThisMonth && (a.isOverdue || a.daysRemaining <= 7)).length;
@@ -120,7 +191,13 @@ export function useRecurringBills(
   const handleUpdateBill = async (id: string, updates: Partial<RecurringBill>) => {
     const success = await updateRecurringBill(id, updates);
     if (success) {
-      setRecurringBills((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)));
+      setRecurringBills((prev) =>
+        prev.map((item) =>
+          item.id === id || (updates.title && item.title.toLowerCase().trim() === updates.title.toLowerCase().trim())
+            ? { ...item, ...updates }
+            : item
+        )
+      );
       showToast('✅ Conta fixa atualizada!', 'success');
     }
     return success;
@@ -158,7 +235,7 @@ export function useRecurringBills(
     await handleCreateExpense(newExpense);
 
     // 2. Mark recurring bill as paid in lastPaidMonth
-    await handleUpdateBill(bill.id, { lastPaidMonth: currentMonthStr });
+    await handleUpdateBill(bill.id, { lastPaidMonth: currentMonthStr, title: bill.title });
 
     showToast(`✅ ${bill.title} marcada como paga e espelhada no Financeiro!`, 'success');
   };

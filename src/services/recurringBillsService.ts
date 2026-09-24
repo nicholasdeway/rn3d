@@ -13,7 +13,6 @@ let hasRecurringBillsTable = false;
 
 function isMockItem(id?: string, title?: string): boolean {
   if (id && MOCK_IDS.includes(id)) return true;
-  if (title && MOCK_TITLES.some((m) => title.toLowerCase().includes(m))) return true;
   return false;
 }
 
@@ -197,7 +196,11 @@ export async function updateRecurringBill(id: string, updates: Partial<Recurring
   const currentBills = getStorageParsed<RecurringBill[]>('rn3d_recurring_bills', []).filter(
     (b) => !isMockItem(b.id, b.title)
   );
-  const updatedList = currentBills.map((item) => (item.id === id ? { ...item, ...updates } : item));
+  const updatedList = currentBills.map((item) =>
+    item.id === id || (updates.title && item.title.toLowerCase().trim() === updates.title.toLowerCase().trim())
+      ? { ...item, ...updates }
+      : item
+  );
 
   if (isSupabaseConfigured()) {
     // 1. Update recurring_bills table if applicable

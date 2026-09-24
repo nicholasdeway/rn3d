@@ -86,7 +86,7 @@ export function useAppData() {
     handleUpdateBill,
     handleDeleteBill,
     handleMarkBillPaid,
-  } = useRecurringBills(showToast, handleCreateExpense);
+  } = useRecurringBills(expenses, showToast, handleCreateExpense);
 
 
   const {
