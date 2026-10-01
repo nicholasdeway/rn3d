@@ -195,10 +195,14 @@ export async function updateQuote(id: string, updates: Partial<Quote>): Promise<
 
   const payload: any = {};
   if (updates.clientName !== undefined) payload.client_name = updates.clientName;
+  if (updates.clientId !== undefined) payload.client_id = updates.clientId;
   if (updates.status !== undefined) payload.status = updates.status;
   if (updates.total !== undefined) payload.total = updates.total;
   if (updates.subtotal !== undefined) payload.subtotal = updates.subtotal;
   if (updates.discount !== undefined) payload.discount = updates.discount;
+  if (updates.paymentTerms !== undefined) payload.payment_terms = updates.paymentTerms;
+  if (updates.validityDays !== undefined) payload.validity_days = updates.validityDays;
+  if (updates.productionSlaDays !== undefined) payload.production_sla_days = updates.productionSlaDays;
   if (updates.notes !== undefined || updates.attendanceMode !== undefined || updates.internalLogisticsType !== undefined) {
     payload.notes = encodeQuoteNotesWithMeta(updates.notes || '', updates);
   }

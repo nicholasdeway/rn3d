@@ -1472,7 +1472,8 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                     '💳 50% no Pedido e 50% na Entrega',
                     '📅 Faturado a Prazo (30 Dias)',
                   ].map((preset) => {
-                    const isSelected = paymentTerms === preset;
+                    const cleanText = (str: string) => (str || '').replace(/[^\w\s]/gi, '').trim().toLowerCase();
+                    const isSelected = paymentTerms === preset || (paymentTerms && cleanText(paymentTerms) === cleanText(preset));
                     return (
                       <button
                         key={preset}
@@ -1814,7 +1815,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                       </div>
                     </div>
 
-                    {(validAddress || resolvedResponsible || validPhone || validEmail) && (
+                    {(validAddress || validPhone || validEmail) && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-700 dark:text-slate-300 pt-0.5">
                         {validAddress && (
                           <div className="sm:col-span-2">
@@ -1823,15 +1824,8 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                           </div>
                         )}
 
-                        {resolvedResponsible && (
-                          <div>
-                            <span className="font-bold text-slate-900 dark:text-slate-100">Contato / Responsável: </span>
-                            <span>{resolvedResponsible}</span>
-                          </div>
-                        )}
-
                         {(validPhone || validEmail) && (
-                          <div className="flex flex-wrap items-center gap-x-3">
+                          <div className="sm:col-span-2 flex flex-wrap items-center gap-x-4 gap-y-1">
                             {validPhone && (
                               <span>
                                 <span className="font-bold text-slate-900 dark:text-slate-100">Telefone: </span>
