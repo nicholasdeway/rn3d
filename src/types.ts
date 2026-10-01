@@ -222,6 +222,8 @@ export interface Quote {
   clientDocument?: string;
   clientPhone?: string;
   clientAddress?: string;
+  clientEmail?: string;
+  clientResponsible?: string;
   date: string;
   createdAt?: string;
   validityDays: number;

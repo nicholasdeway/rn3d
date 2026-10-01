@@ -452,13 +452,34 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
     const todayDate = getTodayBR();
 
+    let formattedAddress = '';
+    if (selectedClient && selectedClient.street && selectedClient.street !== 'Atendimento Local') {
+      const parts: string[] = [];
+      let streetStr = selectedClient.street;
+      if (selectedClient.number && selectedClient.number !== 'S/N') streetStr += `, nº ${selectedClient.number}`;
+      else if (selectedClient.number === 'S/N') streetStr += `, S/N`;
+      if (selectedClient.complement) streetStr += ` (${selectedClient.complement})`;
+      parts.push(streetStr);
+      if (selectedClient.neighborhood && selectedClient.neighborhood !== 'Centro') parts.push(selectedClient.neighborhood);
+      if (selectedClient.city || selectedClient.state) {
+        const cityState = `${selectedClient.city || ''}${selectedClient.city && selectedClient.state ? '/' : ''}${selectedClient.state || ''}`;
+        if (cityState !== 'Local/RJ') parts.push(cityState);
+      }
+      if (selectedClient.cep && selectedClient.cep !== '00000-000') {
+        parts.push(`CEP: ${selectedClient.cep}`);
+      }
+      formattedAddress = parts.join(' - ');
+    }
+
     const newQuote: Quote = {
       id: `ORC-${Math.floor(Math.random() * 900000 + 100000)}`,
       clientId: selectedClient.id,
       clientName: selectedClient.name,
       clientDocument: selectedClient.document,
-      clientPhone: selectedClient.phone,
-      clientAddress: `${selectedClient.street || ''}, ${selectedClient.number || ''} - ${selectedClient.city || ''} / ${selectedClient.state || ''}`,
+      clientPhone: selectedClient.phone || selectedClient.whatsapp,
+      clientAddress: formattedAddress,
+      clientEmail: selectedClient.email,
+      clientResponsible: selectedClient.responsible,
       date: todayDate,
       validityDays,
       productionSlaDays,
@@ -516,47 +537,70 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
     setDiscountPercent(0);
   };
 
-  const renderInlineQuoteDetails = (q: Quote) => (
-    <div className="p-4 sm:p-6 bg-slate-50/90 dark:bg-[#181c26] rounded-2xl border border-slate-200/90 dark:border-[#202531] space-y-5 animate-in fade-in duration-150 my-2 text-left">
-      {/* Top Header info */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-2">
-          <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-          <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-            Detalhes Completos do Orçamento <span className="font-mono text-indigo-600 dark:text-indigo-400">#{q.id}</span> — {q.clientName}
-          </h4>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setPreviewPdfQuote(q);
-            }}
-            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
-          >
-            <Printer className="w-4 h-4" /> PDF A4 do Orçamento
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleExpandQuote(q.id);
-            }}
-            className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
-          >
-            <ChevronUp className="w-4 h-4" /> Recolher
-          </button>
-        </div>
-      </div>
+  const renderInlineQuoteDetails = (q: Quote) => {
+    const inlineClient = clients.find(
+      (c) =>
+        (c.id && q.clientId && c.id === q.clientId) ||
+        (c.name && q.clientName && c.name.toLowerCase().trim() === q.clientName.toLowerCase().trim())
+    );
 
-      {/* Grid Client & Parameters Info */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-        <div className="p-3 bg-white dark:bg-[#12151c] rounded-xl border border-slate-200 dark:border-[#202531]">
-          <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase block">Cliente / Solicitante</span>
-          <strong className="text-slate-900 dark:text-slate-100 font-bold block truncate">{q.clientName}</strong>
-          {q.clientDocument && (
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono block mt-0.5">Doc: {q.clientDocument}</span>
-          )}
+    const docVal = inlineClient?.document || q.clientDocument;
+    const phoneVal = inlineClient?.phone || inlineClient?.whatsapp || q.clientPhone;
+    const addressVal =
+      q.clientAddress ||
+      (inlineClient && inlineClient.street && inlineClient.street !== 'Atendimento Local'
+        ? `${inlineClient.street}, ${inlineClient.number || 'S/N'}${inlineClient.neighborhood ? ' - ' + inlineClient.neighborhood : ''} (${inlineClient.city || ''}/${inlineClient.state || ''})`
+        : null);
+
+    return (
+      <div className="p-4 sm:p-6 bg-slate-50/90 dark:bg-[#181c26] rounded-2xl border border-slate-200/90 dark:border-[#202531] space-y-5 animate-in fade-in duration-150 my-2 text-left">
+        {/* Top Header info */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+            <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+              Detalhes Completos do Orçamento <span className="font-mono text-indigo-600 dark:text-indigo-400">#{q.id}</span> — {q.clientName}
+            </h4>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setPreviewPdfQuote(q);
+              }}
+              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+            >
+              <Printer className="w-4 h-4" /> PDF A4 do Orçamento
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleExpandQuote(q.id);
+              }}
+              className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs inline-flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <ChevronUp className="w-4 h-4" /> Recolher
+            </button>
+          </div>
         </div>
+
+        {/* Grid Client & Parameters Info */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div className="p-3 bg-white dark:bg-[#12151c] rounded-xl border border-slate-200 dark:border-[#202531]">
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase block">Cliente / Solicitante</span>
+            <strong className="text-slate-900 dark:text-slate-100 font-bold block truncate">{q.clientName}</strong>
+            {docVal && docVal !== '000.000.000-00' && (
+              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-mono block mt-0.5">CNPJ/CPF: {docVal}</span>
+            )}
+            {phoneVal && phoneVal !== '(00) 00000-0000' && (
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5">Tel: {phoneVal}</span>
+            )}
+            {addressVal && !addressVal.includes('Atendimento Local') && (
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-0.5 truncate" title={addressVal}>
+                📍 {addressVal}
+              </span>
+            )}
+          </div>
 
         <div className="p-3 bg-white dark:bg-[#12151c] rounded-xl border border-slate-200 dark:border-[#202531]">
           <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase block">Datas & Validade</span>
@@ -661,6 +705,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
       )}
     </div>
   );
+};
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -1692,12 +1737,120 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
               </div>
 
               {/* Client info */}
-              <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-1">
-                <p className="font-bold text-slate-900 dark:text-slate-100 text-sm">CLIENTE: {previewPdfQuote.clientName}</p>
-                {previewPdfQuote.clientDocument && (
-                  <p className="text-slate-600 dark:text-slate-400 font-medium">CPF/CNPJ: {previewPdfQuote.clientDocument}</p>
-                )}
-              </div>
+              {(() => {
+                const pdfClient = clients.find(
+                  (c) =>
+                    (c.id && previewPdfQuote.clientId && c.id === previewPdfQuote.clientId) ||
+                    (c.name && previewPdfQuote.clientName && c.name.toLowerCase().trim() === previewPdfQuote.clientName.toLowerCase().trim())
+                );
+
+                const resolvedName = pdfClient?.name || previewPdfQuote.clientName;
+                const resolvedFantasy = pdfClient?.fantasyName && pdfClient.fantasyName !== resolvedName ? pdfClient.fantasyName : null;
+                const rawDoc = pdfClient?.document || previewPdfQuote.clientDocument;
+                const resolvedDoc = rawDoc && rawDoc !== '000.000.000-00' ? rawDoc : null;
+                const isCnpj = resolvedDoc ? (resolvedDoc.includes('/') || resolvedDoc.replace(/\D/g, '').length > 11) : false;
+                const docLabel = isCnpj ? 'CNPJ' : 'CPF';
+
+                const resolvedStateReg = pdfClient?.stateRegistration;
+                const resolvedResponsible = pdfClient?.responsible && pdfClient.responsible !== 'Balcão / Geral' ? pdfClient.responsible : previewPdfQuote.clientResponsible;
+                const resolvedPhone = pdfClient?.phone || pdfClient?.whatsapp || previewPdfQuote.clientPhone;
+                const validPhone = resolvedPhone && resolvedPhone !== '(00) 00000-0000' ? resolvedPhone : null;
+                const resolvedEmail = pdfClient?.email || previewPdfQuote.clientEmail;
+                const validEmail = resolvedEmail && resolvedEmail.trim() !== '' ? resolvedEmail : null;
+
+                let resolvedAddress = previewPdfQuote.clientAddress || '';
+                if (pdfClient) {
+                  const parts: string[] = [];
+                  if (pdfClient.street && pdfClient.street !== 'Atendimento Local') {
+                    let streetStr = pdfClient.street;
+                    if (pdfClient.number && pdfClient.number !== 'S/N') streetStr += `, nº ${pdfClient.number}`;
+                    else if (pdfClient.number === 'S/N') streetStr += `, S/N`;
+                    if (pdfClient.complement) streetStr += ` (${pdfClient.complement})`;
+                    parts.push(streetStr);
+                  }
+                  if (pdfClient.neighborhood && pdfClient.neighborhood !== 'Centro') {
+                    parts.push(pdfClient.neighborhood);
+                  }
+                  if (pdfClient.city || pdfClient.state) {
+                    const cityState = `${pdfClient.city || ''}${pdfClient.city && pdfClient.state ? '/' : ''}${pdfClient.state || ''}`;
+                    if (cityState && cityState !== 'Local/RJ') {
+                      parts.push(cityState);
+                    }
+                  }
+                  if (pdfClient.cep && pdfClient.cep !== '00000-000') {
+                    parts.push(`CEP: ${pdfClient.cep}`);
+                  }
+                  if (parts.length > 0) {
+                    resolvedAddress = parts.join(' - ');
+                  }
+                }
+
+                const validAddress = resolvedAddress && !resolvedAddress.includes('Atendimento Local') ? resolvedAddress : null;
+
+                return (
+                  <div className="p-4 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200 dark:border-[#202531] space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-200/80 dark:border-slate-800/80 pb-2">
+                      <div>
+                        <p className="font-bold text-slate-900 dark:text-slate-100 text-sm tracking-wide">
+                          CLIENTE: <span className="font-black">{resolvedName}</span>
+                        </p>
+                        {resolvedFantasy && (
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                            Nome Fantasia: {resolvedFantasy}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+                        {resolvedDoc && (
+                          <span className="font-bold text-slate-800 dark:text-slate-200">
+                            <span className="text-slate-500 dark:text-slate-400 font-normal">{docLabel}:</span> {resolvedDoc}
+                          </span>
+                        )}
+                        {resolvedStateReg && (
+                          <span className="text-slate-700 dark:text-slate-300 font-medium text-[11px]">
+                            <span className="text-slate-500 dark:text-slate-400 font-normal">I.E.:</span> {resolvedStateReg}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {(validAddress || resolvedResponsible || validPhone || validEmail) && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-700 dark:text-slate-300 pt-0.5">
+                        {validAddress && (
+                          <div className="sm:col-span-2">
+                            <span className="font-bold text-slate-900 dark:text-slate-100">Endereço: </span>
+                            <span className="text-slate-700 dark:text-slate-300">{validAddress}</span>
+                          </div>
+                        )}
+
+                        {resolvedResponsible && (
+                          <div>
+                            <span className="font-bold text-slate-900 dark:text-slate-100">Contato / Responsável: </span>
+                            <span>{resolvedResponsible}</span>
+                          </div>
+                        )}
+
+                        {(validPhone || validEmail) && (
+                          <div className="flex flex-wrap items-center gap-x-3">
+                            {validPhone && (
+                              <span>
+                                <span className="font-bold text-slate-900 dark:text-slate-100">Telefone: </span>
+                                {validPhone}
+                              </span>
+                            )}
+                            {validEmail && (
+                              <span>
+                                <span className="font-bold text-slate-900 dark:text-slate-100">E-mail: </span>
+                                {validEmail}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Table with Image Thumbnails */}
               <div className="overflow-x-auto">
