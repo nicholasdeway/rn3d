@@ -1753,7 +1753,6 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                 const docLabel = isCnpj ? 'CNPJ' : 'CPF';
 
                 const resolvedStateReg = pdfClient?.stateRegistration;
-                const resolvedResponsible = pdfClient?.responsible && pdfClient.responsible !== 'Balcão / Geral' ? pdfClient.responsible : previewPdfQuote.clientResponsible;
                 const resolvedPhone = pdfClient?.phone || pdfClient?.whatsapp || previewPdfQuote.clientPhone;
                 const validPhone = resolvedPhone && resolvedPhone !== '(00) 00000-0000' ? resolvedPhone : null;
                 const resolvedEmail = pdfClient?.email || previewPdfQuote.clientEmail;
