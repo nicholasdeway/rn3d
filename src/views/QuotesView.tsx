@@ -3,6 +3,7 @@ import { formatDateBR, getTodayBR } from '../utils/formatters';
 import { Client, Product, Quote, QuoteItem, AttendanceMode } from '../types';
 import { ProductSelectCombobox } from '../components/ProductSelectCombobox';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
+import { findMatchingProduct } from '../utils/productMatcher';
 import {
   FileText,
   Plus,
@@ -303,9 +304,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
 
     setQuoteItems((prev) =>
       prev.map((item) => {
-        const matchedProd = products.find(
-          (p) => item.description.includes(p.sku) || item.description.toLowerCase().includes(p.name.toLowerCase())
-        );
+        const matchedProd = findMatchingProduct(products, item);
         if (matchedProd) {
           const targetPrice = isCash
             ? (matchedProd.cashPrice ?? (matchedProd.isKeychain || matchedProd.category === 'Chaveiro' ? 4.0 : matchedProd.standardPrice))
@@ -642,12 +641,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
               {(q.items || []).map((item, idx) => {
-                const matchingProduct = products.find(
-                  (p) =>
-                    p.id === item.productId ||
-                    p.name.toLowerCase() === item.description.toLowerCase() ||
-                    item.description.toLowerCase().includes(p.name.toLowerCase())
-                );
+                const matchingProduct = findMatchingProduct(products, item);
 
                 return (
                   <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
@@ -1205,12 +1199,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   {/* Mobile Selected Items Cards (< 768px) */}
                   <div className="block md:hidden space-y-3">
                     {quoteItems.map((item, idx) => {
-                      const matchingProduct = products.find(
-                        (p) =>
-                          p.id === item.productId ||
-                          p.name.toLowerCase() === item.description.toLowerCase() ||
-                          item.description.toLowerCase().includes(p.name.toLowerCase())
-                      );
+                      const matchingProduct = findMatchingProduct(products, item);
 
                       return (
                         <div
@@ -1324,12 +1313,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                         {quoteItems.map((item, idx) => {
-                          const matchingProduct = products.find(
-                            (p) =>
-                              p.id === item.productId ||
-                              p.name.toLowerCase() === item.description.toLowerCase() ||
-                              item.description.toLowerCase().includes(p.name.toLowerCase())
-                          );
+                          const matchingProduct = findMatchingProduct(products, item);
 
                           return (
                             <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
@@ -1858,12 +1842,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                     {previewPdfQuote.items.map((item, idx) => {
-                      const matchingProduct = products.find(
-                        (p) =>
-                          p.id === item.productId ||
-                          p.name.toLowerCase() === item.description.toLowerCase() ||
-                          item.description.toLowerCase().includes(p.name.toLowerCase())
-                      );
+                      const matchingProduct = findMatchingProduct(products, item);
 
                       return (
                         <tr key={idx}>

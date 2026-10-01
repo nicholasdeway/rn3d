@@ -2,6 +2,7 @@ import React from 'react';
 import { Order, Client, Product } from '../types';
 import { Printer, X, ShoppingCart } from 'lucide-react';
 import { formatDateBR } from '../utils/formatters';
+import { findMatchingProduct } from '../utils/productMatcher';
 
 interface OrderPdfViewerModalProps {
   order: Order | null;
@@ -239,13 +240,10 @@ export const OrderPdfViewerModal: React.FC<OrderPdfViewerModalProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                 {(order.items || []).map((it, idx) => {
-                  const matchingProduct = products.find(
-                    (p) =>
-                      p.name.toLowerCase() === it.productName.toLowerCase() ||
-                      it.productName.toLowerCase().includes(p.name.toLowerCase()) ||
-                      p.name.toLowerCase().includes(it.productName.toLowerCase()) ||
-                      (p.id && (it as any).productId && p.id === (it as any).productId)
-                  );
+                  const matchingProduct = findMatchingProduct(products, {
+                    productName: it.productName,
+                    productId: (it as any).productId,
+                  });
 
                   return (
                     <tr key={idx}>

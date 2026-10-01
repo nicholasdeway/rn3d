@@ -4,6 +4,7 @@ import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, C
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 import { OrderPdfViewerModal } from '../components/OrderPdfViewerModal';
 import { formatDateBR } from '../utils/formatters';
+import { findMatchingProduct } from '../utils/productMatcher';
 
 interface OrdersViewProps {
   orders: Order[];
@@ -238,9 +239,10 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         <div className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200 dark:border-[#202531] overflow-hidden shadow-xs">
           <div className="divide-y divide-slate-100 dark:divide-slate-800/60">
             {o.items.map((i, idx) => {
-              const matchingProduct = products.find(
-                (p) => p.name.trim().toLowerCase() === i.productName.trim().toLowerCase()
-              );
+              const matchingProduct = findMatchingProduct(products, {
+                productName: i.productName,
+                productId: (i as any).productId,
+              });
 
               return (
                 <div key={idx} className="p-3.5 flex items-center justify-between gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
