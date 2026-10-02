@@ -29,24 +29,9 @@ export async function fetchProducts(): Promise<Product[]> {
     const dbStandardPrice = Number(row.standard_price) || 0;
     const dbCashPrice = row.cash_price !== undefined && row.cash_price !== null ? Number(row.cash_price) : dbStandardPrice;
 
-    const finalStandardPrice = catalogMatch?.standardPrice !== undefined ? catalogMatch.standardPrice : dbStandardPrice;
-    const finalCashPrice = catalogMatch?.cashPrice !== undefined ? catalogMatch.cashPrice : (catalogMatch?.standardPrice !== undefined ? catalogMatch.standardPrice : dbCashPrice);
-
-    // Se o preço no Supabase estiver desatualizado em relação ao catálogo, envia update para o banco
-    if (
-      catalogMatch &&
-      (Number(row.standard_price) !== finalStandardPrice || Number(row.cash_price) !== finalCashPrice)
-    ) {
-      supabase
-        .from('products')
-        .update({ standard_price: finalStandardPrice, cash_price: finalCashPrice })
-        .eq('id', row.id)
-        .then(({ error: updateErr }) => {
-          if (updateErr) {
-            supabase.from('products').update({ standard_price: finalStandardPrice }).eq('id', row.id);
-          }
-        });
-    }
+    // A fonte da verdade primária é o banco de dados. O catálogo estático só serve como fallback inicial se o preço no banco for 0/ausente.
+    const finalStandardPrice = dbStandardPrice || (catalogMatch?.standardPrice ?? 0);
+    const finalCashPrice = dbCashPrice || (catalogMatch?.cashPrice ?? finalStandardPrice);
 
     return {
       id: row.id,
