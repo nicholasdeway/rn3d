@@ -202,7 +202,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   // Clean expenses (exclude SYS_ internal balance rows and deduplicate identical order payment entries)
   const cleanExpenses = useMemo(() => {
     const raw = expenses.filter(
-      (exp) => !exp.referenceCode?.startsWith('SYS_') && exp.category !== 'Transferência de Marketplace'
+      (exp) => !exp.referenceCode?.startsWith('SYS_')
     );
 
     const seen = new Set<string>();

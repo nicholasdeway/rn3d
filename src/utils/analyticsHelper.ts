@@ -103,10 +103,7 @@ export function computeMonthlyAnalyticsData(
 
   // 4. Lançamentos de Despesas & Aportes
   expenses.forEach((exp) => {
-    if (
-      exp.referenceCode?.startsWith('SYS_') ||
-      exp.category === 'Transferência de Marketplace'
-    ) {
+    if (exp.referenceCode?.startsWith('SYS_')) {
       return;
     }
 

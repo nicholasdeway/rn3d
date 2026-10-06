@@ -299,9 +299,9 @@ export function useExpenses(
     if (exp) {
       let newBalance = accountBalances.nubank;
 
-      if (exp.category === 'Entrada de Pedido' || exp.category === 'Aporte / Reembolso de Sócio') {
+      if (exp.category === 'Entrada de Pedido' || exp.category === 'Aporte / Reembolso de Sócio' || exp.category === 'Transferência de Marketplace') {
         newBalance = Math.max(0, newBalance - (exp.amount || 0));
-      } else if (exp.category === 'Retirada' || exp.category !== 'Transferência de Marketplace') {
+      } else if (exp.category === 'Retirada') {
         newBalance = newBalance + (exp.amount || 0);
       }
 
