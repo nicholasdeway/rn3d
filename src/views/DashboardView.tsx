@@ -67,8 +67,28 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return computeMonthlyAnalyticsData(orders, transactions, consignments, expenses);
   }, [orders, transactions, consignments, expenses]);
 
-  // Compute dynamic KPIs
-  const totalRevenue = orders.reduce((acc, o) => acc + (Number(o.paidAmount) || 0), 0);
+  // Compute dynamic KPIs (Faturamento Acumulado inclui pedidos, entradas de pedidos e resgates de marketplaces)
+  const totalRevenue = useMemo(() => {
+    const ordersPaid = orders.reduce((acc, o) => acc + (Number(o.paidAmount) || 0), 0);
+
+    const marketplaceTransfers = expenses
+      .filter((e) => e.category === 'Transferência de Marketplace' || e.category === 'Entrada de Pedido' || e.category === 'Aporte / Reembolso de Sócio')
+      .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+
+    const standaloneTransactions = transactions
+      .filter((t) => {
+        if (!t) return false;
+        const typeLower = (t.type || '').toLowerCase();
+        const isReceita = typeLower.includes('receita') || typeLower.includes('venda') || typeLower.includes('entrada') || typeLower.includes('recebimento');
+        if (!isReceita) return false;
+        if (t.type === 'Recebimento de Pedido') return false;
+        if (t.notes && typeof t.notes === 'string' && t.notes.toLowerCase().includes('referente ao pedido')) return false;
+        return true;
+      })
+      .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+
+    return ordersPaid + marketplaceTransfers + standaloneTransactions;
+  }, [orders, expenses, transactions]);
   const totalReceivable = orders.reduce(
     (acc, o) => acc + Math.max(0, (Number(o.totalValue) || 0) - (Number(o.paidAmount) || 0)),
     0

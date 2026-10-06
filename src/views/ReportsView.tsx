@@ -224,9 +224,9 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     return allProductsRanked.slice(0, 5);
   }, [allProductsRanked]);
 
-  // 3. Compute Client / Partner Store Rankings (filtered)
+  // 3. Compute Client / Partner Store Rankings (filtered, incluindo resgates de marketplaces)
   const clientRankings = useMemo(() => {
-    return clients.map((cli) => {
+    const mappedClients = clients.map((cli) => {
       let ordersCount = 0;
       let totalRevenue = 0;
 
@@ -247,7 +247,17 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       );
       const consignmentsValue = clientConsignments.reduce((acc, c) => acc + c.totalValue, 0);
 
-      const combinedRevenue = totalRevenue + consignmentsValue;
+      // Sum any direct income expenses matched to this client
+      const clientExpensesValue = filteredExpenses
+        .filter((e) => {
+          if (e.category !== 'Transferência de Marketplace' && e.category !== 'Entrada de Pedido') return false;
+          const beneficiaryMatch = e.beneficiary && e.beneficiary.toLowerCase().trim() === cli.name.toLowerCase().trim();
+          const descMatch = e.description && e.description.toLowerCase().trim().includes(cli.name.toLowerCase().trim());
+          return beneficiaryMatch || descMatch;
+        })
+        .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+
+      const combinedRevenue = totalRevenue + consignmentsValue + clientExpensesValue;
 
       return {
         id: cli.id,
@@ -263,7 +273,48 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         lastVisitDate: cli.lastVisitDate,
       };
     });
-  }, [clients, filteredOrders, filteredConsignments]);
+
+    // Virtual entries for Marketplaces (Shopee, Mercado Livre, TikTok Shop, Amazon)
+    const marketplaceTransfers = filteredExpenses.filter((e) => e.category === 'Transferência de Marketplace');
+    const marketplaceMap = new Map<string, { count: number; total: number }>();
+
+    marketplaceTransfers.forEach((exp) => {
+      let source = exp.sourceAccount || '';
+      if (!source) {
+        if (exp.description?.includes('Shopee')) source = 'Shopee';
+        else if (exp.description?.includes('Mercado Livre')) source = 'Mercado Livre';
+        else if (exp.description?.includes('TikTok')) source = 'TikTok Shop';
+        else if (exp.description?.includes('Amazon')) source = 'Amazon';
+        else source = 'Marketplace E-commerce';
+      }
+      const cur = marketplaceMap.get(source) || { count: 0, total: 0 };
+      cur.count += 1;
+      cur.total += Number(exp.amount) || 0;
+      marketplaceMap.set(source, cur);
+    });
+
+    const marketplaceEntries: typeof mappedClients = [];
+    marketplaceMap.forEach((data, name) => {
+      const alreadyMapped = mappedClients.some((c) => c.name.toLowerCase().includes(name.toLowerCase()));
+      if (!alreadyMapped && data.total > 0) {
+        marketplaceEntries.push({
+          id: `mkt-${name.toLowerCase().replace(/\s+/g, '-')}`,
+          name: `${name} (Resgate / E-commerce)`,
+          fantasyName: `Canal Online - ${name}`,
+          city: 'E-Commerce Online',
+          type: 'Marketplace',
+          agreedPriceLevel: 'Online',
+          ordersCount: data.count,
+          consignmentsCount: 0,
+          productsOnSiteCount: 0,
+          totalRevenue: data.total,
+          lastVisitDate: undefined,
+        });
+      }
+    });
+
+    return [...mappedClients, ...marketplaceEntries];
+  }, [clients, filteredOrders, filteredConsignments, filteredExpenses]);
 
   // Sorted client rankings
   const allClientsRanked = useMemo(() => {
