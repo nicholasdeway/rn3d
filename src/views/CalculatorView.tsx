@@ -552,8 +552,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                     step="0.01"
                     min="0"
                     inputMode="decimal"
-                    value={inputs.spoolPrice}
-                    onChange={(e) => handleInputChange('spoolPrice', parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    value={inputs.spoolPrice === 0 ? '' : inputs.spoolPrice}
+                    onChange={(e) => handleInputChange('spoolPrice', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   />
                 </div>
@@ -570,8 +571,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                     min="100"
                     step="50"
                     inputMode="numeric"
-                    value={inputs.spoolWeightGrams}
-                    onChange={(e) => handleInputChange('spoolWeightGrams', parseFloat(e.target.value) || 0)}
+                    placeholder="1000"
+                    value={inputs.spoolWeightGrams === 0 ? '' : inputs.spoolWeightGrams}
+                    onChange={(e) => handleInputChange('spoolWeightGrams', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
@@ -591,8 +593,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                     min="1"
                     step="1"
                     inputMode="numeric"
-                    value={inputs.printWeightGrams}
-                    onChange={(e) => handleInputChange('printWeightGrams', parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    value={inputs.printWeightGrams === 0 ? '' : inputs.printWeightGrams}
+                    onChange={(e) => handleInputChange('printWeightGrams', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-indigo-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
@@ -612,8 +615,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                       max="50"
                       step="1"
                       inputMode="decimal"
-                      value={inputs.failureRatePct}
-                      onChange={(e) => handleInputChange('failureRatePct', Math.max(0, parseInt(e.target.value) || 0))}
+                      placeholder="0"
+                      value={inputs.failureRatePct === 0 ? '' : inputs.failureRatePct}
+                      onChange={(e) => handleInputChange('failureRatePct', e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value) || 0))}
                       className="w-14 px-1.5 py-0.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-900 text-right focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-mono"
                     />
                     <span className="text-[11px] font-mono font-bold text-slate-500">%</span>
@@ -688,8 +692,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                     step="0.01"
                     min="0"
                     inputMode="decimal"
-                    value={inputs.energyKwhCost}
-                    onChange={(e) => handleInputChange('energyKwhCost', parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                    value={inputs.energyKwhCost === 0 ? '' : inputs.energyKwhCost}
+                    onChange={(e) => handleInputChange('energyKwhCost', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   />
                 </div>
@@ -706,8 +711,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                     step="10"
                     min="50"
                     inputMode="numeric"
-                    value={inputs.printerPowerWatts}
-                    onChange={(e) => handleInputChange('printerPowerWatts', parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    value={inputs.printerPowerWatts === 0 ? '' : inputs.printerPowerWatts}
+                    onChange={(e) => handleInputChange('printerPowerWatts', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">
@@ -727,8 +733,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                       type="number"
                       min="0"
                       inputMode="numeric"
-                      value={inputs.printHours}
-                      onChange={(e) => handleInputChange('printHours', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      value={inputs.printHours === 0 ? '' : inputs.printHours}
+                      onChange={(e) => handleInputChange('printHours', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
                       className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 text-center focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                     />
                     <span className="text-[10px] text-slate-400 block text-center mt-0.5">Horas</span>
@@ -740,8 +747,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                       min="0"
                       max="59"
                       inputMode="numeric"
-                      value={inputs.printMinutes}
-                      onChange={(e) => handleInputChange('printMinutes', parseInt(e.target.value) || 0)}
+                      placeholder="0"
+                      value={inputs.printMinutes === 0 ? '' : inputs.printMinutes}
+                      onChange={(e) => handleInputChange('printMinutes', e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
                       className="w-full px-2 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 text-center focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                     />
                     <span className="text-[10px] text-slate-400 block text-center mt-0.5">Minutos</span>
@@ -778,8 +786,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                     step="0.10"
                     min="0"
                     inputMode="decimal"
-                    value={inputs.packagingCost}
-                    onChange={(e) => handleInputChange('packagingCost', parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    value={inputs.packagingCost === 0 ? '' : inputs.packagingCost}
+                    onChange={(e) => handleInputChange('packagingCost', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                   />
                 </div>
@@ -799,8 +808,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                     step="0.10"
                     min="0"
                     inputMode="decimal"
-                    value={inputs.tagsCardsCost}
-                    onChange={(e) => handleInputChange('tagsCardsCost', parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    value={inputs.tagsCardsCost === 0 ? '' : inputs.tagsCardsCost}
+                    onChange={(e) => handleInputChange('tagsCardsCost', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                   />
                 </div>
@@ -820,8 +830,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                     step="0.10"
                     min="0"
                     inputMode="decimal"
-                    value={inputs.hardwareCost}
-                    onChange={(e) => handleInputChange('hardwareCost', parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    value={inputs.hardwareCost === 0 ? '' : inputs.hardwareCost}
+                    onChange={(e) => handleInputChange('hardwareCost', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                   />
                 </div>
@@ -841,8 +852,9 @@ Qualquer dúvida estou à disposição! 🚀`;
                     step="0.50"
                     min="0"
                     inputMode="decimal"
-                    value={inputs.laborPrepCost}
-                    onChange={(e) => handleInputChange('laborPrepCost', parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    value={inputs.laborPrepCost === 0 ? '' : inputs.laborPrepCost}
+                    onChange={(e) => handleInputChange('laborPrepCost', e.target.value === '' ? 0 : parseFloat(e.target.value) || 0)}
                     className="w-full pl-9 pr-3 py-2 bg-red-500/10 dark:bg-rose-950/40 border-2 border-red-600 dark:border-rose-500 rounded-xl text-sm font-bold text-slate-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500/30 transition-all"
                   />
                 </div>
