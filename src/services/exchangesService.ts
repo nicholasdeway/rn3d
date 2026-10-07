@@ -1,50 +1,17 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { ExchangeNote } from '../types';
+import { normalizeToIsoDate } from '../utils/formatters';
 
 /**
  * 100% Cloud-Native Supabase Persistence for Exchanges & Transfers
- * Works cleanly with existing Supabase schema (orders & order_items tables, plus optional exchanges table)
+ * Uses standard 'orders' & 'order_items' tables to ensure 100% compatibility across all devices.
  */
 export async function fetchExchanges(): Promise<ExchangeNote[]> {
   if (!isSupabaseConfigured()) return [];
 
   const exchangesMap = new Map<string, ExchangeNote>();
 
-  // 1. Try fetching from dedicated 'exchanges' table if exists (suppress 404 silently)
-  try {
-    const { data: exData, error: exErr } = await supabase
-      .from('exchanges')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!exErr && exData && Array.isArray(exData)) {
-      exData.forEach((row) => {
-        let itemsRemoved = [];
-        let itemsAdded = [];
-        try { itemsRemoved = typeof row.items_removed === 'string' ? JSON.parse(row.items_removed) : (row.items_removed || []); } catch (_) {}
-        try { itemsAdded = typeof row.items_added === 'string' ? JSON.parse(row.items_added) : (row.items_added || []); } catch (_) {}
-
-        const ex: ExchangeNote = {
-          id: row.exchange_code || row.id,
-          visitId: row.visit_id || undefined,
-          clientId: row.client_id || '',
-          clientName: row.client_name || 'Cliente Local',
-          destinationClientId: row.destination_client_id || undefined,
-          destinationClientName: row.destination_client_name || undefined,
-          type: row.type || 'recolhimento_oficina',
-          date: row.date || new Date().toISOString().split('T')[0],
-          createdAt: row.created_at || undefined,
-          responsible: row.responsible || 'Nicholas / Rafael',
-          itemsRemoved,
-          itemsAdded,
-          notes: row.notes || '',
-        };
-        exchangesMap.set(ex.id.toLowerCase().trim(), ex);
-      });
-    }
-  } catch (_) {}
-
-  // 2. Fetch from 'orders' table (TRC- prefix or 'Troca / Recolhimento' status)
+  // Fetch exchange records stored in 'orders' table
   try {
     const { data: oData, error: oErr } = await supabase
       .from('orders')
@@ -136,11 +103,12 @@ export async function createExchange(exchange: ExchangeNote): Promise<boolean> {
     };
 
     const statusPayload = `Troca / Recolhimento [META:${JSON.stringify(meta)}]`;
+    const isoDate = normalizeToIsoDate(exchange.date);
 
     const orderPayload: any = {
       order_code: exchange.id,
       client_name: exchange.clientName || 'Cliente Local',
-      date: exchange.date || new Date().toISOString().split('T')[0],
+      date: isoDate,
       items_count: totalItems,
       total_value: 0,
       paid_amount: 0,
@@ -152,26 +120,7 @@ export async function createExchange(exchange: ExchangeNote): Promise<boolean> {
       orderPayload.client_id = exchange.clientId;
     }
 
-    // 1. Try inserting into dedicated 'exchanges' table if exists (ignore 404 errors silently)
-    try {
-      await supabase
-        .from('exchanges')
-        .insert([{
-          exchange_code: exchange.id,
-          client_id: orderPayload.client_id,
-          client_name: exchange.clientName,
-          destination_client_id: exchange.destinationClientId,
-          destination_client_name: exchange.destinationClientName,
-          type: exchange.type,
-          date: exchange.date,
-          responsible: exchange.responsible,
-          notes: exchange.notes,
-          items_removed: JSON.stringify(exchange.itemsRemoved),
-          items_added: JSON.stringify(exchange.itemsAdded || []),
-        }]);
-    } catch (_) {}
-
-    // 2. Always insert into orders & order_items (using standard schema columns ONLY)
+    // Insert into orders table using ONLY standard valid columns
     const { data: oData, error: oErr } = await supabase
       .from('orders')
       .insert([orderPayload])
@@ -208,15 +157,7 @@ export async function deleteExchange(exchangeId: string): Promise<boolean> {
   try {
     const cleanId = exchangeId.trim();
 
-    // 1. Try deleting from dedicated 'exchanges' table if exists (ignore errors silently)
-    try {
-      await supabase
-        .from('exchanges')
-        .delete()
-        .or(`exchange_code.ilike.${cleanId},id.ilike.${cleanId}`);
-    } catch (_) {}
-
-    // 2. Find matching rows in 'orders' table
+    // Find matching rows in 'orders' table
     const { data: matchingOrders } = await supabase
       .from('orders')
       .select('id, order_code')
@@ -224,7 +165,7 @@ export async function deleteExchange(exchangeId: string): Promise<boolean> {
 
     if (matchingOrders && matchingOrders.length > 0) {
       for (const ord of matchingOrders) {
-        // Delete items first
+        // Delete order items
         await supabase.from('order_items').delete().eq('order_id', ord.id);
         // Delete order row
         await supabase.from('orders').delete().eq('id', ord.id);
