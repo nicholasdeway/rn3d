@@ -24,6 +24,39 @@ interface ExchangesViewProps {
   preselectedClientId?: string;
 }
 
+const parseDateToObj = (dateStr?: string): Date | null => {
+  if (!dateStr) return null;
+  const str = dateStr.trim();
+
+  // Format: DD/MM/YYYY or DD-MM-YYYY
+  if (str.includes('/') || (str.includes('-') && str.split('-')[0].length <= 2)) {
+    const separator = str.includes('/') ? '/' : '-';
+    const parts = str.split(separator);
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+        return new Date(year, month, day);
+      }
+    }
+  }
+
+  // Format: YYYY-MM-DD or ISO string
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+};
+
+const calculateDaysSince = (dateStr?: string): number => {
+  const parsedDate = parseDateToObj(dateStr);
+  if (!parsedDate) return 0;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const consDay = new Date(parsedDate.getFullYear(), parsedDate.getMonth(), parsedDate.getDate());
+  const diffTime = Math.max(0, today.getTime() - consDay.getTime());
+  return Math.floor(diffTime / (1000 * 60 * 60 * 24));
+};
+
 export const ExchangesView: React.FC<ExchangesViewProps> = ({
   exchanges,
   clients = [],
@@ -66,13 +99,26 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
         (cons.clientName && cons.clientName.toLowerCase().trim() === sourceClient.name.toLowerCase().trim());
 
       if (matchesClient && cons.items) {
+        const days = calculateDaysSince(cons.date || cons.createdAt);
+
         cons.items.forEach((cItem) => {
           const key = cItem.productId || cItem.productName.toLowerCase().trim();
+          const prodMatch = products.find(
+            (p) => p.id === cItem.productId || p.name.toLowerCase().trim() === cItem.productName.toLowerCase().trim()
+          );
+
           if (map.has(key)) {
             const existing = map.get(key)!;
             const newQty = existing.quantityOnSite + cItem.quantity;
             existing.quantityOnSite = newQty;
             existing.valuation = newQty * existing.unitPrice;
+            if (days > (existing.daysOnSite || 0)) {
+              existing.daysOnSite = days;
+              existing.status = days >= 30 ? 'Alerta (Sem Giro)' : 'Normal';
+            }
+            if (!existing.imageUrl && (cItem.imageUrl || prodMatch?.imageUrl)) {
+              existing.imageUrl = cItem.imageUrl || prodMatch?.imageUrl;
+            }
           } else {
             map.set(key, {
               productId: cItem.productId || `prod-${Math.random().toString(36).substr(2, 6)}`,
@@ -80,8 +126,9 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
               quantityOnSite: cItem.quantity,
               unitPrice: cItem.unitPrice,
               valuation: cItem.subtotal,
-              daysOnSite: 0,
-              status: 'Normal',
+              daysOnSite: days,
+              status: days >= 30 ? 'Alerta (Sem Giro)' : 'Normal',
+              imageUrl: cItem.imageUrl || prodMatch?.imageUrl,
             });
           }
         });
@@ -112,13 +159,22 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
       const invFromState = clientInventories[sourceClient.id] || [];
       invFromState.forEach((item) => {
         if (item.quantityOnSite > 0) {
-          map.set(item.productId || item.productName.toLowerCase().trim(), { ...item });
+          const prodMatch = products.find(
+            (p) => p.id === item.productId || p.name.toLowerCase().trim() === item.productName.toLowerCase().trim()
+          );
+          const computedDays = item.lastMovementDate ? calculateDaysSince(item.lastMovementDate) : (item.daysOnSite || 0);
+          map.set(item.productId || item.productName.toLowerCase().trim(), {
+            ...item,
+            daysOnSite: computedDays,
+            status: computedDays >= 30 ? 'Alerta (Sem Giro)' : (item.status || 'Normal'),
+            imageUrl: item.imageUrl || prodMatch?.imageUrl,
+          });
         }
       });
     }
 
     return Array.from(map.values()).filter((item) => item.quantityOnSite > 0);
-  }, [sourceClient, clientInventories, consignments, exchanges]);
+  }, [sourceClient, clientInventories, consignments, exchanges, products]);
 
   // Combine allocated source inventory with any catalog items manually added by user
   const allAvailableItems = useMemo(() => {
@@ -145,6 +201,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
       valuation: (prod.suggestedPrice || prod.price || 0) * (prod.stockQuantity || 1),
       daysOnSite: 0,
       status: 'Adicionado do Catálogo',
+      imageUrl: prod.imageUrl,
     };
 
     setCustomCatalogItems((prev) => {
@@ -640,27 +697,43 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                                 : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800'
                             }`}
                           >
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <h5 className="font-bold text-slate-900 dark:text-slate-100 text-xs">{item.productName}</h5>
-                                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                            <div className="flex items-center gap-3">
+                              {item.imageUrl ? (
+                                <img
+                                  src={item.imageUrl}
+                                  alt={item.productName}
+                                  className="w-12 h-12 object-cover rounded-xl border border-slate-200 dark:border-slate-700 shrink-0 bg-slate-100 dark:bg-slate-800"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-400 shrink-0">
+                                  <Boxes className="w-6 h-6" />
+                                </div>
+                              )}
+
+                              <div className="min-w-0 flex-1">
+                                <h5 className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">{item.productName}</h5>
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono block">
                                   R$ {item.unitPrice.toFixed(2).replace('.', ',')} / un
                                 </span>
+                                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-semibold block mt-0.5 font-mono">
+                                  ⏳ {item.daysOnSite || 0} {(item.daysOnSite || 0) === 1 ? 'dia' : 'dias'} no local
+                                </span>
                               </div>
+
                               <span
                                 className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 ${
                                   item.status === 'Adicionado do Catálogo'
                                     ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                                    : item.daysOnSite >= 30 || item.status === 'Alerta (Sem Giro)'
+                                    : (item.daysOnSite || 0) >= 30 || item.status === 'Alerta (Sem Giro)'
                                     ? 'bg-amber-100 text-amber-800 border border-amber-300'
                                     : 'bg-emerald-100 text-emerald-800'
                                 }`}
                               >
                                 {item.status === 'Adicionado do Catálogo'
                                   ? 'Catálogo'
-                                  : item.daysOnSite >= 30
+                                  : (item.daysOnSite || 0) >= 30
                                   ? 'Parado (Sem Giro)'
-                                  : item.status}
+                                  : item.status || 'Normal'}
                               </span>
                             </div>
 
@@ -747,29 +820,44 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                             return (
                               <tr key={item.productId} className="hover:bg-slate-50 transition-colors">
                                 <td className="p-3.5 font-bold text-slate-900">
-                                  {item.productName}
-                                  <span className="block text-[11px] text-slate-400 font-normal font-mono">
-                                    R$ {item.unitPrice.toFixed(2).replace('.', ',')} / un
-                                  </span>
+                                  <div className="flex items-center gap-3">
+                                    {item.imageUrl ? (
+                                      <img
+                                        src={item.imageUrl}
+                                        alt={item.productName}
+                                        className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0 bg-slate-50"
+                                      />
+                                    ) : (
+                                      <div className="w-10 h-10 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+                                        <Boxes className="w-5 h-5" />
+                                      </div>
+                                    )}
+                                    <div>
+                                      <span className="block font-bold text-slate-900">{item.productName}</span>
+                                      <span className="block text-[11px] text-slate-400 font-normal font-mono">
+                                        R$ {item.unitPrice.toFixed(2).replace('.', ',')} / un
+                                      </span>
+                                    </div>
+                                  </div>
                                 </td>
-                                <td className="p-3.5 text-center text-slate-600 font-mono">
-                                  {item.daysOnSite} dias
+                                <td className="p-3.5 text-center text-slate-600 font-mono font-semibold">
+                                  {item.daysOnSite || 0} dias
                                 </td>
                                 <td className="p-3.5 text-center">
                                   <span
                                     className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
                                       item.status === 'Adicionado do Catálogo'
                                         ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                                        : item.daysOnSite >= 30 || item.status === 'Alerta (Sem Giro)'
+                                        : (item.daysOnSite || 0) >= 30 || item.status === 'Alerta (Sem Giro)'
                                         ? 'bg-amber-100 text-amber-800 border border-amber-300'
                                         : 'bg-emerald-100 text-emerald-800'
                                     }`}
                                   >
                                     {item.status === 'Adicionado do Catálogo'
                                       ? 'Catálogo'
-                                      : item.daysOnSite >= 30
+                                      : (item.daysOnSite || 0) >= 30
                                       ? 'Parado (Sem Giro)'
-                                      : item.status}
+                                      : item.status || 'Normal'}
                                   </span>
                                 </td>
                                 <td className="p-3.5 text-center font-bold text-slate-900">
