@@ -166,6 +166,7 @@ export function useAppData() {
     exchanges,
     setExchanges,
     handleExecuteExchange,
+    handleDeleteExchange,
   } = useExchanges(
     products,
     showToast,
@@ -913,6 +914,7 @@ function computeEnrichedClients(
     handleUpdateOrderStatus,
     handleUpdateOrderPayment: handleUpdateOrderPaymentWrapper,
     handleExecuteExchange,
+    handleDeleteExchange,
     handleScheduleVisit,
     handleDeleteVisit,
     handleCompleteVisit,

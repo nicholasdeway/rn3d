@@ -461,19 +461,17 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                   <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/60">
                     <span>Data: {formatDateBR(ex.date)}</span>
                     <div className="flex items-center gap-2">
-                      {onDeleteExchange && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingExchangeId(ex.id);
-                          }}
-                          className="p-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900 rounded-lg transition-colors cursor-pointer"
-                          title="Excluir Nota de Troca"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeletingExchangeId(ex.id);
+                        }}
+                        className="p-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900 rounded-lg transition-colors cursor-pointer"
+                        title="Excluir Nota de Troca"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -536,19 +534,17 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                       <td className="p-4 font-medium text-slate-700 dark:text-slate-300">{ex.responsible}</td>
                       <td className="p-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {onDeleteExchange && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeletingExchangeId(ex.id);
-                              }}
-                              className="p-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900 rounded-lg transition-colors cursor-pointer"
-                              title="Excluir Nota de Troca"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingExchangeId(ex.id);
+                            }}
+                            className="p-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900 rounded-lg transition-colors cursor-pointer"
+                            title="Excluir Nota de Troca"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
