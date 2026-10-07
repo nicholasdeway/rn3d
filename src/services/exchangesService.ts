@@ -21,8 +21,10 @@ export async function fetchExchanges(): Promise<ExchangeNote[]> {
     if (!oErr && oData && Array.isArray(oData)) {
       const exchangeRows = oData.filter(
         (row) =>
-          (row.order_code && row.order_code.toUpperCase().startsWith('TRC-')) ||
-          (row.payment_status_text && row.payment_status_text.startsWith('Troca'))
+          (row.order_code && row.order_code.toUpperCase().includes('TRC-')) ||
+          (row.payment_status_text &&
+            (row.payment_status_text.toLowerCase().includes('troca') ||
+              row.payment_status_text.toLowerCase().includes('recolhimento')))
       );
 
       exchangeRows.forEach((row) => {

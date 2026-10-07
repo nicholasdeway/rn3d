@@ -5,6 +5,8 @@ import { updateProduct } from '../services/productsService';
 import { createExchange, fetchExchanges, syncMissingExchangesToSupabase, deleteExchange } from '../services/exchangesService';
 import { createInventoryMovement } from '../services/movementsService';
 
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
 export function useExchanges(
   products: Product[],
   showToast: (msg: string, type?: 'success' | 'error' | 'info') => void,
@@ -21,36 +23,56 @@ export function useExchanges(
     safeSetLocalStorage('rn3d_exchanges', JSON.stringify(exchanges));
   }, [exchanges]);
 
-  // Fetch initial exchanges from Supabase PostgreSQL on mount and auto-upload any un-synced local notes
+  // Fetch initial exchanges from Supabase PostgreSQL on mount, listen to realtime changes across devices, and auto-sync
   useEffect(() => {
     let isMounted = true;
-    fetchExchanges()
-      .then((dbExchanges) => {
-        if (isMounted) {
-          setExchanges((prev) => {
-            const map = new Map<string, ExchangeNote>();
-            (dbExchanges || []).forEach((ex) => map.set(ex.id.toLowerCase().trim(), ex));
-            (prev || []).forEach((ex) => {
-              if (!map.has(ex.id.toLowerCase().trim())) {
-                map.set(ex.id.toLowerCase().trim(), ex);
+
+    const loadExchangesData = () => {
+      fetchExchanges()
+        .then((dbExchanges) => {
+          if (isMounted) {
+            setExchanges((prev) => {
+              const map = new Map<string, ExchangeNote>();
+              (dbExchanges || []).forEach((ex) => map.set(ex.id.toLowerCase().trim(), ex));
+              (prev || []).forEach((ex) => {
+                if (!map.has(ex.id.toLowerCase().trim())) {
+                  map.set(ex.id.toLowerCase().trim(), ex);
+                }
+              });
+              const merged = Array.from(map.values());
+
+              if (merged.length > 0) {
+                syncMissingExchangesToSupabase(merged).catch((err) =>
+                  console.error('Erro na sincronização de trocas locais:', err)
+                );
               }
+
+              return merged;
             });
-            const merged = Array.from(map.values());
+          }
+        })
+        .catch((err) => console.error('Erro ao buscar trocas no Supabase no carregamento inicial:', err));
+    };
 
-            if (merged.length > 0) {
-              syncMissingExchangesToSupabase(merged).catch((err) =>
-                console.error('Erro na sincronização de trocas locais:', err)
-              );
-            }
+    loadExchangesData();
 
-            return merged;
-          });
-        }
-      })
-      .catch((err) => console.error('Erro ao buscar trocas no Supabase no carregamento inicial:', err));
+    let channel: any;
+    if (isSupabaseConfigured()) {
+      channel = supabase
+        .channel('exchanges_realtime_changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'orders' },
+          () => {
+            loadExchangesData();
+          }
+        )
+        .subscribe();
+    }
 
     return () => {
       isMounted = false;
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 
