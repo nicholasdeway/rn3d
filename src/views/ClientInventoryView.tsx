@@ -1,14 +1,28 @@
 import React, { useState, useMemo } from 'react';
-import { Client, ClientInventoryItem, Consignment } from '../types';
-import { formatDateBR } from '../utils/formatters';
-import { Store, ChevronDown, ChevronUp, Boxes, DollarSign, MapPin, Repeat, ChevronsDown, ChevronsUp } from 'lucide-react';
+import { Client, ClientInventoryItem, Consignment, ExchangeNote, Visit } from '../types';
+import { formatDateBR, parseBRDate } from '../utils/formatters';
+import {
+  Store,
+  ChevronDown,
+  ChevronUp,
+  Boxes,
+  DollarSign,
+  MapPin,
+  Repeat,
+  ChevronsDown,
+  ChevronsUp,
+  History,
+  ArrowDownRight,
+  Package,
+} from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 
 interface ClientInventoryViewProps {
   clients: Client[];
   clientInventories: Record<string, ClientInventoryItem[]>;
   consignments?: Consignment[];
-  exchanges?: any[];
+  exchanges?: ExchangeNote[];
+  visits?: Visit[];
   onNavigateToExchanges?: (clientId: string) => void;
 }
 
@@ -17,6 +31,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
   clientInventories,
   consignments = [],
   exchanges = [],
+  visits = [],
   onNavigateToExchanges,
 }) => {
   const [expandedClientState, setExpandedClientState] = useState<Record<string, boolean>>({});
@@ -41,14 +56,24 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
     }));
   };
 
-  // Helper to reconcile items for any client across all active consignments
-  const getReconciledStoreItems = (cli: Client): ClientInventoryItem[] => {
-    const map = new Map<string, ClientInventoryItem>();
+  // Helper to reconcile items and audit history for any client across all consignments & exchanges
+  const getReconciledClientData = (cli: Client) => {
+    const itemMap = new Map<
+      string,
+      {
+        productId: string;
+        productName: string;
+        sku: string;
+        sentQuantity: number;
+        removedQuantity: number;
+        unitPrice: number;
+      }
+    >();
 
-    // 1. Accumulate items from ALL active consignments for this client (normalized by productName)
+    // 1. Accumulate items from ALL active consignments for this client
     consignments.forEach((cons) => {
       const matchesClient =
-        cons.clientId === cli.id ||
+        (cons.clientId && cons.clientId === cli.id) ||
         (cons.clientName && cons.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim());
 
       if (matchesClient && cons.items) {
@@ -56,68 +81,186 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
           const key = (cItem.productName || '').toLowerCase().trim();
           if (!key) return;
 
-          if (map.has(key)) {
-            const existing = map.get(key)!;
-            const newQty = existing.quantityOnSite + cItem.quantity;
-            existing.quantityOnSite = newQty;
-            existing.currentQuantity = newQty;
-            existing.sentQuantity = (existing.sentQuantity || 0) + cItem.quantity;
-            existing.valuation = newQty * existing.unitPrice;
+          if (itemMap.has(key)) {
+            const existing = itemMap.get(key)!;
+            existing.sentQuantity += cItem.quantity;
           } else {
-            map.set(key, {
-              productId: cItem.productId || `prod-${Math.random().toString(36).substr(2, 6)}`,
+            itemMap.set(key, {
+              productId: cItem.productId || `prod-${Math.random().toString(36).substring(2, 8)}`,
               productName: cItem.productName,
               sku: cItem.sku || '',
               sentQuantity: cItem.quantity,
-              soldQuantity: 0,
-              currentQuantity: cItem.quantity,
-              quantityOnSite: cItem.quantity,
-              unitPrice: cItem.unitPrice,
-              valuation: cItem.subtotal,
-              daysOnSite: 0,
-              status: 'Normal',
+              removedQuantity: 0,
+              unitPrice: cItem.unitPrice || 6.0,
             });
           }
         });
       }
     });
 
-    // 2. Fallback to clientInventories state if no consignments exist in system
-    if (map.size === 0 && consignments.length === 0) {
+    // 2. Accumulate items removed in previous exchanges/remanejamentos for this client
+    const clientExchanges = exchanges.filter(
+      (e) =>
+        (e.clientId && cli.id && e.clientId === cli.id) ||
+        (e.clientName && cli.name && e.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())
+    );
+
+    const removedAuditLogs: {
+      exchangeId: string;
+      date: string;
+      type: string;
+      destinationName: string;
+      items: { productName: string; quantity: number; reason?: string }[];
+    }[] = [];
+
+    clientExchanges.forEach((ex) => {
+      const exItems: { productName: string; quantity: number; reason?: string }[] = [];
+
+      (ex.itemsRemoved || []).forEach((remItem) => {
+        const qty = Number(remItem.quantity) || 0;
+        if (qty <= 0) return;
+
+        const key = (remItem.productName || '').toLowerCase().trim();
+        if (key && itemMap.has(key)) {
+          const existing = itemMap.get(key)!;
+          existing.removedQuantity += qty;
+        }
+
+        exItems.push({
+          productName: remItem.productName || 'Produto Consignado',
+          quantity: qty,
+          reason: remItem.reason || ex.notes,
+        });
+      });
+
+      if (exItems.length > 0) {
+        removedAuditLogs.push({
+          exchangeId: ex.id,
+          date: ex.date || (ex as any).created_at || (ex as any).createdAt || '',
+          type: ex.type === 'recolhimento_oficina' ? 'Recolhimento p/ Oficina' : 'Remanejo entre Clientes',
+          destinationName: ex.destinationClientName || 'Oficina RN 3D',
+          items: exItems,
+        });
+      }
+    });
+
+    // 3. Fallback to clientInventories state if no consignments exist in system
+    if (itemMap.size === 0 && consignments.length === 0) {
       const invFromState = clientInventories[cli.id] || [];
       invFromState.forEach((item) => {
         const key = (item.productName || '').toLowerCase().trim();
         const qty = item.quantityOnSite ?? item.currentQuantity ?? 0;
         if (qty > 0 && key) {
-          map.set(key, {
-            ...item,
-            quantityOnSite: qty,
-            currentQuantity: qty,
+          itemMap.set(key, {
+            productId: item.productId,
+            productName: item.productName,
+            sku: item.sku || '',
             sentQuantity: item.sentQuantity ?? qty,
-            soldQuantity: item.soldQuantity ?? 0,
+            removedQuantity: 0,
+            unitPrice: item.unitPrice || 6.0,
           });
         }
       });
     }
 
-    return Array.from(map.values()).filter((item) => (item.quantityOnSite || item.currentQuantity || 0) > 0);
+    // Build net store items
+    const items: ClientInventoryItem[] = Array.from(itemMap.values())
+      .map((entry) => {
+        const netQty = Math.max(0, entry.sentQuantity - entry.removedQuantity);
+        return {
+          productId: entry.productId,
+          productName: entry.productName,
+          sku: entry.sku,
+          sentQuantity: entry.sentQuantity,
+          soldQuantity: entry.removedQuantity,
+          currentQuantity: netQty,
+          quantityOnSite: netQty,
+          unitPrice: entry.unitPrice,
+          valuation: netQty * entry.unitPrice,
+          daysOnSite: 0,
+          status: 'Normal' as const,
+        };
+      })
+      .filter((item) => item.quantityOnSite > 0 || item.sentQuantity > 0 || item.soldQuantity > 0);
+
+    const totalQty = items.reduce((acc, i) => acc + i.quantityOnSite, 0);
+    const totalValuation = items.reduce((acc, i) => acc + i.valuation, 0);
+
+    // 4. Calculate latest audit date dynamically across client visits, exchanges, consignments, and lastVisitDate
+    let latestDate: Date | null = parseBRDate(cli.lastVisitDate);
+    let latestStr: string = cli.lastVisitDate || 'N/A';
+
+    consignments.forEach((c) => {
+      if (c.clientId === cli.id || (c.clientName && c.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())) {
+        const d = parseBRDate(c.lastAuditDate || c.date);
+        if (d && (!latestDate || d.getTime() > latestDate.getTime())) {
+          latestDate = d;
+          latestStr = c.lastAuditDate || c.date;
+        }
+      }
+    });
+
+    clientExchanges.forEach((ex) => {
+      const rawDate = ex.date || (ex as any).created_at || (ex as any).createdAt;
+      const d = parseBRDate(rawDate);
+      if (d && (!latestDate || d.getTime() > latestDate.getTime())) {
+        latestDate = d;
+        latestStr = rawDate;
+      }
+    });
+
+    const clientVisits = visits.filter(
+      (v) =>
+        (v.clientId && cli.id && v.clientId === cli.id) ||
+        (v.clientName && cli.name && v.clientName.toLowerCase().trim() === cli.name.toLowerCase().trim())
+    );
+    clientVisits.forEach((v) => {
+      const rawVDate = v.completedAt || v.lastVisitText || v.scheduledDate;
+      const d = parseBRDate(rawVDate);
+      if (d && (!latestDate || d.getTime() > latestDate.getTime())) {
+        latestDate = d;
+        latestStr = rawVDate;
+      }
+    });
+
+    return {
+      items,
+      totalQty,
+      totalValuation,
+      removedAuditLogs,
+      latestAuditDate: latestStr,
+    };
   };
 
-  const totalProductsConsigned = useMemo(() => {
-    return clients.reduce((acc, c) => {
-      const items = getReconciledStoreItems(c);
-      const itemsQty = items.reduce((sum, i) => sum + i.quantityOnSite, 0);
-      return acc + itemsQty;
-    }, 0);
-  }, [clients, clientInventories, consignments]);
+  // Sort clients by largest product quantity descending
+  const sortedClientsData = useMemo(() => {
+    return clients
+      .map((cli) => {
+        const data = getReconciledClientData(cli);
+        return {
+          client: cli,
+          data,
+        };
+      })
+      .sort((a, b) => {
+        if (b.data.totalQty !== a.data.totalQty) {
+          return b.data.totalQty - a.data.totalQty;
+        }
+        if (b.data.totalValuation !== a.data.totalValuation) {
+          return b.data.totalValuation - a.data.totalValuation;
+        }
+        return a.client.name.localeCompare(b.client.name);
+      });
+  }, [clients, consignments, exchanges, visits, clientInventories]);
 
-  const totalValuation = useMemo(() => {
-    return clients.reduce((acc, c) => {
-      const items = getReconciledStoreItems(c);
-      const itemsVal = items.reduce((sum, i) => sum + i.valuation, 0);
-      return acc + itemsVal;
-    }, 0);
-  }, [clients, clientInventories, consignments]);
+  // Overall KPI totals across all clients
+  const totalProductsConsigned = useMemo(() => {
+    return sortedClientsData.reduce((acc, item) => acc + item.data.totalQty, 0);
+  }, [sortedClientsData]);
+
+  const totalValuationAll = useMemo(() => {
+    return sortedClientsData.reduce((acc, item) => acc + item.data.totalValuation, 0);
+  }, [sortedClientsData]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -138,7 +281,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
             Estoque Alocado em Clientes
           </h2>
           <p className="text-xs text-slate-500 mt-1">
-            Mapeamento em tempo real de onde suas mercadorias em consignação estão alocadas.
+            Mapeamento em tempo real de onde suas mercadorias em consignação estão alocadas (ordenado por maior estoque).
           </p>
         </div>
 
@@ -188,7 +331,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
             </div>
           </div>
           <p className="text-lg sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-2 sm:mt-3 tracking-tight truncate">
-            R$ {totalValuation.toFixed(2).replace('.', ',')}
+            R$ {totalValuationAll.toFixed(2).replace('.', ',')}
           </p>
         </div>
 
@@ -207,13 +350,13 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
         </div>
       </div>
 
-      {/* Client Consignment Accordion List */}
+      {/* Client Consignment Accordion List (Sorted by largest quantity) */}
       <div className="space-y-4">
-        {clients.map((cli) => {
+        {sortedClientsData.map(({ client: cli, data }, index) => {
           const isExpanded = !!expandedClientState[cli.id];
-          const itemsAtStore = getReconciledStoreItems(cli);
-          const storeProductsCount = itemsAtStore.reduce((acc, i) => acc + i.quantityOnSite, 0);
-          const storeValuation = itemsAtStore.reduce((acc, i) => acc + i.valuation, 0);
+          const itemsAtStore = data.items;
+          const storeProductsCount = data.totalQty;
+          const storeValuation = data.totalValuation;
 
           return (
             <div
@@ -244,9 +387,14 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                     )}
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900 text-sm">{cli.name}</h3>
-                    <p className="text-xs text-slate-500">
-                      {cli.city} • Última conferência: {formatDateBR(cli.lastVisitDate)}
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-slate-900 text-sm">{cli.name}</h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200">
+                        #{index + 1} em estoque
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      {cli.city} • Última conferência: <span className="font-semibold text-slate-700">{formatDateBR(data.latestAuditDate)}</span>
                     </p>
                   </div>
                 </div>
@@ -268,7 +416,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
 
                   <div className="text-right text-xs">
                     <span className="font-bold text-slate-900 block">
-                      {storeProductsCount} produtos
+                      {storeProductsCount} {storeProductsCount === 1 ? 'produto' : 'produtos'}
                     </span>
                     <span className="font-semibold text-emerald-600">
                       R$ {storeValuation.toFixed(2).replace('.', ',')}
@@ -283,56 +431,106 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
 
               {/* Accordion Content */}
               {isExpanded && (
-                <div className="p-5 bg-slate-50 border-t border-slate-100">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-bold text-slate-800 text-xs">
-                      Itens Presentes no Estabelecimento ({cli.name}):
-                    </h4>
-                    {onNavigateToExchanges && itemsAtStore.length > 0 && (
-                      <button
-                        onClick={() => onNavigateToExchanges(cli.id)}
-                        className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1"
-                      >
-                        <Repeat className="w-3.5 h-3.5" /> Migrar peças desta loja ➔
-                      </button>
+                <div className="p-5 bg-slate-50 border-t border-slate-100 space-y-5">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                        <Package className="w-4 h-4 text-indigo-600" />
+                        Estoque Atual no Estabelecimento ({cli.name}):
+                      </h4>
+                      {onNavigateToExchanges && itemsAtStore.length > 0 && (
+                        <button
+                          onClick={() => onNavigateToExchanges(cli.id)}
+                          className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1"
+                        >
+                          <Repeat className="w-3.5 h-3.5" /> Migrar peças desta loja ➔
+                        </button>
+                      )}
+                    </div>
+
+                    {itemsAtStore.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic bg-white p-4 rounded-xl border border-slate-200">Nenhum produto alocado nesta loja no momento.</p>
+                    ) : (
+                      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider">
+                            <tr>
+                              <th className="p-3">Produto</th>
+                              <th className="p-3 text-center">Enviado Inicial</th>
+                              <th className="p-3 text-center">Remanejado / Recolhido</th>
+                              <th className="p-3 text-center">Estoque Atual</th>
+                              <th className="p-3 text-right">Preço Unit.</th>
+                              <th className="p-3 text-right">Valoração Atual</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {itemsAtStore.map((item) => {
+                              const qty = item.quantityOnSite;
+                              const sent = item.sentQuantity;
+                              const removed = item.soldQuantity || 0;
+                              return (
+                                <tr key={item.productId} className="hover:bg-slate-50 transition-colors">
+                                  <td className="p-3 font-bold text-slate-900">{item.productName}</td>
+                                  <td className="p-3 text-center text-slate-600 font-medium">{sent} un</td>
+                                  <td className="p-3 text-center text-amber-700 font-semibold">
+                                    {removed > 0 ? `-${removed} un` : '0 un'}
+                                  </td>
+                                  <td className="p-3 text-center font-black text-indigo-700 text-sm bg-indigo-50/50">
+                                    {qty} un
+                                  </td>
+                                  <td className="p-3 text-right text-slate-600">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                                  <td className="p-3 text-right font-extrabold text-emerald-600 text-sm">
+                                    R$ {item.valuation.toFixed(2).replace('.', ',')}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
                     )}
                   </div>
 
-                  {itemsAtStore.length === 0 ? (
-                    <p className="text-xs text-slate-400 italic">Nenhum produto cadastrado nesta loja.</p>
-                  ) : (
-                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-100 text-slate-500 font-semibold uppercase">
-                          <tr>
-                            <th className="p-3">Produto</th>
-                            <th className="p-3 text-center">Enviado</th>
-                            <th className="p-3 text-center">Vendido</th>
-                            <th className="p-3 text-center">Atual</th>
-                            <th className="p-3 text-right">Preço Unit.</th>
-                            <th className="p-3 text-right">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {itemsAtStore.map((item) => {
-                            const qty = item.currentQuantity ?? item.quantityOnSite ?? 0;
-                            const sent = item.sentQuantity ?? qty;
-                            const sold = item.soldQuantity ?? 0;
-                            return (
-                              <tr key={item.productId} className="hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors">
-                                <td className="p-3 font-bold text-slate-900">{item.productName}</td>
-                                <td className="p-3 text-center text-slate-600">{sent}</td>
-                                <td className="p-3 text-center font-bold text-emerald-600">{sold}</td>
-                                <td className="p-3 text-center font-extrabold text-slate-900">{qty} un</td>
-                                <td className="p-3 text-right text-slate-600">R$ {item.unitPrice.toFixed(2)}</td>
-                                <td className="p-3 text-right font-bold text-slate-900">
-                                  R$ {(qty * item.unitPrice).toFixed(2)}
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                  {/* Histórico Auditado de Retiradas & Remanejamentos (igual PDF de Consignações) */}
+                  {data.removedAuditLogs.length > 0 && (
+                    <div className="pt-2 border-t border-slate-200/60 space-y-3">
+                      <h4 className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5 uppercase tracking-wide">
+                        <History className="w-4 h-4 text-amber-600" />
+                        Histórico de Retiradas & Remanejamentos Auditados ({cli.name})
+                      </h4>
+
+                      <div className="space-y-2.5">
+                        {data.removedAuditLogs.map((log) => (
+                          <div
+                            key={log.exchangeId}
+                            className="bg-amber-50/70 border border-amber-200/90 rounded-xl p-3 text-xs space-y-2"
+                          >
+                            <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-amber-200/60">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded text-[11px]">
+                                  {log.exchangeId}
+                                </span>
+                                <span className="font-semibold text-slate-800">
+                                  {formatDateBR(log.date)}
+                                </span>
+                              </div>
+                              <span className="text-[11px] font-bold text-amber-800 flex items-center gap-1">
+                                <ArrowDownRight className="w-3.5 h-3.5 text-amber-600" />
+                                {log.type} ➔ <span className="text-slate-900 font-extrabold">{log.destinationName}</span>
+                              </span>
+                            </div>
+
+                            <ul className="list-disc pl-5 space-y-1 text-slate-700">
+                              {log.items.map((item, idx) => (
+                                <li key={idx} className="font-medium">
+                                  <strong className="text-amber-900 font-bold">{item.quantity}x</strong> {item.productName}
+                                  {item.reason && <span className="text-slate-500 text-[11px]"> ({item.reason})</span>}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

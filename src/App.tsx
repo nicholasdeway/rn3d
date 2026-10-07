@@ -655,6 +655,7 @@ export function App() {
                   clients={appData.clients}
                   consignments={appData.consignments}
                   exchanges={appData.exchanges}
+                  visits={appData.visits}
                   onNavigateToExchanges={(cliId) => {
                     setPreselectedClientIdForAction(cliId);
                     setCurrentView('exchanges');
