@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ExchangeNote, Product, Client, Consignment } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import { updateProduct } from '../services/productsService';
-import { createExchange, fetchExchanges } from '../services/exchangesService';
+import { createExchange, fetchExchanges, syncMissingExchangesToSupabase } from '../services/exchangesService';
 import { createInventoryMovement } from '../services/movementsService';
 
 export function useExchanges(
@@ -21,21 +21,29 @@ export function useExchanges(
     safeSetLocalStorage('rn3d_exchanges', JSON.stringify(exchanges));
   }, [exchanges]);
 
-  // Fetch initial exchanges from Supabase PostgreSQL on mount
+  // Fetch initial exchanges from Supabase PostgreSQL on mount and auto-upload any un-synced local notes
   useEffect(() => {
     let isMounted = true;
     fetchExchanges()
       .then((dbExchanges) => {
-        if (isMounted && dbExchanges && Array.isArray(dbExchanges) && dbExchanges.length > 0) {
+        if (isMounted) {
           setExchanges((prev) => {
             const map = new Map<string, ExchangeNote>();
-            dbExchanges.forEach((ex) => map.set(ex.id.toLowerCase().trim(), ex));
+            (dbExchanges || []).forEach((ex) => map.set(ex.id.toLowerCase().trim(), ex));
             (prev || []).forEach((ex) => {
               if (!map.has(ex.id.toLowerCase().trim())) {
                 map.set(ex.id.toLowerCase().trim(), ex);
               }
             });
-            return Array.from(map.values());
+            const merged = Array.from(map.values());
+
+            if (merged.length > 0) {
+              syncMissingExchangesToSupabase(merged).catch((err) =>
+                console.error('Erro na sincronização de trocas locais:', err)
+              );
+            }
+
+            return merged;
           });
         }
       })

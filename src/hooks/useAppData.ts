@@ -245,6 +245,11 @@ export function useAppData() {
               }
             });
             const merged = Array.from(map.values());
+            if (merged.length > 0) {
+              syncMissingExchangesToSupabase(merged).catch((e) =>
+                console.error('Erro ao sincronizar trocas locais para o Supabase:', e)
+              );
+            }
             return prev && prev.length === merged.length && JSON.stringify(prev) === JSON.stringify(merged) ? prev : merged;
           });
         }
