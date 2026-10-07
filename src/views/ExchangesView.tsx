@@ -12,6 +12,7 @@ import {
   Building2,
   RotateCcw,
   Check,
+  Trash2,
 } from 'lucide-react';
 
 interface ExchangesViewProps {
@@ -21,6 +22,7 @@ interface ExchangesViewProps {
   products?: Product[];
   consignments?: Consignment[];
   onExecuteExchange?: (newExchange: ExchangeNote) => void;
+  onDeleteExchange?: (exchangeId: string) => void;
   preselectedClientId?: string;
 }
 
@@ -64,9 +66,11 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
   products = [],
   consignments = [],
   onExecuteExchange,
+  onDeleteExchange,
   preselectedClientId,
 }) => {
   const [selectedExchange, setSelectedExchange] = useState<ExchangeNote | null>(null);
+  const [deletingExchangeId, setDeletingExchangeId] = useState<string | null>(null);
 
   React.useEffect(() => {
     setSelectedExchange(null);
@@ -456,15 +460,30 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
 
                   <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-100 dark:border-slate-800/60">
                     <span>Data: {formatDateBR(ex.date)}</span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedExchange(ex);
-                      }}
-                      className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-lg font-bold text-[11px] cursor-pointer"
-                    >
-                      Ver Comprovante PDF
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {onDeleteExchange && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingExchangeId(ex.id);
+                          }}
+                          className="p-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900 rounded-lg transition-colors cursor-pointer"
+                          title="Excluir Nota de Troca"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedExchange(ex);
+                        }}
+                        className="px-3 py-1 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-lg font-bold text-[11px] cursor-pointer"
+                      >
+                        Ver Comprovante PDF
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -516,15 +535,30 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                       </td>
                       <td className="p-4 font-medium text-slate-700 dark:text-slate-300">{ex.responsible}</td>
                       <td className="p-4 text-right">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedExchange(ex);
-                          }}
-                          className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-lg font-semibold cursor-pointer text-xs"
-                        >
-                          Ver Comprovante PDF
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          {onDeleteExchange && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingExchangeId(ex.id);
+                              }}
+                              className="p-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900 rounded-lg transition-colors cursor-pointer"
+                              title="Excluir Nota de Troca"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedExchange(ex);
+                            }}
+                            className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-lg font-semibold cursor-pointer text-xs"
+                          >
+                            Ver Comprovante PDF
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1162,6 +1196,47 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
               <div className="pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
                 RN 3D Soluções — Sistema de Controle de Consignação e Gestão 3D • Documento Gerado em {new Date().toLocaleDateString('pt-BR')}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingExchangeId && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#181c26] w-full max-w-md rounded-2xl border border-slate-200 dark:border-[#202531] shadow-2xl p-6 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400 mb-4">
+              <div className="p-3 bg-rose-50 dark:bg-rose-950/60 rounded-full border border-rose-100 dark:border-rose-900/50">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">Excluir Nota de Troca</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Esta ação não poderá ser desfeita.</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 mb-6">
+              Tem certeza que deseja excluir permanentemente a Nota de Troca <strong className="font-mono text-slate-900 dark:text-slate-100">{deletingExchangeId}</strong>?
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingExchangeId(null)}
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl font-semibold text-xs transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (onDeleteExchange && deletingExchangeId) {
+                    onDeleteExchange(deletingExchangeId);
+                  }
+                  setDeletingExchangeId(null);
+                }}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-sm transition-colors cursor-pointer"
+              >
+                Sim, Excluir
+              </button>
             </div>
           </div>
         </div>

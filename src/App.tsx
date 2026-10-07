@@ -606,6 +606,7 @@ export function App() {
                   products={appData.products}
                   consignments={appData.consignments}
                   onExecuteExchange={appData.handleExecuteExchange}
+                  onDeleteExchange={appData.handleDeleteExchange}
                 />
               )}
 
