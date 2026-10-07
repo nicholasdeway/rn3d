@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ExchangeNote, Product, Client, Consignment } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import { updateProduct } from '../services/productsService';
-import { createExchange, fetchExchanges, syncMissingExchangesToSupabase } from '../services/exchangesService';
+import { createExchange, fetchExchanges, syncMissingExchangesToSupabase, deleteExchange } from '../services/exchangesService';
 import { createInventoryMovement } from '../services/movementsService';
 
 export function useExchanges(
@@ -239,9 +239,30 @@ export function useExchanges(
     }
   };
 
+  const handleDeleteExchange = async (exchangeId: string) => {
+    if (!exchangeId) return;
+
+    // 1. Immediately update UI state
+    setExchanges((prev) => prev.filter((e) => e.id.toLowerCase().trim() !== exchangeId.toLowerCase().trim()));
+
+    // 2. Delete from Supabase PostgreSQL
+    try {
+      const success = await deleteExchange(exchangeId);
+      if (success) {
+        showToast(`Nota de troca #${exchangeId} excluída com sucesso!`, 'success');
+      } else {
+        showToast(`Nota de troca #${exchangeId} removida localmente.`, 'info');
+      }
+    } catch (err) {
+      console.error('Erro ao excluir troca no Supabase:', err);
+      showToast(`Nota de troca #${exchangeId} removida localmente.`, 'info');
+    }
+  };
+
   return {
     exchanges,
     setExchanges,
     handleExecuteExchange,
+    handleDeleteExchange,
   };
 }

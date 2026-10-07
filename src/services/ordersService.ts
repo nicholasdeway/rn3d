@@ -148,7 +148,7 @@ export async function fetchOrders(): Promise<Order[]> {
         !row.client_name?.startsWith('SISTEMA_') &&
         !(row.order_code && row.order_code.startsWith('REM-')) &&
         !(row.order_code && row.order_code.startsWith('TRC-')) &&
-        row.payment_status_text !== 'Troca / Recolhimento'
+        !(row.payment_status_text && row.payment_status_text.startsWith('Troca'))
     )
     .map((row) => {
       const decoded = decodeOrderRow(row);

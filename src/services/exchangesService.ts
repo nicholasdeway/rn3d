@@ -3,14 +3,14 @@ import { ExchangeNote } from '../types';
 
 /**
  * 100% Cloud-Native Supabase Persistence for Exchanges & Transfers
- * Reads and writes directly to Supabase Postgres (orders, order_items & exchanges tables)
+ * Works cleanly with existing Supabase schema (orders & order_items tables, plus optional exchanges table)
  */
 export async function fetchExchanges(): Promise<ExchangeNote[]> {
   if (!isSupabaseConfigured()) return [];
 
   const exchangesMap = new Map<string, ExchangeNote>();
 
-  // 1. Try fetching from dedicated 'exchanges' table if exists
+  // 1. Try fetching from dedicated 'exchanges' table if exists (suppress 404 silently)
   try {
     const { data: exData, error: exErr } = await supabase
       .from('exchanges')
@@ -55,8 +55,7 @@ export async function fetchExchanges(): Promise<ExchangeNote[]> {
       const exchangeRows = oData.filter(
         (row) =>
           (row.order_code && row.order_code.toUpperCase().startsWith('TRC-')) ||
-          row.payment_status_text === 'Troca / Recolhimento' ||
-          (row.notes && row.notes.includes('[META:') && row.notes.includes('"type":'))
+          (row.payment_status_text && row.payment_status_text.startsWith('Troca'))
       );
 
       exchangeRows.forEach((row) => {
@@ -64,39 +63,33 @@ export async function fetchExchanges(): Promise<ExchangeNote[]> {
         if (exchangesMap.has(idKey)) return;
 
         let meta: any = {};
-        let cleanNotes = row.notes || '';
+        let statusText = row.payment_status_text || '';
 
-        if (cleanNotes.includes('[META:')) {
-          const startIdx = cleanNotes.indexOf('[META:');
-          const endIdx = cleanNotes.indexOf(']', startIdx);
+        if (statusText.includes('[META:')) {
+          const startIdx = statusText.indexOf('[META:');
+          const endIdx = statusText.indexOf(']', startIdx);
           if (startIdx !== -1 && endIdx > startIdx + 6) {
             try {
-              const jsonStr = cleanNotes.substring(startIdx + 6, endIdx);
+              const jsonStr = statusText.substring(startIdx + 6, endIdx);
               meta = JSON.parse(jsonStr);
-              cleanNotes = (cleanNotes.substring(0, startIdx) + cleanNotes.substring(endIdx + 1)).trim();
             } catch (_) {}
           }
         }
 
-        let itemsRemoved: { productId: string; productName: string; quantity: number; reason?: string }[] = [];
-        if (row.order_items && Array.isArray(row.order_items)) {
+        let itemsRemoved: { productId: string; productName: string; quantity: number; reason?: string }[] =
+          meta.itemsRemoved || [];
+
+        if (itemsRemoved.length === 0 && row.order_items && Array.isArray(row.order_items)) {
           itemsRemoved = row.order_items.map((i: any) => ({
             productId: i.product_id || '',
             productName: i.product_name,
             quantity: Number(i.quantity) || 1,
-            reason: cleanNotes || 'Troca / Recolhimento',
+            reason: meta.notes || 'Troca / Recolhimento',
           }));
         }
 
         let destinationClientName = meta.destinationClientName || '';
-        if (!destinationClientName && cleanNotes.includes('[Destino:')) {
-          destinationClientName = cleanNotes.split('[Destino:')[1]?.split(']')[0]?.trim() || '';
-        }
-
         let exchangeType: 'troca_local' | 'migracao_lojas' | 'recolhimento_oficina' = meta.type || 'recolhimento_oficina';
-        if (!meta.type && destinationClientName) {
-          exchangeType = destinationClientName.toLowerCase().includes('oficina') ? 'recolhimento_oficina' : 'migracao_lojas';
-        }
 
         const ex: ExchangeNote = {
           id: row.order_code || row.id,
@@ -111,14 +104,14 @@ export async function fetchExchanges(): Promise<ExchangeNote[]> {
           responsible: meta.responsible || 'Nicholas / Rafael',
           itemsRemoved,
           itemsAdded: meta.itemsAdded || [],
-          notes: cleanNotes || '',
+          notes: meta.notes || '',
         };
 
         exchangesMap.set(idKey, ex);
       });
     }
   } catch (err) {
-    console.error('Erro ao buscar trocas no Supabase:', err);
+    console.error('Erro ao buscar trocas em orders no Supabase:', err);
   }
 
   return Array.from(exchangesMap.values());
@@ -138,10 +131,11 @@ export async function createExchange(exchange: ExchangeNote): Promise<boolean> {
       type: exchange.type,
       responsible: exchange.responsible,
       notes: exchange.notes,
-      itemsAdded: exchange.itemsAdded,
+      itemsRemoved: exchange.itemsRemoved,
+      itemsAdded: exchange.itemsAdded || [],
     };
 
-    const notesPayload = `${exchange.notes || ''} [META:${JSON.stringify(meta)}]`;
+    const statusPayload = `Troca / Recolhimento [META:${JSON.stringify(meta)}]`;
 
     const orderPayload: any = {
       order_code: exchange.id,
@@ -150,16 +144,15 @@ export async function createExchange(exchange: ExchangeNote): Promise<boolean> {
       items_count: totalItems,
       total_value: 0,
       paid_amount: 0,
-      payment_status_text: 'Troca / Recolhimento',
+      payment_status_text: statusPayload,
       status: 'Concluído',
-      notes: notesPayload,
     };
 
     if (exchange.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(exchange.clientId)) {
       orderPayload.client_id = exchange.clientId;
     }
 
-    // 1. Try inserting into dedicated 'exchanges' table if exists
+    // 1. Try inserting into dedicated 'exchanges' table if exists (ignore 404 errors silently)
     try {
       await supabase
         .from('exchanges')
@@ -178,7 +171,7 @@ export async function createExchange(exchange: ExchangeNote): Promise<boolean> {
         }]);
     } catch (_) {}
 
-    // 2. Always insert into orders & order_items for full cross-device sync
+    // 2. Always insert into orders & order_items (using standard schema columns ONLY)
     const { data: oData, error: oErr } = await supabase
       .from('orders')
       .insert([orderPayload])
@@ -186,6 +179,7 @@ export async function createExchange(exchange: ExchangeNote): Promise<boolean> {
 
     if (oErr) {
       console.error('Erro ao salvar troca em orders no Supabase:', oErr.message);
+      return false;
     } else {
       const insertedOrder = oData && oData.length > 0 ? oData[0] : null;
       if (insertedOrder?.id && exchange.itemsRemoved && exchange.itemsRemoved.length > 0) {
@@ -204,6 +198,44 @@ export async function createExchange(exchange: ExchangeNote): Promise<boolean> {
     return true;
   } catch (err) {
     console.error('Erro ao criar troca no Supabase:', err);
+    return false;
+  }
+}
+
+export async function deleteExchange(exchangeId: string): Promise<boolean> {
+  if (!isSupabaseConfigured() || !exchangeId) return false;
+
+  try {
+    const cleanId = exchangeId.trim();
+
+    // 1. Try deleting from dedicated 'exchanges' table if exists (ignore errors silently)
+    try {
+      await supabase
+        .from('exchanges')
+        .delete()
+        .or(`exchange_code.ilike.${cleanId},id.ilike.${cleanId}`);
+    } catch (_) {}
+
+    // 2. Find matching rows in 'orders' table
+    const { data: matchingOrders } = await supabase
+      .from('orders')
+      .select('id, order_code')
+      .or(`order_code.ilike.${cleanId},id.ilike.${cleanId}`);
+
+    if (matchingOrders && matchingOrders.length > 0) {
+      for (const ord of matchingOrders) {
+        // Delete items first
+        await supabase.from('order_items').delete().eq('order_id', ord.id);
+        // Delete order row
+        await supabase.from('orders').delete().eq('id', ord.id);
+      }
+    } else {
+      await supabase.from('orders').delete().eq('order_code', cleanId);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('Erro ao deletar troca no Supabase:', err);
     return false;
   }
 }
