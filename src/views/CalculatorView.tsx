@@ -827,13 +827,13 @@ Qualquer dúvida estou à disposição! 🚀`;
                 </div>
               </div>
 
-              {/* Mão de Obra / Preparação */}
+              {/* Combustível / Frete */}
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Acabamento / Mão de Obra (R$)
+                  Combustível / Frete (R$)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-rose-500">
                     R$
                   </span>
                   <input
@@ -841,9 +841,10 @@ Qualquer dúvida estou à disposição! 🚀`;
                     step="0.50"
                     min="0"
                     inputMode="decimal"
-                    value={inputs.laborPrepCost}
+                    placeholder="0.00"
+                    value={inputs.laborPrepCost || ''}
                     onChange={(e) => handleInputChange('laborPrepCost', parseFloat(e.target.value) || 0)}
-                    className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                    className="w-full pl-9 pr-3 py-2 bg-rose-50/80 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl text-sm font-semibold text-rose-900 dark:text-rose-100 placeholder:bg-red-600 placeholder:text-white placeholder:px-1.5 placeholder:py-0.5 placeholder:rounded placeholder:font-bold focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 transition-all"
                   />
                 </div>
               </div>
