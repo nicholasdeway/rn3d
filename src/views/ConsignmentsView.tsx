@@ -882,295 +882,313 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
       )}
 
       {/* 📄 Modal de Detalhes da Consignação & Comprovante PDF A4 */}
-      {selectedConsignment && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto">
-          <style>{`
-            @media print {
-              @page {
-                size: A4 portrait;
-                margin: 10mm 12mm;
-              }
+      {selectedConsignment && (() => {
+        const clientExchanges = exchanges.filter(
+          (e) =>
+            (e.clientId && selectedConsignment.clientId && e.clientId === selectedConsignment.clientId) ||
+            (e.clientName &&
+              selectedConsignment.clientName &&
+              e.clientName.toLowerCase().trim() === selectedConsignment.clientName.toLowerCase().trim())
+        );
 
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                background: white !important;
-                color: black !important;
-                height: auto !important;
-                min-height: 0 !important;
-                overflow: visible !important;
-              }
+        let totalRemovedQty = 0;
+        let totalRemovedValue = 0;
 
-              header, nav, aside, footer, .no-print, [role="alert"] {
-                display: none !important;
-              }
+        clientExchanges.forEach((ex) => {
+          (ex.itemsRemoved || []).forEach((remItem) => {
+            const qty = Number(remItem.quantity) || 0;
+            totalRemovedQty += qty;
 
-              #root, #root > div, main {
-                display: block !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                height: auto !important;
-                min-height: 0 !important;
-                max-height: none !important;
-                overflow: visible !important;
-                background: white !important;
-              }
+            const consItem = (selectedConsignment.items || []).find(
+              (ci) =>
+                (remItem.productId && ci.productId && remItem.productId === ci.productId) ||
+                (remItem.productName && ci.productName && remItem.productName.toLowerCase().trim() === ci.productName.toLowerCase().trim())
+            );
+            const unitPrice = consItem ? consItem.unitPrice : 6.0;
+            totalRemovedValue += qty * unitPrice;
+          });
+        });
 
-              .print-container {
-                position: static !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                max-width: 100% !important;
-                width: 100% !important;
-                height: auto !important;
-                border: none !important;
-                border-radius: 0 !important;
-                box-shadow: none !important;
-                max-height: none !important;
-                overflow: visible !important;
-                display: block !important;
-                background: white !important;
-                color: black !important;
-              }
+        const currentQtyOnSite = Math.max(0, selectedConsignment.itemsCount - totalRemovedQty);
+        const currentValuationOnSite = Math.max(0, selectedConsignment.totalValue - totalRemovedValue);
 
-              .print-sheet {
-                padding: 0 !important;
-                margin: 0 !important;
-                height: auto !important;
-                max-height: none !important;
-                overflow: visible !important;
-                background: white !important;
-                color: black !important;
-                display: block !important;
-              }
+        return (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto">
+            <style>{`
+              @media print {
+                @page {
+                  size: A4 portrait;
+                  margin: 10mm 12mm;
+                }
 
-              .no-print {
-                display: none !important;
-              }
+                body * {
+                  visibility: hidden !important;
+                }
 
-              tr {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-              }
+                .print-container, .print-container * {
+                  visibility: visible !important;
+                }
 
-              .print-avoid-break {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-              }
-            }
-          `}</style>
+                .print-container {
+                  position: absolute !important;
+                  left: 0 !important;
+                  top: 0 !important;
+                  width: 100% !important;
+                  max-width: 100% !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  border: none !important;
+                  border-radius: 0 !important;
+                  box-shadow: none !important;
+                  max-height: none !important;
+                  height: auto !important;
+                  overflow: visible !important;
+                  background: white !important;
+                  color: black !important;
+                }
 
-          <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[92vh] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-            {/* Modal Top Controls (Hidden on Print) */}
-            <div className="no-print p-4 bg-slate-900 dark:bg-[#181c26] text-white flex items-center justify-between shrink-0 border-b border-slate-800 dark:border-[#202531]">
-              <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
-                <Printer className="w-4 h-4 text-indigo-400" />
-                Comprovante de Remessa em Consignação ({selectedConsignment.id})
-              </span>
-              <div className="flex items-center gap-2 sm:gap-3">
-                {onUpdateConsignment && (
-                  <button
-                    onClick={() => {
-                      const toEdit = selectedConsignment;
-                      setSelectedConsignment(null);
-                      handleStartEditConsignment(toEdit);
-                    }}
-                    className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
-                  >
-                    <Edit className="w-4 h-4" /> Editar
-                  </button>
-                )}
-                {onDeleteConsignment && (
-                  <button
-                    onClick={() => {
-                      if (window.confirm(`Tem certeza que deseja excluir a remessa ${selectedConsignment.id} de todo o sistema?`)) {
-                        onDeleteConsignment(selectedConsignment.id);
+                .fixed.inset-0 {
+                  position: absolute !important;
+                  inset: 0 !important;
+                  background: white !important;
+                  padding: 0 !important;
+                  margin: 0 !important;
+                  overflow: visible !important;
+                  display: block !important;
+                  z-index: 99999 !important;
+                }
+
+                .print-sheet {
+                  padding: 0 !important;
+                  margin: 0 !important;
+                  height: auto !important;
+                  max-height: none !important;
+                  overflow: visible !important;
+                  background: white !important;
+                  color: black !important;
+                }
+
+                .no-print {
+                  display: none !important;
+                }
+
+                tr, .print-avoid-break {
+                  page-break-inside: avoid !important;
+                  break-inside: avoid !important;
+                }
+              }
+            `}</style>
+
+            <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[92vh] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+              {/* Modal Top Controls (Hidden on Print) */}
+              <div className="no-print p-4 bg-slate-900 dark:bg-[#181c26] text-white flex items-center justify-between shrink-0 border-b border-slate-800 dark:border-[#202531]">
+                <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                  <Printer className="w-4 h-4 text-indigo-400" />
+                  Comprovante de Remessa em Consignação ({selectedConsignment.id})
+                </span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {onUpdateConsignment && (
+                    <button
+                      onClick={() => {
+                        const toEdit = selectedConsignment;
                         setSelectedConsignment(null);
-                      }
-                    }}
-                    className="px-3 py-2 bg-rose-600/80 hover:bg-rose-700 text-white rounded-xl font-bold flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
+                        handleStartEditConsignment(toEdit);
+                      }}
+                      className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
+                    >
+                      <Edit className="w-4 h-4" /> Editar
+                    </button>
+                  )}
+                  {onDeleteConsignment && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Tem certeza que deseja excluir a remessa ${selectedConsignment.id} de todo o sistema?`)) {
+                          onDeleteConsignment(selectedConsignment.id);
+                          setSelectedConsignment(null);
+                        }
+                      }}
+                      className="px-3 py-2 bg-rose-600/80 hover:bg-rose-700 text-white rounded-xl font-bold flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" /> Excluir
+                    </button>
+                  )}
+                  <button
+                    onClick={() => window.print()}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs transition-colors cursor-pointer shadow-sm"
                   >
-                    <Trash2 className="w-4 h-4" /> Excluir
+                    <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
                   </button>
-                )}
-                <button
-                  onClick={() => window.print()}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs transition-colors cursor-pointer shadow-sm"
-                >
-                  <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
-                </button>
-                <button
-                  onClick={() => setSelectedConsignment(null)}
-                  className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* A4 Printed Sheet Document */}
-            <div className="print-sheet p-8 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white text-slate-900 font-sans flex-1">
-              {/* Header */}
-              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5">
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">RN 3D Soluções</h2>
-                  <p className="text-xs font-black text-slate-900 mt-1">CNPJ: 67.570.155/0001-34</p>
-                  <p className="text-[11px] text-slate-700 font-semibold mt-1">
-                    WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="px-3 py-1 bg-indigo-600 text-white font-mono font-bold rounded-md text-xs inline-block">
-                    REMESSA {selectedConsignment.id}
-                  </span>
-                  <p className="text-slate-500 mt-2 text-xs font-medium">Data Envio: {selectedConsignment.date}</p>
-                  <p className="text-slate-500 text-xs font-medium">Status: <span className="font-bold text-emerald-600">{selectedConsignment.status}</span></p>
+                  <button
+                    onClick={() => setSelectedConsignment(null)}
+                    className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
 
-              {/* Client Details Box */}
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <p className="font-bold text-slate-900 text-sm uppercase">ESTABELECIMENTO / CLIENTE: {selectedConsignment.clientName}</p>
-                <p className="text-slate-600 font-medium">Modalidade: Alocação Inicial de Produtos em Consignação</p>
-                <p className="text-slate-500 text-[11px]">Última Conferência Auditada: {selectedConsignment.lastAuditDate}</p>
-              </div>
+              {/* A4 Printed Sheet Document */}
+              <div className="print-sheet p-8 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white text-slate-900 font-sans flex-1">
+                {/* Header */}
+                <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">RN 3D Soluções</h2>
+                    <p className="text-xs font-black text-slate-900 mt-1">CNPJ: 67.570.155/0001-34</p>
+                    <p className="text-[11px] text-slate-700 font-semibold mt-1">
+                      WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="px-3 py-1 bg-indigo-600 text-white font-mono font-bold rounded-md text-xs inline-block">
+                      REMESSA {selectedConsignment.id}
+                    </span>
+                    <p className="text-slate-500 mt-2 text-xs font-medium">Data Envio: {selectedConsignment.date}</p>
+                    <p className="text-slate-500 text-xs font-medium">Status: <span className="font-bold text-emerald-600">{selectedConsignment.status}</span></p>
+                  </div>
+                </div>
 
-              {/* Items Table */}
-              <div className="space-y-2">
-                <h3 className="font-extrabold text-slate-900 uppercase tracking-wider text-xs flex items-center justify-between border-b border-slate-200 pb-1">
-                  <span>📦 Produtos Entregues / Alocados no Expositor</span>
-                  <span className="font-mono text-indigo-700 font-bold">
-                    Total: {selectedConsignment.itemsCount} unidades
-                  </span>
-                </h3>
-                <table className="w-full text-left border-collapse border border-slate-200">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] bg-slate-50">
-                      <th className="p-2">Item / Descrição do Produto</th>
-                      <th className="p-2 text-center">SKU</th>
-                      <th className="p-2 text-center">Quantidade</th>
-                      <th className="p-2 text-right">Preço Unit.</th>
-                      <th className="p-2 text-right">Subtotal</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium">
-                    {(selectedConsignment.items || []).map((item, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50">
-                        <td className="p-2 font-bold text-slate-900">{item.productName}</td>
-                        <td className="p-2 text-center font-mono text-slate-500">{item.sku || 'N/A'}</td>
-                        <td className="p-2 text-center font-extrabold text-slate-900">{item.quantity} un</td>
-                        <td className="p-2 text-right text-slate-700">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
-                        <td className="p-2 text-right font-extrabold text-emerald-600">R$ {item.subtotal.toFixed(2).replace('.', ',')}</td>
+                {/* Client Details Box */}
+                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                  <p className="font-bold text-slate-900 text-sm uppercase">ESTABELECIMENTO / CLIENTE: {selectedConsignment.clientName}</p>
+                  <p className="text-slate-600 font-medium">Modalidade: Alocação Inicial de Produtos em Consignação</p>
+                  <p className="text-slate-500 text-[11px]">Última Conferência Auditada: {selectedConsignment.lastAuditDate}</p>
+                </div>
+
+                {/* Items Table */}
+                <div className="space-y-2">
+                  <h3 className="font-extrabold text-slate-900 uppercase tracking-wider text-xs flex items-center justify-between border-b border-slate-200 pb-1">
+                    <span>📦 Produtos Entregues / Alocados no Expositor</span>
+                    <span className="font-mono text-indigo-700 font-bold">
+                      Total: {selectedConsignment.itemsCount} unidades
+                    </span>
+                  </h3>
+                  <table className="w-full text-left border-collapse border border-slate-200">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] bg-slate-50">
+                        <th className="p-2">Item / Descrição do Produto</th>
+                        <th className="p-2 text-center">SKU</th>
+                        <th className="p-2 text-center">Quantidade</th>
+                        <th className="p-2 text-right">Preço Unit.</th>
+                        <th className="p-2 text-right">Subtotal</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      {(selectedConsignment.items || []).map((item, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50">
+                          <td className="p-2 font-bold text-slate-900">{item.productName}</td>
+                          <td className="p-2 text-center font-mono text-slate-500">{item.sku || 'N/A'}</td>
+                          <td className="p-2 text-center font-extrabold text-slate-900">{item.quantity} un</td>
+                          <td className="p-2 text-right text-slate-700">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                          <td className="p-2 text-right font-extrabold text-emerald-600">R$ {item.subtotal.toFixed(2).replace('.', ',')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
-              {/* Histórico Auditado de Retiradas / Trocas */}
-              {(() => {
-                const clientExchanges = exchanges.filter(
-                  (e) =>
-                    e.clientId === selectedConsignment.clientId ||
-                    (e.clientName &&
-                      selectedConsignment.clientName &&
-                      e.clientName.toLowerCase().trim() === selectedConsignment.clientName.toLowerCase().trim())
-                );
-
-                if (clientExchanges.length === 0) return null;
-
-                return (
-                  <div className="p-3.5 bg-amber-50/80 border border-amber-200 rounded-xl space-y-2">
-                    <h4 className="font-extrabold text-amber-900 text-xs flex items-center justify-between border-b border-amber-200/60 pb-1">
+                {/* Histórico Auditado de Retiradas / Trocas */}
+                {clientExchanges.length > 0 && (
+                  <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-xl space-y-3 print-avoid-break">
+                    <h4 className="font-extrabold text-amber-900 text-xs flex items-center justify-between border-b border-amber-200/80 pb-2">
                       <span>🔄 Histórico de Retiradas & Remanejamentos Auditados (RN 3D)</span>
-                      <span className="font-mono text-[11px] bg-amber-200/80 px-2 py-0.5 rounded-md text-amber-900 font-bold">
+                      <span className="font-mono text-[11px] bg-amber-200/90 px-2.5 py-0.5 rounded-md text-amber-950 font-bold">
                         {clientExchanges.length} nota(s) vinculada(s)
                       </span>
                     </h4>
-                    <div className="space-y-1.5 text-[11px]">
+                    <div className="space-y-2 text-[11px]">
                       {clientExchanges.map((ex) => {
                         const totalRemoved = ex.itemsRemoved.reduce((acc, i) => acc + i.quantity, 0);
                         return (
                           <div
                             key={ex.id}
-                            className="flex justify-between items-center bg-white p-2.5 rounded-lg border border-amber-200/60 shadow-2xs"
+                            className="bg-white p-3 rounded-lg border border-amber-200/80 shadow-2xs space-y-2"
                           >
-                            <div>
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                               <div className="flex items-center gap-2">
                                 <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
                                   {ex.id}
                                 </span>
-                                <span className="text-slate-600 font-medium">{ex.date}</span>
-                                <span className="text-slate-500 font-normal">({ex.responsibleName})</span>
+                                <span className="text-slate-600 font-semibold">{formatDateBR(ex.date)}</span>
+                                {ex.responsible && (
+                                  <span className="text-slate-400 text-[10px]">({ex.responsible})</span>
+                                )}
                               </div>
-                              <span className="text-slate-800 block font-bold mt-1 text-xs">
-                                {ex.itemsRemoved.map((i) => `${i.quantity}x ${i.productName}`).join(', ')}
+                              <span className="font-extrabold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-md text-xs">
+                                -{totalRemoved} un
                               </span>
                             </div>
-                            <span className="font-extrabold text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-1 rounded-md text-xs shrink-0 whitespace-nowrap">
-                              -{totalRemoved} un
-                            </span>
+                            <ul className="space-y-1 font-medium text-slate-800 text-xs pl-1">
+                              {ex.itemsRemoved.map((item, iIdx) => (
+                                <li key={iIdx} className="flex items-center justify-between">
+                                  <span className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                                    <span>{item.productName}</span>
+                                  </span>
+                                  <span className="font-bold text-amber-900 font-mono">-{item.quantity} un</span>
+                                </li>
+                              ))}
+                            </ul>
                           </div>
                         );
                       })}
                     </div>
                   </div>
-                );
-              })()}
+                )}
 
-              {/* Summary Valuation */}
-              <div className="print-avoid-break p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 flex justify-between items-center text-xs">
-                <div>
-                  <span className="font-bold text-slate-900 block">Saldo Atual Alocado no Expositor:</span>
-                  <span className="text-slate-600 font-medium">{selectedConsignment.itemsCount} produtos em exibição</span>
+                {/* Summary Valuation */}
+                <div className="print-avoid-break p-4 bg-emerald-50/80 rounded-xl border border-emerald-200 flex justify-between items-center text-xs">
+                  <div>
+                    <span className="font-bold text-slate-900 block">Saldo Atual Alocado no Expositor:</span>
+                    <span className="text-slate-700 font-bold">{currentQtyOnSite} produtos em exibição</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-500 text-[10px] uppercase font-bold block">Valor Total Auditado / A Cobrar</span>
+                    <span className="text-xl font-black text-emerald-700">
+                      R$ {currentValuationOnSite.toFixed(2).replace('.', ',')}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-slate-500 text-[10px] uppercase font-bold block">Valor Total Auditado / A Cobrar</span>
-                  <span className="text-xl font-black text-emerald-700">
-                    R$ {selectedConsignment.totalValue.toFixed(2).replace('.', ',')}
-                  </span>
+
+                {/* Notes */}
+                {selectedConsignment.notes && (
+                  <div className="print-avoid-break p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <span className="font-bold text-slate-900 block text-[11px]">Observações de Entrega:</span>
+                    <p className="text-slate-600 italic text-[11px]">{selectedConsignment.notes}</p>
+                  </div>
+                )}
+
+                {/* Signatures Footer */}
+                <div className="print-avoid-break pt-10 grid grid-cols-2 gap-8 text-center text-slate-700 text-[11px]">
+                  <div className="border-t border-slate-400 pt-2 space-y-0.5">
+                    <p className="font-bold text-slate-900">{selectedConsignment.clientName}</p>
+                    <p className="text-slate-500">Assinatura de Recebimento do Estabelecimento</p>
+                  </div>
+                  <div className="border-t border-slate-400 pt-2 space-y-0.5">
+                    <p className="font-bold text-slate-900">RN 3D Soluções</p>
+                    <p className="text-slate-500">Assinatura do Entregador / Responsável</p>
+                  </div>
+                </div>
+
+                {/* Print Footer */}
+                <div className="pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
+                  RN 3D Soluções — Sistema de Controle de Consignação e Gestão 3D • Documento Gerado em {new Date().toLocaleDateString('pt-BR')}
                 </div>
               </div>
 
-              {/* Notes */}
-              {selectedConsignment.notes && (
-                <div className="print-avoid-break p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                  <span className="font-bold text-slate-900 block text-[11px]">Observações de Entrega:</span>
-                  <p className="text-slate-600 italic text-[11px]">{selectedConsignment.notes}</p>
-                </div>
-              )}
-
-              {/* Signatures Footer */}
-              <div className="print-avoid-break pt-10 grid grid-cols-2 gap-8 text-center text-slate-700 text-[11px]">
-                <div className="border-t border-slate-400 pt-2 space-y-0.5">
-                  <p className="font-bold text-slate-900">{selectedConsignment.clientName}</p>
-                  <p className="text-slate-500">Assinatura de Recebimento do Estabelecimento</p>
-                </div>
-                <div className="border-t border-slate-400 pt-2 space-y-0.5">
-                  <p className="font-bold text-slate-900">RN 3D Soluções</p>
-                  <p className="text-slate-500">Assinatura do Entregador / Responsável</p>
-                </div>
+              {/* Modal Bottom Controls (Hidden on Print) */}
+              <div className="no-print p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] flex items-center justify-between shrink-0">
+                <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">RN 3D Soluções — Impressão em Formato A4 Padronizado</span>
+                <button
+                  onClick={() => window.print()}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs shadow-sm transition-all cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" /> Imprimir / Gerar PDF
+                </button>
               </div>
-
-              {/* Print Footer */}
-              <div className="pt-4 border-t border-slate-200 text-center text-[10px] text-slate-400">
-                RN 3D Soluções — Sistema de Controle de Consignação e Gestão 3D • Documento Gerado em {new Date().toLocaleDateString('pt-BR')}
-              </div>
-            </div>
-
-            {/* Modal Bottom Controls (Hidden on Print) */}
-            <div className="no-print p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] flex items-center justify-between shrink-0">
-              <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">RN 3D Soluções — Impressão em Formato A4 Padronizado</span>
-              <button
-                onClick={() => window.print()}
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs shadow-sm transition-all cursor-pointer"
-              >
-                <Printer className="w-4 h-4" /> Imprimir / Gerar PDF
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
