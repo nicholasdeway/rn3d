@@ -476,11 +476,11 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Delivery Toggle Checkbox for Mobile */}
-                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
+                  {/* Delivery Toggle Checkbox & Action Buttons for Mobile */}
+                  <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
                     <label
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-2 cursor-pointer bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold select-none transition-colors"
+                      className="inline-flex items-center gap-1.5 cursor-pointer bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold select-none transition-colors text-[11px] sm:text-xs shrink-0"
                     >
                       <input
                         type="checkbox"
@@ -494,21 +494,21 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                             if (onUpdateOrderStatus) onUpdateOrderStatus(o.id, fallbackStatus);
                           }
                         }}
-                        className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                        className="w-3.5 h-3.5 sm:w-4 sm:h-4 accent-emerald-600 rounded cursor-pointer"
                       />
                       <span className={o.status === 'Entregue' ? 'text-emerald-700 dark:text-emerald-400 font-bold' : 'text-slate-600 dark:text-slate-400'}>
                         {o.status === 'Entregue' ? 'Entregue' : 'Não entregue'}
                       </span>
                     </label>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           setPreviewPdfOrder(o);
                         }}
-                        className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0"
+                        className="px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-[11px] sm:text-xs transition-colors shrink-0"
                         title="Ver Documento PDF A4 do Pedido"
                       >
                         <Printer className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
@@ -522,7 +522,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                             e.stopPropagation();
                             setDeletingOrderId(o.id);
                           }}
-                          className="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors"
+                          className="px-2.5 sm:px-3 py-1.5 bg-rose-50 dark:bg-rose-950/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/50 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-[11px] sm:text-xs transition-colors shrink-0"
                           title="Excluir pedido"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -533,7 +533,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                       <button
                         type="button"
                         onClick={() => toggleExpandOrder(o.id)}
-                        className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-xs transition-colors"
+                        className="px-2.5 sm:px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/80 hover:bg-indigo-100 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-900/50 rounded-xl font-bold inline-flex items-center gap-1 cursor-pointer text-[11px] sm:text-xs transition-colors shrink-0"
                       >
                         {isExpanded ? (
                           <>

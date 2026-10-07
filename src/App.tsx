@@ -604,6 +604,7 @@ export function App() {
                   clients={appData.clients}
                   clientInventories={appData.clientInventories}
                   products={appData.products}
+                  consignments={appData.consignments}
                   onExecuteExchange={appData.handleExecuteExchange}
                 />
               )}

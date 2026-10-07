@@ -45,6 +45,8 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
   const [destinationType, setDestinationType] = useState<'migracao_lojas' | 'recolhimento_oficina'>('migracao_lojas');
   const [destinationClientId, setDestinationClientId] = useState<string>('');
   const [selectedItems, setSelectedItems] = useState<Record<string, number>>({});
+  const [selectedCatalogProductId, setSelectedCatalogProductId] = useState<string>('');
+  const [customCatalogItems, setCustomCatalogItems] = useState<ClientInventoryItem[]>([]);
   const [exchangeReason, setExchangeReason] = useState<string>('Baixo giro / Peças encalhadas no expositor');
   const [responsibleName, setResponsibleName] = useState<string>('Nicholas');
 
@@ -105,8 +107,8 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
       }
     });
 
-    // 3. Fallback to clientInventories if no consignments in system
-    if (map.size === 0 && consignments.length === 0) {
+    // 3. Fallback to clientInventories if no consignments found for sourceClient
+    if (map.size === 0) {
       const invFromState = clientInventories[sourceClient.id] || [];
       invFromState.forEach((item) => {
         if (item.quantityOnSite > 0) {
@@ -117,6 +119,46 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
 
     return Array.from(map.values()).filter((item) => item.quantityOnSite > 0);
   }, [sourceClient, clientInventories, consignments, exchanges]);
+
+  // Combine allocated source inventory with any catalog items manually added by user
+  const allAvailableItems = useMemo(() => {
+    const map = new Map<string, ClientInventoryItem>();
+    sourceInventory.forEach((item) => map.set(item.productId, item));
+    customCatalogItems.forEach((item) => {
+      if (!map.has(item.productId)) {
+        map.set(item.productId, item);
+      }
+    });
+    return Array.from(map.values());
+  }, [sourceInventory, customCatalogItems]);
+
+  const handleAddCatalogProduct = () => {
+    if (!selectedCatalogProductId) return;
+    const prod = products.find((p) => p.id === selectedCatalogProductId);
+    if (!prod) return;
+
+    const newItem: ClientInventoryItem = {
+      productId: prod.id,
+      productName: prod.name,
+      quantityOnSite: prod.stockQuantity && prod.stockQuantity > 0 ? prod.stockQuantity : 99,
+      unitPrice: prod.suggestedPrice || prod.price || 0,
+      valuation: (prod.suggestedPrice || prod.price || 0) * (prod.stockQuantity || 1),
+      daysOnSite: 0,
+      status: 'Adicionado do Catálogo',
+    };
+
+    setCustomCatalogItems((prev) => {
+      if (prev.some((item) => item.productId === prod.id)) return prev;
+      return [...prev, newItem];
+    });
+
+    setSelectedItems((prev) => ({
+      ...prev,
+      [prod.id]: prev[prod.id] ? prev[prod.id] : 1,
+    }));
+
+    setSelectedCatalogProductId('');
+  };
 
   // Helper to compute total allocated units for any client
   const getClientAllocatedQty = (cliId: string, cliName: string) => {
@@ -181,6 +223,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
     const dest = clients.find((c) => c.id !== cliId);
     if (dest) setDestinationClientId(dest.id);
     setSelectedItems({});
+    setCustomCatalogItems([]);
     setIsWizardOpen(true);
   };
 
@@ -191,7 +234,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
     const itemsRemoved = Object.entries(selectedItems)
       .filter(([_, qty]) => (qty as number) > 0)
       .map(([prodId, qty]) => {
-        const invItem = sourceInventory.find((i) => i.productId === prodId);
+        const invItem = allAvailableItems.find((i) => i.productId === prodId);
         const prod = products.find((p) => p.id === prodId);
         return {
           productId: prodId,
@@ -229,6 +272,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
     setSelectedExchange(null);
     setIsWizardOpen(false);
     setSelectedItems({});
+    setCustomCatalogItems([]);
   };
 
   // Identify clients with stagnant inventory (only clients with active allocated stock)
@@ -453,12 +497,13 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
               </button>
             </div>
 
-            <form onSubmit={handleSubmitExchange} className="p-6 sm:p-8 overflow-y-auto space-y-6 text-xs flex-1">
-              {/* Step 1: Select Source Store (Loja A) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-50 rounded-2xl border border-slate-200/80">
+            <form onSubmit={handleSubmitExchange} className="p-4 sm:p-6 lg:p-8 overflow-y-auto space-y-6 text-xs flex-1">
+              {/* Step 1 & Step 2: Source & Destination */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 p-4 sm:p-5 bg-slate-50 rounded-2xl border border-slate-200/80">
+                {/* Step 1: Select Source Store (Loja A) */}
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5 flex items-center gap-1.5">
-                    <Store className="w-4 h-4 text-indigo-600" />
+                    <Store className="w-4 h-4 text-indigo-600 shrink-0" />
                     1. Loja Origem (De onde as peças serão retiradas / Loja A) *
                   </label>
                   <select
@@ -466,6 +511,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                     onChange={(e) => {
                       setSourceClientId(e.target.value);
                       setSelectedItems({});
+                      setCustomCatalogItems([]);
                     }}
                     className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs focus:ring-2 focus:ring-indigo-500/20"
                   >
@@ -483,31 +529,33 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                 {/* Step 2: Destination Choice */}
                 <div>
                   <label className="block font-bold text-slate-800 text-xs mb-1.5 flex items-center gap-1.5">
-                    <Building2 className="w-4 h-4 text-emerald-600" />
+                    <Building2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     2. Destino do Remanejamento / Trade *
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
                     <button
                       type="button"
                       onClick={() => setDestinationType('migracao_lojas')}
-                      className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${destinationType === 'migracao_lojas'
+                      className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                        destinationType === 'migracao_lojas'
                           ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                           : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
+                      }`}
                     >
-                      <Store className="w-4 h-4 text-indigo-300" />
-                      <span>🏬 Migrar para Outra Loja (Loja B)</span>
+                      <Store className="w-4 h-4 text-indigo-300 shrink-0" />
+                      <span>🏬 Outra Loja (Loja B)</span>
                     </button>
 
                     <button
                       type="button"
                       onClick={() => setDestinationType('recolhimento_oficina')}
-                      className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${destinationType === 'recolhimento_oficina'
+                      className={`p-2.5 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                        destinationType === 'recolhimento_oficina'
                           ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
                           : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
+                      }`}
                     >
-                      <RotateCcw className="w-4 h-4 text-emerald-300" />
+                      <RotateCcw className="w-4 h-4 text-emerald-300 shrink-0" />
                       <span>🏭 Recolher para Oficina</span>
                     </button>
                   </div>
@@ -516,7 +564,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                     <select
                       value={destinationClientId}
                       onChange={(e) => setDestinationClientId(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 text-xs"
                     >
                       {availableDestinationClients.map((cli) => (
                         <option key={cli.id} value={cli.id}>
@@ -529,100 +577,273 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
               </div>
 
               {/* Step 3: Select Products to Migrate */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-slate-900 text-xs flex items-center gap-2">
-                    <Boxes className="w-4 h-4 text-indigo-600" />
-                    <span>3. Produtos Alocados na Loja Origem — Selecione os itens e a quantidade a recolher/migrar:</span>
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <h4 className="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-2">
+                    <Boxes className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span>3. Seleção de Produtos para Troca / Remanejamento:</span>
                   </h4>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    Selecione os itens alocados ou adicione do catálogo abaixo
+                  </span>
                 </div>
 
-                {sourceInventory.length === 0 ? (
-                  <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center text-slate-400 space-y-1">
+                {/* Catalog Product Selection Bar */}
+                <div className="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                  <div className="flex-1 min-w-0">
+                    <label className="block text-[11px] font-bold text-indigo-900 dark:text-indigo-200 mb-1">
+                      Adicionar produto do catálogo para trocar/remanejar:
+                    </label>
+                    <select
+                      value={selectedCatalogProductId}
+                      onChange={(e) => setSelectedCatalogProductId(e.target.value)}
+                      className="w-full px-3.5 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100"
+                    >
+                      <option value="">-- Selecionar Produto do Catálogo --</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} (R$ {(p.suggestedPrice || p.price || 0).toFixed(2).replace('.', ',')})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddCatalogProduct}
+                    disabled={!selectedCatalogProductId}
+                    className="sm:self-end px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>+ Adicionar Produto</span>
+                  </button>
+                </div>
+
+                {allAvailableItems.length === 0 ? (
+                  <div className="p-8 border-2 border-dashed border-slate-200 rounded-2xl text-center text-slate-400 space-y-2">
                     <p className="text-xs font-bold text-slate-700">Nenhum produto alocado nesta loja no momento.</p>
-                    <p className="text-[11px]">Selecione outro estabelecimento de origem que possua produtos no expositor.</p>
+                    <p className="text-[11px]">
+                      Você pode selecionar produtos do catálogo no campo acima para realizar a troca ou escolher outra loja de origem.
+                    </p>
                   </div>
                 ) : (
-                  <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs bg-white">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
-                        <tr>
-                          <th className="p-3.5">Produto Alocado</th>
-                          <th className="p-3.5 text-center">Dias no Local</th>
-                          <th className="p-3.5 text-center">Status Giro</th>
-                          <th className="p-3.5 text-center">Disponível</th>
-                          <th className="p-3.5 text-center w-36">Quantidade a Retirar</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 font-medium">
-                        {sourceInventory.map((item) => {
-                          const currentSelectedQty = selectedItems[item.productId] || 0;
-                          return (
-                            <tr key={item.productId} className="hover:bg-slate-50 transition-colors">
-                              <td className="p-3.5 font-bold text-slate-900">
-                                {item.productName}
-                                <span className="block text-[11px] text-slate-400 font-normal font-mono">
+                  <>
+                    {/* Mobile Card List (< md) */}
+                    <div className="block md:hidden space-y-2.5">
+                      {allAvailableItems.map((item) => {
+                        const currentSelectedQty = selectedItems[item.productId] || 0;
+                        return (
+                          <div
+                            key={item.productId}
+                            className={`p-3.5 rounded-xl border transition-colors space-y-2.5 ${
+                              currentSelectedQty > 0
+                                ? 'bg-indigo-50/40 border-indigo-300 dark:bg-indigo-950/30 dark:border-indigo-800'
+                                : 'bg-white border-slate-200 dark:bg-slate-900 dark:border-slate-800'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <h5 className="font-bold text-slate-900 dark:text-slate-100 text-xs">{item.productName}</h5>
+                                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
                                   R$ {item.unitPrice.toFixed(2).replace('.', ',')} / un
                                 </span>
-                              </td>
-                              <td className="p-3.5 text-center text-slate-600 font-mono">
-                                {item.daysOnSite} dias
-                              </td>
-                              <td className="p-3.5 text-center">
-                                <span
-                                  className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${item.daysOnSite >= 30 || item.status === 'Alerta (Sem Giro)'
-                                      ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                                      : 'bg-emerald-100 text-emerald-800'
-                                    }`}
+                              </div>
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold shrink-0 ${
+                                  item.status === 'Adicionado do Catálogo'
+                                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                    : item.daysOnSite >= 30 || item.status === 'Alerta (Sem Giro)'
+                                    ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                    : 'bg-emerald-100 text-emerald-800'
+                                }`}
+                              >
+                                {item.status === 'Adicionado do Catálogo'
+                                  ? 'Catálogo'
+                                  : item.daysOnSite >= 30
+                                  ? 'Parado (Sem Giro)'
+                                  : item.status}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                              <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                                Disponível: <strong className="text-slate-900 dark:text-slate-200">{item.quantityOnSite} un</strong>
+                              </span>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleToggleItemQuantity(
+                                      item.productId,
+                                      item.quantityOnSite,
+                                      Math.max(0, currentSelectedQty - 1)
+                                    )
+                                  }
+                                  className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold rounded-lg text-sm transition-colors cursor-pointer"
                                 >
-                                  {item.daysOnSite >= 30 ? 'Parado (Sem Giro)' : item.status}
-                                </span>
-                              </td>
-                              <td className="p-3.5 text-center font-bold text-slate-900">
-                                {item.quantityOnSite} un
-                              </td>
-                              <td className="p-3.5 text-center">
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max={item.quantityOnSite}
-                                    value={currentSelectedQty}
-                                    onChange={(e) =>
-                                      handleToggleItemQuantity(
-                                        item.productId,
-                                        item.quantityOnSite,
-                                        Number(e.target.value)
-                                      )
-                                    }
-                                    className="w-20 text-center px-2 py-1.5 border border-slate-300 rounded-xl font-bold bg-white focus:ring-2 focus:ring-indigo-500/20"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleToggleItemQuantity(
-                                        item.productId,
-                                        item.quantityOnSite,
-                                        item.quantityOnSite
-                                      )
-                                    }
-                                    className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                                  -
+                                </button>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max={item.quantityOnSite}
+                                  value={currentSelectedQty}
+                                  onChange={(e) =>
+                                    handleToggleItemQuantity(
+                                      item.productId,
+                                      item.quantityOnSite,
+                                      Number(e.target.value)
+                                    )
+                                  }
+                                  className="w-14 text-center px-1.5 py-1.5 border border-slate-300 dark:border-slate-700 rounded-lg font-bold text-xs bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleToggleItemQuantity(
+                                      item.productId,
+                                      item.quantityOnSite,
+                                      Math.min(item.quantityOnSite, currentSelectedQty + 1)
+                                    )
+                                  }
+                                  className="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold rounded-lg text-sm transition-colors cursor-pointer"
+                                >
+                                  +
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleToggleItemQuantity(
+                                      item.productId,
+                                      item.quantityOnSite,
+                                      item.quantityOnSite
+                                    )
+                                  }
+                                  className="px-2 py-1.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 text-[10px] font-bold rounded-lg transition-colors cursor-pointer border border-indigo-200 dark:border-indigo-900"
+                                >
+                                  Tudo
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Desktop Table View (>= md) */}
+                    <div className="hidden md:block border border-slate-200/80 rounded-2xl overflow-hidden shadow-xs bg-white">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase">
+                          <tr>
+                            <th className="p-3.5">Produto Alocado / Catálogo</th>
+                            <th className="p-3.5 text-center">Dias no Local</th>
+                            <th className="p-3.5 text-center">Status Giro</th>
+                            <th className="p-3.5 text-center">Disponível</th>
+                            <th className="p-3.5 text-center w-40">Quantidade a Retirar</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium">
+                          {allAvailableItems.map((item) => {
+                            const currentSelectedQty = selectedItems[item.productId] || 0;
+                            return (
+                              <tr key={item.productId} className="hover:bg-slate-50 transition-colors">
+                                <td className="p-3.5 font-bold text-slate-900">
+                                  {item.productName}
+                                  <span className="block text-[11px] text-slate-400 font-normal font-mono">
+                                    R$ {item.unitPrice.toFixed(2).replace('.', ',')} / un
+                                  </span>
+                                </td>
+                                <td className="p-3.5 text-center text-slate-600 font-mono">
+                                  {item.daysOnSite} dias
+                                </td>
+                                <td className="p-3.5 text-center">
+                                  <span
+                                    className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold ${
+                                      item.status === 'Adicionado do Catálogo'
+                                        ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                                        : item.daysOnSite >= 30 || item.status === 'Alerta (Sem Giro)'
+                                        ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                                        : 'bg-emerald-100 text-emerald-800'
+                                    }`}
                                   >
-                                    Tudo
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                                    {item.status === 'Adicionado do Catálogo'
+                                      ? 'Catálogo'
+                                      : item.daysOnSite >= 30
+                                      ? 'Parado (Sem Giro)'
+                                      : item.status}
+                                  </span>
+                                </td>
+                                <td className="p-3.5 text-center font-bold text-slate-900">
+                                  {item.quantityOnSite} un
+                                </td>
+                                <td className="p-3.5 text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleToggleItemQuantity(
+                                          item.productId,
+                                          item.quantityOnSite,
+                                          Math.max(0, currentSelectedQty - 1)
+                                        )
+                                      }
+                                      className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs cursor-pointer"
+                                    >
+                                      -
+                                    </button>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max={item.quantityOnSite}
+                                      value={currentSelectedQty}
+                                      onChange={(e) =>
+                                        handleToggleItemQuantity(
+                                          item.productId,
+                                          item.quantityOnSite,
+                                          Number(e.target.value)
+                                        )
+                                      }
+                                      className="w-16 text-center px-1.5 py-1 border border-slate-300 rounded-xl font-bold bg-white focus:ring-2 focus:ring-indigo-500/20"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleToggleItemQuantity(
+                                          item.productId,
+                                          item.quantityOnSite,
+                                          Math.min(item.quantityOnSite, currentSelectedQty + 1)
+                                        )
+                                      }
+                                      className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-lg text-xs cursor-pointer"
+                                    >
+                                      +
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleToggleItemQuantity(
+                                          item.productId,
+                                          item.quantityOnSite,
+                                          item.quantityOnSite
+                                        )
+                                      }
+                                      className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+                                    >
+                                      Tudo
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
               </div>
 
               {/* Step 4: Reasons & Summary */}
-              <div className="p-5 bg-slate-50 dark:bg-slate-900/80 rounded-2xl border border-slate-200/80 dark:border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+              <div className="p-4 sm:p-5 bg-slate-50 dark:bg-slate-900/80 rounded-2xl border border-slate-200/80 dark:border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 items-center">
                 <div className="md:col-span-2 space-y-3">
                   <div>
                     <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Motivo do Remanejamento / Troca</label>
@@ -645,7 +866,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                   </div>
                 </div>
 
-                <div className="p-4 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 text-right">
+                <div className="p-4 bg-white dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 text-left md:text-right">
                   <span className="text-xs text-slate-400 dark:text-slate-500 font-semibold block">Total de Peças em Troca:</span>
                   <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400 block">
                     {(Object.values(selectedItems) as number[]).reduce((acc: number, qty: number) => acc + qty, 0)} unidades
@@ -657,18 +878,18 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
               </div>
 
               {/* Modal Footer Controls */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+              <div className="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3">
                 <button
                   type="button"
                   onClick={() => setIsWizardOpen(false)}
-                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+                  className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer text-center"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={(Object.values(selectedItems) as number[]).reduce((acc: number, qty: number) => acc + qty, 0) === 0}
-                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm transition-all cursor-pointer flex items-center gap-2"
+                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Check className="w-4 h-4" />
                   <span>Confirmar Troca & Remanejamento</span>
