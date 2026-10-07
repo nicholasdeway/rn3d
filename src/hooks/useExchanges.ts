@@ -3,6 +3,7 @@ import { ExchangeNote, Product, Client, Consignment } from '../types';
 import { safeSetLocalStorage, getStorageParsed } from '../utils/storage';
 import { updateProduct } from '../services/productsService';
 import { createExchange, fetchExchanges, syncMissingExchangesToSupabase, deleteExchange } from '../services/exchangesService';
+import { updateConsignment } from '../services/consignmentsService';
 import { createInventoryMovement } from '../services/movementsService';
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -214,6 +215,8 @@ export function useExchanges(
       );
     }
 
+    const updatedConsignmentsList: Consignment[] = [];
+
     setConsignments((prev) =>
       prev.map((c) => {
         const matchesClient =
@@ -243,16 +246,25 @@ export function useExchanges(
           const newItemsCount = updatedItems.reduce((sum, i) => sum + i.quantity, 0);
           const newTotalValuation = updatedItems.reduce((sum, i) => sum + i.subtotal, 0);
 
-          return {
+          const updatedConsignment: Consignment = {
             ...c,
             items: updatedItems,
             itemsCount: newItemsCount,
             totalValue: newTotalValuation,
           };
+          updatedConsignmentsList.push(updatedConsignment);
+          return updatedConsignment;
         }
         return c;
       })
     );
+
+    // Save updated consignments directly to Supabase PostgreSQL
+    updatedConsignmentsList.forEach((uCons) => {
+      updateConsignment(uCons).catch((err) =>
+        console.error('Erro ao atualizar consignação no Supabase após troca:', err)
+      );
+    });
 
     if (isOffice) {
       showToast(`Troca / Recolhimento ${newExchange.id} concluído! Peças retornadas ao Estoque Geral.`, 'success');

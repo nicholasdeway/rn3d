@@ -17,7 +17,7 @@ import { fetchProducts } from '../services/productsService';
 import { fetchClients } from '../services/clientsService';
 import { fetchOrders } from '../services/ordersService';
 import { fetchQuotes } from '../services/quotesService';
-import { fetchConsignments, syncMissingConsignmentsToSupabase } from '../services/consignmentsService';
+import { fetchConsignments, syncMissingConsignmentsToSupabase, reconcileConsignmentsWithExchanges } from '../services/consignmentsService';
 import { fetchVisits, syncMissingVisitsToSupabase } from '../services/visitsService';
 import { fetchExchanges, syncMissingExchangesToSupabase } from '../services/exchangesService';
 import { syncMissingProductsToSupabase } from '../services/productsService';
@@ -204,9 +204,11 @@ export function useAppData() {
           fetchExpenses(),
         ]);
         if (!isMounted) return;
-        const enrichedClients = computeEnrichedClients(dbClients, dbConsignments || [], dbOrders || [], dbVisits || visits || []);
+        const reconciledConsignments = reconcileConsignmentsWithExchanges(dbConsignments || [], dbExchanges || []);
+        const enrichedClients = computeEnrichedClients(dbClients, reconciledConsignments, dbOrders || [], dbVisits || visits || []);
         setProducts((prev) => (prev && prev.length === dbProducts.length && JSON.stringify(prev) === JSON.stringify(dbProducts) ? prev : dbProducts));
         setClients((prev) => (prev && prev.length === enrichedClients.length && JSON.stringify(prev) === JSON.stringify(enrichedClients) ? prev : enrichedClients));
+        setConsignments((prev) => (prev && prev.length === reconciledConsignments.length && JSON.stringify(prev) === JSON.stringify(reconciledConsignments) ? prev : reconciledConsignments));
         setQuotes((prev) => (prev && prev.length === dbQuotes.length && JSON.stringify(prev) === JSON.stringify(dbQuotes) ? prev : dbQuotes));
         if (dbExpensesRes && dbExpensesRes.expenses) {
           setExpenses((prev) => {
@@ -487,7 +489,8 @@ function computeEnrichedClients(
     setClients((prevClients) => {
       if (!prevClients || prevClients.length === 0) return prevClients;
 
-      const enriched = computeEnrichedClients(prevClients, consignments || [], orders || [], visits || []);
+      const reconciled = reconcileConsignmentsWithExchanges(consignments || [], exchanges || []);
+      const enriched = computeEnrichedClients(prevClients, reconciled, orders || [], visits || []);
       const isIdentical =
         prevClients.length === enriched.length &&
         prevClients.every((c, idx) => {
@@ -503,7 +506,7 @@ function computeEnrichedClients(
 
       return isIdentical ? prevClients : enriched;
     });
-  }, [consignments, orders, visits]);
+  }, [consignments, orders, visits, exchanges]);
 
   // Auto-replicate internal logistics costs from orders and visits into expenses (Combustível & Transporte)
 

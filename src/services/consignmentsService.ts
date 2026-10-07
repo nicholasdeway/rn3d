@@ -257,3 +257,60 @@ export async function syncMissingConsignmentsToSupabase(consignments: Consignmen
 
   return syncedCount;
 }
+
+export function reconcileConsignmentsWithExchanges(
+  rawConsignments: Consignment[],
+  rawExchanges: any[]
+): Consignment[] {
+  if (!rawConsignments || rawConsignments.length === 0) return [];
+  if (!rawExchanges || rawExchanges.length === 0) return rawConsignments;
+
+  return rawConsignments.map((cons) => {
+    const matchingExchanges = rawExchanges.filter(
+      (e) =>
+        (e.clientId && cons.clientId && e.clientId === cons.clientId) ||
+        (e.clientName && cons.clientName && e.clientName.toLowerCase().trim() === cons.clientName.toLowerCase().trim())
+    );
+
+    if (matchingExchanges.length === 0 || !cons.items || cons.items.length === 0) {
+      return cons;
+    }
+
+    const removedQtyMap = new Map<string, number>();
+    matchingExchanges.forEach((ex) => {
+      (ex.itemsRemoved || []).forEach((item: any) => {
+        const key = (item.productName || '').toLowerCase().trim();
+        if (key) {
+          removedQtyMap.set(key, (removedQtyMap.get(key) || 0) + (Number(item.quantity) || 0));
+        }
+      });
+    });
+
+    if (removedQtyMap.size === 0) return cons;
+
+    const updatedItems = cons.items.map((item) => {
+      const key = (item.productName || '').toLowerCase().trim();
+      const totalRemoved = removedQtyMap.get(key) || 0;
+      if (totalRemoved > 0) {
+        const newQty = Math.max(0, item.quantity - totalRemoved);
+        removedQtyMap.set(key, Math.max(0, totalRemoved - item.quantity));
+        return {
+          ...item,
+          quantity: newQty,
+          subtotal: newQty * (item.unitPrice || 0),
+        };
+      }
+      return item;
+    });
+
+    const newItemsCount = updatedItems.reduce((sum, i) => sum + i.quantity, 0);
+    const newTotalValuation = updatedItems.reduce((sum, i) => sum + i.subtotal, 0);
+
+    return {
+      ...cons,
+      items: updatedItems,
+      itemsCount: newItemsCount,
+      totalValue: newTotalValuation,
+    };
+  });
+}
