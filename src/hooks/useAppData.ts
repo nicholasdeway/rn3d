@@ -235,7 +235,7 @@ export function useAppData() {
             return prev.length === finalMerged.length && JSON.stringify(prev) === JSON.stringify(finalMerged) ? prev : finalMerged;
           });
         }
-        if (dbExchanges && dbExchanges.length > 0) {
+        if (dbExchanges) {
           setExchanges((prev) => {
             const map = new Map<string, any>();
             dbExchanges.forEach((ex) => map.set(ex.id.toLowerCase().trim(), ex));
@@ -244,7 +244,8 @@ export function useAppData() {
                 map.set(ex.id.toLowerCase().trim(), ex);
               }
             });
-            return Array.from(map.values());
+            const merged = Array.from(map.values());
+            return prev && prev.length === merged.length && JSON.stringify(prev) === JSON.stringify(merged) ? prev : merged;
           });
         }
         if (dbVisits && dbVisits.length > 0) {

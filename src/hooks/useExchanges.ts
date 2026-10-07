@@ -21,6 +21,31 @@ export function useExchanges(
     safeSetLocalStorage('rn3d_exchanges', JSON.stringify(exchanges));
   }, [exchanges]);
 
+  // Fetch initial exchanges from Supabase PostgreSQL on mount
+  useEffect(() => {
+    let isMounted = true;
+    fetchExchanges()
+      .then((dbExchanges) => {
+        if (isMounted && dbExchanges && Array.isArray(dbExchanges) && dbExchanges.length > 0) {
+          setExchanges((prev) => {
+            const map = new Map<string, ExchangeNote>();
+            dbExchanges.forEach((ex) => map.set(ex.id.toLowerCase().trim(), ex));
+            (prev || []).forEach((ex) => {
+              if (!map.has(ex.id.toLowerCase().trim())) {
+                map.set(ex.id.toLowerCase().trim(), ex);
+              }
+            });
+            return Array.from(map.values());
+          });
+        }
+      })
+      .catch((err) => console.error('Erro ao buscar trocas no Supabase no carregamento inicial:', err));
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleExecuteExchange = (newExchange: ExchangeNote) => {
     setExchanges((prev) => [newExchange, ...prev]);
 
