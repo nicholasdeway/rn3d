@@ -580,6 +580,7 @@ export function App() {
                   clients={appData.clients}
                   products={appData.products}
                   exchanges={appData.exchanges}
+                  visits={appData.visits}
                   onAddConsignment={appData.handleAddConsignment}
                   onUpdateConsignment={appData.handleUpdateConsignment}
                   onDeleteConsignment={appData.handleDeleteConsignment}

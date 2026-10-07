@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Client, Consignment, ConsignmentItem, Product, ExchangeNote } from '../types';
+import { Client, Consignment, ConsignmentItem, Product, ExchangeNote, Visit } from '../types';
 import { ProductSelectCombobox } from '../components/ProductSelectCombobox';
-import { formatDateBR, getTodayBR } from '../utils/formatters';
+import { formatDateBR, getTodayBR, parseBRDate } from '../utils/formatters';
 import {
   Boxes,
   Plus,
@@ -26,6 +26,7 @@ interface ConsignmentsViewProps {
   clients: Client[];
   products: Product[];
   exchanges?: ExchangeNote[];
+  visits?: Visit[];
   onAddConsignment: (consignment: Consignment) => void;
   onUpdateConsignment?: (consignment: Consignment) => void;
   onDeleteConsignment?: (id: string) => void;
@@ -38,6 +39,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   clients,
   products,
   exchanges = [],
+  visits = [],
   onAddConsignment,
   onUpdateConsignment,
   onDeleteConsignment,
@@ -199,7 +201,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
       itemsCount: totalQty,
       totalValue: totalVal,
       status: editStatus,
-      lastAuditDate: editDeliveryDate,
+      lastAuditDate: getTodayBR(),
       items: editItems,
       notes: editNotes,
     };
@@ -209,6 +211,47 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
     }
     setIsEditModalOpen(false);
     setEditingConsignmentId(null);
+  };
+
+  const getConsignmentLatestAuditDate = (
+    cons: Consignment,
+    exList: ExchangeNote[] = [],
+    vList: Visit[] = []
+  ): string => {
+    let latestDate: Date | null = parseBRDate(cons.lastAuditDate) || parseBRDate(cons.date);
+    let latestStr: string = cons.lastAuditDate || cons.date || getTodayBR();
+
+    const clientExchanges = exList.filter(
+      (e) =>
+        (e.clientId && cons.clientId && e.clientId === cons.clientId) ||
+        (e.clientName && cons.clientName && e.clientName.toLowerCase().trim() === cons.clientName.toLowerCase().trim())
+    );
+
+    clientExchanges.forEach((ex) => {
+      const rawDate = ex.date || (ex as any).created_at || (ex as any).createdAt;
+      const exDate = parseBRDate(rawDate);
+      if (exDate && (!latestDate || exDate.getTime() > latestDate.getTime())) {
+        latestDate = exDate;
+        latestStr = rawDate;
+      }
+    });
+
+    const clientVisits = vList.filter(
+      (v) =>
+        (v.clientId && cons.clientId && v.clientId === cons.clientId) ||
+        (v.clientName && cons.clientName && v.clientName.toLowerCase().trim() === cons.clientName.toLowerCase().trim())
+    );
+
+    clientVisits.forEach((v) => {
+      const rawVDate = v.completedAt || v.lastVisitText || v.scheduledDate;
+      const vDate = parseBRDate(rawVDate);
+      if (vDate && (!latestDate || vDate.getTime() > latestDate.getTime())) {
+        latestDate = vDate;
+        latestStr = rawVDate;
+      }
+    });
+
+    return latestStr;
   };
 
   const getConsignmentDeductedStats = (cons: Consignment, exList: ExchangeNote[]) => {
@@ -374,7 +417,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                             Data: {formatDateBR(c.date)} • {stats.itemsCount} {stats.itemsCount === 1 ? 'item' : 'itens'}
                           </p>
                           <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                            Última conferência: <span className="font-semibold text-slate-700 dark:text-slate-300">{formatDateBR(c.lastAuditDate)}</span>
+                            Última conferência: <span className="font-semibold text-slate-700 dark:text-slate-300">{formatDateBR(getConsignmentLatestAuditDate(c, exchanges, visits))}</span>
                           </p>
                         </div>
                         <div className="text-right">
@@ -469,7 +512,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                               <span>{c.status}</span>
                             </span>
                           </td>
-                          <td className="p-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDateBR(c.lastAuditDate)}</td>
+                          <td className="p-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDateBR(getConsignmentLatestAuditDate(c, exchanges, visits))}</td>
                           <td className="p-4 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                               <button
@@ -1095,7 +1138,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
                   <p className="font-bold text-slate-900 text-sm uppercase">ESTABELECIMENTO / CLIENTE: {selectedConsignment.clientName}</p>
                   <p className="text-slate-600 font-medium">Modalidade: Alocação Inicial de Produtos em Consignação</p>
-                  <p className="text-slate-500 text-[11px]">Última Conferência Auditada: {selectedConsignment.lastAuditDate}</p>
+                  <p className="text-slate-500 text-[11px]">Última Conferência Auditada: {formatDateBR(getConsignmentLatestAuditDate(selectedConsignment, exchanges, visits))}</p>
                 </div>
 
                 {/* Items Table */}
