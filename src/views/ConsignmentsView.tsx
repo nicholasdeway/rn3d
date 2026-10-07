@@ -211,6 +211,44 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
     setEditingConsignmentId(null);
   };
 
+  const getConsignmentDeductedStats = (cons: Consignment, exList: ExchangeNote[]) => {
+    const clientExchanges = exList.filter(
+      (e) =>
+        (e.clientId && cons.clientId && e.clientId === cons.clientId) ||
+        (e.clientName && cons.clientName && e.clientName.toLowerCase().trim() === cons.clientName.toLowerCase().trim())
+    );
+
+    if (clientExchanges.length === 0) {
+      return {
+        itemsCount: cons.itemsCount,
+        totalValue: cons.totalValue,
+      };
+    }
+
+    let totalRemovedQty = 0;
+    let totalRemovedValue = 0;
+
+    clientExchanges.forEach((ex) => {
+      (ex.itemsRemoved || []).forEach((remItem) => {
+        const qty = Number(remItem.quantity) || 0;
+        totalRemovedQty += qty;
+
+        const consItem = (cons.items || []).find(
+          (ci) =>
+            (remItem.productId && ci.productId && remItem.productId === ci.productId) ||
+            (remItem.productName && ci.productName && remItem.productName.toLowerCase().trim() === ci.productName.toLowerCase().trim())
+        );
+        const unitPrice = consItem ? consItem.unitPrice : 6.0;
+        totalRemovedValue += qty * unitPrice;
+      });
+    });
+
+    return {
+      itemsCount: Math.max(0, cons.itemsCount - totalRemovedQty),
+      totalValue: Math.max(0, cons.totalValue - totalRemovedValue),
+    };
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Top Header */}
@@ -309,83 +347,86 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
           {/* Cards Grid Layout */}
           {viewMode === 'grid' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredConsignments.map((c) => (
-                <div
-                  key={c.id}
-                  onClick={() => setSelectedConsignment(c)}
-                  className="bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/90 dark:border-[#202531] shadow-xs space-y-3 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-colors flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    {/* Card Header: REM ID & Status */}
-                    <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
-                      <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-lg">
-                        {c.id}
-                      </span>
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
-                        {c.status}
-                      </span>
-                    </div>
-
-                    {/* Card Body: Client, Items & Valuation */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{c.clientName}</h4>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          Data: {formatDateBR(c.date)} • {c.itemsCount} {c.itemsCount === 1 ? 'item' : 'itens'}
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                          Última conferência: <span className="font-semibold text-slate-700 dark:text-slate-300">{formatDateBR(c.lastAuditDate)}</span>
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-[10px] text-slate-400 font-medium block">Valor Mercadorias</span>
-                        <span className="font-black text-emerald-600 dark:text-emerald-400 text-base">
-                          R$ {c.totalValue.toFixed(2).replace('.', ',')}
+              {filteredConsignments.map((c) => {
+                const stats = getConsignmentDeductedStats(c, exchanges);
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => setSelectedConsignment(c)}
+                    className="bg-white dark:bg-[#12151c] p-4 rounded-2xl border border-slate-200/90 dark:border-[#202531] shadow-xs space-y-3 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500/50 transition-colors flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      {/* Card Header: REM ID & Status */}
+                      <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-xs bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-1 rounded-lg">
+                          {c.id}
+                        </span>
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80">
+                          {c.status}
                         </span>
                       </div>
+
+                      {/* Card Body: Client, Items & Valuation */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{c.clientName}</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Data: {formatDateBR(c.date)} • {stats.itemsCount} {stats.itemsCount === 1 ? 'item' : 'itens'}
+                          </p>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Última conferência: <span className="font-semibold text-slate-700 dark:text-slate-300">{formatDateBR(c.lastAuditDate)}</span>
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 font-medium block">Valor Mercadorias</span>
+                          <span className="font-black text-emerald-600 dark:text-emerald-400 text-base">
+                            R$ {stats.totalValue.toFixed(2).replace('.', ',')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 dark:border-[#202531] flex items-center justify-between gap-1.5">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedConsignment(c);
+                        }}
+                        className="flex-1 py-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <Printer className="w-3.5 h-3.5" /> PDF
+                      </button>
+                      {onUpdateConsignment && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartEditConsignment(c);
+                          }}
+                          className="px-2.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:hover:bg-amber-900/50 dark:text-amber-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                          title="Editar Remessa"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>Editar</span>
+                        </button>
+                      )}
+                      {onDeleteConsignment && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (window.confirm(`Tem certeza que deseja excluir a remessa ${c.id} de todo o sistema?`)) {
+                              onDeleteConsignment(c.id);
+                            }
+                          }}
+                          className="px-2.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                          title="Excluir Remessa"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
-
-                  <div className="pt-2 border-t border-slate-100 dark:border-[#202531] flex items-center justify-between gap-1.5">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedConsignment(c);
-                      }}
-                      className="flex-1 py-2 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
-                    >
-                      <Printer className="w-3.5 h-3.5" /> PDF
-                    </button>
-                    {onUpdateConsignment && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartEditConsignment(c);
-                        }}
-                        className="px-2.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:hover:bg-amber-900/50 dark:text-amber-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
-                        title="Editar Remessa"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                        <span>Editar</span>
-                      </button>
-                    )}
-                    {onDeleteConsignment && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (window.confirm(`Tem certeza que deseja excluir a remessa ${c.id} de todo o sistema?`)) {
-                            onDeleteConsignment(c.id);
-                          }
-                        }}
-                        className="px-2.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors"
-                        title="Excluir Remessa"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -407,67 +448,70 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
-                    {filteredConsignments.map((c) => (
-                      <tr
-                        key={c.id}
-                        onClick={() => setSelectedConsignment(c)}
-                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
-                      >
-                        <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{c.id}</td>
-                        <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{c.clientName}</td>
-                        <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(c.date)}</td>
-                        <td className="p-4 text-center font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">{c.itemsCount} itens</td>
-                        <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
-                          R$ {c.totalValue.toFixed(2).replace('.', ',')}
-                        </td>
-                        <td className="p-4 text-center whitespace-nowrap">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 inline-flex items-center justify-center gap-1 whitespace-nowrap">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                            <span>{c.status}</span>
-                          </span>
-                        </td>
-                        <td className="p-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDateBR(c.lastAuditDate)}</td>
-                        <td className="p-4 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2 whitespace-nowrap">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedConsignment(c);
-                              }}
-                              className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer text-xs transition-colors shrink-0 whitespace-nowrap"
-                            >
-                              <Printer className="w-3.5 h-3.5" /> Ver PDF
-                            </button>
-                            {onUpdateConsignment && (
+                    {filteredConsignments.map((c) => {
+                      const stats = getConsignmentDeductedStats(c, exchanges);
+                      return (
+                        <tr
+                          key={c.id}
+                          onClick={() => setSelectedConsignment(c)}
+                          className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
+                        >
+                          <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{c.id}</td>
+                          <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{c.clientName}</td>
+                          <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(c.date)}</td>
+                          <td className="p-4 text-center font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">{stats.itemsCount} itens</td>
+                          <td className="p-4 text-right font-extrabold text-emerald-600 dark:text-emerald-400 text-sm whitespace-nowrap">
+                            R$ {stats.totalValue.toFixed(2).replace('.', ',')}
+                          </td>
+                          <td className="p-4 text-center whitespace-nowrap">
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 inline-flex items-center justify-center gap-1 whitespace-nowrap">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              <span>{c.status}</span>
+                            </span>
+                          </td>
+                          <td className="p-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{formatDateBR(c.lastAuditDate)}</td>
+                          <td className="p-4 text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-2 whitespace-nowrap">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handleStartEditConsignment(c);
+                                  setSelectedConsignment(c);
                                 }}
-                                className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:hover:bg-amber-900/50 dark:text-amber-400 rounded-lg font-semibold flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0 whitespace-nowrap"
-                                title="Editar Remessa"
+                                className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 rounded-lg font-semibold flex items-center gap-1.5 cursor-pointer text-xs transition-colors shrink-0 whitespace-nowrap"
                               >
-                                <Edit className="w-3.5 h-3.5" /> Editar
+                                <Printer className="w-3.5 h-3.5" /> Ver PDF
                               </button>
-                            )}
-                            {onDeleteConsignment && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (window.confirm(`Tem certeza que deseja excluir a remessa ${c.id} de todo o sistema?`)) {
-                                    onDeleteConsignment(c.id);
-                                  }
-                                }}
-                                className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 dark:text-rose-400 rounded-lg font-semibold flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0 whitespace-nowrap"
-                                title="Excluir Remessa"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" /> Excluir
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                              {onUpdateConsignment && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartEditConsignment(c);
+                                  }}
+                                  className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:hover:bg-amber-900/50 dark:text-amber-400 rounded-lg font-semibold flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0 whitespace-nowrap"
+                                  title="Editar Remessa"
+                                >
+                                  <Edit className="w-3.5 h-3.5" /> Editar
+                                </button>
+                              )}
+                              {onDeleteConsignment && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm(`Tem certeza que deseja excluir a remessa ${c.id} de todo o sistema?`)) {
+                                      onDeleteConsignment(c.id);
+                                    }
+                                  }}
+                                  className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:hover:bg-rose-900/50 dark:text-rose-400 rounded-lg font-semibold flex items-center gap-1 cursor-pointer text-xs transition-colors shrink-0 whitespace-nowrap"
+                                  title="Excluir Remessa"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Excluir
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
