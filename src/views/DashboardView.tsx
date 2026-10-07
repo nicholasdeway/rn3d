@@ -67,12 +67,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     return computeMonthlyAnalyticsData(orders, transactions, consignments, expenses);
   }, [orders, transactions, consignments, expenses]);
 
-  // Compute dynamic KPIs (Faturamento Acumulado inclui pedidos, entradas de pedidos e resgates de marketplaces)
+  // Compute dynamic KPIs (Faturamento Acumulado inclui pedidos pagos e resgates de marketplaces)
   const totalRevenue = useMemo(() => {
     const ordersPaid = orders.reduce((acc, o) => acc + (Number(o.paidAmount) || 0), 0);
 
     const marketplaceTransfers = expenses
-      .filter((e) => e.category === 'Transferência de Marketplace' || e.category === 'Entrada de Pedido' || e.category === 'Aporte / Reembolso de Sócio')
+      .filter((e) => e.category === 'Transferência de Marketplace')
       .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
 
     const standaloneTransactions = transactions

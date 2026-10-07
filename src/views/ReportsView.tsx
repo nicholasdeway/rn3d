@@ -247,17 +247,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       );
       const consignmentsValue = clientConsignments.reduce((acc, c) => acc + c.totalValue, 0);
 
-      // Sum any direct income expenses matched to this client
-      const clientExpensesValue = filteredExpenses
-        .filter((e) => {
-          if (e.category !== 'Transferência de Marketplace' && e.category !== 'Entrada de Pedido') return false;
-          const beneficiaryMatch = e.beneficiary && e.beneficiary.toLowerCase().trim() === cli.name.toLowerCase().trim();
-          const descMatch = e.description && e.description.toLowerCase().trim().includes(cli.name.toLowerCase().trim());
-          return beneficiaryMatch || descMatch;
-        })
-        .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
-
-      const combinedRevenue = totalRevenue + consignmentsValue + clientExpensesValue;
+      const combinedRevenue = totalRevenue + consignmentsValue;
 
       return {
         id: cli.id,
