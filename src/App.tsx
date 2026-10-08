@@ -588,6 +588,7 @@ export function App() {
                   preselectedClientId={preselectedClientIdForAction}
                   onAddOrder={appData.handleCreateOrder}
                   onExecuteExchange={appData.handleExecuteExchange}
+                  onCreateExpense={appData.handleCreateExpense}
                 />
               )}
 

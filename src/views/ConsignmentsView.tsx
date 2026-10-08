@@ -21,6 +21,7 @@ import {
   Minus,
   Check,
   CreditCard,
+  Clock,
 } from 'lucide-react';
 
 import { safeGetLocalStorage, safeSetLocalStorage } from '../utils/storage';
@@ -38,6 +39,7 @@ interface ConsignmentsViewProps {
   preselectedClientId?: string;
   onAddOrder?: (order: Order) => void;
   onExecuteExchange?: (exchange: ExchangeNote) => void;
+  onCreateExpense?: (expense: any) => void;
 }
 
 export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
@@ -53,6 +55,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   preselectedClientId,
   onAddOrder,
   onExecuteExchange,
+  onCreateExpense,
 }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>(() => {
     const saved = safeGetLocalStorage('rn3d_consignments_view_mode');
@@ -72,6 +75,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   const [acertoConsignment, setAcertoConsignment] = useState<Consignment | null>(null);
   const [acertoQuantities, setAcertoQuantities] = useState<Record<string, number>>({});
   const [acertoPaymentMethod, setAcertoPaymentMethod] = useState<string>('PIX');
+  const [acertoPaymentStatus, setAcertoPaymentStatus] = useState<'aguardando_pagamento' | 'pago'>('aguardando_pagamento');
   const [acertoDate, setAcertoDate] = useState<string>(getTodayBR());
   const [acertoNotes, setAcertoNotes] = useState('');
 
@@ -180,6 +184,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
     setAcertoQuantities(initialSold);
     setAcertoPaymentMethod('PIX');
+    setAcertoPaymentStatus('aguardando_pagamento');
     setAcertoDate(getTodayBR());
     setAcertoNotes('');
     setIsAcertoModalOpen(true);
@@ -225,6 +230,11 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
       ? acertoDate.split('/').reverse().join('-')
       : acertoDate;
 
+    const isPaid = acertoPaymentStatus === 'pago';
+    const paidAmountVal = isPaid ? totalSoldValuation : 0;
+    const paymentStatusTextVal = isPaid ? 'PAGO' : 'AGUARDANDO PAGAMENTO';
+    const statusVal = isPaid ? 'Entregue' : 'Aguardando pagamento';
+
     const newOrder: Order = {
       id: newOrderId,
       clientId: acertoConsignment.clientId,
@@ -233,9 +243,9 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
       createdAt: new Date().toISOString(),
       itemsCount: totalSoldQty,
       totalValue: totalSoldValuation,
-      paidAmount: totalSoldValuation,
-      paymentStatusText: 'PAGO',
-      status: 'Entregue',
+      paidAmount: paidAmountVal,
+      paymentStatusText: paymentStatusTextVal,
+      status: statusVal,
       productionProgressPct: 100,
       attendanceMode: 'Presencial',
       paymentMethod: acertoPaymentMethod,
@@ -250,7 +260,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
       timeline: [
         {
           date: formatDateBR(acertoDate),
-          title: 'Venda Consignada Auditada & Faturada',
+          title: isPaid ? 'Venda Consignada Auditada & Faturada (Pago)' : 'Venda Consignada Auditada (Aguardando Pagamento)',
           description: `Acerto presencial de ${totalSoldQty} peças no valor de R$ ${totalSoldValuation.toFixed(2).replace('.', ',')} (${acertoPaymentMethod})`,
         },
       ],
@@ -278,6 +288,19 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
     if (onAddOrder) {
       onAddOrder(newOrder);
+    }
+    if (isPaid && onCreateExpense) {
+      onCreateExpense({
+        id: `EXP-${Math.floor(100000 + Math.random() * 900000)}`,
+        date: formattedIsoDate,
+        description: `Acerto de Consignação - Pedido #${newOrderId} (${acertoConsignment.clientName})`,
+        category: 'Entrada de Pedido',
+        amount: totalSoldValuation,
+        paymentMethod: acertoPaymentMethod,
+        type: 'income',
+        referenceCode: newOrderId,
+        notes: `Gerado via Acerto de Consignação (${acertoConsignment.id})`,
+      });
     }
     if (onExecuteExchange) {
       onExecuteExchange(exchangeNote);
@@ -860,7 +883,21 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
               </div>
 
               {/* Payment & Date Controls */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-slate-50 dark:bg-[#181c26] rounded-2xl border border-slate-200/80 dark:border-[#202531]">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-[#181c26] rounded-2xl border border-slate-200/80 dark:border-[#202531]">
+                <div>
+                  <label className="block font-bold text-slate-800 dark:text-slate-200 text-xs mb-1.5 flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-amber-500" /> Status do Pagamento *
+                  </label>
+                  <select
+                    value={acertoPaymentStatus}
+                    onChange={(e) => setAcertoPaymentStatus(e.target.value as 'aguardando_pagamento' | 'pago')}
+                    className="w-full px-3.5 py-2.5 bg-white dark:bg-[#12151c] border border-slate-300 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/20"
+                  >
+                    <option value="aguardando_pagamento">⏳ Aguardando Pagamento (Lança em Contas a Receber)</option>
+                    <option value="pago">✅ Já Pago / Recebido na Hora (Lança no Caixa)</option>
+                  </select>
+                </div>
+
                 <div>
                   <label className="block font-bold text-slate-800 dark:text-slate-200 text-xs mb-1.5 flex items-center gap-1.5">
                     <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /> Forma de Pagamento *
@@ -891,7 +928,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div className="md:col-span-3">
                   <label className="block font-bold text-slate-800 dark:text-slate-200 text-xs mb-1.5">
                     Observações do Acerto (Opcional)
                   </label>
