@@ -450,6 +450,11 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                           }`}>
                           {o.attendanceMode === 'online' ? '💬 Atendimento Online' : '📍 Visita Presencial'}
                         </span>
+                        {o.orderType === 'acerto_consignacao' && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900">
+                            🏷️ Acerto Consignado
+                          </span>
+                        )}
                         {(() => {
                           const paid = o.paidAmount || 0;
                           const total = o.totalValue || 0;
@@ -593,6 +598,11 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                                 <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
                               )}
                               <span>{o.id}</span>
+                              {o.orderType === 'acerto_consignacao' && (
+                                <span className="text-[10px] font-extrabold px-1.5 py-0.5 bg-purple-100 dark:bg-purple-950 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-800 rounded-md">
+                                  Consignado
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td className="p-3.5 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap max-w-[200px] truncate" title={o.clientName}>

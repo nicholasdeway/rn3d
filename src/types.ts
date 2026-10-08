@@ -257,6 +257,7 @@ export interface Order {
   productionSlaDate?: string;
   estimatedDeliveryDate?: string;
   attendanceMode?: AttendanceMode;
+  orderType?: 'orcamento' | 'acerto_consignacao' | 'venda_direta';
   internalLogisticsType?: 'combustivel' | 'frete' | 'retirada';
   internalLogisticsCost?: number;
   paymentMethod?: string;

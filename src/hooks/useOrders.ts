@@ -100,8 +100,8 @@ export function useOrders(
     setOrders((prev) => [newOrder, ...prev]);
     toast(`Pedido #${newOrder.id} gerado com sucesso!`, 'success');
 
-    // Baixa automática no estoque geral para os itens do pedido
-    if (newOrder.items && newOrder.items.length > 0 && setProducts) {
+    // Baixa automática no estoque geral para os itens do pedido (apenas se não for Acerto de Consignação)
+    if (newOrder.orderType !== 'acerto_consignacao' && newOrder.items && newOrder.items.length > 0 && setProducts) {
       setProducts((prevProducts) =>
         prevProducts.map((p) => {
           const itemMatch = newOrder.items.find(
