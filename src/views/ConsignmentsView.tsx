@@ -1509,7 +1509,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
         };
 
         return (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
             <style>{`
               @media print {
                 @page {
@@ -1575,14 +1575,22 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
               }
             `}</style>
 
-            <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[92vh] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="print-container bg-white dark:bg-[#12151c] w-full max-w-3xl rounded-2xl border border-slate-300 dark:border-[#202531] overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[92vh] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
               {/* Modal Top Controls (Hidden on Print) */}
-              <div className="no-print p-4 bg-slate-900 dark:bg-[#181c26] text-white flex items-center justify-between shrink-0 border-b border-slate-800 dark:border-[#202531]">
-                <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
-                  <Printer className="w-4 h-4 text-indigo-400" />
-                  Comprovante de Remessa em Consignação ({selectedConsignment.id})
-                </span>
-                <div className="flex items-center gap-2 sm:gap-3">
+              <div className="no-print p-3 sm:p-4 bg-slate-900 dark:bg-[#181c26] text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 border-b border-slate-800 dark:border-[#202531]">
+                <div className="flex items-center justify-between sm:justify-start gap-2 min-w-0">
+                  <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2 truncate">
+                    <Printer className="w-4 h-4 text-indigo-400 shrink-0" />
+                    <span className="truncate">Comprovante de Remessa ({selectedConsignment.id})</span>
+                  </span>
+                  <button
+                    onClick={() => setSelectedConsignment(null)}
+                    className="sm:hidden p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="flex items-center justify-end flex-wrap gap-1.5 sm:gap-2">
                   {onUpdateConsignment && (
                     <button
                       onClick={() => {
@@ -1590,9 +1598,9 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                         setSelectedConsignment(null);
                         handleStartEditConsignment(toEdit);
                       }}
-                      className="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
+                      className="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold flex items-center gap-1 text-[11px] sm:text-xs transition-colors cursor-pointer"
                     >
-                      <Edit className="w-4 h-4" /> Editar
+                      <Edit className="w-3.5 h-3.5" /> Editar
                     </button>
                   )}
                   {onDeleteConsignment && (
@@ -1603,20 +1611,20 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                           setSelectedConsignment(null);
                         }
                       }}
-                      className="px-3 py-2 bg-rose-600/80 hover:bg-rose-700 text-white rounded-xl font-bold flex items-center gap-1.5 text-xs transition-colors cursor-pointer"
+                      className="px-2.5 sm:px-3 py-1.5 sm:py-2 bg-rose-600/80 hover:bg-rose-700 text-white rounded-xl font-bold flex items-center gap-1 text-[11px] sm:text-xs transition-colors cursor-pointer"
                     >
-                      <Trash2 className="w-4 h-4" /> Excluir
+                      <Trash2 className="w-3.5 h-3.5" /> Excluir
                     </button>
                   )}
                   <button
                     onClick={() => window.print()}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs transition-colors cursor-pointer shadow-sm"
+                    className="px-3 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-1.5 text-[11px] sm:text-xs transition-colors cursor-pointer shadow-sm"
                   >
-                    <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
+                    <Printer className="w-3.5 h-3.5" /> <span className="hidden xs:inline sm:inline">Imprimir / </span>PDF
                   </button>
                   <button
                     onClick={() => setSelectedConsignment(null)}
-                    className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer transition-colors"
+                    className="hidden sm:block p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -1624,73 +1632,75 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
               </div>
 
               {/* A4 Printed Sheet Document */}
-              <div className="print-sheet p-8 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white text-slate-900 font-sans flex-1">
+              <div className="print-sheet p-4 sm:p-8 md:p-10 overflow-y-auto space-y-4 sm:space-y-6 text-xs bg-white text-slate-900 font-sans flex-1">
                 {/* Header */}
-                <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-3 pb-4 sm:pb-5 border-b-2 border-slate-900">
                   <div>
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">RN 3D Soluções</h2>
-                    <p className="text-xs font-black text-slate-900 mt-1">CNPJ: 67.570.155/0001-34</p>
-                    <p className="text-[11px] text-slate-700 font-semibold mt-1">
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">RN 3D Soluções</h2>
+                    <p className="text-xs font-black text-slate-900 mt-0.5 sm:mt-1">CNPJ: 67.570.155/0001-34</p>
+                    <p className="text-[10px] sm:text-[11px] text-slate-700 font-semibold mt-0.5 sm:mt-1">
                       WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
                     </p>
                   </div>
-                  <div className="text-right">
-                    <span className="px-3 py-1 bg-indigo-600 text-white font-mono font-bold rounded-md text-xs inline-block">
+                  <div className="text-left sm:text-right">
+                    <span className="px-2.5 sm:px-3 py-1 bg-indigo-600 text-white font-mono font-bold rounded-md text-[11px] sm:text-xs inline-block">
                       REMESSA {selectedConsignment.id}
                     </span>
-                    <p className="text-slate-500 mt-2 text-xs font-medium">Data Envio: {formatDateBR(selectedConsignment.date)}</p>
-                    <p className="text-slate-500 text-xs font-medium">Status: <span className="font-bold text-emerald-600">{selectedConsignment.status}</span></p>
+                    <p className="text-slate-500 mt-1 sm:mt-2 text-[11px] sm:text-xs font-medium">Data Envio: {formatDateBR(selectedConsignment.date)}</p>
+                    <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Status: <span className="font-bold text-emerald-600">{selectedConsignment.status}</span></p>
                   </div>
                 </div>
 
                 {/* Client Details Box */}
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                  <p className="font-bold text-slate-900 text-sm uppercase">ESTABELECIMENTO / CLIENTE: {selectedConsignment.clientName}</p>
-                  <p className="text-slate-600 font-medium">Modalidade: Alocação Inicial de Produtos em Consignação</p>
-                  <p className="text-slate-500 text-[11px]">Última Conferência Auditada: {formatDateBR(getConsignmentLatestAuditDate(selectedConsignment, exchanges, visits))}</p>
+                <div className="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                  <p className="font-bold text-slate-900 text-xs sm:text-sm uppercase">ESTABELECIMENTO / CLIENTE: {selectedConsignment.clientName}</p>
+                  <p className="text-slate-600 font-medium text-[11px] sm:text-xs">Modalidade: Alocação Inicial de Produtos em Consignação</p>
+                  <p className="text-slate-500 text-[10px] sm:text-[11px]">Última Conferência Auditada: {formatDateBR(getConsignmentLatestAuditDate(selectedConsignment, exchanges, visits))}</p>
                 </div>
 
                 {/* Items Table */}
                 <div className="space-y-2">
-                  <h3 className="font-extrabold text-slate-900 uppercase tracking-wider text-xs flex items-center justify-between border-b border-slate-200 pb-1">
+                  <h3 className="font-extrabold text-slate-900 uppercase tracking-wider text-[11px] sm:text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-200 pb-1">
                     <span>📦 Produtos Entregues / Alocados no Expositor (Inicial)</span>
                     <span className="font-mono text-indigo-700 font-bold">
                       Total: {selectedConsignment.itemsCount} unidades
                     </span>
                   </h3>
-                  <table className="w-full text-left border-collapse border border-slate-200">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] bg-slate-50">
-                        <th className="p-2">Item / Descrição do Produto</th>
-                        <th className="p-2 text-center">SKU</th>
-                        <th className="p-2 text-center">Quantidade</th>
-                        <th className="p-2 text-right">Preço Unit.</th>
-                        <th className="p-2 text-right">Subtotal</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-medium">
-                      {(selectedConsignment.items || []).map((item, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50">
-                          <td className="p-2 font-bold text-slate-900">{item.productName}</td>
-                          <td className="p-2 text-center font-mono text-slate-500">{item.sku || 'N/A'}</td>
-                          <td className="p-2 text-center font-extrabold text-slate-900">{item.quantity} un</td>
-                          <td className="p-2 text-right text-slate-700">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
-                          <td className="p-2 text-right font-extrabold text-emerald-600">R$ {item.subtotal.toFixed(2).replace('.', ',')}</td>
+                  <div className="overflow-x-auto max-w-full -mx-1 px-1">
+                    <table className="w-full text-left border-collapse border border-slate-200 min-w-[440px] sm:min-w-full">
+                      <thead>
+                        <tr className="border-b border-slate-200 text-slate-700 font-bold uppercase text-[9px] sm:text-[10px] bg-slate-50">
+                          <th className="p-1.5 sm:p-2">Item / Descrição do Produto</th>
+                          <th className="p-1.5 sm:p-2 text-center">SKU</th>
+                          <th className="p-1.5 sm:p-2 text-center">Quantidade</th>
+                          <th className="p-1.5 sm:p-2 text-right">Preço Unit.</th>
+                          <th className="p-1.5 sm:p-2 text-right">Subtotal</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium text-[11px] sm:text-xs">
+                        {(selectedConsignment.items || []).map((item, idx) => (
+                          <tr key={idx} className="hover:bg-slate-50/50">
+                            <td className="p-1.5 sm:p-2 font-bold text-slate-900">{item.productName}</td>
+                            <td className="p-1.5 sm:p-2 text-center font-mono text-slate-500">{item.sku || 'N/A'}</td>
+                            <td className="p-1.5 sm:p-2 text-center font-extrabold text-slate-900">{item.quantity} un</td>
+                            <td className="p-1.5 sm:p-2 text-right text-slate-700">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                            <td className="p-1.5 sm:p-2 text-right font-extrabold text-emerald-600">R$ {item.subtotal.toFixed(2).replace('.', ',')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {/* Mechanism 1: Itens Quitados / Pagos (Vendas Auditadas & Faturadas) */}
                 {paidExchanges.length > 0 && (
-                  <div className="p-4 bg-emerald-50/90 border border-emerald-300 rounded-xl space-y-3 print-avoid-break">
-                    <h4 className="font-extrabold text-emerald-950 text-xs flex items-center justify-between border-b border-emerald-200 pb-2">
+                  <div className="p-3 sm:p-4 bg-emerald-50/90 border border-emerald-300 rounded-xl space-y-3 print-avoid-break">
+                    <h4 className="font-extrabold text-emerald-950 text-[11px] sm:text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-emerald-200 pb-2">
                       <span className="flex items-center gap-1.5">
                         <span className="text-emerald-600">✅</span>
                         <span>Itens Quitados / Pagos — Baixa Registrada (Não Cobrar Novamente)</span>
                       </span>
-                      <span className="font-mono text-[11px] bg-emerald-200/90 px-2.5 py-0.5 rounded-md text-emerald-950 font-bold">
+                      <span className="font-mono text-[10px] sm:text-[11px] bg-emerald-200/90 px-2 sm:px-2.5 py-0.5 rounded-md text-emerald-950 font-bold shrink-0 self-start sm:self-auto">
                         {paidExchanges.length} nota(s) baixada(s)
                       </span>
                     </h4>
@@ -1701,26 +1711,26 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                         return (
                           <div
                             key={ex.id}
-                            className="bg-white p-3 rounded-lg border border-emerald-200 shadow-2xs space-y-2"
+                            className="bg-white p-2.5 sm:p-3 rounded-lg border border-emerald-200 shadow-2xs space-y-2"
                           >
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-wrap gap-2">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-wrap gap-1.5">
+                              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                <span className="font-mono font-bold text-emerald-800 bg-emerald-100 px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-200 text-[10px] sm:text-xs">
                                   {ex.id}
                                 </span>
-                                <span className="text-slate-600 font-semibold">{formatDateBR(ex.date)}</span>
+                                <span className="text-slate-600 font-semibold text-[10px] sm:text-xs">{formatDateBR(ex.date)}</span>
                                 {ex.responsible && (
-                                  <span className="text-slate-500 text-[10px]">({ex.responsible})</span>
+                                  <span className="text-slate-500 text-[9px] sm:text-[10px]">({ex.responsible})</span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-md border border-emerald-300">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[9px] sm:text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 sm:px-2 py-0.5 rounded-md border border-emerald-300">
                                   DEU BAIXA — PAGO
                                 </span>
                                 {onExecuteExchange && (
                                   <button
                                     onClick={() => handleToggleExchangeStatus(ex, 'remanejado')}
-                                    className="no-print text-[10px] text-sky-700 bg-sky-50 hover:bg-sky-100 px-2 py-0.5 rounded border border-sky-200 font-bold cursor-pointer transition-colors"
+                                    className="no-print text-[9px] sm:text-[10px] text-sky-700 bg-sky-50 hover:bg-sky-100 px-1.5 sm:px-2 py-0.5 rounded border border-sky-200 font-bold cursor-pointer transition-colors"
                                     title="Clique para alterar a classificação desta nota para Remanejamento"
                                   >
                                     🔄 Mudar p/ Remanejado
@@ -1728,36 +1738,38 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                                 )}
                               </div>
                             </div>
-                            <table className="w-full text-left border-collapse">
-                              <thead>
-                                <tr className="text-slate-500 uppercase text-[9px] border-b border-slate-100 bg-slate-50/50">
-                                  <th className="p-1 font-bold">Item Vendido / Baixado</th>
-                                  <th className="p-1 text-center font-bold">Qtd Baixada</th>
-                                  <th className="p-1 text-right font-bold">Preço Unit.</th>
-                                  <th className="p-1 text-right font-bold">Total Quitado</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-50">
-                                {ex.itemsRemoved.map((item, iIdx) => {
-                                  const unitPrice = getConsignmentUnitPrice(item.productName, item.productId);
-                                  const subtotal = item.quantity * unitPrice;
-                                  notePaidTotal += subtotal;
-                                  notePaidQty += item.quantity;
-                                  return (
-                                    <tr key={iIdx} className="text-xs">
-                                      <td className="p-1 font-bold text-slate-800">
-                                        {item.productName}
-                                        <span className="ml-2 text-[10px] text-emerald-600 font-normal italic">(Baixa por Venda)</span>
-                                      </td>
-                                      <td className="p-1 text-center font-extrabold text-slate-900">{item.quantity} un</td>
-                                      <td className="p-1 text-right text-slate-600">R$ {unitPrice.toFixed(2).replace('.', ',')}</td>
-                                      <td className="p-1 text-right font-extrabold text-emerald-700">R$ {subtotal.toFixed(2).replace('.', ',')}</td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                            <div className="pt-1 border-t border-emerald-100 flex justify-between items-center text-[11px] font-bold text-emerald-900">
+                            <div className="overflow-x-auto max-w-full -mx-1 px-1">
+                              <table className="w-full text-left border-collapse min-w-[420px] sm:min-w-full">
+                                <thead>
+                                  <tr className="text-slate-500 uppercase text-[9px] border-b border-slate-100 bg-slate-50/50">
+                                    <th className="p-1 font-bold">Item Vendido / Baixado</th>
+                                    <th className="p-1 text-center font-bold">Qtd Baixada</th>
+                                    <th className="p-1 text-right font-bold">Preço Unit.</th>
+                                    <th className="p-1 text-right font-bold">Total Quitado</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 text-[11px] sm:text-xs">
+                                  {ex.itemsRemoved.map((item, iIdx) => {
+                                    const unitPrice = getConsignmentUnitPrice(item.productName, item.productId);
+                                    const subtotal = item.quantity * unitPrice;
+                                    notePaidTotal += subtotal;
+                                    notePaidQty += item.quantity;
+                                    return (
+                                      <tr key={iIdx}>
+                                        <td className="p-1 font-bold text-slate-800">
+                                          {item.productName}
+                                          <span className="ml-1.5 text-[9px] sm:text-[10px] text-emerald-600 font-normal italic">(Baixa por Venda)</span>
+                                        </td>
+                                        <td className="p-1 text-center font-extrabold text-slate-900">{item.quantity} un</td>
+                                        <td className="p-1 text-right text-slate-600">R$ {unitPrice.toFixed(2).replace('.', ',')}</td>
+                                        <td className="p-1 text-right font-extrabold text-emerald-700">R$ {subtotal.toFixed(2).replace('.', ',')}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                            <div className="pt-1 border-t border-emerald-100 flex justify-between items-center text-[10px] sm:text-[11px] font-bold text-emerald-900">
                               <span>Total Baixado nesta Nota ({notePaidQty} un):</span>
                               <span className="font-black text-xs text-emerald-800">R$ {notePaidTotal.toFixed(2).replace('.', ',')}</span>
                             </div>
@@ -1770,13 +1782,13 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
                 {/* Mechanism 2: Itens Remanejados / Devolvidos (Oficina ou Outra Loja) */}
                 {remanejadoExchanges.length > 0 && (
-                  <div className="p-4 bg-sky-50/90 border border-sky-300 rounded-xl space-y-3 print-avoid-break">
-                    <h4 className="font-extrabold text-sky-950 text-xs flex items-center justify-between border-b border-sky-200 pb-2">
+                  <div className="p-3 sm:p-4 bg-sky-50/90 border border-sky-300 rounded-xl space-y-3 print-avoid-break">
+                    <h4 className="font-extrabold text-sky-950 text-[11px] sm:text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-sky-200 pb-2">
                       <span className="flex items-center gap-1.5">
                         <span className="text-sky-600">🔄</span>
                         <span>Itens Remanejados / Retirados (Oficina ou Outra Loja)</span>
                       </span>
-                      <span className="font-mono text-[11px] bg-sky-200/90 px-2.5 py-0.5 rounded-md text-sky-950 font-bold">
+                      <span className="font-mono text-[10px] sm:text-[11px] bg-sky-200/90 px-2 sm:px-2.5 py-0.5 rounded-md text-sky-950 font-bold shrink-0 self-start sm:self-auto">
                         {remanejadoExchanges.length} nota(s) de remanejamento
                       </span>
                     </h4>
@@ -1790,26 +1802,26 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                         return (
                           <div
                             key={ex.id}
-                            className="bg-white p-3 rounded-lg border border-sky-200 shadow-2xs space-y-2"
+                            className="bg-white p-2.5 sm:p-3 rounded-lg border border-sky-200 shadow-2xs space-y-2"
                           >
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-wrap gap-2">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-sky-800 bg-sky-100 px-2 py-0.5 rounded-md border border-sky-200">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-wrap gap-1.5">
+                              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                <span className="font-mono font-bold text-sky-800 bg-sky-100 px-1.5 sm:px-2 py-0.5 rounded-md border border-sky-200 text-[10px] sm:text-xs">
                                   {ex.id}
                                 </span>
-                                <span className="text-slate-600 font-semibold">{formatDateBR(ex.date)}</span>
+                                <span className="text-slate-600 font-semibold text-[10px] sm:text-xs">{formatDateBR(ex.date)}</span>
                                 {ex.responsible && (
-                                  <span className="text-slate-500 text-[10px]">({ex.responsible})</span>
+                                  <span className="text-slate-500 text-[9px] sm:text-[10px]">({ex.responsible})</span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-extrabold text-sky-900 bg-sky-100 border border-sky-300 px-2.5 py-0.5 rounded-md text-xs">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-extrabold text-sky-900 bg-sky-100 border border-sky-300 px-2 py-0.5 rounded-md text-[10px] sm:text-xs">
                                   -{totalRemoved} un
                                 </span>
                                 {onExecuteExchange && (
                                   <button
                                     onClick={() => handleToggleExchangeStatus(ex, 'paid')}
-                                    className="no-print text-[10px] text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 font-bold cursor-pointer transition-colors flex items-center gap-1"
+                                    className="no-print text-[9px] sm:text-[10px] text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-1.5 sm:px-2 py-0.5 rounded border border-emerald-200 font-bold cursor-pointer transition-colors flex items-center gap-1"
                                     title="Clique para converter esta nota em Baixa por Venda / Pago"
                                   >
                                     🟢 Converter em Baixa (Vendido / Quitado)
@@ -1817,18 +1829,18 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                                 )}
                               </div>
                             </div>
-                            <p className="text-[10px] text-slate-600">
+                            <p className="text-[10px] sm:text-[11px] text-slate-600">
                               Destino / Motivo: <strong className="text-slate-900 font-bold">{destinationLabel}</strong>
                             </p>
-                            <ul className="space-y-1 font-medium text-slate-800 text-xs pl-1">
+                            <ul className="space-y-1 font-medium text-slate-800 text-[11px] sm:text-xs pl-1">
                               {ex.itemsRemoved.map((item, iIdx) => (
-                                <li key={iIdx} className="flex items-center justify-between">
-                                  <span className="flex items-center gap-1.5">
+                                <li key={iIdx} className="flex items-center justify-between gap-2">
+                                  <span className="flex items-center gap-1.5 min-w-0">
                                     <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0"></span>
-                                    <span>{item.productName}</span>
-                                    {item.reason && <span className="text-slate-400 text-[10px]">({item.reason})</span>}
+                                    <span className="truncate">{item.productName}</span>
+                                    {item.reason && <span className="text-slate-400 text-[9px] sm:text-[10px] shrink-0">({item.reason})</span>}
                                   </span>
-                                  <span className="font-bold text-sky-900 font-mono">-{item.quantity} un</span>
+                                  <span className="font-bold text-sky-900 font-mono shrink-0">-{item.quantity} un</span>
                                 </li>
                               ))}
                             </ul>
@@ -1840,15 +1852,15 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 )}
 
                 {/* Summary Valuation & Remaining Active Stock */}
-                <div className="print-avoid-break p-4 bg-emerald-50/90 rounded-xl border border-emerald-300 space-y-3 text-xs">
-                  <div className="flex justify-between items-center border-b border-emerald-200 pb-2">
+                <div className="print-avoid-break p-3 sm:p-4 bg-emerald-50/90 rounded-xl border border-emerald-300 space-y-3 text-xs">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 border-b border-emerald-200 pb-2">
                     <div>
-                      <span className="font-black text-emerald-950 text-xs uppercase block">📦 Saldo Atual Alocado no Expositor (Ativo na Loja)</span>
-                      <span className="text-slate-700 font-bold">{currentQtyOnSite} produtos em exibição restante</span>
+                      <span className="font-black text-emerald-950 text-[11px] sm:text-xs uppercase block">📦 Saldo Atual Alocado no Expositor (Ativo na Loja)</span>
+                      <span className="text-slate-700 font-bold text-[11px] sm:text-xs">{currentQtyOnSite} produtos em exibição restante</span>
                     </div>
-                    <div className="text-right">
-                      <span className="text-slate-600 text-[10px] uppercase font-bold block">Valor Total Auditado / A Cobrar</span>
-                      <span className="text-xl font-black text-emerald-700">
+                    <div className="text-left sm:text-right">
+                      <span className="text-slate-600 text-[9px] sm:text-[10px] uppercase font-bold block">Valor Total Auditado / A Cobrar</span>
+                      <span className="text-lg sm:text-xl font-black text-emerald-700">
                         R$ {currentValuationOnSite.toFixed(2).replace('.', ',')}
                       </span>
                     </div>
@@ -1856,29 +1868,31 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
                   {activeItemsOnSite.length > 0 && (
                     <div className="space-y-1">
-                      <span className="text-[10px] font-bold uppercase text-slate-600 block">Detalhamento dos Itens Restantes na Loja:</span>
-                      <table className="w-full text-left border-collapse bg-white rounded-lg border border-emerald-200 text-[11px]">
-                        <thead>
-                          <tr className="bg-emerald-100/60 text-emerald-950 text-[9px] uppercase font-bold border-b border-emerald-200">
-                            <th className="p-1.5">Produto Restante</th>
-                            <th className="p-1.5 text-center">Qtd Atual</th>
-                            <th className="p-1.5 text-right">Preço Unit.</th>
-                            <th className="p-1.5 text-right">Subtotal A Cobrar</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 font-medium">
-                          {activeItemsOnSite.map((item, aIdx) => (
-                            <tr key={aIdx}>
-                              <td className="p-1.5 font-bold text-slate-900">{item.productName}</td>
-                              <td className="p-1.5 text-center font-extrabold text-slate-900">{item.remainingQty} un</td>
-                              <td className="p-1.5 text-right text-slate-600">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
-                              <td className="p-1.5 text-right font-extrabold text-emerald-700">
-                                R$ {item.remainingSubtotal.toFixed(2).replace('.', ',')}
-                              </td>
+                      <span className="text-[9px] sm:text-[10px] font-bold uppercase text-slate-600 block">Detalhamento dos Itens Restantes na Loja:</span>
+                      <div className="overflow-x-auto max-w-full -mx-1 px-1">
+                        <table className="w-full text-left border-collapse bg-white rounded-lg border border-emerald-200 text-[10px] sm:text-[11px] min-w-[420px] sm:min-w-full">
+                          <thead>
+                            <tr className="bg-emerald-100/60 text-emerald-950 text-[9px] uppercase font-bold border-b border-emerald-200">
+                              <th className="p-1.5">Produto Restante</th>
+                              <th className="p-1.5 text-center">Qtd Atual</th>
+                              <th className="p-1.5 text-right">Preço Unit.</th>
+                              <th className="p-1.5 text-right">Subtotal A Cobrar</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium">
+                            {activeItemsOnSite.map((item, aIdx) => (
+                              <tr key={aIdx}>
+                                <td className="p-1.5 font-bold text-slate-900">{item.productName}</td>
+                                <td className="p-1.5 text-center font-extrabold text-slate-900">{item.remainingQty} un</td>
+                                <td className="p-1.5 text-right text-slate-600">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                                <td className="p-1.5 text-right font-extrabold text-emerald-700">
+                                  R$ {item.remainingSubtotal.toFixed(2).replace('.', ',')}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1892,7 +1906,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 )}
 
                 {/* Signatures Footer */}
-                <div className="print-avoid-break pt-10 grid grid-cols-2 gap-8 text-center text-slate-700 text-[11px]">
+                <div className="print-avoid-break pt-6 sm:pt-10 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 text-center text-slate-700 text-[11px]">
                   <div className="border-t border-slate-400 pt-2 space-y-0.5">
                     <p className="font-bold text-slate-900">{selectedConsignment.clientName}</p>
                     <p className="text-slate-500">Assinatura de Recebimento do Estabelecimento</p>
@@ -1910,11 +1924,11 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
               </div>
 
               {/* Modal Bottom Controls (Hidden on Print) */}
-              <div className="no-print p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] flex items-center justify-between shrink-0">
-                <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">RN 3D Soluções — Impressão em Formato A4 Padronizado</span>
+              <div className="no-print p-3 sm:p-4 bg-slate-50 dark:bg-[#181c26] border-t border-slate-200 dark:border-[#202531] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <span className="text-slate-500 dark:text-slate-400 text-[11px] sm:text-xs font-medium text-center sm:text-left">RN 3D Soluções — Impressão em Formato A4 Padronizado</span>
                 <button
                   onClick={() => window.print()}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs shadow-sm transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2 sm:py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 text-xs shadow-sm transition-all cursor-pointer"
                 >
                   <Printer className="w-4 h-4" /> Imprimir / Gerar PDF
                 </button>

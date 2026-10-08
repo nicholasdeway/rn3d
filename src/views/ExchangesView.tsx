@@ -1097,22 +1097,31 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
             }
           `}</style>
 
-          <div className="print-container bg-white w-full max-w-3xl rounded-2xl border border-slate-300 overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="print-container bg-white w-full max-w-3xl rounded-2xl border border-slate-300 overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[92vh]">
             {/* Modal Header */}
-            <div className="no-print p-4 bg-slate-900 text-white flex items-center justify-between">
-              <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
-                <Printer className="w-4 h-4 text-emerald-400" /> Preview do Documento PDF — Nota de Troca & Remanejamento
-              </span>
-              <div className="flex items-center gap-3">
+            <div className="no-print p-3 sm:p-4 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center justify-between sm:justify-start gap-2 min-w-0">
+                <span className="font-bold text-xs uppercase tracking-wider flex items-center gap-2 truncate">
+                  <Printer className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="truncate">Preview PDF — Nota de Troca ({selectedExchange.id})</span>
+                </span>
+                <button
+                  onClick={() => setSelectedExchange(null)}
+                  className="sm:hidden p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex items-center justify-end gap-2">
                 <button
                   onClick={() => window.print()}
-                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center gap-2 text-xs transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 text-xs transition-colors cursor-pointer"
                 >
                   <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
                 </button>
                 <button
                   onClick={() => setSelectedExchange(null)}
-                  className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer"
+                  className="hidden sm:block p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1120,64 +1129,66 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
             </div>
 
             {/* A4 Printed Sheet */}
-            <div className="print-sheet p-8 sm:p-10 overflow-y-auto space-y-6 text-xs bg-white text-slate-900 font-sans">
+            <div className="print-sheet p-4 sm:p-8 md:p-10 overflow-y-auto space-y-4 sm:space-y-6 text-xs bg-white text-slate-900 font-sans">
               {/* Header */}
-              <div className="flex justify-between items-start border-b-2 border-slate-900 pb-5">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-3 pb-4 sm:pb-5 border-b-2 border-slate-900">
                 <div>
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">RN 3D Soluções</h2>
-                  <p className="text-xs font-black text-slate-900 mt-1">CNPJ: 67.570.155/0001-34</p>
-                  <p className="text-[11px] text-slate-700 font-semibold mt-1">
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">RN 3D Soluções</h2>
+                  <p className="text-xs font-black text-slate-900 mt-0.5 sm:mt-1">CNPJ: 67.570.155/0001-34</p>
+                  <p className="text-[10px] sm:text-[11px] text-slate-700 font-semibold mt-0.5 sm:mt-1">
                     WhatsApp: (22) 99754-0815 • Instagram: @rn3d.solucoes
                   </p>
                 </div>
-                <div className="text-right">
-                  <span className="px-3 py-1 bg-slate-900 text-white font-mono font-bold rounded-md text-xs">
+                <div className="text-left sm:text-right">
+                  <span className="px-2.5 sm:px-3 py-1 bg-slate-900 text-white font-mono font-bold rounded-md text-[11px] sm:text-xs inline-block">
                     NOTA DE TROCA {selectedExchange.id}
                   </span>
-                  <p className="text-slate-500 mt-2 text-xs font-medium">Data: {formatDateBR(selectedExchange.date)}</p>
-                  <p className="text-slate-500 text-xs font-medium">Responsável: {selectedExchange.responsible}</p>
+                  <p className="text-slate-500 mt-1 sm:mt-2 text-[11px] sm:text-xs font-medium">Data: {formatDateBR(selectedExchange.date)}</p>
+                  <p className="text-slate-500 text-[11px] sm:text-xs font-medium">Responsável: {selectedExchange.responsible}</p>
                 </div>
               </div>
 
               {/* Client Box */}
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
-                <p className="font-bold text-slate-900 text-sm">LOJA ORIGEM (RETIRADA): {selectedExchange.clientName}</p>
-                <p className="font-bold text-indigo-700 text-xs">
+              <div className="p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                <p className="font-bold text-slate-900 text-xs sm:text-sm">LOJA ORIGEM (RETIRADA): {selectedExchange.clientName}</p>
+                <p className="font-bold text-indigo-700 text-[11px] sm:text-xs">
                   DESTINO: {selectedExchange.destinationClientName || (selectedExchange.type === 'recolhimento_oficina' ? 'Estoque Geral (Oficina RN 3D)' : 'Loja Parceira')}
                 </p>
-                <p className="text-slate-600 font-medium">Operação: Troca e Remanejamento de Estoque Consignado (Giro de Peças)</p>
+                <p className="text-slate-600 font-medium text-[10px] sm:text-xs">Operação: Troca e Remanejamento de Estoque Consignado (Giro de Peças)</p>
               </div>
 
               {/* Items Removed Table */}
               <div className="space-y-2">
-                <h3 className="font-extrabold text-rose-700 uppercase tracking-wider text-xs flex items-center justify-between border-b border-rose-200 pb-1">
+                <h3 className="font-extrabold text-rose-700 uppercase tracking-wider text-[11px] sm:text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-rose-200 pb-1">
                   <span>🔴 Produtos Retirados do Expositor (Loja Origem)</span>
                   <span className="font-mono text-rose-800 font-bold">
                     Total: {selectedExchange.itemsRemoved.reduce((acc, i) => acc + i.quantity, 0)} un
                   </span>
                 </h3>
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-rose-200 text-rose-900 font-bold uppercase text-[10px] bg-rose-50">
-                      <th className="p-2">Descrição do Produto</th>
-                      <th className="p-2 text-center">Quantidade Retirada</th>
-                      <th className="p-2 text-right">Motivo</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-rose-100">
-                    {selectedExchange.itemsRemoved.map((item, idx) => (
-                      <tr key={idx} className="bg-rose-50/40 text-rose-950">
-                        <td className="p-2 font-semibold">{item.productName}</td>
-                        <td className="p-2 text-center font-bold">{item.quantity} un</td>
-                        <td className="p-2 text-right font-medium text-rose-700">{item.reason || 'Baixo giro / Encalhado'}</td>
+                <div className="overflow-x-auto max-w-full -mx-1 px-1">
+                  <table className="w-full text-left border-collapse min-w-[420px] sm:min-w-full text-[11px] sm:text-xs">
+                    <thead>
+                      <tr className="border-b border-rose-200 text-rose-900 font-bold uppercase text-[9px] sm:text-[10px] bg-rose-50">
+                        <th className="p-1.5 sm:p-2">Descrição do Produto</th>
+                        <th className="p-1.5 sm:p-2 text-center">Quantidade Retirada</th>
+                        <th className="p-1.5 sm:p-2 text-right">Motivo</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-rose-100">
+                      {selectedExchange.itemsRemoved.map((item, idx) => (
+                        <tr key={idx} className="bg-rose-50/40 text-rose-950">
+                          <td className="p-1.5 sm:p-2 font-semibold">{item.productName}</td>
+                          <td className="p-1.5 sm:p-2 text-center font-bold">{item.quantity} un</td>
+                          <td className="p-1.5 sm:p-2 text-right font-medium text-rose-700">{item.reason || 'Baixo giro / Encalhado'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Signatures Footer */}
-              <div className="pt-10 grid grid-cols-2 gap-8 text-center text-slate-700 text-[11px]">
+              <div className="pt-6 sm:pt-10 grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 text-center text-slate-700 text-[11px]">
                 <div className="border-t border-slate-400 pt-2 space-y-0.5">
                   <p className="font-bold text-slate-900">{selectedExchange.clientName}</p>
                   <p className="text-slate-500">Assinatura da Loja Origem</p>
