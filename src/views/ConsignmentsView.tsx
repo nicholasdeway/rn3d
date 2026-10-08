@@ -1129,7 +1129,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                     <span className="px-3 py-1 bg-indigo-600 text-white font-mono font-bold rounded-md text-xs inline-block">
                       REMESSA {selectedConsignment.id}
                     </span>
-                    <p className="text-slate-500 mt-2 text-xs font-medium">Data Envio: {selectedConsignment.date}</p>
+                    <p className="text-slate-500 mt-2 text-xs font-medium">Data Envio: {formatDateBR(selectedConsignment.date)}</p>
                     <p className="text-slate-500 text-xs font-medium">Status: <span className="font-bold text-emerald-600">{selectedConsignment.status}</span></p>
                   </div>
                 </div>
