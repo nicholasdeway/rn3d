@@ -786,8 +786,8 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                   <span className="text-slate-500 font-normal">Informe a quantidade vendida de cada item</span>
                 </h4>
 
-                <div className="border border-slate-200 dark:border-[#202531] rounded-xl overflow-hidden bg-white dark:bg-[#12151c]">
-                  <table className="w-full text-left text-xs">
+                <div className="border border-slate-200 dark:border-[#202531] rounded-xl overflow-x-auto bg-white dark:bg-[#12151c]">
+                  <table className="w-full text-left text-xs min-w-[600px]">
                     <thead className="bg-slate-100 dark:bg-[#181c26] text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-[#202531]">
                       <tr>
                         <th className="p-3">Produto</th>
@@ -800,6 +800,8 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                       {(acertoConsignment.items || []).map((item) => {
                         const key = item.productId || item.productName;
+                        const product = products.find(p => p.id === item.productId || p.name === item.productName);
+                        const imageUrl = product?.imageUrl || (product as any)?.image_url;
 
                         const clientExchanges = exchanges.filter(
                           (e) =>
@@ -824,7 +826,18 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
                         return (
                           <tr key={key} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                            <td className="p-3 font-bold text-slate-900 dark:text-slate-100">{item.productName}</td>
+                            <td className="p-3 font-bold text-slate-900 dark:text-slate-100">
+                              <div className="flex items-center gap-3">
+                                {imageUrl ? (
+                                  <img src={imageUrl} alt={item.productName} className="w-10 h-10 rounded-lg object-cover shadow-sm border border-slate-200 dark:border-slate-700 shrink-0" />
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 shrink-0">
+                                    <Package className="w-5 h-5 text-slate-400" />
+                                  </div>
+                                )}
+                                <span className="line-clamp-2">{item.productName}</span>
+                              </div>
+                            </td>
                             <td className="p-3 text-center text-slate-600 dark:text-slate-400 font-semibold">{currentQtyOnSite} un</td>
                             <td className="p-3 text-center">
                               <div className="flex items-center justify-center gap-1">

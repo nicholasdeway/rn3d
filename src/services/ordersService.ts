@@ -317,6 +317,40 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   }
 
   const cleanId = id.replace(/^PED-/, '').replace(/^ORC-/, '');
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+  let existingData: any = null;
+  try {
+    if (isUuid) {
+      const { data } = await supabase.from('orders').select('*').eq('id', id).limit(1).single();
+      existingData = data;
+    } else {
+      const { data } = await supabase
+        .from('orders')
+        .select('*')
+        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId}`)
+        .limit(1)
+        .single();
+      existingData = data;
+    }
+  } catch (e) {}
+
+  let decodedExisting = existingData ? decodeOrderRow(existingData) : {} as any;
+  const mergedUpdates = {
+    notes: decodedExisting.notes,
+    paymentReceiptUrl: decodedExisting.paymentReceiptUrl,
+    paymentReceiptType: decodedExisting.paymentReceiptType,
+    paymentReceiptName: decodedExisting.paymentReceiptName,
+    paymentReceiptUrl2: decodedExisting.paymentReceiptUrl2,
+    paymentReceiptType2: decodedExisting.paymentReceiptType2,
+    paymentReceiptName2: decodedExisting.paymentReceiptName2,
+    paymentTerms: decodedExisting.paymentTerms,
+    productionProgressPct: decodedExisting.productionProgressPct,
+    internalLogisticsType: decodedExisting.internalLogisticsType,
+    internalLogisticsCost: decodedExisting.internalLogisticsCost,
+    attendanceMode: decodedExisting.attendanceMode,
+    ...updates,
+  };
 
   const corePayload: any = {};
   if (updates.clientName !== undefined) corePayload.client_name = updates.clientName;
@@ -334,8 +368,8 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
     updates.internalLogisticsType !== undefined ||
     updates.internalLogisticsCost !== undefined
   ) {
-    const statusText = updates.paymentStatusText || 'Pendente';
-    corePayload.payment_status_text = encodeStatusWithMeta(statusText, updates);
+    const statusText = updates.paymentStatusText || decodedExisting.paymentStatusText || 'Pendente';
+    corePayload.payment_status_text = encodeStatusWithMeta(statusText, mergedUpdates);
   }
 
   if (Object.keys(corePayload).length === 0) return updates as any;
@@ -343,15 +377,24 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   try {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     if (isUuid) {
-      await supabase.from('orders').update(corePayload).eq('id', id);
+      const { error } = await supabase.from('orders').update(corePayload).eq('id', id);
+      if (error) console.error("Erro ao atualizar pedido no Supabase:", error.message, error.details);
     } else {
-      await supabase
+      const { data: matched } = await supabase
         .from('orders')
-        .update(corePayload)
+        .select('id')
         .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId}`);
+
+      if (matched && matched.length > 0) {
+        const uuids = matched.map((m) => m.id);
+        const { error } = await supabase.from('orders').update(corePayload).in('id', uuids);
+        if (error) console.error("Erro ao atualizar lote de pedidos no Supabase:", error.message, error.details);
+      } else {
+        console.warn(`Nenhum pedido encontrado no Supabase para o id: ${id}`);
+      }
     }
   } catch (e) {
-    console.error('Erro ao atualizar pedido no Supabase:', e);
+    console.error('Erro na requisição ao atualizar pedido no Supabase:', e);
   }
 
   return updates as any;
