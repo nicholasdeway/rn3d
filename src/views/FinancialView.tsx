@@ -522,39 +522,63 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
   // Helper to format Date & Time nicely
   const getEntryDateTime = (entry: any): { dateFormatted: string; timeStr?: string } => {
-    let rawDateOrIso = '';
+    let dateFormatted = '';
+    let timeStr: string | undefined = undefined;
 
     if (entry.type === 'order') {
       const o = entry.data as Order;
-      rawDateOrIso = o.createdAt || o.date || '';
+      const dateSource = o.date || o.createdAt || '';
+      dateFormatted = formatDateBR(dateSource).split(' ')[0];
+
+      const timeSource = o.createdAt || (o.date && (o.date.includes('T') || o.date.includes(' ')) ? o.date : '');
+      if (timeSource) {
+        const t = formatTimeOnly(timeSource);
+        if (t && t.includes(':') && t.length === 5) {
+          timeStr = t;
+        }
+      }
     } else if (entry.type === 'transaction') {
       const t = entry.data as SaleTransaction;
-      rawDateOrIso = t.timestamp || t.dueDate || '';
+      const dateSource = t.dueDate || t.timestamp || '';
+      dateFormatted = formatDateBR(dateSource).split(' ')[0];
+
+      if (t.timestamp) {
+        const parsed = formatTimeOnly(t.timestamp);
+        if (parsed && parsed.includes(':') && parsed.length === 5) {
+          timeStr = parsed;
+        }
+      }
     } else if (entry.type === 'expense') {
       const exp = entry.data as ExpenseItem;
-      rawDateOrIso = exp.timestamp || exp.date || '';
+      const dateSource = exp.date || (exp.timestamp && exp.timestamp.length > 10 ? exp.timestamp : '');
+      dateFormatted = formatDateBR(dateSource).split(' ')[0];
+
+      if (exp.timestamp) {
+        if (exp.timestamp.includes('T') || exp.timestamp.length > 10) {
+          const parsed = formatTimeOnly(exp.timestamp);
+          if (parsed && parsed.includes(':') && parsed.length === 5) {
+            timeStr = parsed;
+          }
+        } else if (exp.timestamp.includes(':')) {
+          timeStr = exp.timestamp.slice(0, 5);
+        }
+      }
     } else if (entry.type === 'consignment') {
       const c = entry.data as Consignment;
-      rawDateOrIso = c.createdAt || c.date || '';
-    }
+      const dateSource = c.date || c.createdAt || '';
+      dateFormatted = formatDateBR(dateSource).split(' ')[0];
 
-    if (!rawDateOrIso) {
-      return { dateFormatted: '' };
-    }
-
-    const brFormatted = formatDateBR(rawDateOrIso);
-    let dateFormatted = brFormatted;
-    let timeStr: string | undefined = undefined;
-
-    if (brFormatted.includes(' ')) {
-      const parts = brFormatted.split(' ');
-      dateFormatted = parts[0];
-      timeStr = parts[1];
-    } else if (rawDateOrIso.includes('T')) {
-      const parsedTime = formatTimeOnly(rawDateOrIso);
-      if (parsedTime && parsedTime.includes(':')) {
-        timeStr = parsedTime;
+      const timeSource = c.createdAt || (c.date && (c.date.includes('T') || c.date.includes(' ')) ? c.date : '');
+      if (timeSource) {
+        const parsed = formatTimeOnly(timeSource);
+        if (parsed && parsed.includes(':') && parsed.length === 5) {
+          timeStr = parsed;
+        }
       }
+    }
+
+    if (!dateFormatted || dateFormatted === 'N/A' || dateFormatted === '—') {
+      dateFormatted = getTodayBR();
     }
 
     return {
