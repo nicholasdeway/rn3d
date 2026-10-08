@@ -176,6 +176,26 @@ export function useAppData() {
     setConsignments
   );
 
+  const handleDeleteConsignmentCascade = async (consignmentId: string) => {
+    await handleDeleteConsignment(consignmentId);
+
+    const matchingOrders = (orders || []).filter(
+      (o) => o.notes && o.notes.includes(consignmentId)
+    );
+    for (const ord of matchingOrders) {
+      await handleDeleteOrderCascade(ord.id);
+    }
+
+    const matchingExchanges = (exchanges || []).filter(
+      (ex) =>
+        (ex.notes && ex.notes.includes(consignmentId)) ||
+        matchingOrders.some((ord) => ex.notes && ex.notes.includes(ord.id))
+    );
+    for (const ex of matchingExchanges) {
+      await handleDeleteExchange(ex.id);
+    }
+  };
+
   // Auxiliary setter helper for useVisits
   function setExchangesRef(val: any) {
     setExchanges(val);
@@ -899,7 +919,7 @@ function computeEnrichedClients(
     handleDeleteClient,
     handleAddConsignment,
     handleUpdateConsignment,
-    handleDeleteConsignment,
+    handleDeleteConsignment: handleDeleteConsignmentCascade,
     handleClearConsignments,
     handleCreateQuote,
     handleUpdateQuote,
