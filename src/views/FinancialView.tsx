@@ -24,7 +24,7 @@ import {
   Loader2,
   Trash2,
 } from 'lucide-react';
-import { formatDateBR, parseBRDate } from '../utils/formatters';
+import { formatDateBR, parseBRDate, getTodayBR } from '../utils/formatters';
 
 interface FinancialViewProps {
   transactions: SaleTransaction[];
@@ -48,6 +48,10 @@ interface FinancialViewProps {
     receiptName?: string
   ) => void;
   onDeleteExpense?: (id: string) => void;
+  onAddOrder?: (order: Order) => void;
+  onCreateExpense?: (expense: any) => void;
+  onExecuteExchange?: (exchange: any) => void;
+  onUpdateConsignment?: (consignment: Consignment) => void;
 }
 
 export const FinancialView: React.FC<FinancialViewProps> = ({
@@ -60,6 +64,10 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   onUpdateOrderPayment,
   onRecordPayment,
   onDeleteExpense,
+  onAddOrder,
+  onCreateExpense,
+  onExecuteExchange,
+  onUpdateConsignment,
 }) => {
   const handlePayment = onUpdateOrderPayment || onRecordPayment;
 
@@ -78,6 +86,14 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   const [paymentReceiptUrl, setPaymentReceiptUrl] = useState<string>('');
   const [paymentReceiptType, setPaymentReceiptType] = useState<'image' | 'pdf'>('image');
   const [paymentReceiptName, setPaymentReceiptName] = useState<string>('');
+
+  // Consignment Acerto Modal State
+  const [selectedConsignmentForAcerto, setSelectedConsignmentForAcerto] = useState<Consignment | null>(null);
+  const [consignmentPaymentAmount, setConsignmentPaymentAmount] = useState<string>('');
+  const [consignmentPaymentMethod, setConsignmentPaymentMethod] = useState<string>('PIX');
+  const [consignmentPaymentDate, setConsignmentPaymentDate] = useState<string>(getTodayBR());
+  const [consignmentPaymentNotes, setConsignmentPaymentNotes] = useState<string>('');
+  const [isSubmittingConsignmentAcerto, setIsSubmittingConsignmentAcerto] = useState<boolean>(false);
 
   // Pagination state (10 items per page)
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -303,7 +319,35 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         };
       });
 
-    // 3. Pending Order Entries (Contas a Receber pendentes exibidos também no Extrato Completo)
+    // 3. Paid Orders that do not have matching expense entries yet
+    const orderPaidEntries = orders
+      .filter((o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_'))
+      .filter((o) => (o.paidAmount || 0) > 0)
+      .filter((o) => isDateInRange(o.date || o.createdAt))
+      .filter((o) => {
+        const inExpenses = cleanExpenses.some((exp) => {
+          if (exp.referenceCode && (exp.referenceCode === o.id || exp.referenceCode.replace(/^PED-/, '') === o.id.replace(/^PED-/, ''))) return true;
+          if (exp.category === 'Entrada de Pedido' && exp.description && exp.description.toLowerCase().includes(o.id.toLowerCase())) return true;
+          return false;
+        });
+        const inTx = filteredTransactions.some((t) => t.id === o.id || (t.clientName && t.clientName === o.clientName && Math.abs(t.amount - o.paidAmount) < 0.01));
+        return !inExpenses && !inTx;
+      })
+      .map((o) => ({
+        type: 'order' as const,
+        direction: 'entrada' as const,
+        data: o,
+        id: `ENT-${o.id}`,
+        date: o.date || o.createdAt || '',
+        title: `Entrada Pedido #${o.id}`,
+        clientOrCategory: o.clientName,
+        amount: o.paidAmount,
+        paidAmount: o.paidAmount,
+        totalValue: o.totalValue,
+        status: o.paymentStatusText || 'Pago',
+      }));
+
+    // 4. Pending Order Entries (Contas a Receber pendentes exibidos também no Extrato Completo)
     const pendingOrderEntries = orders
       .filter((o) => !o.id?.startsWith('SYS_') && !o.clientName?.startsWith('SISTEMA_'))
       .filter((o) => o.totalValue > (o.paidAmount || 0))
@@ -314,15 +358,15 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         data: o,
         id: o.id,
         date: o.date || o.createdAt || '',
-        title: `Pedido #${o.id}`,
+        title: `Pedido #${o.id} (Aguardando Pagamento)`,
         clientOrCategory: o.clientName,
         amount: o.totalValue - (o.paidAmount || 0),
         paidAmount: o.paidAmount || 0,
         totalValue: o.totalValue || 0,
-        status: o.paymentStatusText || (o.paidAmount > 0 ? 'Adiantamento' : 'Pendente'),
+        status: o.paymentStatusText || (o.paidAmount > 0 ? 'Adiantamento' : 'Aguardando Pagamento'),
       }));
 
-    return [...txEntries, ...expenseEntries, ...pendingOrderEntries];
+    return [...txEntries, ...expenseEntries, ...orderPaidEntries, ...pendingOrderEntries];
   }, [orders, filteredTransactions, cleanExpenses, dateRangeStart, dateRangeEnd]);
 
   // Extrato Entries filtered by movementType & searchTerm for display
@@ -351,8 +395,8 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
   // Calculate Summary Metrics for Header KPI cards from unfiltered base
   const periodEntradas = useMemo(() => {
     return unfilteredExtratoEntries
-      .filter((e) => e.direction === 'entrada' && e.type !== 'order')
-      .reduce((acc, e) => acc + e.amount, 0);
+      .filter((e) => e.direction === 'entrada' && e.status !== 'Aguardando Pagamento' && e.status !== 'Pendente')
+      .reduce((acc, e) => acc + (e.paidAmount || e.amount), 0);
   }, [unfilteredExtratoEntries]);
 
   const periodSaidas = useMemo(() => {
@@ -667,6 +711,123 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
       setPaymentReceiptName('');
     } finally {
       setIsSubmittingPayment(false);
+    }
+  };
+  const handleOpenConsignmentAcertoModal = (consignment: Consignment) => {
+    setSelectedConsignmentForAcerto(consignment);
+    setConsignmentPaymentAmount(consignment.totalValue.toFixed(2).replace('.', ','));
+    setConsignmentPaymentMethod('PIX');
+    setConsignmentPaymentDate(getTodayBR());
+    setConsignmentPaymentNotes('');
+  };
+
+  const handleConfirmConsignmentAcerto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedConsignmentForAcerto || isSubmittingConsignmentAcerto) return;
+
+    const cleanStr = consignmentPaymentAmount.replace(/\./g, '').replace(',', '.');
+    const val = parseFloat(cleanStr);
+    if (isNaN(val) || val <= 0) {
+      alert('Informe um valor de recebimento válido.');
+      return;
+    }
+
+    setIsSubmittingConsignmentAcerto(true);
+
+    try {
+      const c = selectedConsignmentForAcerto;
+      const newOrderId = `PED-${Math.floor(100000 + Math.random() * 900000)}`;
+      const formattedIsoDate = consignmentPaymentDate.includes('/')
+        ? consignmentPaymentDate.split('/').reverse().join('-')
+        : consignmentPaymentDate;
+
+      const itemsList = c.items && c.items.length > 0 ? c.items : [
+        { productName: 'Acerto de Mercadorias em Consignação', quantity: c.itemsCount || 1, unitPrice: val / (c.itemsCount || 1), subtotal: val }
+      ];
+
+      const newOrder: Order = {
+        id: newOrderId,
+        clientId: c.clientId,
+        clientName: c.clientName,
+        date: formattedIsoDate,
+        createdAt: new Date().toISOString(),
+        itemsCount: c.itemsCount || 1,
+        totalValue: val,
+        paidAmount: val,
+        paymentStatusText: 'PAGO',
+        status: 'Entregue',
+        productionProgressPct: 100,
+        attendanceMode: 'Presencial',
+        paymentMethod: consignmentPaymentMethod,
+        orderType: 'acerto_consignacao',
+        notes: consignmentPaymentNotes || `Acerto de Consignação (${c.id}) faturado via Vendas e Pagamentos`,
+        items: itemsList.map((i) => ({
+          productName: i.productName,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          subtotal: i.subtotal,
+        })),
+        timeline: [
+          {
+            date: formatDateBR(consignmentPaymentDate),
+            title: 'Venda Consignada Auditada & Quitada',
+            description: `Acerto e recebimento presencial no valor de R$ ${val.toFixed(2).replace('.', ',')} (${consignmentPaymentMethod})`,
+          },
+        ],
+      };
+
+      if (onAddOrder) {
+        onAddOrder(newOrder);
+      }
+
+      if (onCreateExpense) {
+        onCreateExpense({
+          id: `EXP-${Math.floor(100000 + Math.random() * 900000)}`,
+          date: formattedIsoDate,
+          description: `Acerto de Consignação - Pedido #${newOrderId} (${c.clientName})`,
+          category: 'Entrada de Pedido',
+          amount: val,
+          paymentMethod: consignmentPaymentMethod,
+          type: 'income',
+          referenceCode: newOrderId,
+          notes: `Acerto e baixa registrados em Vendas e Pagamentos (${c.id})`,
+        });
+      }
+
+      if (onExecuteExchange) {
+        onExecuteExchange({
+          id: `TRC-${Math.floor(100000 + Math.random() * 900000)}`,
+          clientId: c.clientId,
+          clientName: c.clientName,
+          date: consignmentPaymentDate,
+          destinationClientId: 'OFFICE',
+          destinationClientName: 'Venda Consignada Auditada',
+          type: 'recolhimento_oficina',
+          itemsRemoved: itemsList.map((i) => ({
+            productId: (i as any).productId || i.productName,
+            productName: i.productName,
+            quantity: i.quantity,
+            reason: 'Vendido no PDV (Acerto de Consignação)',
+          })),
+          itemsAdded: [],
+          responsible: 'Nicholas',
+          responsibleName: 'Nicholas',
+          notes: `Venda consignada faturada via Pedido #${newOrderId}`,
+        });
+      }
+
+      if (onUpdateConsignment) {
+        onUpdateConsignment({
+          ...c,
+          lastAuditDate: consignmentPaymentDate,
+        });
+      }
+
+      setSelectedConsignmentForAcerto(null);
+    } catch (err) {
+      console.error('Erro ao registrar recebimento da consignação:', err);
+    } finally {
+      setIsSubmittingConsignmentAcerto(false);
     }
   };
 
@@ -1635,7 +1796,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   } else {
                     const c = entry.data as Consignment;
                     return (
-                      <div key={c.id} className="p-4 space-y-2 bg-purple-50/30 dark:bg-purple-950/20">
+                      <div key={c.id} className="p-4 space-y-3 bg-purple-50/30 dark:bg-purple-950/20">
                         <div className="flex items-center justify-between">
                           <span className="font-mono font-bold text-purple-600 dark:text-purple-400 text-xs">{c.id} (Consignação)</span>
                           <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">{c.clientName}</span>
@@ -1644,6 +1805,13 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                           <span className="text-slate-500 dark:text-slate-400">Valor em Loja:</span>
                           <span className="font-extrabold text-indigo-600 dark:text-indigo-400">R$ {c.totalValue.toFixed(2).replace('.', ',')}</span>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenConsignmentAcertoModal(c)}
+                          className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                        >
+                          <HandCoins className="w-4 h-4" /> Registrar Recebimento / Acerto
+                        </button>
                       </div>
                     );
                   }
@@ -1730,9 +1898,13 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                             </td>
                             <td className="p-4 text-center whitespace-nowrap">
                               <div className="flex items-center justify-center w-full">
-                                <span className="px-2.5 py-1 bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 rounded-lg font-bold text-xs inline-block whitespace-nowrap border border-purple-200 dark:border-purple-800">
-                                  Acerto na Visita
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenConsignmentAcertoModal(c)}
+                                  className="w-48 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold text-xs inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+                                >
+                                  <HandCoins className="w-3.5 h-3.5" /> Registrar Recebimento
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -1789,6 +1961,120 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
               )}
             </>
           )}
+        </div>
+      )}
+
+      {/* Consignment Acerto Modal */}
+      {selectedConsignmentForAcerto && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#12151c] w-full max-w-md rounded-2xl border border-slate-200 dark:border-[#202531] overflow-hidden animate-in fade-in zoom-in-95 duration-150 shadow-2xl space-y-4 p-6">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#202531]">
+              <div className="flex items-center gap-2">
+                <HandCoins className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm sm:text-base">
+                  Registrar Recebimento de Consignação
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedConsignmentForAcerto(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3 bg-purple-50 dark:bg-purple-950/40 rounded-xl border border-purple-200 dark:border-purple-900/50 text-xs space-y-1">
+              <span className="font-bold text-purple-900 dark:text-purple-200 block">{selectedConsignmentForAcerto.clientName}</span>
+              <span className="text-purple-700 dark:text-purple-300 block text-[11px]">
+                Remessa #{selectedConsignmentForAcerto.id} • Valor Alocado em Loja: R$ {selectedConsignmentForAcerto.totalValue.toFixed(2).replace('.', ',')}
+              </span>
+            </div>
+
+            <form onSubmit={handleConfirmConsignmentAcerto} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-800 dark:text-slate-200 text-xs mb-1.5">
+                  Valor Vendido / Recebido (R$) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={consignmentPaymentAmount}
+                  onChange={(e) => setConsignmentPaymentAmount(e.target.value)}
+                  placeholder="0,00"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-300 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-purple-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 dark:text-slate-200 text-xs mb-1.5">
+                  Forma de Pagamento *
+                </label>
+                <select
+                  value={consignmentPaymentMethod}
+                  onChange={(e) => setConsignmentPaymentMethod(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-300 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 text-xs focus:ring-2 focus:ring-purple-500/20"
+                >
+                  <option value="PIX">⚡ PIX</option>
+                  <option value="Dinheiro">💵 Dinheiro</option>
+                  <option value="Cartão de Crédito">💳 Cartão de Crédito</option>
+                  <option value="Cartão de Débito">💳 Cartão de Débito</option>
+                  <option value="Transferência / Boleto">📑 Transferência / Boleto</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 dark:text-slate-200 text-xs mb-1.5">
+                  Data do Recebimento *
+                </label>
+                <input
+                  type="text"
+                  value={consignmentPaymentDate}
+                  onChange={(e) => setConsignmentPaymentDate(e.target.value)}
+                  placeholder="DD/MM/AAAA"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-300 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 text-xs focus:ring-2 focus:ring-purple-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-800 dark:text-slate-200 text-xs mb-1.5">
+                  Observações (Opcional)
+                </label>
+                <input
+                  type="text"
+                  value={consignmentPaymentNotes}
+                  onChange={(e) => setConsignmentPaymentNotes(e.target.value)}
+                  placeholder="Ex: Pagamento referente ao acerto de consignação..."
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-[#181c26] border border-slate-300 dark:border-slate-700 rounded-xl font-bold text-slate-900 dark:text-slate-100 text-xs focus:ring-2 focus:ring-purple-500/20"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 dark:border-[#202531] flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedConsignmentForAcerto(null)}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-semibold text-xs cursor-pointer hover:bg-slate-200"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingConsignmentAcerto}
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-md"
+                >
+                  {isSubmittingConsignmentAcerto ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Processando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4" /> Confirmar e Dar Baixa
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

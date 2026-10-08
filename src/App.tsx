@@ -677,6 +677,10 @@ export function App() {
                   onUpdateOrderPayment={appData.handleUpdateOrderPayment}
                   onRecordPayment={appData.handleUpdateOrderPayment}
                   onDeleteExpense={appData.handleDeleteExpense}
+                  onAddOrder={appData.handleCreateOrder}
+                  onCreateExpense={appData.handleCreateExpense}
+                  onExecuteExchange={appData.handleExecuteExchange}
+                  onUpdateConsignment={appData.handleUpdateConsignment}
                 />
               )}
 
