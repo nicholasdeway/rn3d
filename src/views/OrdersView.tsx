@@ -3,7 +3,7 @@ import { Order, Product, Client } from '../types';
 import { ShoppingCart, Printer, X, Truck, FileText, Plus, Minus, CheckCircle2, Clock, Play, Sparkles, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { ImageLightboxModal } from '../components/ImageLightboxModal';
 import { OrderPdfViewerModal } from '../components/OrderPdfViewerModal';
-import { formatDateBR } from '../utils/formatters';
+import { formatDateBR, parseBRDate, formatTimeOnly } from '../utils/formatters';
 import { findMatchingProduct } from '../utils/productMatcher';
 
 interface OrdersViewProps {
@@ -51,6 +51,28 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
       (o.items && o.items.some((i) => i.productName.toLowerCase().includes(q)))
     );
   });
+
+  const sortedOrders = [...filteredOrders].sort((a, b) => {
+    const timeA = parseBRDate(a.createdAt || a.date)?.getTime() || 0;
+    const timeB = parseBRDate(b.createdAt || b.date)?.getTime() || 0;
+    return timeB - timeA;
+  });
+
+  const getOrderDateTime = (o: Order) => {
+    const raw = o.createdAt || o.date || '';
+    const dateFormatted = formatDateBR(raw);
+    let timeStr = formatTimeOnly(raw);
+    if (timeStr === '00:00' && o.timeline && o.timeline.length > 0) {
+      const tDate = o.timeline[0].date;
+      if (tDate && tDate.includes(' ')) {
+        timeStr = formatTimeOnly(tDate.split(' ')[1]);
+      }
+    }
+    return {
+      dateFormatted,
+      timeStr: timeStr !== '00:00' ? timeStr : null,
+    };
+  };
 
   const toggleExpandOrder = (orderId: string) => {
     setExpandedOrderId((prev) => (prev === orderId ? null : orderId));
@@ -378,7 +400,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
         <>
           {/* Mobile Card Layout (< 768px) - Eliminates Horizontal Scroll */}
           <div className="block md:hidden space-y-3">
-            {filteredOrders.map((o) => {
+            {sortedOrders.map((o) => {
               const isExpanded = expandedOrderId === o.id;
 
               return (
@@ -441,7 +463,14 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                     <div>
                       <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{o.clientName}</h4>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                        Data: {o.date} • {o.itemsCount} {o.itemsCount === 1 ? 'item' : 'itens'}
+                        {(() => {
+                          const { dateFormatted, timeStr } = getOrderDateTime(o);
+                          return (
+                            <span>
+                              Data: {dateFormatted}{timeStr ? ` às ${timeStr}` : ''} • {o.itemsCount} {o.itemsCount === 1 ? 'item' : 'itens'}
+                            </span>
+                          );
+                        })()}
                       </p>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${o.attendanceMode === 'online'
@@ -578,7 +607,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
-                  {filteredOrders.map((o) => {
+                  {sortedOrders.map((o) => {
                     const isExpanded = expandedOrderId === o.id;
 
                     return (
@@ -608,7 +637,21 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                           <td className="p-3.5 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap max-w-[200px] truncate" title={o.clientName}>
                             {o.clientName}
                           </td>
-                          <td className="p-3.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(o.date)}</td>
+                          <td className="p-3.5 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                            {(() => {
+                              const { dateFormatted, timeStr } = getOrderDateTime(o);
+                              return (
+                                <div>
+                                  <span className="font-semibold block">{dateFormatted}</span>
+                                  {timeStr && (
+                                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono block">
+                                      às {timeStr}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td className="p-3.5 text-center font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">{o.itemsCount} itens</td>
                           <td className="p-3.5 text-right font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                             R$ {o.totalValue.toFixed(2).replace('.', ',')}
