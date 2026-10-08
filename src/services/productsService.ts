@@ -11,14 +11,19 @@ export async function fetchProducts(): Promise<Product[]> {
     return [];
   }
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from('products')
     .select('*')
     .order('created_at', { ascending: false });
 
   if (error || !data) {
-    console.error('Erro ao buscar produtos no Supabase:', error?.message);
-    return [];
+    console.warn('Aviso ao buscar produtos com ordenação created_at, tentando busca padrão:', error?.message);
+    const retry = await supabase.from('products').select('*');
+    if (retry.error) {
+      console.error('Erro fatal ao buscar produtos no Supabase:', retry.error.message);
+      return [];
+    }
+    data = retry.data;
   }
 
   const dbProducts: Product[] = data.map((row) => {

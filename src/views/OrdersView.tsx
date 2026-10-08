@@ -60,9 +60,9 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
 
   const getOrderDateTime = (o: Order) => {
     const raw = o.createdAt || o.date || '';
-    const dateFormatted = formatDateBR(raw);
+    const dateFormatted = formatDateBR(raw).split(' ')[0];
     let timeStr = formatTimeOnly(raw);
-    if (timeStr === '00:00' && o.timeline && o.timeline.length > 0) {
+    if ((!timeStr || timeStr === '00:00') && o.timeline && o.timeline.length > 0) {
       const tDate = o.timeline[0].date;
       if (tDate && tDate.includes(' ')) {
         timeStr = formatTimeOnly(tDate.split(' ')[1]);
@@ -70,7 +70,7 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
     }
     return {
       dateFormatted,
-      timeStr: timeStr !== '00:00' ? timeStr : null,
+      timeStr: timeStr && timeStr !== '00:00' ? timeStr : null,
     };
   };
 
