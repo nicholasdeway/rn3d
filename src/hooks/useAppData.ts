@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ExpenseItem, Quote, Order, Client, Consignment, Visit } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { useProducts } from './useProducts';
@@ -533,7 +533,7 @@ function computeEnrichedClients(
   // Auto-replicate internal logistics costs from orders and visits into expenses (Combustível & Transporte)
 
 
-  const deletedExpenseIdsRef = React.useRef(new Set<string>());
+  const deletedExpenseIdsRef = useRef(new Set<string>());
 
   // Auto-mirror order local payments (e.g. 50% signal deposit / 50% completion) into expenses/transactions log
   useEffect(() => {
