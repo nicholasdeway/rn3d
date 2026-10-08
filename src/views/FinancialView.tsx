@@ -24,7 +24,7 @@ import {
   Loader2,
   Trash2,
 } from 'lucide-react';
-import { formatDateBR, parseBRDate, getTodayBR } from '../utils/formatters';
+import { formatDateBR, parseBRDate, getTodayBR, formatTimeOnly } from '../utils/formatters';
 
 interface FinancialViewProps {
   transactions: SaleTransaction[];
@@ -522,33 +522,43 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
   // Helper to format Date & Time nicely
   const getEntryDateTime = (entry: any): { dateFormatted: string; timeStr?: string } => {
-    let dateRaw = '';
-    let timeStr: string | undefined = undefined;
+    let rawDateOrIso = '';
 
     if (entry.type === 'order') {
       const o = entry.data as Order;
-      dateRaw = o.date || o.createdAt || '';
+      rawDateOrIso = o.createdAt || o.date || '';
     } else if (entry.type === 'transaction') {
       const t = entry.data as SaleTransaction;
-      dateRaw = t.timestamp || t.dueDate || '';
+      rawDateOrIso = t.timestamp || t.dueDate || '';
     } else if (entry.type === 'expense') {
       const exp = entry.data as ExpenseItem;
-      dateRaw = exp.date || exp.timestamp || '';
-      if (exp.timestamp && exp.timestamp.includes(':')) {
-        timeStr = exp.timestamp.slice(0, 5);
-      }
+      rawDateOrIso = exp.timestamp || exp.date || '';
+    } else if (entry.type === 'consignment') {
+      const c = entry.data as Consignment;
+      rawDateOrIso = c.createdAt || c.date || '';
     }
 
-    if (dateRaw && dateRaw.includes('T')) {
-      const parts = dateRaw.split('T');
-      dateRaw = parts[0];
-      if (!timeStr && parts[1]) {
-        timeStr = parts[1].slice(0, 5);
+    if (!rawDateOrIso) {
+      return { dateFormatted: '' };
+    }
+
+    const brFormatted = formatDateBR(rawDateOrIso);
+    let dateFormatted = brFormatted;
+    let timeStr: string | undefined = undefined;
+
+    if (brFormatted.includes(' ')) {
+      const parts = brFormatted.split(' ');
+      dateFormatted = parts[0];
+      timeStr = parts[1];
+    } else if (rawDateOrIso.includes('T')) {
+      const parsedTime = formatTimeOnly(rawDateOrIso);
+      if (parsedTime && parsedTime.includes(':')) {
+        timeStr = parsedTime;
       }
     }
 
     return {
-      dateFormatted: formatDateBR(dateRaw),
+      dateFormatted,
       timeStr,
     };
   };
@@ -1136,6 +1146,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
               {/* Mobile View: Financial Cards */}
               <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
                 {paginatedExtrato.map((entry) => {
+                  const { dateFormatted, timeStr } = getEntryDateTime(entry);
                   if (entry.type === 'order') {
                     const o = entry.data as Order;
                     const paid = o.paidAmount || 0;
@@ -1157,7 +1168,9 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
 
                         <div className="flex items-center justify-between gap-2 text-xs">
                           <span className="font-bold text-slate-900 dark:text-slate-100 flex-1 min-w-0 pr-1 leading-snug break-words">{o.clientName}</span>
-                          <span className="text-slate-500 dark:text-slate-400 text-[11px] shrink-0 whitespace-nowrap">{formatDateBR(o.date)}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[11px] shrink-0 whitespace-nowrap">
+                            {dateFormatted} {timeStr ? `às ${timeStr}` : ''}
+                          </span>
                         </div>
 
                         <div className="grid grid-cols-3 gap-1.5 p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/60 dark:border-[#202531] text-[11px]">
@@ -1209,7 +1222,9 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                               {isEntrada ? '+ ENTRADA' : '- SAÍDA'}
                             </span>
                           </span>
-                          <span className="text-slate-500 dark:text-slate-400 text-[11px] shrink-0 whitespace-nowrap">{formatDateBR(exp.date)}</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-[11px] shrink-0 whitespace-nowrap">
+                            {dateFormatted} {timeStr ? `às ${timeStr}` : ''}
+                          </span>
                         </div>
 
                         <div className="flex items-start justify-between gap-3 text-xs">
@@ -1236,6 +1251,10 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                           <span className="font-bold text-slate-900 dark:text-slate-100 flex-1 min-w-0 pr-1 leading-snug break-words">{t.clientName}</span>
                           <span className="font-extrabold text-emerald-600 dark:text-emerald-400 whitespace-nowrap shrink-0 text-right">R$ {t.amount.toFixed(2).replace('.', ',')}</span>
                         </div>
+
+                        <div className="text-right text-[11px] text-slate-500 dark:text-slate-400">
+                          {dateFormatted} {timeStr ? `às ${timeStr}` : ''}
+                        </div>
                       </div>
                     );
                   }
@@ -1249,7 +1268,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     <tr>
                       <th className="p-4 whitespace-nowrap">Código / Tipo</th>
                       <th className="p-4 whitespace-nowrap">Origem / Descrição</th>
-                      <th className="p-4 whitespace-nowrap">Data</th>
+                      <th className="p-4 whitespace-nowrap">Data &amp; Hora</th>
                       <th className="p-4 text-right whitespace-nowrap">Valor Total</th>
                       <th className="p-4 text-right whitespace-nowrap">Entrou em Caixa</th>
                       <th className="p-4 text-right whitespace-nowrap">A Receber / Saldo</th>
@@ -1259,6 +1278,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                     {paginatedExtrato.map((entry) => {
+                      const { dateFormatted, timeStr } = getEntryDateTime(entry);
                       if (entry.type === 'order') {
                         const o = entry.data as Order;
                         const paid = o.paidAmount || 0;
@@ -1273,7 +1293,14 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                           <tr key={o.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors">
                             <td className="p-4 font-mono font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">{o.id}</td>
                             <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{o.clientName}</td>
-                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(o.date)}</td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                              <span className="font-semibold block">{dateFormatted}</span>
+                              {timeStr && (
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono block">
+                                  às {timeStr}
+                                </span>
+                              )}
+                            </td>
                             <td className="p-4 text-right font-extrabold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                               R$ {o.totalValue.toFixed(2).replace('.', ',')}
                             </td>
@@ -1335,7 +1362,14 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                               {exp.description}
                               <span className="block text-[10px] text-slate-400 font-normal">Categoria: {exp.category}</span>
                             </td>
-                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(exp.date)}</td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                              <span className="font-semibold block">{dateFormatted}</span>
+                              {timeStr && (
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono block">
+                                  às {timeStr}
+                                </span>
+                              )}
+                            </td>
                             <td className="p-4 text-right font-extrabold whitespace-nowrap">
                               <span className={isEntrada ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
                                 {isEntrada ? '+' : '-'} R$ {exp.amount.toFixed(2).replace('.', ',')}
@@ -1384,7 +1418,14 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                           <tr key={t.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-slate-50/40 dark:bg-slate-900/40">
                             <td className="p-4 font-mono font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">{t.id}</td>
                             <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{t.clientName}</td>
-                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">{formatDateBR(t.timestamp || t.dueDate)}</td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                              <span className="font-semibold block">{dateFormatted}</span>
+                              {timeStr && (
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono block">
+                                  às {timeStr}
+                                </span>
+                              )}
+                            </td>
                             <td className="p-4 text-right font-extrabold text-slate-900 dark:text-slate-100 whitespace-nowrap">
                               R$ {t.amount.toFixed(2).replace('.', ',')}
                             </td>
@@ -1749,6 +1790,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
               {/* Mobile View */}
               <div className="block sm:hidden divide-y divide-slate-100 dark:divide-slate-800/80">
                 {paginatedReceber.map((entry) => {
+                  const { dateFormatted, timeStr } = getEntryDateTime(entry);
                   if (entry.type === 'order') {
                     const o = entry.data as Order;
                     const paid = o.paidAmount || 0;
@@ -1766,7 +1808,12 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                               </span>
                             )}
                           </div>
-                          <span className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">{o.clientName}</span>
+                          <div className="text-right">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 text-xs block">{o.clientName}</span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
+                              {dateFormatted} {timeStr ? `às ${timeStr}` : ''}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 p-2.5 bg-slate-50 dark:bg-[#181c26] rounded-xl border border-slate-200/60 dark:border-[#202531] text-[11px]">
@@ -1799,7 +1846,12 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                       <div key={c.id} className="p-4 space-y-3 bg-purple-50/30 dark:bg-purple-950/20">
                         <div className="flex items-center justify-between">
                           <span className="font-mono font-bold text-purple-600 dark:text-purple-400 text-xs">{c.id} (Consignação)</span>
-                          <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">{c.clientName}</span>
+                          <div className="text-right">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 text-xs block">{c.clientName}</span>
+                            <span className="text-[10px] text-slate-400 dark:text-slate-500 block">
+                              {dateFormatted} {timeStr ? `às ${timeStr}` : ''}
+                            </span>
+                          </div>
                         </div>
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-500 dark:text-slate-400">Valor em Loja:</span>
@@ -1825,6 +1877,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                     <tr>
                       <th className="p-4 whitespace-nowrap">Pedido / Loja</th>
                       <th className="p-4 whitespace-nowrap">Cliente</th>
+                      <th className="p-4 whitespace-nowrap">Data &amp; Hora</th>
                       <th className="p-4 text-right whitespace-nowrap">Valor Total Pedido</th>
                       <th className="p-4 text-right whitespace-nowrap">Valor Já Pago</th>
                       <th className="p-4 text-right whitespace-nowrap">Saldo Pendente (A Receber)</th>
@@ -1833,6 +1886,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                     {paginatedReceber.map((entry) => {
+                      const { dateFormatted, timeStr } = getEntryDateTime(entry);
                       if (entry.type === 'order') {
                         const o = entry.data as Order;
                         const paid = o.paidAmount || 0;
@@ -1852,6 +1906,14 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                               </div>
                             </td>
                             <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{o.clientName}</td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                              <span className="font-semibold block">{dateFormatted}</span>
+                              {timeStr && (
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono block">
+                                  às {timeStr}
+                                </span>
+                              )}
+                            </td>
                             <td className="p-4 text-right font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                               R$ {o.totalValue.toFixed(2).replace('.', ',')}
                             </td>
@@ -1889,6 +1951,14 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
                           <tr key={c.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition-colors bg-purple-50/30 dark:bg-purple-950/20">
                             <td className="p-4 font-mono font-bold text-purple-600 dark:text-purple-400 whitespace-nowrap">{c.id} (Consignação)</td>
                             <td className="p-4 font-bold text-slate-900 dark:text-slate-100 whitespace-nowrap">{c.clientName}</td>
+                            <td className="p-4 text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                              <span className="font-semibold block">{dateFormatted}</span>
+                              {timeStr && (
+                                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono block">
+                                  às {timeStr}
+                                </span>
+                              )}
+                            </td>
                             <td className="p-4 text-right font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
                               R$ {c.totalValue.toFixed(2).replace('.', ',')}
                             </td>
