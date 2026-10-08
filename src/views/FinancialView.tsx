@@ -791,7 +791,7 @@ export const FinancialView: React.FC<FinancialViewProps> = ({
         paymentStatusText: 'PAGO',
         status: 'Entregue',
         productionProgressPct: 100,
-        attendanceMode: 'Presencial',
+        attendanceMode: 'presencial',
         paymentMethod: consignmentPaymentMethod,
         orderType: 'acerto_consignacao',
         notes: consignmentPaymentNotes || `Acerto de Consignação (${c.id}) faturado via Vendas e Pagamentos`,

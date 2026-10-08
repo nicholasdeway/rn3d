@@ -248,6 +248,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
       status: statusVal,
       productionProgressPct: 100,
       attendanceMode: 'Presencial',
+
       paymentMethod: acertoPaymentMethod,
       orderType: 'acerto_consignacao',
       notes: acertoNotes || `Acerto de Consignação (${acertoConsignment.id})`,
@@ -979,11 +980,10 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                       <button
                         type="submit"
                         disabled={totalSoldQty === 0}
-                        className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer ${
-                          totalSoldQty > 0
+                        className={`px-5 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md cursor-pointer ${totalSoldQty > 0
                             ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
                             : 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                        }`}
+                          }`}
                       >
                         <Check className="w-4 h-4" />
                         <span>Confirmar Acerto & Gerar Pedido (R$ {totalSoldValuation.toFixed(2).replace('.', ',')})</span>
