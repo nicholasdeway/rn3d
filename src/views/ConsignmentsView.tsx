@@ -247,8 +247,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
       paymentStatusText: paymentStatusTextVal,
       status: statusVal,
       productionProgressPct: 100,
-      attendanceMode: 'Presencial',
-
+      attendanceMode: 'presencial',
       paymentMethod: acertoPaymentMethod,
       orderType: 'acerto_consignacao',
       notes: acertoNotes || `Acerto de Consignação (${acertoConsignment.id})`,
