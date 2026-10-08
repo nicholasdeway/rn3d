@@ -233,7 +233,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
     const isPaid = acertoPaymentStatus === 'pago';
     const paidAmountVal = isPaid ? totalSoldValuation : 0;
     const paymentStatusTextVal = isPaid ? 'PAGO' : 'AGUARDANDO PAGAMENTO';
-    const statusVal = isPaid ? 'Entregue' : 'Aguardando pagamento';
+    const statusVal = 'Entregue';
 
     const newOrder: Order = {
       id: newOrderId,

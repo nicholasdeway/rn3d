@@ -48,6 +48,12 @@ export function useOrders(
                   !o.id?.startsWith('REM-')
               );
               const merged = cleanDb.map((dbOrder) => {
+                const isConsigned = dbOrder.orderType === 'acerto_consignacao' || (dbOrder.notes && dbOrder.notes.toLowerCase().includes('consigna'));
+                if (isConsigned) {
+                  dbOrder.status = 'Entregue';
+                  dbOrder.productionProgressPct = 100;
+                }
+
                 const localMatch = prev.find(
                   (l) =>
                     l.id === dbOrder.id ||
@@ -278,16 +284,22 @@ export function useOrders(
           }
 
           const isFullyPaid = (o.totalValue > 0 && newPaid >= (o.totalValue - 0.01));
-          const newStatus = isFullyPaid
+          const newStatusText = isFullyPaid
             ? 'Pago Total'
             : newPaid > 0
               ? 'Adiantamento'
               : 'Pendente';
 
+          const isConsigned = o.orderType === 'acerto_consignacao' || (o.notes && o.notes.toLowerCase().includes('consigna'));
+          const newOrderStatus = isConsigned ? 'Entregue' : (isFullyPaid ? 'Entregue' : o.status);
+          const newProgressPct = isConsigned ? 100 : (isFullyPaid ? 100 : o.productionProgressPct);
+
           updatedOrderObj = {
             ...o,
             paidAmount: newPaid,
-            paymentStatusText: newStatus,
+            paymentStatusText: newStatusText,
+            status: newOrderStatus,
+            productionProgressPct: newProgressPct,
             paymentReceiptUrl: finalReceiptUrl1,
             paymentReceiptType: finalReceiptType1,
             paymentReceiptName: finalReceiptName1,
@@ -313,6 +325,8 @@ export function useOrders(
         await updateOrder(orderId, {
           paidAmount: updatedOrderObj.paidAmount,
           paymentStatusText: updatedOrderObj.paymentStatusText,
+          status: updatedOrderObj.status,
+          productionProgressPct: updatedOrderObj.productionProgressPct,
           paymentReceiptUrl: updatedOrderObj.paymentReceiptUrl,
           paymentReceiptType: updatedOrderObj.paymentReceiptType,
           paymentReceiptName: updatedOrderObj.paymentReceiptName,
