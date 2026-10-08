@@ -649,7 +649,33 @@ export function App() {
               )}
 
               {(currentView === 'movements' || currentView === 'inventory-movements') && (
-                <MovementsView movements={allMovements} />
+                <MovementsView
+                  movements={allMovements}
+                  onDeleteMovement={(id) => {
+                    if (id.startsWith('MOV-REM-')) {
+                      const targetRem = (appData.consignments || []).find((c) => id.includes(c.id));
+                      if (targetRem) {
+                        appData.handleDeleteConsignment(targetRem.id);
+                        return;
+                      }
+                    }
+                    if (id.startsWith('MOV-TRC-')) {
+                      const targetEx = (appData.exchanges || []).find((e) => id.includes(e.id));
+                      if (targetEx) {
+                        appData.handleDeleteExchange(targetEx.id);
+                        return;
+                      }
+                    }
+                    if (id.startsWith('MOV-PED-')) {
+                      const targetOrder = (appData.orders || []).find((o) => id.includes(o.id));
+                      if (targetOrder) {
+                        appData.handleDeleteOrder(targetOrder.id);
+                        return;
+                      }
+                    }
+                    appData.handleDeleteMovement(id);
+                  }}
+                />
               )}
 
               {currentView === 'inventory-clients' && (

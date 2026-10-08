@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { InventoryMovement } from '../types';
-import { History, Search, Clock } from 'lucide-react';
+import { History, Search, Clock, Trash2 } from 'lucide-react';
 import { formatDateBR } from '../utils/formatters';
 
 interface MovementsViewProps {
   movements: InventoryMovement[];
+  onDeleteMovement?: (id: string) => void;
 }
 
-export const MovementsView: React.FC<MovementsViewProps> = ({ movements }) => {
+export const MovementsView: React.FC<MovementsViewProps> = ({ movements, onDeleteMovement }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('Todos');
 
@@ -75,12 +76,13 @@ export const MovementsView: React.FC<MovementsViewProps> = ({ movements }) => {
                 <th className="p-4">Tipo</th>
                 <th className="p-4">Cliente / Origem</th>
                 <th className="p-4">Referência</th>
+                <th className="p-4 text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
+                  <td colSpan={7} className="p-8 text-center text-slate-400 dark:text-slate-500 text-xs">
                     Nenhuma movimentação de estoque encontrada.
                   </td>
                 </tr>
@@ -115,6 +117,22 @@ export const MovementsView: React.FC<MovementsViewProps> = ({ movements }) => {
                       <td className="p-4 font-medium text-slate-700 dark:text-slate-300">{m.clientName || 'Oficina RN 3D'}</td>
                       <td className="p-4 font-mono font-semibold text-slate-500 dark:text-slate-400">
                         {m.referenceCode || '—'}
+                      </td>
+                      <td className="p-4 text-center whitespace-nowrap">
+                        {onDeleteMovement && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (window.confirm(`Tem certeza que deseja excluir o registro de movimentação do produto "${m.productName}" (${m.quantityDelta > 0 ? '+' : ''}${m.quantityDelta} un)?`)) {
+                                onDeleteMovement(m.id);
+                              }
+                            }}
+                            className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/60 dark:hover:bg-rose-900/80 dark:text-rose-400 rounded-lg transition-colors cursor-pointer border border-rose-200 dark:border-rose-900/50"
+                            title="Excluir movimentação de estoque"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

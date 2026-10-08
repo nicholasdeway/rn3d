@@ -65,6 +65,22 @@ export async function createInventoryMovement(movement: InventoryMovement): Prom
   }
 }
 
+export async function deleteInventoryMovement(id: string): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false;
+
+  try {
+    const { error } = await supabase.from('inventory_movements').delete().eq('id', id);
+    if (error) {
+      console.error('Erro ao excluir movimentação no Supabase:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Erro ao deletar movimentação de estoque:', err);
+    return false;
+  }
+}
+
 export async function fetchSalesTransactions(): Promise<SaleTransaction[]> {
   if (!isSupabaseConfigured()) return [];
 

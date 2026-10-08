@@ -108,13 +108,23 @@ export function formatDateBR(dateStr?: string | null): string {
     return str;
   }
 
-  // If ISO format YYYY-MM-DD or YYYY-MM-DD HH:mm or YYYY-MM-DDTHH:mm
-  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{2}):(\d{2}))?/);
-  if (isoMatch) {
-    const [_, year, month, day, hours, minutes] = isoMatch;
-    if (hours && minutes) {
+  // If ISO timestamp containing time (e.g. 2026-10-08T00:30:00.000Z or 2026-10-08 21:30)
+  if (str.includes('T') || str.endsWith('Z') || (str.includes('-') && str.length > 10)) {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = String(d.getHours()).padStart(2, '0');
+      const minutes = String(d.getMinutes()).padStart(2, '0');
       return `${day}/${month}/${year} ${hours}:${minutes}`;
     }
+  }
+
+  // If plain YYYY-MM-DD format (date only, no time component)
+  const isoDateOnly = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoDateOnly) {
+    const [_, year, month, day] = isoDateOnly;
     return `${day}/${month}/${year}`;
   }
 

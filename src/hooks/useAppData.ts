@@ -20,6 +20,7 @@ import { fetchQuotes } from '../services/quotesService';
 import { fetchConsignments, syncMissingConsignmentsToSupabase, reconcileConsignmentsWithExchanges } from '../services/consignmentsService';
 import { fetchVisits, syncMissingVisitsToSupabase } from '../services/visitsService';
 import { fetchExchanges, syncMissingExchangesToSupabase } from '../services/exchangesService';
+import { deleteInventoryMovement } from '../services/movementsService';
 import { syncMissingProductsToSupabase } from '../services/productsService';
 import { syncMissingClientsToSupabase } from '../services/clientsService';
 import { syncMissingOrdersToSupabase } from '../services/ordersService';
@@ -879,6 +880,12 @@ function computeEnrichedClients(
     }
   };
 
+  const handleDeleteMovement = async (id: string) => {
+    setMovements((prev) => prev.filter((m) => m.id !== id));
+    deleteInventoryMovement(id).catch(() => {});
+    showToast('Movimentação excluída com sucesso!', 'info');
+  };
+
   return {
     products,
     clients,
@@ -941,5 +948,6 @@ function computeEnrichedClients(
     handleScheduleVisit,
     handleDeleteVisit,
     handleCompleteVisit,
+    handleDeleteMovement,
   };
 }
