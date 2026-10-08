@@ -1403,6 +1403,35 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
       {/* 📄 Modal de Detalhes da Consignação & Comprovante PDF A4 */}
       {selectedConsignment && (() => {
+        const clientExchanges = exchanges.filter(
+          (e) =>
+            (e.clientId && selectedConsignment.clientId && e.clientId === selectedConsignment.clientId) ||
+            (e.clientName &&
+              selectedConsignment.clientName &&
+              e.clientName.toLowerCase().trim() === selectedConsignment.clientName.toLowerCase().trim())
+        );
+
+        let totalRemovedQty = 0;
+        let totalRemovedValue = 0;
+
+        clientExchanges.forEach((ex) => {
+          (ex.itemsRemoved || []).forEach((remItem) => {
+            const qty = Number(remItem.quantity) || 0;
+            totalRemovedQty += qty;
+
+            const consItem = (selectedConsignment.items || []).find(
+              (ci) =>
+                (remItem.productId && ci.productId && remItem.productId === ci.productId) ||
+                (remItem.productName && ci.productName && remItem.productName.toLowerCase().trim() === ci.productName.toLowerCase().trim())
+            );
+            const unitPrice = consItem ? consItem.unitPrice : 6.0;
+            totalRemovedValue += qty * unitPrice;
+          });
+        });
+
+        const currentQtyOnSite = Math.max(0, selectedConsignment.itemsCount - totalRemovedQty);
+        const currentValuationOnSite = Math.max(0, selectedConsignment.totalValue - totalRemovedValue);
+
         const isPaidExchange = (ex: ExchangeNote) => {
           if (ex.destinationClientName === 'Venda Consignada Auditada') return true;
           if (
