@@ -1134,7 +1134,7 @@ export const ExchangesView: React.FC<ExchangesViewProps> = ({
                   <span className="px-3 py-1 bg-slate-900 text-white font-mono font-bold rounded-md text-xs">
                     NOTA DE TROCA {selectedExchange.id}
                   </span>
-                  <p className="text-slate-500 mt-2 text-xs font-medium">Data: {selectedExchange.date}</p>
+                  <p className="text-slate-500 mt-2 text-xs font-medium">Data: {formatDateBR(selectedExchange.date)}</p>
                   <p className="text-slate-500 text-xs font-medium">Responsável: {selectedExchange.responsible}</p>
                 </div>
               </div>

@@ -332,8 +332,8 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
           <button
             onClick={() => setViewMode('grid')}
             className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${viewMode === 'grid'
-                ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             title="Visualização em Cards / Grid"
           >
@@ -343,8 +343,8 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
           <button
             onClick={() => setViewMode('table')}
             className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${viewMode === 'table'
-                ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+              ? 'bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-xs'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
               }`}
             title="Visualização em Lista / Tabela"
           >
