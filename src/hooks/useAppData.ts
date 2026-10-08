@@ -94,6 +94,7 @@ export function useAppData() {
     transactions,
     setTransactions,
     movements,
+    setMovements,
     clientInventories,
     setClientInventories,
   } = useTransactions();
