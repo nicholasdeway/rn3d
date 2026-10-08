@@ -291,6 +291,8 @@ export function useExpenses(
 
   const handleDeleteExpense = async (expenseId: string) => {
     const exp = expenses.find((e) => e.id === expenseId || (e.referenceCode && e.referenceCode === expenseId));
+    if (!exp) return;
+
     setExpenses((prev) => {
       return prev.filter((e) => e.id !== expenseId && e.referenceCode !== expenseId);
     });

@@ -15,7 +15,7 @@ import { normalizeToIsoDate, parseBRDate, formatDateBR, formatTimeOnly } from '.
 
 import { fetchProducts } from '../services/productsService';
 import { fetchClients } from '../services/clientsService';
-import { fetchOrders } from '../services/ordersService';
+import { fetchOrders, deleteOrder } from '../services/ordersService';
 import { fetchQuotes } from '../services/quotesService';
 import { fetchConsignments, syncMissingConsignmentsToSupabase, reconcileConsignmentsWithExchanges } from '../services/consignmentsService';
 import { fetchVisits, syncMissingVisitsToSupabase } from '../services/visitsService';
@@ -25,7 +25,7 @@ import { syncMissingProductsToSupabase } from '../services/productsService';
 import { syncMissingClientsToSupabase } from '../services/clientsService';
 import { syncMissingOrdersToSupabase } from '../services/ordersService';
 import { syncMissingQuotesToSupabase } from '../services/quotesService';
-import { syncMissingExpensesToSupabase, createExpense, fetchExpenses } from '../services/expensesService';
+import { syncMissingExpensesToSupabase, createExpense, fetchExpenses, deleteExpense } from '../services/expensesService';
 
 
 export function useAppData() {
@@ -533,6 +533,8 @@ function computeEnrichedClients(
   // Auto-replicate internal logistics costs from orders and visits into expenses (Combustível & Transporte)
 
 
+  const deletedExpenseIdsRef = React.useRef(new Set<string>());
+
   // Auto-mirror order local payments (e.g. 50% signal deposit / 50% completion) into expenses/transactions log
   useEffect(() => {
     if (!orders || orders.length === 0 || dataLoading) return;
@@ -580,11 +582,19 @@ function computeEnrichedClients(
         return exp;
       });
 
-      // 2. Ensure orders with paidAmount > 0 have an expense entry without creating duplicates
+      // 2. Ensure orders with paidAmount > 0 have an expense entry without creating duplicates or recreating deleted ones
       orders.forEach((o) => {
         const paid = Number(o.paidAmount) || 0;
         if (paid > 0) {
           const cleanId = o.id.replace(/^PED-/, '');
+          const isExplicitlyDeleted =
+            deletedExpenseIdsRef.current.has(o.id.toLowerCase()) ||
+            deletedExpenseIdsRef.current.has(cleanId.toLowerCase()) ||
+            deletedExpenseIdsRef.current.has(`ped-pay-${o.id.toLowerCase()}-1`) ||
+            deletedExpenseIdsRef.current.has(`ped-pay-${cleanId.toLowerCase()}-1`);
+
+          if (isExplicitlyDeleted) return;
+
           const alreadyExists = updatedPrev.some((e) => {
             const refLower = (e.referenceCode || '').toLowerCase();
             const idLower = (e.id || '').toLowerCase();
@@ -937,10 +947,76 @@ function computeEnrichedClients(
     handleCreateExpense,
     handleExecuteTransfer,
     handleUpdateExpense,
-    handleDeleteExpense,
+    handleDeleteExpense: async (expenseId: string) => {
+      const exp = expenses.find((e) => e.id === expenseId || (e.referenceCode && e.referenceCode === expenseId));
+      if (!exp) return;
+
+      deletedExpenseIdsRef.current.add(expenseId.toLowerCase());
+      if (exp.referenceCode) deletedExpenseIdsRef.current.add(exp.referenceCode.toLowerCase());
+
+      // Extract linked order ID if present
+      let orderIdToClean: string | undefined = undefined;
+      if (exp.referenceCode && exp.referenceCode.includes('PED-')) {
+        const match = exp.referenceCode.match(/PED-\d+/i);
+        if (match) orderIdToClean = match[0].toUpperCase();
+      } else if (exp.description) {
+        const match = exp.description.match(/PED-\d+/i);
+        if (match) orderIdToClean = match[0].toUpperCase();
+      }
+
+      if (orderIdToClean) {
+        deletedExpenseIdsRef.current.add(orderIdToClean.toLowerCase());
+        const cleanId = orderIdToClean.replace(/^PED-/, '');
+        deletedExpenseIdsRef.current.add(cleanId.toLowerCase());
+        deletedExpenseIdsRef.current.add(`ped-pay-${cleanId}-1`);
+        deletedExpenseIdsRef.current.add(`ped-pay-${orderIdToClean}-1`);
+
+        const targetOrder = orders.find(
+          (o) => o.id === orderIdToClean || o.id === cleanId || o.id.replace(/^PED-/, '') === cleanId
+        );
+
+        if (targetOrder) {
+          await handleDeleteOrder(targetOrder.id);
+        }
+      }
+
+      await handleDeleteExpense(expenseId);
+    },
     handleUpdateSingleBalance,
     handleCreateOrder,
-    handleDeleteOrder: handleDeleteOrderCascade,
+    handleDeleteOrder: async (orderId: string) => {
+      const cleanId = orderId.replace(/^PED-/, '').replace(/^ORC-/, '');
+      deletedExpenseIdsRef.current.add(orderId.toLowerCase());
+      deletedExpenseIdsRef.current.add(cleanId.toLowerCase());
+      deletedExpenseIdsRef.current.add(`ped-pay-${orderId.toLowerCase()}-1`);
+      deletedExpenseIdsRef.current.add(`ped-pay-${cleanId.toLowerCase()}-1`);
+
+      // Cascade delete matching expenses
+      const matchingExpenses = expenses.filter((e) => {
+        const refLower = (e.referenceCode || '').toLowerCase();
+        const idLower = (e.id || '').toLowerCase();
+        const descLower = (e.description || '').toLowerCase();
+        const oIdLower = orderId.toLowerCase();
+        const cleanIdLower = cleanId.toLowerCase();
+
+        return (
+          refLower.includes(oIdLower) ||
+          refLower.includes(cleanIdLower) ||
+          idLower.includes(oIdLower) ||
+          idLower.includes(cleanIdLower) ||
+          descLower.includes(oIdLower) ||
+          descLower.includes(cleanIdLower)
+        );
+      });
+
+      for (const exp of matchingExpenses) {
+        deleteExpense(exp.id, exp.referenceCode).catch(() => {});
+      }
+
+      setExpenses((prev) => prev.filter((e) => !matchingExpenses.some((me) => me.id === e.id)));
+
+      await handleDeleteOrder(orderId);
+    },
     handleUpdateOrderProgress,
     handleUpdateOrderStatus,
     handleUpdateOrderPayment: handleUpdateOrderPaymentWrapper,
