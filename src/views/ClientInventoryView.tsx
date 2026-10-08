@@ -274,13 +274,13 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
       )}
 
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#12151c] p-6 rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Store className="w-6 h-6 text-indigo-600" />
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <Store className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
             Estoque Alocado em Clientes
           </h2>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Mapeamento em tempo real de onde suas mercadorias em consignação estão alocadas (ordenado por maior estoque).
           </p>
         </div>
@@ -288,18 +288,18 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={handleExpandAll}
-            className="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs border border-indigo-100"
+            className="px-3.5 py-2 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs border border-indigo-100 dark:border-indigo-900/50"
             title="Expandir a visualização de todos os estabelecimentos"
           >
-            <ChevronsDown className="w-4 h-4 text-indigo-600" />
+            <ChevronsDown className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span>Expandir Todos</span>
           </button>
           <button
             onClick={handleCollapseAll}
-            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs border border-slate-200"
+            className="px-3.5 py-2 bg-slate-100 dark:bg-[#181c26] hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs border border-slate-200 dark:border-[#202531]"
             title="Recolher a visualização de todos os estabelecimentos"
           >
-            <ChevronsUp className="w-4 h-4 text-slate-500" />
+            <ChevronsUp className="w-4 h-4 text-slate-500 dark:text-slate-400" />
             <span>Recolher Todos</span>
           </button>
         </div>
@@ -361,11 +361,11 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
           return (
             <div
               key={cli.id}
-              className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden transition-all"
+              className="bg-white dark:bg-[#12151c] rounded-2xl border border-slate-200/80 dark:border-[#202531] shadow-xs overflow-hidden transition-all"
             >
               <div
                 onClick={() => toggleClientExpand(cli.id)}
-                className="p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors"
+                className="p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div
@@ -375,7 +375,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                         setZoomImage({ url: cli.avatarUrl, title: cli.name });
                       }
                     }}
-                    className={`w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-sm shrink-0 border border-indigo-100 overflow-hidden ${
+                    className={`w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-bold flex items-center justify-center text-sm shrink-0 border border-indigo-100 dark:border-indigo-900/50 overflow-hidden ${
                       cli.avatarUrl ? 'cursor-zoom-in hover:scale-105 transition-transform' : ''
                     }`}
                     title={cli.avatarUrl ? 'Clique para ampliar a foto' : undefined}
@@ -388,13 +388,13 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-bold text-slate-900 text-sm">{cli.name}</h3>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200">
+                      <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">{cli.name}</h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-[#181c26] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-[#202531]">
                         #{index + 1} em estoque
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {cli.city} • Última conferência: <span className="font-semibold text-slate-700">{formatDateBR(data.latestAuditDate)}</span>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      {cli.city} • Última conferência: <span className="font-semibold text-slate-700 dark:text-slate-300">{formatDateBR(data.latestAuditDate)}</span>
                     </p>
                   </div>
                 </div>
@@ -406,7 +406,7 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                         e.stopPropagation();
                         onNavigateToExchanges(cli.id);
                       }}
-                      className="px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                      className="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 dark:hover:text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs border border-indigo-100/50 dark:border-indigo-900/50"
                       title="Migrar/Remanejar estoque desta loja para outra"
                     >
                       <Repeat className="w-3.5 h-3.5" />
@@ -415,15 +415,15 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                   )}
 
                   <div className="text-right text-xs">
-                    <span className="font-bold text-slate-900 block">
+                    <span className="font-bold text-slate-900 dark:text-slate-100 block">
                       {storeProductsCount} {storeProductsCount === 1 ? 'produto' : 'produtos'}
                     </span>
-                    <span className="font-semibold text-emerald-600">
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">
                       R$ {storeValuation.toFixed(2).replace('.', ',')}
                     </span>
                   </div>
 
-                  <button className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+                  <button className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg">
                     {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </button>
                 </div>
@@ -431,17 +431,17 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
 
               {/* Accordion Content */}
               {isExpanded && (
-                <div className="p-5 bg-slate-50 border-t border-slate-100 space-y-5">
+                <div className="p-5 bg-slate-50 dark:bg-[#181c26] border-t border-slate-100 dark:border-[#202531] space-y-5">
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                        <Package className="w-4 h-4 text-indigo-600" />
+                      <h4 className="font-bold text-slate-800 dark:text-slate-200 text-xs flex items-center gap-1.5">
+                        <Package className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                         Estoque Atual no Estabelecimento ({cli.name}):
                       </h4>
                       {onNavigateToExchanges && itemsAtStore.length > 0 && (
                         <button
                           onClick={() => onNavigateToExchanges(cli.id)}
-                          className="text-xs font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center gap-1"
+                          className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 cursor-pointer flex items-center gap-1"
                         >
                           <Repeat className="w-3.5 h-3.5" /> Migrar peças desta loja ➔
                         </button>
@@ -449,11 +449,13 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                     </div>
 
                     {itemsAtStore.length === 0 ? (
-                      <p className="text-xs text-slate-400 italic bg-white p-4 rounded-xl border border-slate-200">Nenhum produto alocado nesta loja no momento.</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 italic bg-white dark:bg-[#12151c] p-4 rounded-xl border border-slate-200 dark:border-[#202531]">
+                        Nenhum produto alocado nesta loja no momento.
+                      </p>
                     ) : (
-                      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
+                      <div className="border border-slate-200 dark:border-[#202531] rounded-xl overflow-hidden bg-white dark:bg-[#12151c] shadow-2xs">
                         <table className="w-full text-left text-xs">
-                          <thead className="bg-slate-100 text-slate-600 font-semibold uppercase tracking-wider">
+                          <thead className="bg-slate-100 dark:bg-[#181c26] text-slate-600 dark:text-slate-400 font-semibold uppercase tracking-wider border-b border-slate-200 dark:border-[#202531]">
                             <tr>
                               <th className="p-3">Produto</th>
                               <th className="p-3 text-center">Enviado Inicial</th>
@@ -463,23 +465,23 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                               <th className="p-3 text-right">Valoração Atual</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100">
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                             {itemsAtStore.map((item) => {
                               const qty = item.quantityOnSite;
                               const sent = item.sentQuantity;
                               const removed = item.soldQuantity || 0;
                               return (
-                                <tr key={item.productId} className="hover:bg-slate-50 transition-colors">
-                                  <td className="p-3 font-bold text-slate-900">{item.productName}</td>
-                                  <td className="p-3 text-center text-slate-600 font-medium">{sent} un</td>
-                                  <td className="p-3 text-center text-amber-700 font-semibold">
+                                <tr key={item.productId} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                  <td className="p-3 font-bold text-slate-900 dark:text-slate-100">{item.productName}</td>
+                                  <td className="p-3 text-center text-slate-600 dark:text-slate-400 font-medium">{sent} un</td>
+                                  <td className="p-3 text-center text-amber-700 dark:text-amber-400 font-semibold">
                                     {removed > 0 ? `-${removed} un` : '0 un'}
                                   </td>
-                                  <td className="p-3 text-center font-black text-indigo-700 text-sm bg-indigo-50/50">
+                                  <td className="p-3 text-center font-black text-indigo-700 dark:text-indigo-400 text-sm bg-indigo-50/50 dark:bg-indigo-950/40">
                                     {qty} un
                                   </td>
-                                  <td className="p-3 text-right text-slate-600">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
-                                  <td className="p-3 text-right font-extrabold text-emerald-600 text-sm">
+                                  <td className="p-3 text-right text-slate-600 dark:text-slate-400">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                                  <td className="p-3 text-right font-extrabold text-emerald-600 dark:text-emerald-400 text-sm">
                                     R$ {item.valuation.toFixed(2).replace('.', ',')}
                                   </td>
                                 </tr>
@@ -491,11 +493,11 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                     )}
                   </div>
 
-                  {/* Histórico Auditado de Retiradas & Remanejamentos (igual PDF de Consignações) */}
+                  {/* Histórico Auditado de Retiradas & Remanejamentos */}
                   {data.removedAuditLogs.length > 0 && (
-                    <div className="pt-2 border-t border-slate-200/60 space-y-3">
-                      <h4 className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5 uppercase tracking-wide">
-                        <History className="w-4 h-4 text-amber-600" />
+                    <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/80 space-y-3">
+                      <h4 className="font-extrabold text-slate-900 dark:text-slate-100 text-xs flex items-center gap-1.5 uppercase tracking-wide">
+                        <History className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                         Histórico de Retiradas & Remanejamentos Auditados ({cli.name})
                       </h4>
 
@@ -503,28 +505,28 @@ export const ClientInventoryView: React.FC<ClientInventoryViewProps> = ({
                         {data.removedAuditLogs.map((log) => (
                           <div
                             key={log.exchangeId}
-                            className="bg-amber-50/70 border border-amber-200/90 rounded-xl p-3 text-xs space-y-2"
+                            className="bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/90 dark:border-amber-800/40 rounded-xl p-3 text-xs space-y-2"
                           >
-                            <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-amber-200/60">
+                            <div className="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-amber-200/60 dark:border-amber-800/40">
                               <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded text-[11px]">
+                                <span className="font-mono font-bold text-amber-900 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/60 px-2 py-0.5 rounded text-[11px]">
                                   {log.exchangeId}
                                 </span>
-                                <span className="font-semibold text-slate-800">
+                                <span className="font-semibold text-slate-800 dark:text-slate-300">
                                   {formatDateBR(log.date)}
                                 </span>
                               </div>
-                              <span className="text-[11px] font-bold text-amber-800 flex items-center gap-1">
-                                <ArrowDownRight className="w-3.5 h-3.5 text-amber-600" />
-                                {log.type} ➔ <span className="text-slate-900 font-extrabold">{log.destinationName}</span>
+                              <span className="text-[11px] font-bold text-amber-800 dark:text-amber-400 flex items-center gap-1">
+                                <ArrowDownRight className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                                {log.type} ➔ <span className="text-slate-900 dark:text-slate-100 font-extrabold">{log.destinationName}</span>
                               </span>
                             </div>
 
-                            <ul className="list-disc pl-5 space-y-1 text-slate-700">
+                            <ul className="list-disc pl-5 space-y-1 text-slate-700 dark:text-slate-300">
                               {log.items.map((item, idx) => (
                                 <li key={idx} className="font-medium">
-                                  <strong className="text-amber-900 font-bold">{item.quantity}x</strong> {item.productName}
-                                  {item.reason && <span className="text-slate-500 text-[11px]"> ({item.reason})</span>}
+                                  <strong className="text-amber-900 dark:text-amber-400 font-bold">{item.quantity}x</strong> {item.productName}
+                                  {item.reason && <span className="text-slate-500 dark:text-slate-400 text-[11px]"> ({item.reason})</span>}
                                 </li>
                               ))}
                             </ul>
