@@ -1403,34 +1403,36 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
       {/* 📄 Modal de Detalhes da Consignação & Comprovante PDF A4 */}
       {selectedConsignment && (() => {
-        const clientExchanges = exchanges.filter(
-          (e) =>
-            (e.clientId && selectedConsignment.clientId && e.clientId === selectedConsignment.clientId) ||
-            (e.clientName &&
-              selectedConsignment.clientName &&
-              e.clientName.toLowerCase().trim() === selectedConsignment.clientName.toLowerCase().trim())
-        );
+        const isPaidExchange = (ex: ExchangeNote) => {
+          if (ex.destinationClientName === 'Venda Consignada Auditada') return true;
+          if (
+            ex.notes?.toLowerCase().includes('venda consignada') ||
+            ex.notes?.toLowerCase().includes('pedido #') ||
+            ex.notes?.toLowerCase().includes('acerto')
+          )
+            return true;
+          if (
+            ex.itemsRemoved &&
+            ex.itemsRemoved.some((i) => {
+              const r = (i.reason || '').toLowerCase();
+              return r.includes('vendido') || r.includes('acerto') || r.includes('pdv') || r.includes('pago');
+            })
+          )
+            return true;
+          return false;
+        };
 
-        let totalRemovedQty = 0;
-        let totalRemovedValue = 0;
+        const paidExchanges = clientExchanges.filter(isPaidExchange);
+        const remanejadoExchanges = clientExchanges.filter((ex) => !isPaidExchange(ex));
 
-        clientExchanges.forEach((ex) => {
-          (ex.itemsRemoved || []).forEach((remItem) => {
-            const qty = Number(remItem.quantity) || 0;
-            totalRemovedQty += qty;
-
-            const consItem = (selectedConsignment.items || []).find(
-              (ci) =>
-                (remItem.productId && ci.productId && remItem.productId === ci.productId) ||
-                (remItem.productName && ci.productName && remItem.productName.toLowerCase().trim() === ci.productName.toLowerCase().trim())
-            );
-            const unitPrice = consItem ? consItem.unitPrice : 6.0;
-            totalRemovedValue += qty * unitPrice;
-          });
-        });
-
-        const currentQtyOnSite = Math.max(0, selectedConsignment.itemsCount - totalRemovedQty);
-        const currentValuationOnSite = Math.max(0, selectedConsignment.totalValue - totalRemovedValue);
+        const getConsignmentUnitPrice = (productName: string, productId?: string) => {
+          const item = (selectedConsignment.items || []).find(
+            (ci) =>
+              (productId && ci.productId && ci.productId === productId) ||
+              (productName && ci.productName && ci.productName.toLowerCase().trim() === productName.toLowerCase().trim())
+          );
+          return item ? item.unitPrice : 0;
+        };
 
         return (
           <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4 overflow-y-auto">
@@ -1606,45 +1608,128 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                   </table>
                 </div>
 
-                {/* Histórico Auditado de Retiradas / Trocas */}
-                {clientExchanges.length > 0 && (
-                  <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-xl space-y-3 print-avoid-break">
-                    <h4 className="font-extrabold text-amber-900 text-xs flex items-center justify-between border-b border-amber-200/80 pb-2">
-                      <span>🔄 Histórico de Retiradas & Remanejamentos Auditados (RN 3D)</span>
-                      <span className="font-mono text-[11px] bg-amber-200/90 px-2.5 py-0.5 rounded-md text-amber-950 font-bold">
-                        {clientExchanges.length} nota(s) vinculada(s)
+                {/* Mechanism 1: Itens Quitados / Pagos (Vendas Auditadas & Faturadas) */}
+                {paidExchanges.length > 0 && (
+                  <div className="p-4 bg-emerald-50/90 border border-emerald-300 rounded-xl space-y-3 print-avoid-break">
+                    <h4 className="font-extrabold text-emerald-950 text-xs flex items-center justify-between border-b border-emerald-200 pb-2">
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-emerald-600">✅</span>
+                        <span>Itens Quitados / Pagos (Vendas Auditadas — Não Cobrar Novamente)</span>
+                      </span>
+                      <span className="font-mono text-[11px] bg-emerald-200/90 px-2.5 py-0.5 rounded-md text-emerald-950 font-bold">
+                        {paidExchanges.length} nota(s) faturada(s)
                       </span>
                     </h4>
-                    <div className="space-y-2 text-[11px]">
-                      {clientExchanges.map((ex) => {
-                        const totalRemoved = ex.itemsRemoved.reduce((acc, i) => acc + i.quantity, 0);
+                    <div className="space-y-2.5 text-[11px]">
+                      {paidExchanges.map((ex) => {
+                        let notePaidTotal = 0;
+                        let notePaidQty = 0;
                         return (
                           <div
                             key={ex.id}
-                            className="bg-white p-3 rounded-lg border border-amber-200/80 shadow-2xs space-y-2"
+                            className="bg-white p-3 rounded-lg border border-emerald-200 shadow-2xs space-y-2"
                           >
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-wrap gap-2">
                               <div className="flex items-center gap-2">
-                                <span className="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                                <span className="font-mono font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-md border border-emerald-200">
                                   {ex.id}
                                 </span>
                                 <span className="text-slate-600 font-semibold">{formatDateBR(ex.date)}</span>
                                 {ex.responsible && (
-                                  <span className="text-slate-400 text-[10px]">({ex.responsible})</span>
+                                  <span className="text-slate-500 text-[10px]">({ex.responsible})</span>
                                 )}
                               </div>
-                              <span className="font-extrabold text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-md text-xs">
+                              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md border border-emerald-200">
+                                QUITADO / PAGO
+                              </span>
+                            </div>
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="text-slate-500 uppercase text-[9px] border-b border-slate-100 bg-slate-50/50">
+                                  <th className="p-1 font-bold">Item Vendido / Quitado</th>
+                                  <th className="p-1 text-center font-bold">Qtd Baixada</th>
+                                  <th className="p-1 text-right font-bold">Preço Unit.</th>
+                                  <th className="p-1 text-right font-bold">Total Quitado</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-50">
+                                {ex.itemsRemoved.map((item, iIdx) => {
+                                  const unitPrice = getConsignmentUnitPrice(item.productName, item.productId);
+                                  const subtotal = item.quantity * unitPrice;
+                                  notePaidTotal += subtotal;
+                                  notePaidQty += item.quantity;
+                                  return (
+                                    <tr key={iIdx} className="text-xs">
+                                      <td className="p-1 font-bold text-slate-800">{item.productName}</td>
+                                      <td className="p-1 text-center font-extrabold text-slate-900">{item.quantity} un</td>
+                                      <td className="p-1 text-right text-slate-600">R$ {unitPrice.toFixed(2).replace('.', ',')}</td>
+                                      <td className="p-1 text-right font-extrabold text-emerald-700">R$ {subtotal.toFixed(2).replace('.', ',')}</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                            <div className="pt-1 border-t border-emerald-100 flex justify-between items-center text-[11px] font-bold text-emerald-900">
+                              <span>Total Baixado nesta Nota ({notePaidQty} un):</span>
+                              <span className="font-black text-xs text-emerald-800">R$ {notePaidTotal.toFixed(2).replace('.', ',')}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Mechanism 2: Itens Remanejados / Devolvidos (Oficina ou Outra Loja) */}
+                {remanejadoExchanges.length > 0 && (
+                  <div className="p-4 bg-sky-50/90 border border-sky-300 rounded-xl space-y-3 print-avoid-break">
+                    <h4 className="font-extrabold text-sky-950 text-xs flex items-center justify-between border-b border-sky-200 pb-2">
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-sky-600">🔄</span>
+                        <span>Itens Remanejados / Retirados (Oficina ou Outra Loja)</span>
+                      </span>
+                      <span className="font-mono text-[11px] bg-sky-200/90 px-2.5 py-0.5 rounded-md text-sky-950 font-bold">
+                        {remanejadoExchanges.length} nota(s) de remanejamento
+                      </span>
+                    </h4>
+                    <div className="space-y-2 text-[11px]">
+                      {remanejadoExchanges.map((ex) => {
+                        const totalRemoved = ex.itemsRemoved.reduce((acc, i) => acc + i.quantity, 0);
+                        const destinationLabel =
+                          ex.destinationClientName ||
+                          (ex.type === 'recolhimento_oficina' ? 'Estoque Geral (Oficina RN 3D)' : 'Troca Direta / Outra Loja');
+
+                        return (
+                          <div
+                            key={ex.id}
+                            className="bg-white p-3 rounded-lg border border-sky-200 shadow-2xs space-y-2"
+                          >
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-wrap gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono font-bold text-sky-800 bg-sky-100 px-2 py-0.5 rounded-md border border-sky-200">
+                                  {ex.id}
+                                </span>
+                                <span className="text-slate-600 font-semibold">{formatDateBR(ex.date)}</span>
+                                {ex.responsible && (
+                                  <span className="text-slate-500 text-[10px]">({ex.responsible})</span>
+                                )}
+                              </div>
+                              <span className="font-extrabold text-sky-900 bg-sky-100 border border-sky-300 px-2.5 py-0.5 rounded-md text-xs">
                                 -{totalRemoved} un
                               </span>
                             </div>
+                            <p className="text-[10px] text-slate-600">
+                              Destino / Motivo: <strong className="text-slate-900 font-bold">{destinationLabel}</strong>
+                            </p>
                             <ul className="space-y-1 font-medium text-slate-800 text-xs pl-1">
                               {ex.itemsRemoved.map((item, iIdx) => (
                                 <li key={iIdx} className="flex items-center justify-between">
                                   <span className="flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0"></span>
                                     <span>{item.productName}</span>
+                                    {item.reason && <span className="text-slate-400 text-[10px]">({item.reason})</span>}
                                   </span>
-                                  <span className="font-bold text-amber-900 font-mono">-{item.quantity} un</span>
+                                  <span className="font-bold text-sky-900 font-mono">-{item.quantity} un</span>
                                 </li>
                               ))}
                             </ul>
