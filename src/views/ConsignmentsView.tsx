@@ -1433,21 +1433,28 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
         const currentValuationOnSite = Math.max(0, selectedConsignment.totalValue - totalRemovedValue);
 
         const isPaidExchange = (ex: ExchangeNote) => {
-          if (ex.destinationClientName === 'Venda Consignada Auditada') return true;
-          if (
-            ex.notes?.toLowerCase().includes('venda consignada') ||
-            ex.notes?.toLowerCase().includes('pedido #') ||
-            ex.notes?.toLowerCase().includes('acerto')
-          )
-            return true;
+          const dest = (ex.destinationClientName || '').toLowerCase();
+          const notes = (ex.notes || '').toLowerCase();
+
+          if (dest.includes('venda') || dest.includes('acerto') || dest.includes('pdv') || dest.includes('faturad')) return true;
+          if (notes.includes('venda') || notes.includes('pedido #') || notes.includes('acerto') || notes.includes('faturad') || notes.includes('baixa') || notes.includes('pago')) return true;
+
           if (
             ex.itemsRemoved &&
             ex.itemsRemoved.some((i) => {
               const r = (i.reason || '').toLowerCase();
-              return r.includes('vendido') || r.includes('acerto') || r.includes('pdv') || r.includes('pago');
+              return (
+                r.includes('vendido') ||
+                r.includes('acerto') ||
+                r.includes('pdv') ||
+                r.includes('baixa') ||
+                r.includes('pago') ||
+                r.includes('faturad')
+              );
             })
           )
             return true;
+
           return false;
         };
 
@@ -1461,6 +1468,44 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
               (productName && ci.productName && ci.productName.toLowerCase().trim() === productName.toLowerCase().trim())
           );
           return item ? item.unitPrice : 0;
+        };
+
+        const activeItemsOnSite = (selectedConsignment.items || [])
+          .map((consItem) => {
+            let itemRemovedQty = 0;
+            clientExchanges.forEach((ex) => {
+              (ex.itemsRemoved || []).forEach((rem) => {
+                if (
+                  (rem.productId && consItem.productId && rem.productId === consItem.productId) ||
+                  (rem.productName && consItem.productName && rem.productName.toLowerCase().trim() === consItem.productName.toLowerCase().trim())
+                ) {
+                  itemRemovedQty += Number(rem.quantity) || 0;
+                }
+              });
+            });
+            const remainingQty = Math.max(0, consItem.quantity - itemRemovedQty);
+            return {
+              ...consItem,
+              remainingQty,
+              remainingSubtotal: remainingQty * consItem.unitPrice,
+            };
+          })
+          .filter((i) => i.remainingQty > 0);
+
+        const handleToggleExchangeStatus = (ex: ExchangeNote, targetType: 'paid' | 'remanejado') => {
+          const updatedExchange: ExchangeNote = {
+            ...ex,
+            destinationClientName: targetType === 'paid' ? 'Venda Consignada Auditada' : 'Estoque Geral (Oficina RN 3D)',
+            notes: targetType === 'paid' ? 'Acerto de Consignação (Baixa por Venda)' : 'Remanejamento de estoque',
+            itemsRemoved: (ex.itemsRemoved || []).map((item) => ({
+              ...item,
+              reason: targetType === 'paid' ? 'Vendido no PDV (Acerto — Baixa)' : 'Remanejamento / Recolhimento para Oficina',
+            })),
+          };
+
+          if (onExecuteExchange) {
+            onExecuteExchange(updatedExchange);
+          }
         };
 
         return (
@@ -1608,7 +1653,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 {/* Items Table */}
                 <div className="space-y-2">
                   <h3 className="font-extrabold text-slate-900 uppercase tracking-wider text-xs flex items-center justify-between border-b border-slate-200 pb-1">
-                    <span>📦 Produtos Entregues / Alocados no Expositor</span>
+                    <span>📦 Produtos Entregues / Alocados no Expositor (Inicial)</span>
                     <span className="font-mono text-indigo-700 font-bold">
                       Total: {selectedConsignment.itemsCount} unidades
                     </span>
@@ -1643,10 +1688,10 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                     <h4 className="font-extrabold text-emerald-950 text-xs flex items-center justify-between border-b border-emerald-200 pb-2">
                       <span className="flex items-center gap-1.5">
                         <span className="text-emerald-600">✅</span>
-                        <span>Itens Quitados / Pagos (Vendas Auditadas — Não Cobrar Novamente)</span>
+                        <span>Itens Quitados / Pagos — Baixa Registrada (Não Cobrar Novamente)</span>
                       </span>
                       <span className="font-mono text-[11px] bg-emerald-200/90 px-2.5 py-0.5 rounded-md text-emerald-950 font-bold">
-                        {paidExchanges.length} nota(s) faturada(s)
+                        {paidExchanges.length} nota(s) baixada(s)
                       </span>
                     </h4>
                     <div className="space-y-2.5 text-[11px]">
@@ -1668,14 +1713,25 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                                   <span className="text-slate-500 text-[10px]">({ex.responsible})</span>
                                 )}
                               </div>
-                              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md border border-emerald-200">
-                                QUITADO / PAGO
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-md border border-emerald-300">
+                                  DEU BAIXA — PAGO
+                                </span>
+                                {onExecuteExchange && (
+                                  <button
+                                    onClick={() => handleToggleExchangeStatus(ex, 'remanejado')}
+                                    className="no-print text-[10px] text-sky-700 bg-sky-50 hover:bg-sky-100 px-2 py-0.5 rounded border border-sky-200 font-bold cursor-pointer transition-colors"
+                                    title="Clique para alterar a classificação desta nota para Remanejamento"
+                                  >
+                                    🔄 Mudar p/ Remanejado
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             <table className="w-full text-left border-collapse">
                               <thead>
                                 <tr className="text-slate-500 uppercase text-[9px] border-b border-slate-100 bg-slate-50/50">
-                                  <th className="p-1 font-bold">Item Vendido / Quitado</th>
+                                  <th className="p-1 font-bold">Item Vendido / Baixado</th>
                                   <th className="p-1 text-center font-bold">Qtd Baixada</th>
                                   <th className="p-1 text-right font-bold">Preço Unit.</th>
                                   <th className="p-1 text-right font-bold">Total Quitado</th>
@@ -1689,7 +1745,10 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                                   notePaidQty += item.quantity;
                                   return (
                                     <tr key={iIdx} className="text-xs">
-                                      <td className="p-1 font-bold text-slate-800">{item.productName}</td>
+                                      <td className="p-1 font-bold text-slate-800">
+                                        {item.productName}
+                                        <span className="ml-2 text-[10px] text-emerald-600 font-normal italic">(Baixa por Venda)</span>
+                                      </td>
                                       <td className="p-1 text-center font-extrabold text-slate-900">{item.quantity} un</td>
                                       <td className="p-1 text-right text-slate-600">R$ {unitPrice.toFixed(2).replace('.', ',')}</td>
                                       <td className="p-1 text-right font-extrabold text-emerald-700">R$ {subtotal.toFixed(2).replace('.', ',')}</td>
@@ -1743,9 +1802,20 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                                   <span className="text-slate-500 text-[10px]">({ex.responsible})</span>
                                 )}
                               </div>
-                              <span className="font-extrabold text-sky-900 bg-sky-100 border border-sky-300 px-2.5 py-0.5 rounded-md text-xs">
-                                -{totalRemoved} un
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-sky-900 bg-sky-100 border border-sky-300 px-2.5 py-0.5 rounded-md text-xs">
+                                  -{totalRemoved} un
+                                </span>
+                                {onExecuteExchange && (
+                                  <button
+                                    onClick={() => handleToggleExchangeStatus(ex, 'paid')}
+                                    className="no-print text-[10px] text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 font-bold cursor-pointer transition-colors flex items-center gap-1"
+                                    title="Clique para converter esta nota em Baixa por Venda / Pago"
+                                  >
+                                    🟢 Converter em Baixa (Vendido / Quitado)
+                                  </button>
+                                )}
+                              </div>
                             </div>
                             <p className="text-[10px] text-slate-600">
                               Destino / Motivo: <strong className="text-slate-900 font-bold">{destinationLabel}</strong>
@@ -1769,18 +1839,48 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                   </div>
                 )}
 
-                {/* Summary Valuation */}
-                <div className="print-avoid-break p-4 bg-emerald-50/80 rounded-xl border border-emerald-200 flex justify-between items-center text-xs">
-                  <div>
-                    <span className="font-bold text-slate-900 block">Saldo Atual Alocado no Expositor:</span>
-                    <span className="text-slate-700 font-bold">{currentQtyOnSite} produtos em exibição</span>
+                {/* Summary Valuation & Remaining Active Stock */}
+                <div className="print-avoid-break p-4 bg-emerald-50/90 rounded-xl border border-emerald-300 space-y-3 text-xs">
+                  <div className="flex justify-between items-center border-b border-emerald-200 pb-2">
+                    <div>
+                      <span className="font-black text-emerald-950 text-xs uppercase block">📦 Saldo Atual Alocado no Expositor (Ativo na Loja)</span>
+                      <span className="text-slate-700 font-bold">{currentQtyOnSite} produtos em exibição restante</span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-600 text-[10px] uppercase font-bold block">Valor Total Auditado / A Cobrar</span>
+                      <span className="text-xl font-black text-emerald-700">
+                        R$ {currentValuationOnSite.toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-slate-500 text-[10px] uppercase font-bold block">Valor Total Auditado / A Cobrar</span>
-                    <span className="text-xl font-black text-emerald-700">
-                      R$ {currentValuationOnSite.toFixed(2).replace('.', ',')}
-                    </span>
-                  </div>
+
+                  {activeItemsOnSite.length > 0 && (
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-bold uppercase text-slate-600 block">Detalhamento dos Itens Restantes na Loja:</span>
+                      <table className="w-full text-left border-collapse bg-white rounded-lg border border-emerald-200 text-[11px]">
+                        <thead>
+                          <tr className="bg-emerald-100/60 text-emerald-950 text-[9px] uppercase font-bold border-b border-emerald-200">
+                            <th className="p-1.5">Produto Restante</th>
+                            <th className="p-1.5 text-center">Qtd Atual</th>
+                            <th className="p-1.5 text-right">Preço Unit.</th>
+                            <th className="p-1.5 text-right">Subtotal A Cobrar</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium">
+                          {activeItemsOnSite.map((item, aIdx) => (
+                            <tr key={aIdx}>
+                              <td className="p-1.5 font-bold text-slate-900">{item.productName}</td>
+                              <td className="p-1.5 text-center font-extrabold text-slate-900">{item.remainingQty} un</td>
+                              <td className="p-1.5 text-right text-slate-600">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                              <td className="p-1.5 text-right font-extrabold text-emerald-700">
+                                R$ {item.remainingSubtotal.toFixed(2).replace('.', ',')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
 
                 {/* Notes */}
