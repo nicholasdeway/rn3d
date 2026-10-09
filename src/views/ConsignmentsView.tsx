@@ -74,6 +74,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   const [isAcertoModalOpen, setIsAcertoModalOpen] = useState(false);
   const [acertoConsignment, setAcertoConsignment] = useState<Consignment | null>(null);
   const [acertoQuantities, setAcertoQuantities] = useState<Record<string, number>>({});
+  const [acertoUnitPrices, setAcertoUnitPrices] = useState<Record<string, number>>({});
   const [acertoPaymentMethod, setAcertoPaymentMethod] = useState<string>('PIX');
   const [acertoPaymentStatus, setAcertoPaymentStatus] = useState<'aguardando_pagamento' | 'pago'>('aguardando_pagamento');
   const [acertoDate, setAcertoDate] = useState<string>(getTodayBR());
@@ -174,15 +175,19 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   };
 
   const handleStartAcerto = (c: Consignment) => {
+    setSelectedConsignment(null);
     setAcertoConsignment(c);
 
     const initialSold: Record<string, number> = {};
+    const initialPrices: Record<string, number> = {};
     (c.items || []).forEach((item) => {
       const key = item.productId || item.productName;
       initialSold[key] = 0;
+      initialPrices[key] = item.unitPrice;
     });
 
     setAcertoQuantities(initialSold);
+    setAcertoUnitPrices(initialPrices);
     setAcertoPaymentMethod('PIX');
     setAcertoPaymentStatus('aguardando_pagamento');
     setAcertoDate(getTodayBR());
@@ -205,13 +210,14 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
     (acertoConsignment.items || []).forEach((item) => {
       const key = item.productId || item.productName;
       const soldQty = Number(acertoQuantities[key]) || 0;
+      const unitPrice = acertoUnitPrices[key] !== undefined ? Number(acertoUnitPrices[key]) : item.unitPrice;
       if (soldQty > 0) {
         soldItemsList.push({
           productId: item.productId || key,
           productName: item.productName,
           quantity: soldQty,
-          unitPrice: item.unitPrice,
-          subtotal: soldQty * item.unitPrice,
+          unitPrice: unitPrice,
+          subtotal: soldQty * unitPrice,
         });
       }
     });
@@ -289,7 +295,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
     if (onAddOrder) {
       onAddOrder(newOrder);
     }
-    if (isPaid && onCreateExpense) {
+    if (onCreateExpense) {
       onCreateExpense({
         id: `EXP-${Math.floor(100000 + Math.random() * 900000)}`,
         date: formattedIsoDate,
@@ -312,6 +318,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
       });
     }
 
+    setSelectedConsignment(null);
     setIsAcertoModalOpen(false);
     setAcertoConsignment(null);
   };
@@ -910,9 +917,24 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                                   </button>
                                 </div>
                               </td>
-                              <td className="p-3 text-right text-slate-600 dark:text-slate-400">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                              <td className="p-3 text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <span className="text-slate-400 font-semibold text-xs">R$</span>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={acertoUnitPrices[key] !== undefined ? acertoUnitPrices[key] : item.unitPrice}
+                                    onChange={(e) => {
+                                      const val = Math.max(0, parseFloat(e.target.value) || 0);
+                                      setAcertoUnitPrices((prev) => ({ ...prev, [key]: val }));
+                                    }}
+                                    className="w-20 text-right px-2 py-1 border border-slate-300 dark:border-slate-700 rounded-lg font-bold bg-white dark:bg-[#181c26] text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                  />
+                                </div>
+                              </td>
                               <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                                R$ {(soldQty * item.unitPrice).toFixed(2).replace('.', ',')}
+                                R$ {(soldQty * (acertoUnitPrices[key] !== undefined ? acertoUnitPrices[key] : item.unitPrice)).toFixed(2).replace('.', ',')}
                               </td>
                             </tr>
                           );
@@ -991,8 +1013,9 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 (acertoConsignment.items || []).forEach((item) => {
                   const key = item.productId || item.productName;
                   const soldQty = Number(acertoQuantities[key]) || 0;
+                  const unitPrice = acertoUnitPrices[key] !== undefined ? Number(acertoUnitPrices[key]) : item.unitPrice;
                   totalSoldQty += soldQty;
-                  totalSoldValuation += soldQty * item.unitPrice;
+                  totalSoldValuation += soldQty * unitPrice;
                 });
 
                 return (
