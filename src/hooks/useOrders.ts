@@ -251,9 +251,16 @@ export function useOrders(
 
     let updatedOrderObj: Order | undefined;
 
+    const cleanTargetId = orderId.replace(/^PED-/, '').replace(/^ORC-/, '').toLowerCase().trim();
+
     setOrders((prev) =>
       prev.map((o) => {
-        if (o.id === orderId || o.id.replace(/^PED-/, '') === orderId.replace(/^PED-/, '')) {
+        const cleanOId = o.id.replace(/^PED-/, '').replace(/^ORC-/, '').toLowerCase().trim();
+        if (
+          o.id === orderId ||
+          o.id.toLowerCase().trim() === orderId.toLowerCase().trim() ||
+          cleanOId === cleanTargetId
+        ) {
           const targetIndex = receiptIndex || ((o.paymentReceiptUrl || (o.paidAmount && o.paidAmount > 0)) ? 2 : 1);
 
           let finalReceiptUrl1 = o.paymentReceiptUrl;
@@ -314,6 +321,12 @@ export function useOrders(
       })
     );
 
+    // If updatedOrderObj was set inside the functional mapper or found in state
+    const targetOrder = updatedOrderObj || orders.find((o) => {
+      const cleanOId = o.id.replace(/^PED-/, '').replace(/^ORC-/, '').toLowerCase().trim();
+      return o.id === orderId || o.id.toLowerCase().trim() === orderId.toLowerCase().trim() || cleanOId === cleanTargetId;
+    });
+
     if (receiptUrl) {
       toast(`Comprovante do pedido #${orderId} salvo com sucesso!`, 'success');
     } else {
@@ -321,25 +334,27 @@ export function useOrders(
     }
 
     try {
-      if (updatedOrderObj) {
-        await updateOrder(orderId, {
-          paidAmount: updatedOrderObj.paidAmount,
-          paymentStatusText: updatedOrderObj.paymentStatusText,
-          status: updatedOrderObj.status,
-          productionProgressPct: updatedOrderObj.productionProgressPct,
-          paymentReceiptUrl: updatedOrderObj.paymentReceiptUrl,
-          paymentReceiptType: updatedOrderObj.paymentReceiptType,
-          paymentReceiptName: updatedOrderObj.paymentReceiptName,
-          paymentReceiptUrl2: updatedOrderObj.paymentReceiptUrl2,
-          paymentReceiptType2: updatedOrderObj.paymentReceiptType2,
-          paymentReceiptName2: updatedOrderObj.paymentReceiptName2,
-        });
-      }
+      const actualOrderToSave = targetOrder || updatedOrderObj;
+      const actualPaid = actualOrderToSave ? actualOrderToSave.paidAmount : addedAmount;
+      const actualStatusText = actualOrderToSave ? actualOrderToSave.paymentStatusText : (addedAmount > 0 ? 'Pago Total' : 'Pendente');
+
+      await updateOrder(orderId, {
+        paidAmount: actualPaid,
+        paymentStatusText: actualStatusText,
+        status: actualOrderToSave?.status || 'Entregue',
+        productionProgressPct: actualOrderToSave?.productionProgressPct,
+        paymentReceiptUrl: actualOrderToSave?.paymentReceiptUrl,
+        paymentReceiptType: actualOrderToSave?.paymentReceiptType,
+        paymentReceiptName: actualOrderToSave?.paymentReceiptName,
+        paymentReceiptUrl2: actualOrderToSave?.paymentReceiptUrl2,
+        paymentReceiptType2: actualOrderToSave?.paymentReceiptType2,
+        paymentReceiptName2: actualOrderToSave?.paymentReceiptName2,
+      });
     } catch (err) {
       console.error('Erro ao atualizar pagamento do pedido no Supabase:', err);
     }
 
-    return updatedOrderObj;
+    return updatedOrderObj || targetOrder;
   };
 
   return {

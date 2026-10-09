@@ -301,12 +301,14 @@ export function useAppData() {
             ])
           );
 
+          const currentExpensesList = dbExpensesRes?.expenses || expenses || [];
+
           const merged = dbOrders.map((dbOrder) => {
-            const cleanDb = dbOrder.id.replace(/^PED-/, '').toLowerCase().trim();
+            const cleanDb = dbOrder.id.replace(/^PED-/, '').replace(/^ORC-/, '').toLowerCase().trim();
             const local = prev.find(
               (l) =>
                 l.id.toLowerCase().trim() === dbOrder.id.toLowerCase().trim() ||
-                l.id.replace(/^PED-/, '').toLowerCase().trim() === cleanDb
+                l.id.replace(/^PED-/, '').replace(/^ORC-/, '').toLowerCase().trim() === cleanDb
             );
 
             let finalPaid = dbOrder.paidAmount || 0;
@@ -329,9 +331,41 @@ export function useAppData() {
               }
             }
 
+            // Check if there are payment expenses registered for this order in financial/expenses
+            const matchingExpensePaidSum = currentExpensesList
+              .filter((exp) => {
+                if (exp.category !== 'Entrada de Pedido' && exp.paymentStatus !== 'Pago') return false;
+                const refLower = (exp.referenceCode || '').toLowerCase();
+                const descLower = (exp.description || '').toLowerCase();
+                const idLower = (exp.id || '').toLowerCase();
+                const dbIdLower = dbOrder.id.toLowerCase();
+                return (
+                  refLower.includes(dbIdLower) ||
+                  refLower.includes(cleanDb) ||
+                  idLower.includes(dbIdLower) ||
+                  idLower.includes(cleanDb) ||
+                  descLower.includes(dbIdLower) ||
+                  descLower.includes(cleanDb)
+                );
+              })
+              .reduce((sum, exp) => sum + (exp.amount || 0), 0);
+
+            if (matchingExpensePaidSum > finalPaid) {
+              finalPaid = matchingExpensePaidSum;
+            }
+
             const hasReceipt = Boolean(finalReceipt1 || finalReceipt2);
-            const isPaidFull = (finalPaid >= dbOrder.totalValue && dbOrder.totalValue > 0) || (hasReceipt && (finalPaid >= dbOrder.totalValue || finalPaid === 0));
-            const calculatedPaid = isPaidFull ? (finalPaid > 0 ? finalPaid : dbOrder.totalValue) : finalPaid;
+            const isPaidFull =
+              (finalPaid >= (dbOrder.totalValue - 0.01) && dbOrder.totalValue > 0) ||
+              (hasReceipt && (finalPaid >= dbOrder.totalValue || finalPaid === 0)) ||
+              dbOrder.paymentStatusText === 'Pago Total' ||
+              dbOrder.paymentStatusText === 'Pago' ||
+              (local && (local.paymentStatusText === 'Pago Total' || local.paymentStatusText === 'Pago'));
+
+            const calculatedPaid = isPaidFull
+              ? (dbOrder.totalValue > 0 ? Math.max(finalPaid, dbOrder.totalValue) : finalPaid)
+              : finalPaid;
+
             const calculatedStatusText = isPaidFull
               ? 'Pago Total'
               : calculatedPaid > 0
@@ -341,7 +375,7 @@ export function useAppData() {
             return {
               ...dbOrder,
               productionProgressPct: finalProgress,
-              status: finalStatus,
+              status: isPaidFull && finalStatus === 'Novo' ? 'Entregue' : finalStatus,
               paidAmount: calculatedPaid,
               paymentStatusText: calculatedStatusText,
               paymentReceiptUrl: finalReceipt1,

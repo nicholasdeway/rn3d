@@ -488,7 +488,12 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                           const paid = o.paidAmount || 0;
                           const total = o.totalValue || 0;
                           const hasReceipt = Boolean(o.paymentReceiptUrl || o.paymentReceiptUrl2);
-                          const isFull = (total > 0 && paid >= total) || (hasReceipt && (paid >= total || paid === 0));
+                          const isFull =
+                            (total > 0 && paid >= (total - 0.01)) ||
+                            (hasReceipt && (paid >= total || paid === 0)) ||
+                            o.paymentStatusText === 'Pago Total' ||
+                            o.paymentStatusText === 'Pago' ||
+                            o.paymentStatusText === 'PAGO';
                           const isPartial = paid > 0 && !isFull;
 
                           const label = isFull ? 'Pago Total' : isPartial ? `Adiantamento (R$ ${paid.toFixed(2).replace('.', ',')})` : (o.paymentStatusText || 'Pendente');
@@ -661,7 +666,12 @@ export const OrdersView: React.FC<OrdersViewProps> = ({
                               const paid = o.paidAmount || 0;
                               const total = o.totalValue || 0;
                               const hasReceipt = Boolean(o.paymentReceiptUrl || o.paymentReceiptUrl2);
-                              const isFull = (total > 0 && paid >= total) || (hasReceipt && (paid >= total || paid === 0));
+                              const isFull =
+                                (total > 0 && paid >= (total - 0.01)) ||
+                                (hasReceipt && (paid >= total || paid === 0)) ||
+                                o.paymentStatusText === 'Pago Total' ||
+                                o.paymentStatusText === 'Pago' ||
+                                o.paymentStatusText === 'PAGO';
                               const isPartial = paid > 0 && !isFull;
 
                               const label = isFull ? 'Pago Total' : isPartial ? 'Adiantamento' : (o.paymentStatusText || 'Pendente');

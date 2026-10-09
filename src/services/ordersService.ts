@@ -328,7 +328,7 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
       const { data } = await supabase
         .from('orders')
         .select('*')
-        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId}`)
+        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId},order_code.eq.ORC-${cleanId}`)
         .limit(1)
         .single();
       existingData = data;
@@ -358,19 +358,16 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
   if (updates.paidAmount !== undefined) corePayload.paid_amount = Number(updates.paidAmount) || 0;
   if (updates.status !== undefined) corePayload.status = updates.status;
 
-  if (
-    updates.paymentStatusText !== undefined ||
-    updates.notes !== undefined ||
-    updates.paymentReceiptUrl !== undefined ||
-    updates.paymentReceiptUrl2 !== undefined ||
-    updates.paymentTerms !== undefined ||
-    updates.productionProgressPct !== undefined ||
-    updates.internalLogisticsType !== undefined ||
-    updates.internalLogisticsCost !== undefined
-  ) {
-    const statusText = updates.paymentStatusText || decodedExisting.paymentStatusText || 'Pendente';
-    corePayload.payment_status_text = encodeStatusWithMeta(statusText, mergedUpdates);
+  const totalVal = corePayload.total_value ?? Number(existingData?.total_value) ?? 0;
+  const paidVal = corePayload.paid_amount ?? Number(existingData?.paid_amount) ?? 0;
+  const isPaidFull = totalVal > 0 && paidVal >= (totalVal - 0.01);
+
+  let statusText = updates.paymentStatusText || decodedExisting.paymentStatusText || (isPaidFull ? 'Pago Total' : 'Pendente');
+  if (isPaidFull && statusText === 'Pendente') {
+    statusText = 'Pago Total';
   }
+
+  corePayload.payment_status_text = encodeStatusWithMeta(statusText, mergedUpdates);
 
   if (Object.keys(corePayload).length === 0) return updates as any;
 
@@ -383,14 +380,15 @@ export async function updateOrder(id: string, updates: Partial<Order>): Promise<
       const { data: matched } = await supabase
         .from('orders')
         .select('id')
-        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId}`);
+        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId},order_code.eq.ORC-${cleanId}`);
 
       if (matched && matched.length > 0) {
         const uuids = matched.map((m) => m.id);
         const { error } = await supabase.from('orders').update(corePayload).in('id', uuids);
         if (error) console.error("Erro ao atualizar lote de pedidos no Supabase:", error.message, error.details);
       } else {
-        console.warn(`Nenhum pedido encontrado no Supabase para o id: ${id}`);
+        const { error: directErr } = await supabase.from('orders').update(corePayload).eq('order_code', id);
+        if (directErr) console.warn(`Aviso ao atualizar pedido diretamente com order_code ${id}:`, directErr.message);
       }
     }
   } catch (e) {
@@ -413,7 +411,7 @@ export async function deleteOrder(id: string): Promise<boolean> {
       const { data: matched } = await supabase
         .from('orders')
         .select('id, order_code')
-        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId}`);
+        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId},order_code.eq.ORC-${cleanId}`);
 
       if (matched && matched.length > 0) {
         const uuids = matched.map((m) => m.id);
@@ -424,7 +422,7 @@ export async function deleteOrder(id: string): Promise<boolean> {
       await supabase
         .from('orders')
         .delete()
-        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId}`);
+        .or(`order_code.eq.${id},order_code.eq.${cleanId},order_code.eq.PED-${cleanId},order_code.eq.ORC-${cleanId}`);
     }
     return true;
   } catch (e) {
