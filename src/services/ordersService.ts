@@ -105,6 +105,10 @@ function decodeOrderRow(row: any): {
     }
   }
 
+  if (!attendanceMode && (notes.toLowerCase().includes('whatsapp') || notes.toLowerCase().includes('online') || rawText.toLowerCase().includes('whatsapp') || rawText.toLowerCase().includes('online'))) {
+    attendanceMode = 'online';
+  }
+
   return {
     paymentStatusText,
     notes,
@@ -280,6 +284,7 @@ export async function createOrder(order: Partial<Order>): Promise<Order | null> 
     paid_amount: order.paidAmount || 0,
     payment_status_text: encodeStatusWithMeta(baseStatusText, order),
     status: order.status || 'Novo',
+    attendance_mode: order.attendanceMode || (order.notes && (order.notes.toLowerCase().includes('whatsapp') || order.notes.toLowerCase().includes('online')) ? 'online' : undefined),
   };
 
   if (order.clientId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.clientId)) {

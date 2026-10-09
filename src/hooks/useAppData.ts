@@ -372,8 +372,14 @@ export function useAppData() {
                 ? 'Adiantamento'
                 : (dbOrder.paymentStatusText && dbOrder.paymentStatusText !== 'Pendente' ? dbOrder.paymentStatusText : 'Pendente');
 
+            const finalAttendance =
+              dbOrder.attendanceMode ||
+              (local ? local.attendanceMode : undefined) ||
+              (dbOrder.notes && (dbOrder.notes.toLowerCase().includes('whatsapp') || dbOrder.notes.toLowerCase().includes('online')) ? 'online' : undefined);
+
             return {
               ...dbOrder,
+              attendanceMode: finalAttendance,
               productionProgressPct: finalProgress,
               status: isPaidFull && finalStatus === 'Novo' ? 'Entregue' : finalStatus,
               paidAmount: calculatedPaid,
@@ -815,6 +821,12 @@ function computeEnrichedClients(
         const effectiveLogisticsType =
           quote.internalLogisticsType || matchingClient?.defaultLogisticsType || 'combustivel';
 
+        const effectiveAttendanceMode =
+          quote.attendanceMode ||
+          (quote.notes && (quote.notes.toLowerCase().includes('whatsapp') || quote.notes.toLowerCase().includes('online'))
+            ? 'online'
+            : 'presencial');
+
         const newOrder: Order = {
           id: orderId,
           clientId: quote.clientId || '',
@@ -828,7 +840,7 @@ function computeEnrichedClients(
           status: 'Novo',
           productionProgressPct: 0,
           productionSlaDate: productionSlaDateStr,
-          attendanceMode: quote.attendanceMode,
+          attendanceMode: effectiveAttendanceMode,
           internalLogisticsType: effectiveLogisticsType,
           internalLogisticsCost: effectiveLogisticsCost,
           notes: quote.notes || `Convertido a partir do Orçamento #${quote.id}`,
