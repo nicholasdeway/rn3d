@@ -798,98 +798,126 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
-                      {(acertoConsignment.items || []).map((item) => {
-                        const key = item.productId || item.productName;
-                        const product = products.find(p => p.id === item.productId || p.name === item.productName);
-                        const imageUrl = product?.imageUrl || (product as any)?.image_url;
-
+                      {(() => {
                         const clientExchanges = exchanges.filter(
                           (e) =>
                             (e.clientId && acertoConsignment.clientId && e.clientId === acertoConsignment.clientId) ||
                             (e.clientName && acertoConsignment.clientName && e.clientName.toLowerCase().trim() === acertoConsignment.clientName.toLowerCase().trim())
                         );
 
-                        let removedQty = 0;
-                        clientExchanges.forEach((ex) => {
-                          (ex.itemsRemoved || []).forEach((rem) => {
-                            if (
-                              (rem.productId && item.productId && rem.productId === item.productId) ||
-                              (rem.productName && item.productName && rem.productName.toLowerCase().trim() === item.productName.toLowerCase().trim())
-                            ) {
-                              removedQty += Number(rem.quantity) || 0;
-                            }
+                        const activeItems = (acertoConsignment.items || []).filter((item) => {
+                          let removedQty = 0;
+                          clientExchanges.forEach((ex) => {
+                            (ex.itemsRemoved || []).forEach((rem) => {
+                              if (
+                                (rem.productId && item.productId && rem.productId === item.productId) ||
+                                (rem.productName && item.productName && rem.productName.toLowerCase().trim() === item.productName.toLowerCase().trim())
+                              ) {
+                                removedQty += Number(rem.quantity) || 0;
+                              }
+                            });
                           });
+                          const currentQtyOnSite = Math.max(0, item.quantity - removedQty);
+                          return currentQtyOnSite > 0;
                         });
 
-                        const currentQtyOnSite = Math.max(0, item.quantity - removedQty);
-                        const soldQty = Number(acertoQuantities[key]) || 0;
+                        if (activeItems.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={5} className="p-8 text-center text-slate-500 dark:text-slate-400 font-medium">
+                                Nenhum produto com estoque alocado no expositor.
+                              </td>
+                            </tr>
+                          );
+                        }
 
-                        return (
-                          <tr key={key} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                            <td className="p-3 font-bold text-slate-900 dark:text-slate-100">
-                              <div className="flex items-center gap-3">
-                                {imageUrl ? (
-                                  <img src={imageUrl} alt={item.productName} className="w-10 h-10 rounded-lg object-cover shadow-sm border border-slate-200 dark:border-slate-700 shrink-0" />
-                                ) : (
-                                  <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 shrink-0">
-                                    <Package className="w-5 h-5 text-slate-400" />
-                                  </div>
-                                )}
-                                <span className="line-clamp-2">{item.productName}</span>
-                              </div>
-                            </td>
-                            <td className="p-3 text-center text-slate-600 dark:text-slate-400 font-semibold">{currentQtyOnSite} un</td>
-                            <td className="p-3 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const newQty = Math.max(0, soldQty - 1);
-                                    setAcertoQuantities((prev) => ({ ...prev, [key]: newQty }));
-                                  }}
-                                  className="w-7 h-7 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg text-xs cursor-pointer"
-                                >
-                                  <Minus className="w-3 h-3" />
-                                </button>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max={currentQtyOnSite}
-                                  value={soldQty}
-                                  onChange={(e) => {
-                                    const val = Math.min(currentQtyOnSite, Math.max(0, Number(e.target.value) || 0));
-                                    setAcertoQuantities((prev) => ({ ...prev, [key]: val }));
-                                  }}
-                                  className="w-14 text-center px-1 py-1 border border-slate-300 dark:border-slate-700 rounded-lg font-bold bg-white dark:bg-[#181c26] text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const newQty = Math.min(currentQtyOnSite, soldQty + 1);
-                                    setAcertoQuantities((prev) => ({ ...prev, [key]: newQty }));
-                                  }}
-                                  className="w-7 h-7 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg text-xs cursor-pointer"
-                                >
-                                  <Plus className="w-3 h-3" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setAcertoQuantities((prev) => ({ ...prev, [key]: currentQtyOnSite }));
-                                  }}
-                                  className="px-2 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-[10px] font-bold rounded-lg transition-colors cursor-pointer border border-emerald-200/60 dark:border-emerald-900/50"
-                                >
-                                  Tudo
-                                </button>
-                              </div>
-                            </td>
-                            <td className="p-3 text-right text-slate-600 dark:text-slate-400">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
-                            <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400 text-sm">
-                              R$ {(soldQty * item.unitPrice).toFixed(2).replace('.', ',')}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                        return activeItems.map((item) => {
+                          const key = item.productId || item.productName;
+                          const product = products.find(p => p.id === item.productId || p.name === item.productName);
+                          const imageUrl = product?.imageUrl || (product as any)?.image_url;
+
+                          let removedQty = 0;
+                          clientExchanges.forEach((ex) => {
+                            (ex.itemsRemoved || []).forEach((rem) => {
+                              if (
+                                (rem.productId && item.productId && rem.productId === item.productId) ||
+                                (rem.productName && item.productName && rem.productName.toLowerCase().trim() === item.productName.toLowerCase().trim())
+                              ) {
+                                removedQty += Number(rem.quantity) || 0;
+                              }
+                            });
+                          });
+
+                          const currentQtyOnSite = Math.max(0, item.quantity - removedQty);
+                          const soldQty = Number(acertoQuantities[key]) || 0;
+
+                          return (
+                            <tr key={key} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                              <td className="p-3 font-bold text-slate-900 dark:text-slate-100">
+                                <div className="flex items-center gap-3">
+                                  {imageUrl ? (
+                                    <img src={imageUrl} alt={item.productName} className="w-10 h-10 rounded-lg object-cover shadow-sm border border-slate-200 dark:border-slate-700 shrink-0" />
+                                  ) : (
+                                    <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center border border-slate-200 dark:border-slate-700 shrink-0">
+                                      <Package className="w-5 h-5 text-slate-400" />
+                                    </div>
+                                  )}
+                                  <span className="line-clamp-2">{item.productName}</span>
+                                </div>
+                              </td>
+                              <td className="p-3 text-center text-slate-600 dark:text-slate-400 font-semibold">{currentQtyOnSite} un</td>
+                              <td className="p-3 text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newQty = Math.max(0, soldQty - 1);
+                                      setAcertoQuantities((prev) => ({ ...prev, [key]: newQty }));
+                                    }}
+                                    className="w-7 h-7 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg text-xs cursor-pointer"
+                                  >
+                                    <Minus className="w-3 h-3" />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max={currentQtyOnSite}
+                                    value={soldQty}
+                                    onChange={(e) => {
+                                      const val = Math.min(currentQtyOnSite, Math.max(0, Number(e.target.value) || 0));
+                                      setAcertoQuantities((prev) => ({ ...prev, [key]: val }));
+                                    }}
+                                    className="w-14 text-center px-1 py-1 border border-slate-300 dark:border-slate-700 rounded-lg font-bold bg-white dark:bg-[#181c26] text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newQty = Math.min(currentQtyOnSite, soldQty + 1);
+                                      setAcertoQuantities((prev) => ({ ...prev, [key]: newQty }));
+                                    }}
+                                    className="w-7 h-7 flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg text-xs cursor-pointer"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setAcertoQuantities((prev) => ({ ...prev, [key]: currentQtyOnSite }));
+                                    }}
+                                    className="px-2 py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-[10px] font-bold rounded-lg transition-colors cursor-pointer border border-emerald-200/60 dark:border-emerald-900/50"
+                                  >
+                                    Tudo
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="p-3 text-right text-slate-600 dark:text-slate-400">R$ {item.unitPrice.toFixed(2).replace('.', ',')}</td>
+                              <td className="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400 text-sm">
+                                R$ {(soldQty * item.unitPrice).toFixed(2).replace('.', ',')}
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
                     </tbody>
                   </table>
                 </div>
