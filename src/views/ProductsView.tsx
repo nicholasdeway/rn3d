@@ -601,13 +601,13 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   {/* Financial & Dual Price Display */}
                   <div className="flex items-center justify-between my-3 p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs gap-2">
                     <div>
-                      <span className="text-[10px] text-slate-400 block font-medium">À Vista / 50%:</span>
+                      <span className="text-[10px] text-slate-400 block font-medium">À Vista / Pix (Atacado):</span>
                       <span className="font-extrabold text-emerald-600 text-sm">
                         R$ {(p.cashPrice ?? (p.isKeychain || p.category === 'Chaveiro' ? 4.0 : p.standardPrice)).toFixed(2).replace('.', ',')}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] text-slate-400 block font-medium">Consignado / Faturado:</span>
+                      <span className="text-[10px] text-slate-400 block font-medium">Tabela / Prazo (Varejo):</span>
                       <span className="font-extrabold text-indigo-600 text-sm">
                         R$ {p.standardPrice.toFixed(2).replace('.', ',')}
                       </span>
@@ -659,8 +659,8 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   <th className="p-4">SKU</th>
                   <th className="p-4">Categoria</th>
                   <th className="p-4">Capacidade</th>
-                  <th className="p-4">Preço À Vista</th>
-                  <th className="p-4">Preço Consignado</th>
+                  <th className="p-4">Preço À Vista (Pix)</th>
+                  <th className="p-4">Preço Tabela (Varejo)</th>
                   <th className="p-4">Estoque</th>
                   <th className="p-4">Status</th>
                   <th className="p-4 text-right">Ação</th>
@@ -881,7 +881,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Preço À Vista / 50% (R$)</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Preço À Vista / Atacado (Pix) (R$) *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -893,7 +893,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Preço Consignado / Faturado (R$) *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Preço Tabela / Varejo (Prazo) (R$) *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -1092,7 +1092,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Preço À Vista / 50% (R$) *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Preço À Vista / Atacado (Pix) (R$) *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -1106,7 +1106,7 @@ export const ProductsView: React.FC<ProductsViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Preço Consignado / Faturado (R$) *</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Preço Tabela / Varejo (Prazo) (R$) *</label>
                   <input
                     type="number"
                     step="0.01"
