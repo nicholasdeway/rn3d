@@ -75,10 +75,11 @@ export async function uploadToSupabaseStorage(
   if (fileOrBase64.startsWith('data:image/')) {
     try {
       if (folder === 'receipts') {
-        // Compressão para comprovantes: até 1600px com qualidade 0.8 (garante legibilidade de letras pequenas)
-        preparedBase64 = await compressImage(fileOrBase64, 1600, 1600, 0.8);
+        // Compressão otimizada para comprovantes: max 800px com qualidade 0.65 (super legível e ultraleve ~40KB)
+        preparedBase64 = await compressImage(fileOrBase64, 800, 800, 0.65);
       } else {
-        preparedBase64 = await compressImage(fileOrBase64, 800, 800, 0.75);
+        // Compressão para produtos e clientes: max 400px com qualidade 0.6 (~20KB)
+        preparedBase64 = await compressImage(fileOrBase64, 400, 400, 0.6);
       }
     } catch (e) {
       console.warn('[Storage] Falha ao comprimir imagem, usando original:', e);

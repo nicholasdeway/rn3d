@@ -422,23 +422,15 @@ export function useAppData() {
     // Initial load shows loading indicator if needed
     loadAllData(true);
 
-    // Re-sincronizar silenciosamente a cada 5 minutos (sem disparar efeito de blur/loading nos cards)
+    // Re-sincronizar silenciosamente a cada 15 minutos (evita consumo excessivo de egress/banda no Supabase)
     const intervalId = setInterval(async () => {
       if (!isMounted) return;
       loadAllData(false);
-    }, 300000);
-
-    // Re-sincronizar silenciosamente ao focar na janela/Alt+Tab (sem disparar efeito de blur/loading nos cards)
-    const handleFocus = () => {
-      if (!isMounted) return;
-      loadAllData(false);
-    };
-    window.addEventListener('focus', handleFocus);
+    }, 900000);
 
     return () => {
       isMounted = false;
       clearInterval(intervalId);
-      window.removeEventListener('focus', handleFocus);
     };
   }, [user, setProducts, setClients, setOrders, setQuotes]);
 
