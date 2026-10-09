@@ -1722,12 +1722,12 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                   <p className="text-slate-500 text-[10px] sm:text-[11px]">Última Conferência Auditada: {formatDateBR(getConsignmentLatestAuditDate(selectedConsignment, exchanges, visits))}</p>
                 </div>
 
-                {/* Items Table */}
+                {/* Card 1: Produtos Entregues / Alocados no Expositor (Remessa Inicial) */}
                 <div className="space-y-2">
                   <h3 className="font-extrabold text-slate-900 uppercase tracking-wider text-[11px] sm:text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-slate-200 pb-1">
-                    <span>📦 Produtos Entregues / Alocados no Expositor (Inicial)</span>
+                    <span>📦 Produtos Entregues / Alocados no Expositor (Remessa Inicial)</span>
                     <span className="font-mono text-indigo-700 font-bold">
-                      Total: {selectedConsignment.itemsCount} unidades
+                      Total Inicial: {selectedConsignment.itemsCount} unidades
                     </span>
                   </h3>
                   <div className="overflow-x-auto max-w-full -mx-1 px-1">
@@ -1756,13 +1756,92 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                   </div>
                 </div>
 
-                {/* Mechanism 1: Itens Quitados / Pagos (Vendas Auditadas & Faturadas) */}
+                {/* Card 2: Devoluções / Recolhimentos para Oficina (Condicional — exibido apenas se houver devoluções) */}
+                {remanejadoExchanges.length > 0 && (
+                  <div className="p-3 sm:p-4 bg-sky-50/90 border border-sky-300 rounded-xl space-y-3 print-avoid-break">
+                    <h4 className="font-extrabold text-sky-950 text-[11px] sm:text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-sky-200 pb-2">
+                      <span className="flex items-center gap-1.5">
+                        <span className="text-sky-600">🏭</span>
+                        <span>Itens Devolvidos para Oficina / Retirados da Loja</span>
+                      </span>
+                      <span className="font-mono text-[10px] sm:text-[11px] bg-sky-200/90 px-2 sm:px-2.5 py-0.5 rounded-md text-sky-950 font-bold shrink-0 self-start sm:self-auto">
+                        {remanejadoExchanges.length} nota(s) de recolhimento
+                      </span>
+                    </h4>
+                    <div className="space-y-2 text-[11px]">
+                      {remanejadoExchanges.map((ex) => {
+                        const totalRemoved = ex.itemsRemoved.reduce((acc, i) => acc + i.quantity, 0);
+                        const destinationLabel =
+                          ex.destinationClientName ||
+                          (ex.type === 'recolhimento_oficina' ? 'Estoque Geral (Oficina RN 3D)' : 'Troca Direta / Outra Loja');
+
+                        return (
+                          <div
+                            key={ex.id}
+                            className="bg-white p-2.5 sm:p-3 rounded-lg border border-sky-200 shadow-2xs space-y-2"
+                          >
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-wrap gap-1.5">
+                              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                                <span className="font-mono font-bold text-sky-800 bg-sky-100 px-1.5 sm:px-2 py-0.5 rounded-md border border-sky-200 text-[10px] sm:text-xs">
+                                  {ex.id}
+                                </span>
+                                <span className="text-slate-600 font-semibold text-[10px] sm:text-xs">{formatDateBR(ex.date)}</span>
+                                {ex.responsible && (
+                                  <span className="text-slate-500 text-[9px] sm:text-[10px]">({ex.responsible})</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-extrabold text-sky-900 bg-sky-100 border border-sky-300 px-2 py-0.5 rounded-md text-[10px] sm:text-xs">
+                                  -{totalRemoved} un
+                                </span>
+                                {onExecuteExchange && (
+                                  <button
+                                    onClick={() => handleToggleExchangeStatus(ex, 'paid')}
+                                    className="no-print text-[9px] sm:text-[10px] text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-1.5 sm:px-2 py-0.5 rounded border border-emerald-200 font-bold cursor-pointer transition-colors flex items-center gap-1"
+                                    title="Clique para converter esta nota em Baixa por Venda / Pago"
+                                  >
+                                    🟢 Converter em Baixa (Vendido / Quitado)
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <p className="text-[10px] sm:text-[11px] text-slate-600">
+                              Destino / Motivo: <strong className="text-slate-900 font-bold">{destinationLabel}</strong>
+                            </p>
+                            <div className="overflow-x-auto max-w-full -mx-1 px-1">
+                              <table className="w-full text-left border-collapse min-w-[380px] sm:min-w-full">
+                                <thead>
+                                  <tr className="text-slate-500 uppercase text-[9px] border-b border-slate-100 bg-slate-50/50">
+                                    <th className="p-1 font-bold">Produto Devolvido / Recolhido</th>
+                                    <th className="p-1 text-center font-bold">Quantidade</th>
+                                    <th className="p-1 text-left font-bold">Motivo / Observação</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50 text-[11px] sm:text-xs">
+                                  {ex.itemsRemoved.map((item, iIdx) => (
+                                    <tr key={iIdx}>
+                                      <td className="p-1 font-bold text-slate-900">{item.productName}</td>
+                                      <td className="p-1 text-center font-bold text-sky-900">-{item.quantity} un</td>
+                                      <td className="p-1 text-slate-500 text-[10px]">{item.reason || 'Devolução / Recolhimento para Oficina'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Card 3: Itens Acertados e Lançados para Pedido (Vendas) (Condicional — exibido apenas se houver acertos) */}
                 {paidExchanges.length > 0 && (
                   <div className="p-3 sm:p-4 bg-emerald-50/90 border border-emerald-300 rounded-xl space-y-3 print-avoid-break">
                     <h4 className="font-extrabold text-emerald-950 text-[11px] sm:text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-emerald-200 pb-2">
                       <span className="flex items-center gap-1.5">
-                        <span className="text-emerald-600">✅</span>
-                        <span>Itens Quitados / Pagos — Baixa Registrada (Não Cobrar Novamente)</span>
+                        <span className="text-emerald-600">🟢</span>
+                        <span>Itens Acertados & Faturados em Pedido (Baixa por Venda)</span>
                       </span>
                       <span className="font-mono text-[10px] sm:text-[11px] bg-emerald-200/90 px-2 sm:px-2.5 py-0.5 rounded-md text-emerald-950 font-bold shrink-0 self-start sm:self-auto">
                         {paidExchanges.length} nota(s) baixada(s)
@@ -1806,10 +1885,10 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                               <table className="w-full text-left border-collapse min-w-[420px] sm:min-w-full">
                                 <thead>
                                   <tr className="text-slate-500 uppercase text-[9px] border-b border-slate-100 bg-slate-50/50">
-                                    <th className="p-1 font-bold">Item Vendido / Baixado</th>
-                                    <th className="p-1 text-center font-bold">Qtd Baixada</th>
-                                    <th className="p-1 text-right font-bold">Preço Unit.</th>
-                                    <th className="p-1 text-right font-bold">Total Quitado</th>
+                                    <th className="p-1 font-bold">Produto Vendido / Baixado</th>
+                                    <th className="p-1 text-center font-bold">Quantidade Vendida</th>
+                                    <th className="p-1 text-right font-bold">Preço Unitário</th>
+                                    <th className="p-1 text-right font-bold">Subtotal Quitado</th>
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-50 text-[11px] sm:text-xs">
@@ -1820,10 +1899,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                                     notePaidQty += item.quantity;
                                     return (
                                       <tr key={iIdx}>
-                                        <td className="p-1 font-bold text-slate-800">
-                                          {item.productName}
-                                          <span className="ml-1.5 text-[9px] sm:text-[10px] text-emerald-600 font-normal italic">(Baixa por Venda)</span>
-                                        </td>
+                                        <td className="p-1 font-bold text-slate-800">{item.productName}</td>
                                         <td className="p-1 text-center font-extrabold text-slate-900">{item.quantity} un</td>
                                         <td className="p-1 text-right text-slate-600">R$ {unitPrice.toFixed(2).replace('.', ',')}</td>
                                         <td className="p-1 text-right font-extrabold text-emerald-700">R$ {subtotal.toFixed(2).replace('.', ',')}</td>
@@ -1844,78 +1920,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                   </div>
                 )}
 
-                {/* Mechanism 2: Itens Remanejados / Devolvidos (Oficina ou Outra Loja) */}
-                {remanejadoExchanges.length > 0 && (
-                  <div className="p-3 sm:p-4 bg-sky-50/90 border border-sky-300 rounded-xl space-y-3 print-avoid-break">
-                    <h4 className="font-extrabold text-sky-950 text-[11px] sm:text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-sky-200 pb-2">
-                      <span className="flex items-center gap-1.5">
-                        <span className="text-sky-600">🔄</span>
-                        <span>Itens Remanejados / Retirados (Oficina ou Outra Loja)</span>
-                      </span>
-                      <span className="font-mono text-[10px] sm:text-[11px] bg-sky-200/90 px-2 sm:px-2.5 py-0.5 rounded-md text-sky-950 font-bold shrink-0 self-start sm:self-auto">
-                        {remanejadoExchanges.length} nota(s) de remanejamento
-                      </span>
-                    </h4>
-                    <div className="space-y-2 text-[11px]">
-                      {remanejadoExchanges.map((ex) => {
-                        const totalRemoved = ex.itemsRemoved.reduce((acc, i) => acc + i.quantity, 0);
-                        const destinationLabel =
-                          ex.destinationClientName ||
-                          (ex.type === 'recolhimento_oficina' ? 'Estoque Geral (Oficina RN 3D)' : 'Troca Direta / Outra Loja');
-
-                        return (
-                          <div
-                            key={ex.id}
-                            className="bg-white p-2.5 sm:p-3 rounded-lg border border-sky-200 shadow-2xs space-y-2"
-                          >
-                            <div className="flex items-center justify-between border-b border-slate-100 pb-1.5 flex-wrap gap-1.5">
-                              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                                <span className="font-mono font-bold text-sky-800 bg-sky-100 px-1.5 sm:px-2 py-0.5 rounded-md border border-sky-200 text-[10px] sm:text-xs">
-                                  {ex.id}
-                                </span>
-                                <span className="text-slate-600 font-semibold text-[10px] sm:text-xs">{formatDateBR(ex.date)}</span>
-                                {ex.responsible && (
-                                  <span className="text-slate-500 text-[9px] sm:text-[10px]">({ex.responsible})</span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-extrabold text-sky-900 bg-sky-100 border border-sky-300 px-2 py-0.5 rounded-md text-[10px] sm:text-xs">
-                                  -{totalRemoved} un
-                                </span>
-                                {onExecuteExchange && (
-                                  <button
-                                    onClick={() => handleToggleExchangeStatus(ex, 'paid')}
-                                    className="no-print text-[9px] sm:text-[10px] text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-1.5 sm:px-2 py-0.5 rounded border border-emerald-200 font-bold cursor-pointer transition-colors flex items-center gap-1"
-                                    title="Clique para converter esta nota em Baixa por Venda / Pago"
-                                  >
-                                    🟢 Converter em Baixa (Vendido / Quitado)
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            <p className="text-[10px] sm:text-[11px] text-slate-600">
-                              Destino / Motivo: <strong className="text-slate-900 font-bold">{destinationLabel}</strong>
-                            </p>
-                            <ul className="space-y-1 font-medium text-slate-800 text-[11px] sm:text-xs pl-1">
-                              {ex.itemsRemoved.map((item, iIdx) => (
-                                <li key={iIdx} className="flex items-center justify-between gap-2">
-                                  <span className="flex items-center gap-1.5 min-w-0">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500 shrink-0"></span>
-                                    <span className="truncate">{item.productName}</span>
-                                    {item.reason && <span className="text-slate-400 text-[9px] sm:text-[10px] shrink-0">({item.reason})</span>}
-                                  </span>
-                                  <span className="font-bold text-sky-900 font-mono shrink-0">-{item.quantity} un</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Summary Valuation & Remaining Active Stock */}
+                {/* Card 4: Saldo Atual Presente no Mostruário (Ativo na Loja) */}
                 <div className="print-avoid-break p-3 sm:p-4 bg-emerald-50/90 rounded-xl border border-emerald-300 space-y-3 text-xs">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 border-b border-emerald-200 pb-2">
                     <div>
