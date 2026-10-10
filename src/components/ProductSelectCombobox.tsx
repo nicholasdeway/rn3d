@@ -7,22 +7,32 @@ interface ProductSelectComboboxProps {
   products: Product[];
   onSelectProduct: (product: Product, quantity?: number) => void;
   onSetProductQuantity?: (product: Product, newQuantity: number) => void;
+  selectedQuantities?: Record<string, number>;
   isCashPayment?: boolean;
+  placeholder?: string;
 }
 
 export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
   products,
   onSelectProduct,
   onSetProductQuantity,
+  selectedQuantities: selectedQuantitiesProp,
   isCashPayment = false,
+  placeholder,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [lastAddedId, setLastAddedId] = useState<string | null>(null);
-  const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
+  const [internalSelectedQuantities, setInternalSelectedQuantities] = useState<Record<string, number>>({});
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync internal quantities if selectedQuantities prop is provided
+  useEffect(() => {
+    if (selectedQuantitiesProp) {
+      setInternalSelectedQuantities(selectedQuantitiesProp);
+    }
+  }, [selectedQuantitiesProp]);
 
   // Close dropdown when clicking outside (on desktop)
   useEffect(() => {
@@ -63,19 +73,19 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
     return p.standardPrice;
   };
 
-  // Mobile selection handler
-  const handleMobileSelect = (product: Product) => {
-    onSelectProduct(product);
-    setLastAddedId(product.id);
-    setTimeout(() => setLastAddedId(null), 1500);
+  const getProductQuantity = (productId: string): number => {
+    if (selectedQuantitiesProp && selectedQuantitiesProp[productId] !== undefined) {
+      return selectedQuantitiesProp[productId] || 0;
+    }
+    return internalSelectedQuantities[productId] || 0;
   };
 
-  // Desktop selection / quantity handlers (Keeps dropdown OPEN on web!)
-  const handleDesktopAddProduct = (product: Product) => {
-    const currentQty = selectedQuantities[product.id] || 0;
+  // Add product (init to 1 or increment)
+  const handleAddProduct = (product: Product) => {
+    const currentQty = getProductQuantity(product.id);
     const newQty = currentQty > 0 ? currentQty + 1 : 1;
 
-    setSelectedQuantities((prev) => ({
+    setInternalSelectedQuantities((prev) => ({
       ...prev,
       [product.id]: newQty,
     }));
@@ -83,17 +93,16 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
     if (onSetProductQuantity) {
       onSetProductQuantity(product, newQty);
     } else {
-      onSelectProduct(product);
+      onSelectProduct(product, newQty);
     }
-    // Web dropdown stays OPEN (do not close!)
-    setIsOpen(true);
   };
 
-  const handleDesktopQuantityChange = (product: Product, delta: number) => {
-    const currentQty = selectedQuantities[product.id] || 0;
+  // Quantity delta change (+1 / -1)
+  const handleQuantityChange = (product: Product, delta: number) => {
+    const currentQty = getProductQuantity(product.id);
     const newQty = Math.max(0, currentQty + delta);
 
-    setSelectedQuantities((prev) => ({
+    setInternalSelectedQuantities((prev) => ({
       ...prev,
       [product.id]: newQty,
     }));
@@ -102,24 +111,31 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
       onSetProductQuantity(product, newQty);
     } else {
       if (newQty > 0) {
-        onSelectProduct(product);
+        onSelectProduct(product, newQty);
       }
     }
-    setIsOpen(true);
   };
 
-  const handleDesktopDirectInputQty = (product: Product, valStr: string) => {
-    const qty = parseInt(valStr.replace(/\D/g, ''), 10) || 0;
-    setSelectedQuantities((prev) => ({
+  // Direct numeric input
+  const handleDirectInputQty = (product: Product, valStr: string) => {
+    const cleanStr = valStr.replace(/\D/g, '');
+    const qty = cleanStr === '' ? 0 : parseInt(cleanStr, 10);
+
+    setInternalSelectedQuantities((prev) => ({
       ...prev,
       [product.id]: qty,
     }));
+
     if (onSetProductQuantity) {
       onSetProductQuantity(product, qty);
     } else if (qty > 0) {
-      onSelectProduct(product);
+      onSelectProduct(product, qty);
     }
   };
+
+  const totalSelectedCount = Object.values(
+    selectedQuantitiesProp !== undefined ? selectedQuantitiesProp : internalSelectedQuantities
+  ).reduce((sum, qty) => sum + (qty || 0), 0);
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -134,7 +150,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
             setSearchQuery(e.target.value);
             setIsOpen(true);
           }}
-          placeholder={`🔍 Digite o nome, SKU ou modelo para pesquisar (${products.length} produtos)...`}
+          placeholder={placeholder || `🔍 Digite o nome, SKU ou modelo para pesquisar (${products.length} produtos)...`}
           className="w-full pl-10 pr-10 py-2.5 bg-white border border-slate-300 hover:border-indigo-400 focus:border-indigo-500 rounded-xl text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-xs transition-all cursor-pointer"
         />
         {searchQuery ? (
@@ -156,13 +172,13 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
           {/* Mobile Top Header */}
           <div className="p-3.5 bg-slate-900 dark:bg-slate-900 text-white flex items-center justify-between shadow-md shrink-0 border-b border-slate-800">
             <div className="flex items-center gap-2">
-              <Search className="w-4 h-4 text-indigo-400" />
+              <Sparkles className="w-4 h-4 text-indigo-400" />
               <span className="font-bold text-xs uppercase tracking-wider">Catálogo de Produtos</span>
             </div>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-sm cursor-pointer"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center gap-1.5 shadow-sm cursor-pointer active:scale-95 transition-all"
             >
               <Check className="w-4 h-4" /> Concluir
             </button>
@@ -191,13 +207,17 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
               )}
             </div>
             <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 dark:text-slate-400 px-1">
-              <span>{filteredProducts.length} produtos encontrados</span>
-              <span className="text-indigo-600 dark:text-indigo-400">Toque em + para adicionar</span>
+              <span>{filteredProducts.length} produtos</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">
+                {totalSelectedCount > 0
+                  ? `${totalSelectedCount} ${totalSelectedCount === 1 ? 'item selecionado' : 'itens selecionados'}`
+                  : 'Selecione e ajuste as quantidades'}
+              </span>
             </div>
           </div>
 
-          {/* Mobile Scrollable Product List */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 p-2">
+          {/* Mobile Scrollable Product List with Interactive Stepper */}
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 p-2 space-y-1.5">
             {filteredProducts.length === 0 ? (
               <div className="p-10 text-center text-slate-400 space-y-2">
                 <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Nenhum produto localizado</p>
@@ -206,17 +226,38 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
             ) : (
               filteredProducts.map((p) => {
                 const price = getEffectivePrice(p);
-                const isJustAdded = lastAddedId === p.id;
+                const selectedQty = getProductQuantity(p.id);
+                const isSelected = selectedQty > 0;
+
                 return (
                   <div
                     key={p.id}
-                    onClick={() => handleMobileSelect(p)}
-                    className={`p-3 rounded-xl transition-all flex items-center justify-between gap-3 active:bg-indigo-50 dark:active:bg-indigo-950 ${
-                      isJustAdded ? 'bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800' : 'hover:bg-slate-50 dark:hover:bg-slate-900'
+                    className={`p-3 rounded-2xl transition-all flex items-center justify-between gap-2.5 ${
+                      isSelected
+                        ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-300/80 dark:border-emerald-800/80 shadow-2xs'
+                        : 'hover:bg-slate-50 dark:hover:bg-slate-900 border border-transparent'
                     }`}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-12 h-12 rounded-xl bg-indigo-100/80 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700">
+                    {/* Left: Thumbnail + Info */}
+                    <div
+                      className="flex items-center gap-2.5 min-w-0 flex-1 cursor-pointer"
+                      onClick={() => {
+                        if (!isSelected) {
+                          handleAddProduct(p);
+                        }
+                      }}
+                    >
+                      <div
+                        onClick={(e) => {
+                          if (p.imageUrl) {
+                            e.stopPropagation();
+                            setZoomImage({ url: p.imageUrl, title: p.name });
+                          }
+                        }}
+                        className={`w-12 h-12 rounded-xl bg-indigo-100/80 dark:bg-slate-800 text-indigo-700 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 overflow-hidden border border-slate-200 dark:border-slate-700 ${
+                          p.imageUrl ? 'cursor-zoom-in' : ''
+                        }`}
+                      >
                         {p.imageUrl ? (
                           <img
                             src={p.imageUrl}
@@ -227,48 +268,83 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                           <span>3D</span>
                         )}
                       </div>
-                      <div className="min-w-0">
-                        <h5 className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">{p.name}</h5>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h5 className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">
+                            {p.name}
+                          </h5>
+                          {isSelected && (
+                            <span className="px-1.5 py-0.5 bg-emerald-600 text-white font-extrabold text-[10px] rounded-md flex items-center gap-0.5 shadow-2xs animate-in fade-in">
+                              <Check className="w-2.5 h-2.5" /> {selectedQty}
+                            </span>
+                          )}
+                        </div>
+
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                           <span className="font-mono text-indigo-600 dark:text-indigo-400 font-bold">SKU: {p.sku}</span>
                           {p.storageCapacity && ` • ${p.storageCapacity}`}
                         </p>
+
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                            R$ {price.toFixed(2).replace('.', ',')}
+                          </span>
+                          {isCashPayment && (
+                            <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase bg-amber-50 dark:bg-amber-950 px-1 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
+                              À Vista
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="text-right">
-                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 block">
-                          R$ {price.toFixed(2).replace('.', ',')}
-                        </span>
-                        {isCashPayment && (
-                          <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase bg-amber-50 dark:bg-amber-950 px-1 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
-                            À Vista
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMobileSelect(p);
-                        }}
-                        className={`px-3 py-2 rounded-xl font-bold text-xs flex items-center gap-1 shadow-xs transition-all ${
-                          isJustAdded
-                            ? 'bg-emerald-600 text-white'
-                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                        }`}
-                      >
-                        {isJustAdded ? (
-                          <>
-                            <Check className="w-4 h-4" /> Adicionado
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="w-4 h-4" /> Adicionar
-                          </>
-                        )}
-                      </button>
+                    {/* Right: Interactive Stepper on Mobile (Same behavior as Web) */}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {isSelected ? (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-1 bg-white dark:bg-slate-900 border-2 border-emerald-500/80 rounded-xl p-0.5 shadow-xs"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleQuantityChange(p, -1)}
+                            className="w-8 h-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-black flex items-center justify-center cursor-pointer active:scale-90 transition-transform"
+                            title="Diminuir quantidade"
+                          >
+                            <Minus className="w-3.5 h-3.5 text-rose-500" />
+                          </button>
+
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={selectedQty}
+                            onChange={(e) => handleDirectInputQty(p, e.target.value)}
+                            className="w-8 text-center font-black text-xs text-slate-900 dark:text-slate-100 bg-transparent focus:outline-none"
+                          />
+
+                          <button
+                            type="button"
+                            onClick={() => handleQuantityChange(p, 1)}
+                            className="w-8 h-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-black flex items-center justify-center cursor-pointer active:scale-90 transition-transform shadow-xs"
+                            title="Aumentar quantidade"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddProduct(p);
+                          }}
+                          className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1 shadow-xs transition-all cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Selecionar</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -312,7 +388,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
             ) : (
               filteredProducts.map((p) => {
                 const price = getEffectivePrice(p);
-                const selectedQty = selectedQuantities[p.id] || 0;
+                const selectedQty = getProductQuantity(p.id);
                 const isSelectedOnWeb = selectedQty > 0;
 
                 return (
@@ -389,7 +465,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                         <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-emerald-500/60 rounded-xl p-1 shadow-xs">
                           <button
                             type="button"
-                            onClick={() => handleDesktopQuantityChange(p, -1)}
+                            onClick={() => handleQuantityChange(p, -1)}
                             className="p-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg font-bold cursor-pointer transition-all active:scale-95"
                             title="Diminuir quantidade"
                           >
@@ -400,13 +476,13 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                             type="text"
                             inputMode="numeric"
                             value={selectedQty}
-                            onChange={(e) => handleDesktopDirectInputQty(p, e.target.value)}
+                            onChange={(e) => handleDirectInputQty(p, e.target.value)}
                             className="w-10 text-center font-black text-xs text-slate-900 dark:text-slate-100 bg-transparent focus:outline-none"
                           />
 
                           <button
                             type="button"
-                            onClick={() => handleDesktopQuantityChange(p, 1)}
+                            onClick={() => handleQuantityChange(p, 1)}
                             className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold cursor-pointer transition-all active:scale-95 shadow-xs"
                             title="Aumentar quantidade"
                           >
@@ -416,7 +492,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
                       ) : (
                         <button
                           type="button"
-                          onClick={() => handleDesktopAddProduct(p)}
+                          onClick={() => handleAddProduct(p)}
                           className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95"
                         >
                           <Plus className="w-4 h-4" />

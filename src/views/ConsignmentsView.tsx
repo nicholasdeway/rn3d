@@ -137,6 +137,44 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
     }
   };
 
+  const handleSetProductQuantityInConsignment = (prod: Product, newQty: number) => {
+    const existingIndex = items.findIndex((i) => i.productId === prod.id);
+    if (newQty <= 0) {
+      if (existingIndex >= 0) {
+        setItems(items.filter((_, idx) => idx !== existingIndex));
+      }
+      return;
+    }
+    if (existingIndex >= 0) {
+      const updated = [...items];
+      updated[existingIndex].quantity = newQty;
+      updated[existingIndex].subtotal = newQty * updated[existingIndex].unitPrice;
+      setItems(updated);
+    } else {
+      setItems([
+        ...items,
+        {
+          productId: prod.id,
+          productName: prod.name,
+          sku: prod.sku,
+          quantity: newQty,
+          unitPrice: prod.standardPrice,
+          subtotal: newQty * prod.standardPrice,
+        },
+      ]);
+    }
+  };
+
+  const consignmentItemsQuantityMap = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    (items || []).forEach((item) => {
+      if (item.productId) {
+        map[item.productId] = (map[item.productId] || 0) + item.quantity;
+      }
+    });
+    return map;
+  }, [items]);
+
   const handleUpdateItemQuantity = (index: number, newQty: number) => {
     if (newQty < 1) return;
     const updated = [...items];
@@ -1130,6 +1168,8 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                   <ProductSelectCombobox
                     products={products}
                     onSelectProduct={handleAddProductToConsignment}
+                    onSetProductQuantity={handleSetProductQuantityInConsignment}
+                    selectedQuantities={consignmentItemsQuantityMap}
                     isCashPayment={false}
                   />
                 </div>

@@ -434,6 +434,21 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
   const subtotal = quoteItems.reduce((acc, i) => acc + i.subtotal, 0);
   const total = Math.max(0, subtotal - discount);
 
+  const quoteItemsQuantityMap = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    (quoteItems || []).forEach((item) => {
+      if (item.productId) {
+        map[item.productId] = (map[item.productId] || 0) + item.quantity;
+      } else {
+        const matched = findMatchingProduct(products, item);
+        if (matched) {
+          map[matched.id] = (map[matched.id] || 0) + item.quantity;
+        }
+      }
+    });
+    return map;
+  }, [quoteItems, products]);
+
   const [validationMessage, setValidationError] = useState<string | null>(null);
 
   const handleSubmitQuote = (status: Quote['status']) => {
@@ -1164,6 +1179,7 @@ export const QuotesView: React.FC<QuotesViewProps> = ({
                   products={products}
                   onSelectProduct={handleAddProductFromCatalog}
                   onSetProductQuantity={handleSetProductQuantityFromCatalog}
+                  selectedQuantities={quoteItemsQuantityMap}
                   isCashPayment={
                     paymentTerms.toLowerCase().includes('à vista') ||
                     paymentTerms.toLowerCase().includes('a vista') ||
