@@ -24,27 +24,7 @@ export function useProducts(user: any, showToast: (msg: string, type?: 'success'
     }
   }, [products]);
 
-  // Load directly from Supabase on mount and merge cleanly
-  useEffect(() => {
-    if (!user) return;
-    let isMounted = true;
 
-    fetchProducts()
-      .then((dbProducts) => {
-        if (isMounted && Array.isArray(dbProducts) && dbProducts.length > 0) {
-          setProducts((prev) => {
-            const dbIds = new Set(dbProducts.map((p) => p.id));
-            const extraLocal = prev.filter((p) => !dbIds.has(p.id));
-            return [...dbProducts, ...extraLocal];
-          });
-        }
-      })
-      .catch((err) => console.error('Erro ao carregar produtos do Supabase:', err));
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
 
   const handleAddProduct = async (newProd: Product) => {
     let finalProd = newProd;

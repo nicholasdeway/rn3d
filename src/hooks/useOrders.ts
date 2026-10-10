@@ -31,75 +31,7 @@ export function useOrders(
 
   const toast = typeof showToastOrQuotes === 'function' ? showToastOrQuotes : showToast || (() => { });
 
-  // Load directly from Supabase on mount and set authoritative state
-  useEffect(() => {
-    if (!user) return;
-    let isMounted = true;
 
-    const loadOrdersData = () => {
-      fetchOrders()
-        .then((dbOrders) => {
-          if (isMounted && Array.isArray(dbOrders)) {
-            setOrders((prev) => {
-              const cleanDb = dbOrders.filter(
-                (o) =>
-                  !o.id?.startsWith('SYS_') &&
-                  !o.clientName?.startsWith('SISTEMA_') &&
-                  !o.id?.startsWith('REM-')
-              );
-              const merged = cleanDb.map((dbOrder) => {
-                const isConsigned = dbOrder.orderType === 'acerto_consignacao' || (dbOrder.notes && dbOrder.notes.toLowerCase().includes('consigna'));
-                if (isConsigned) {
-                  dbOrder.status = 'Entregue';
-                  dbOrder.productionProgressPct = 100;
-                }
-
-                const localMatch = prev.find(
-                  (l) =>
-                    l.id === dbOrder.id ||
-                    l.id.replace(/^PED-/, '') === dbOrder.id.replace(/^PED-/, '')
-                );
-
-                if (localMatch && (localMatch.paidAmount || 0) > (dbOrder.paidAmount || 0)) {
-                  return {
-                    ...dbOrder,
-                    paidAmount: localMatch.paidAmount,
-                    paymentStatusText: localMatch.paymentStatusText,
-                    paymentReceiptUrl: localMatch.paymentReceiptUrl || dbOrder.paymentReceiptUrl,
-                    paymentReceiptUrl2: localMatch.paymentReceiptUrl2 || dbOrder.paymentReceiptUrl2,
-                  };
-                }
-                return dbOrder;
-              });
-
-              return merged;
-            });
-          }
-        })
-        .catch((err) => console.error('Erro ao carregar pedidos do Supabase:', err));
-    };
-
-    loadOrdersData();
-
-    let channel: any;
-    if (isSupabaseConfigured()) {
-      channel = supabase
-        .channel('orders_realtime_changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders' },
-          () => {
-            loadOrdersData();
-          }
-        )
-        .subscribe();
-    }
-
-    return () => {
-      isMounted = false;
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, [user]);
 
 
   const handleAddOrder = async (newOrder: Order) => {

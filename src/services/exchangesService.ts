@@ -16,6 +16,7 @@ export async function fetchExchanges(): Promise<ExchangeNote[]> {
     const { data: oData, error: oErr } = await supabase
       .from('orders')
       .select('*, order_items(*)')
+      .or('order_code.ilike.%TRC-%,payment_status_text.ilike.%troca%,payment_status_text.ilike.%recolhimento%')
       .order('created_at', { ascending: false });
 
     if (!oErr && oData && Array.isArray(oData)) {

@@ -19,27 +19,7 @@ export function useQuotes(user: any, showToast: (msg: string, type?: 'success' |
     }
   }, [quotes]);
 
-  // Load directly from Supabase on mount and merge cleanly
-  useEffect(() => {
-    if (!user) return;
-    let isMounted = true;
 
-    fetchQuotes()
-      .then((dbQuotes) => {
-        if (isMounted && Array.isArray(dbQuotes) && dbQuotes.length > 0) {
-          setQuotes((prev) => {
-            const dbIds = new Set(dbQuotes.map((q) => q.id));
-            const extraLocal = prev.filter((q) => !dbIds.has(q.id));
-            return [...dbQuotes, ...extraLocal];
-          });
-        }
-      })
-      .catch((err) => console.error('Erro ao carregar orçamentos do Supabase:', err));
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
 
   const handleAddQuote = async (newQuote: Quote) => {
     setQuotes((prev) => [newQuote, ...prev]);

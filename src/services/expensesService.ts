@@ -177,12 +177,6 @@ export async function fetchExpenses(): Promise<{ expenses: ExpenseItem[]; balanc
     return true;
   });
 
-  if (duplicateIdsToDelete.length > 0) {
-    supabase.from('expenses').delete().in('id', duplicateIdsToDelete).then(({ error }) => {
-      if (error) console.error('Erro ao expurgar despesas duplicadas do Supabase:', error.message);
-    });
-  }
-
   const dbExpenses: ExpenseItem[] = filteredData.map((row) => {
     const decoded = decodeNotesAndMetadata(row);
     return {

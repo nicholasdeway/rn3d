@@ -12,6 +12,7 @@ export async function fetchConsignments(): Promise<Consignment[]> {
     const { data: oData, error: oErr } = await supabase
       .from('orders')
       .select('*, order_items(*)')
+      .or('order_code.ilike.%REM-%,payment_status_text.eq.Consignação')
       .order('created_at', { ascending: false });
 
     if (!oErr && oData && Array.isArray(oData)) {

@@ -138,6 +138,9 @@ export async function fetchOrders(): Promise<Order[]> {
   const { data, error } = await supabase
     .from('orders')
     .select('*, order_items(*)')
+    .not('order_code', 'ilike', 'REM-%')
+    .not('order_code', 'ilike', 'TRC-%')
+    .not('order_code', 'ilike', 'SYS_%')
     .order('created_at', { ascending: false });
 
   if (error || !data) {

@@ -25,33 +25,7 @@ export function useVisits(
     }
   }, [visits]);
 
-  // Sync from Supabase on mount
-  useEffect(() => {
-    if (!user) return;
-    let isMounted = true;
 
-    fetchVisits()
-      .then((dbVisits) => {
-        if (!isMounted || !Array.isArray(dbVisits) || dbVisits.length === 0) return;
-        setVisits((prev) => {
-          const map = new Map<string, Visit>();
-          dbVisits.forEach((v) => map.set(v.id.toLowerCase().trim(), v));
-          (prev || []).forEach((v) => {
-            if (!map.has(v.id.toLowerCase().trim())) {
-              map.set(v.id.toLowerCase().trim(), v);
-            }
-          });
-          const merged = Array.from(map.values());
-          safeSetLocalStorage('rn3d_visits', JSON.stringify(merged));
-          return merged;
-        });
-      })
-      .catch((err) => console.error('Erro ao buscar visitas no Supabase:', err));
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
 
   const handleScheduleVisit = async (newVisitData: {
     clientId: string;

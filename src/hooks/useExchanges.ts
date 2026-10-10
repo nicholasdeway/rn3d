@@ -24,58 +24,7 @@ export function useExchanges(
     safeSetLocalStorage('rn3d_exchanges', JSON.stringify(exchanges));
   }, [exchanges]);
 
-  // Fetch initial exchanges from Supabase PostgreSQL on mount, listen to realtime changes across devices, and auto-sync
-  useEffect(() => {
-    let isMounted = true;
 
-    const loadExchangesData = () => {
-      fetchExchanges()
-        .then((dbExchanges) => {
-          if (isMounted) {
-            setExchanges((prev) => {
-              const map = new Map<string, ExchangeNote>();
-              (dbExchanges || []).forEach((ex) => map.set(ex.id.toLowerCase().trim(), ex));
-              (prev || []).forEach((ex) => {
-                if (!map.has(ex.id.toLowerCase().trim())) {
-                  map.set(ex.id.toLowerCase().trim(), ex);
-                }
-              });
-              const merged = Array.from(map.values());
-
-              if (merged.length > 0) {
-                syncMissingExchangesToSupabase(merged).catch((err) =>
-                  console.error('Erro na sincronização de trocas locais:', err)
-                );
-              }
-
-              return merged;
-            });
-          }
-        })
-        .catch((err) => console.error('Erro ao buscar trocas no Supabase no carregamento inicial:', err));
-    };
-
-    loadExchangesData();
-
-    let channel: any;
-    if (isSupabaseConfigured()) {
-      channel = supabase
-        .channel('exchanges_realtime_changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'orders' },
-          () => {
-            loadExchangesData();
-          }
-        )
-        .subscribe();
-    }
-
-    return () => {
-      isMounted = false;
-      if (channel) supabase.removeChannel(channel);
-    };
-  }, []);
 
   const handleExecuteExchange = (newExchange: ExchangeNote) => {
     setExchanges((prev) => [newExchange, ...prev]);

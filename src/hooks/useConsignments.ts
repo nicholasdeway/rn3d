@@ -17,31 +17,7 @@ export function useConsignments(
 ) {
   const [consignments, setConsignments] = useState<Consignment[]>([]);
 
-  // 100% Cloud-Native Fetch on Mount from Supabase Postgres
-  useEffect(() => {
-    let isMounted = true;
 
-    async function loadCloudConsignments() {
-      try {
-        try {
-          safeRemoveLocalStorage('rn3d_consignments');
-        } catch (_) {}
-
-        const dbItems = await fetchConsignments();
-        if (isMounted) {
-          setConsignments(dbItems);
-        }
-      } catch (err) {
-        console.error('Erro ao carregar consignações do Supabase:', err);
-      }
-    }
-
-    loadCloudConsignments();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const handleAddConsignment = async (newConsignment: Consignment) => {
     // Optimistic UI update

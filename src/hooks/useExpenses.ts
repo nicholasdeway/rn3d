@@ -71,11 +71,6 @@ export function useExpenses(
       }
       if (res.balances) {
         let fixedBalances = { ...res.balances };
-        // Se o saldo do Nubank estiver inflado/duplicado (>= 900), corrige para o saldo real informado de R$ 542,77
-        if (fixedBalances.nubank >= 900) {
-          fixedBalances.nubank = 542.77;
-          saveAccountBalancesToSupabase(fixedBalances);
-        }
         setAccountBalances((prev) => {
           if (
             prev &&
@@ -103,23 +98,6 @@ export function useExpenses(
   useEffect(() => {
     if (!user) return;
     reloadExpenses();
-
-    if (isSupabaseConfigured()) {
-      const channel = supabase
-        .channel('expenses_realtime_changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'expenses' },
-          () => {
-            reloadExpenses();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
   }, [user]);
 
 
