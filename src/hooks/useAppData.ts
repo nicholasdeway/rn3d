@@ -417,15 +417,8 @@ export function useAppData() {
     // Initial load shows loading indicator if needed
     loadAllData(true);
 
-    // Re-sincronizar silenciosamente a cada 15 minutos (evita consumo excessivo de egress/banda no Supabase)
-    const intervalId = setInterval(async () => {
-      if (!isMounted) return;
-      loadAllData(false);
-    }, 900000);
-
     return () => {
       isMounted = false;
-      clearInterval(intervalId);
     };
   }, [user, setProducts, setClients, setOrders, setQuotes]);
 
