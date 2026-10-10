@@ -140,7 +140,10 @@ export async function fetchOrders(): Promise<Order[]> {
     .select('*, order_items(*)')
     .not('order_code', 'ilike', 'REM-%')
     .not('order_code', 'ilike', 'TRC-%')
+    .not('order_code', 'ilike', 'VIS-%')
     .not('order_code', 'ilike', 'SYS_%')
+    .not('payment_status_text', 'eq', 'Visita')
+    .not('payment_status_text', 'eq', 'Consignação')
     .order('created_at', { ascending: false });
 
   if (error || !data) {
@@ -155,6 +158,9 @@ export async function fetchOrders(): Promise<Order[]> {
         !row.client_name?.startsWith('SISTEMA_') &&
         !(row.order_code && row.order_code.startsWith('REM-')) &&
         !(row.order_code && row.order_code.startsWith('TRC-')) &&
+        !(row.order_code && row.order_code.startsWith('VIS-')) &&
+        row.payment_status_text !== 'Visita' &&
+        row.payment_status_text !== 'Consignação' &&
         !(row.payment_status_text && row.payment_status_text.startsWith('Troca'))
     )
     .map((row) => {

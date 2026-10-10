@@ -169,12 +169,24 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
   const currentSteps = stepsMap[visitType];
   const maxStep = currentSteps.length;
 
-  const handleAddProductToDelivery = (prod: Product) => {
+  const handleAddProductToDelivery = (prod: Product, quantity?: number) => {
     const existingIdx = deliveryItems.findIndex((i) => i.productId === prod.id);
+    const newQty = typeof quantity === 'number' ? quantity : (existingIdx >= 0 ? deliveryItems[existingIdx].quantity + 1 : 1);
+    handleSetProductQuantityInDelivery(prod, newQty);
+  };
+
+  const handleSetProductQuantityInDelivery = (prod: Product, newQty: number) => {
+    const existingIdx = deliveryItems.findIndex((i) => i.productId === prod.id);
+    if (newQty <= 0) {
+      if (existingIdx >= 0) {
+        setDeliveryItems(deliveryItems.filter((_, idx) => idx !== existingIdx));
+      }
+      return;
+    }
     if (existingIdx >= 0) {
       const updated = [...deliveryItems];
-      updated[existingIdx].quantity += 1;
-      updated[existingIdx].subtotal = updated[existingIdx].quantity * updated[existingIdx].unitPrice;
+      updated[existingIdx].quantity = newQty;
+      updated[existingIdx].subtotal = newQty * updated[existingIdx].unitPrice;
       setDeliveryItems(updated);
     } else {
       setDeliveryItems([
@@ -182,13 +194,23 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
         {
           productId: prod.id,
           productName: prod.name,
-          quantity: 5,
+          quantity: newQty,
           unitPrice: prod.standardPrice,
-          subtotal: 5 * prod.standardPrice,
+          subtotal: newQty * prod.standardPrice,
         },
       ]);
     }
   };
+
+  const deliveryItemsQuantityMap = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    (deliveryItems || []).forEach((item) => {
+      if (item.productId) {
+        map[item.productId] = (map[item.productId] || 0) + item.quantity;
+      }
+    });
+    return map;
+  }, [deliveryItems]);
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-200">
@@ -932,6 +954,8 @@ export const VisitExecutionWizard: React.FC<VisitExecutionWizardProps> = ({
                     <ProductSelectCombobox
                       products={allProducts}
                       onSelectProduct={handleAddProductToDelivery}
+                      onSetProductQuantity={handleSetProductQuantityInDelivery}
+                      selectedQuantities={deliveryItemsQuantityMap}
                       isCashPayment={true}
                     />
                   </div>

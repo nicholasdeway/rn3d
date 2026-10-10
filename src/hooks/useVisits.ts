@@ -152,14 +152,14 @@ export function useVisits(
     }
 
     if (visitData.restocks && typeof visitData.restocks === 'object') {
+      const restockUpdates: { id: string; newStock: number }[] = [];
+
       setProducts((prev) =>
         prev.map((p) => {
           const restockQty = visitData.restocks[p.id] || visitData.restocks[p.productId] || 0;
           if (restockQty > 0) {
             const newStock = Math.max(0, p.currentStock - restockQty);
-            updateProduct(p.id, { currentStock: newStock }).catch((err) =>
-              console.error('Erro ao dar baixa no estoque do produto no Supabase:', err)
-            );
+            restockUpdates.push({ id: p.id, newStock });
             return {
               ...p,
               currentStock: newStock,
@@ -168,6 +168,13 @@ export function useVisits(
           return p;
         })
       );
+
+      // Perform database updates safely outside React state setter
+      restockUpdates.forEach(({ id, newStock }) => {
+        updateProduct(id, { currentStock: newStock }).catch((err) =>
+          console.error('Erro ao dar baixa no estoque do produto no Supabase:', err)
+        );
+      });
     }
 
     setClients((prev) =>

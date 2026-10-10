@@ -15,6 +15,7 @@ export async function fetchVisits(): Promise<Visit[]> {
     const { data, error } = await supabase
       .from('orders')
       .select('*')
+      .or('order_code.ilike.%VIS-%,payment_status_text.eq.Visita')
       .order('created_at', { ascending: false });
 
     if (error || !data || !Array.isArray(data)) {

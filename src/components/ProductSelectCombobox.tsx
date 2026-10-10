@@ -27,12 +27,11 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
 
-  // Sync internal quantities if selectedQuantities prop is provided
-  useEffect(() => {
-    if (selectedQuantitiesProp) {
-      setInternalSelectedQuantities(selectedQuantitiesProp);
-    }
-  }, [selectedQuantitiesProp]);
+  // Controlled vs uncontrolled quantity resolution
+  const isControlled = selectedQuantitiesProp !== undefined;
+  const quantitiesMap: Record<string, number> = isControlled
+    ? (selectedQuantitiesProp || {})
+    : internalSelectedQuantities;
 
   // Close dropdown when clicking outside (on desktop)
   useEffect(() => {
@@ -74,10 +73,7 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
   };
 
   const getProductQuantity = (productId: string): number => {
-    if (selectedQuantitiesProp && selectedQuantitiesProp[productId] !== undefined) {
-      return selectedQuantitiesProp[productId] || 0;
-    }
-    return internalSelectedQuantities[productId] || 0;
+    return quantitiesMap[productId] || 0;
   };
 
   // Add product (init to 1 or increment)
@@ -85,10 +81,12 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
     const currentQty = getProductQuantity(product.id);
     const newQty = currentQty > 0 ? currentQty + 1 : 1;
 
-    setInternalSelectedQuantities((prev) => ({
-      ...prev,
-      [product.id]: newQty,
-    }));
+    if (!isControlled) {
+      setInternalSelectedQuantities((prev) => ({
+        ...prev,
+        [product.id]: newQty,
+      }));
+    }
 
     if (onSetProductQuantity) {
       onSetProductQuantity(product, newQty);
@@ -102,17 +100,17 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
     const currentQty = getProductQuantity(product.id);
     const newQty = Math.max(0, currentQty + delta);
 
-    setInternalSelectedQuantities((prev) => ({
-      ...prev,
-      [product.id]: newQty,
-    }));
+    if (!isControlled) {
+      setInternalSelectedQuantities((prev) => ({
+        ...prev,
+        [product.id]: newQty,
+      }));
+    }
 
     if (onSetProductQuantity) {
       onSetProductQuantity(product, newQty);
     } else {
-      if (newQty > 0) {
-        onSelectProduct(product, newQty);
-      }
+      onSelectProduct(product, newQty);
     }
   };
 
@@ -121,21 +119,24 @@ export const ProductSelectCombobox: React.FC<ProductSelectComboboxProps> = ({
     const cleanStr = valStr.replace(/\D/g, '');
     const qty = cleanStr === '' ? 0 : parseInt(cleanStr, 10);
 
-    setInternalSelectedQuantities((prev) => ({
-      ...prev,
-      [product.id]: qty,
-    }));
+    if (!isControlled) {
+      setInternalSelectedQuantities((prev) => ({
+        ...prev,
+        [product.id]: qty,
+      }));
+    }
 
     if (onSetProductQuantity) {
       onSetProductQuantity(product, qty);
-    } else if (qty > 0) {
+    } else {
       onSelectProduct(product, qty);
     }
   };
 
-  const totalSelectedCount = Object.values(
-    selectedQuantitiesProp !== undefined ? selectedQuantitiesProp : internalSelectedQuantities
-  ).reduce((sum, qty) => sum + (qty || 0), 0);
+  const totalSelectedCount: number = Object.values(quantitiesMap).reduce<number>(
+    (sum: number, qty: unknown) => sum + (Number(qty) || 0),
+    0
+  );
 
   return (
     <div ref={containerRef} className="relative w-full">

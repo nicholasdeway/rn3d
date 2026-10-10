@@ -371,12 +371,24 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
     setIsEditModalOpen(true);
   };
 
-  const handleAddProductToEditItems = (prod: Product) => {
+  const handleAddProductToEditItems = (prod: Product, quantity?: number) => {
     const existingIndex = editItems.findIndex((i) => i.productId === prod.id);
+    const newQty = typeof quantity === 'number' ? quantity : (existingIndex >= 0 ? editItems[existingIndex].quantity + 1 : 1);
+    handleSetProductQuantityInEditItems(prod, newQty);
+  };
+
+  const handleSetProductQuantityInEditItems = (prod: Product, newQty: number) => {
+    const existingIndex = editItems.findIndex((i) => i.productId === prod.id);
+    if (newQty <= 0) {
+      if (existingIndex >= 0) {
+        setEditItems(editItems.filter((_, idx) => idx !== existingIndex));
+      }
+      return;
+    }
     if (existingIndex >= 0) {
       const updated = [...editItems];
-      updated[existingIndex].quantity += 1;
-      updated[existingIndex].subtotal = updated[existingIndex].quantity * updated[existingIndex].unitPrice;
+      updated[existingIndex].quantity = newQty;
+      updated[existingIndex].subtotal = newQty * updated[existingIndex].unitPrice;
       setEditItems(updated);
     } else {
       setEditItems([
@@ -385,13 +397,23 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
           productId: prod.id,
           productName: prod.name,
           sku: prod.sku,
-          quantity: 1,
+          quantity: newQty,
           unitPrice: prod.standardPrice,
-          subtotal: prod.standardPrice,
+          subtotal: newQty * prod.standardPrice,
         },
       ]);
     }
   };
+
+  const editItemsQuantityMap = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    (editItems || []).forEach((item) => {
+      if (item.productId) {
+        map[item.productId] = (map[item.productId] || 0) + item.quantity;
+      }
+    });
+    return map;
+  }, [editItems]);
 
   const handleSaveEditedConsignment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1403,6 +1425,8 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                 <ProductSelectCombobox
                   products={products}
                   onSelectProduct={handleAddProductToEditItems}
+                  onSetProductQuantity={handleSetProductQuantityInEditItems}
+                  selectedQuantities={editItemsQuantityMap}
                   placeholder="Buscar produto do catálogo 3D..."
                 />
               </div>

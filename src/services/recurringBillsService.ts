@@ -119,11 +119,8 @@ export async function fetchRecurringBills(): Promise<RecurringBill[]> {
   );
 
   if (cached.length > 0 && mergedBills.length === 0) {
-    // Upload local items to Supabase
+    // Upload local items to Supabase only if Supabase had zero items
     mergedBills = cached;
-    saveSysRecurringBillsToSupabase(mergedBills);
-  } else if (mergedBills.length > 0) {
-    // Keep SYS_RECURRING_BILLS updated
     saveSysRecurringBillsToSupabase(mergedBills);
   }
 
