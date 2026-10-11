@@ -903,11 +903,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80 font-medium">
                       {(() => {
-                        const clientExchanges = exchanges.filter(
-                          (e) =>
-                            (e.clientId && acertoConsignment.clientId && e.clientId === acertoConsignment.clientId) ||
-                            (e.clientName && acertoConsignment.clientName && e.clientName.toLowerCase().trim() === acertoConsignment.clientName.toLowerCase().trim())
-                        );
+                        const clientExchanges = getExchangesForConsignment(acertoConsignment, exchanges);
 
                         const activeItems = (acertoConsignment.items || []).filter((item) => {
                           let removedQty = 0;
