@@ -183,6 +183,14 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
     setItems(updated);
   };
 
+  const handleUpdateItemUnitPrice = (index: number, newPrice: number) => {
+    const updated = [...items];
+    const price = Math.max(0, isNaN(newPrice) ? 0 : newPrice);
+    updated[index].unitPrice = price;
+    updated[index].subtotal = updated[index].quantity * price;
+    setItems(updated);
+  };
+
   const handleRemoveItem = (index: number) => {
     setItems(items.filter((_, idx) => idx !== index));
   };
@@ -1231,15 +1239,31 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                             </button>
                           </div>
                           <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                            <div className="flex items-center gap-2">
-                              <span className="text-slate-500">Qtd:</span>
-                              <input
-                                type="number"
-                                min="1"
-                                value={item.quantity}
-                                onChange={(e) => handleUpdateItemQuantity(idx, Number(e.target.value))}
-                                className="w-16 text-center px-2 py-1 border border-slate-200 rounded-lg font-bold"
-                              />
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-slate-500 font-medium">Qtd:</span>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity}
+                                  onChange={(e) => handleUpdateItemQuantity(idx, Number(e.target.value))}
+                                  className="w-14 text-center px-2 py-1 border border-slate-200 rounded-lg font-bold"
+                                />
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span className="text-slate-500 font-medium">Preço:</span>
+                                <span className="text-slate-400 text-[11px] font-semibold">R$</span>
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  inputMode="decimal"
+                                  value={item.unitPrice === 0 ? '' : item.unitPrice}
+                                  placeholder="0,00"
+                                  onChange={(e) => handleUpdateItemUnitPrice(idx, e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                                  className="w-16 text-right px-1.5 py-1 border border-slate-200 rounded-lg font-bold text-slate-800 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                              </div>
                             </div>
                             <div className="text-right">
                               <span className="text-slate-400 text-[10px] block">Subtotal</span>
@@ -1278,8 +1302,20 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                                   className="w-20 text-center px-2.5 py-1.5 border border-slate-200 rounded-xl font-bold bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                                 />
                               </td>
-                              <td className="p-3.5 text-right text-slate-700 font-semibold">
-                                R$ {item.unitPrice.toFixed(2).replace('.', ',')}
+                              <td className="p-3.5 text-right">
+                                <div className="inline-flex items-center justify-end gap-1.5">
+                                  <span className="text-slate-400 font-semibold text-xs">R$</span>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    inputMode="decimal"
+                                    value={item.unitPrice === 0 ? '' : item.unitPrice}
+                                    placeholder="0,00"
+                                    onChange={(e) => handleUpdateItemUnitPrice(idx, e.target.value === '' ? 0 : parseFloat(e.target.value))}
+                                    className="w-24 text-right px-2.5 py-1.5 border border-slate-200 rounded-xl font-bold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  />
+                                </div>
                               </td>
                               <td className="p-3.5 text-right font-extrabold text-emerald-600 text-sm">
                                 R$ {item.subtotal.toFixed(2).replace('.', ',')}
@@ -1466,9 +1502,25 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
                             className="w-16 px-2 py-1 bg-white dark:bg-[#12151c] border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-center text-slate-900 dark:text-slate-100 text-xs"
                           />
                           <span className="text-slate-400">×</span>
-                          <span className="font-bold text-slate-700 dark:text-slate-300">
-                            R$ {item.unitPrice.toFixed(2).replace('.', ',')}
-                          </span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-400 text-[11px] font-semibold">R$</span>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              inputMode="decimal"
+                              value={item.unitPrice === 0 ? '' : item.unitPrice}
+                              placeholder="0,00"
+                              onChange={(e) => {
+                                const price = e.target.value === '' ? 0 : Math.max(0, parseFloat(e.target.value) || 0);
+                                const updated = [...editItems];
+                                updated[idx].unitPrice = price;
+                                updated[idx].subtotal = updated[idx].quantity * price;
+                                setEditItems(updated);
+                              }}
+                              className="w-20 px-2 py-1 bg-white dark:bg-[#12151c] border border-slate-200 dark:border-slate-700 rounded-lg font-bold text-right text-slate-900 dark:text-slate-100 text-xs [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
                           <span className="font-extrabold text-emerald-600 dark:text-emerald-400 min-w-[70px] text-right">
                             R$ {item.subtotal.toFixed(2).replace('.', ',')}
                           </span>
