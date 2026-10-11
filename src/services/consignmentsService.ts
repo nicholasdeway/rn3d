@@ -267,11 +267,31 @@ export function reconcileConsignmentsWithExchanges(
   if (!rawExchanges || rawExchanges.length === 0) return rawConsignments;
 
   return rawConsignments.map((cons) => {
-    const matchingExchanges = rawExchanges.filter(
-      (e) =>
+    const matchingExchanges = rawExchanges.filter((e) => {
+      const matchesClient =
         (e.clientId && cons.clientId && e.clientId === cons.clientId) ||
-        (e.clientName && cons.clientName && e.clientName.toLowerCase().trim() === cons.clientName.toLowerCase().trim())
-    );
+        (e.clientName && cons.clientName && e.clientName.toLowerCase().trim() === cons.clientName.toLowerCase().trim());
+      if (!matchesClient) return false;
+
+      // 1. If explicit consignmentId exists, match strictly
+      if (e.consignmentId) {
+        return e.consignmentId === cons.id;
+      }
+
+      // 2. If notes mention a specific REM- code, match strictly
+      if (e.notes && e.notes.includes('REM-')) {
+        return e.notes.includes(cons.id);
+      }
+
+      // 3. Chronological isolation: an exchange cannot belong to a consignment created after the exchange
+      const consCreated = cons.createdAt ? new Date(cons.createdAt).getTime() : 0;
+      const exCreated = e.createdAt ? new Date(e.createdAt).getTime() : 0;
+      if (consCreated > 0 && exCreated > 0 && exCreated < consCreated - 60000) {
+        return false;
+      }
+
+      return true;
+    });
 
     if (matchingExchanges.length === 0 || !cons.items || cons.items.length === 0) {
       return cons;

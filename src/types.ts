@@ -172,6 +172,7 @@ export interface Visit {
 export interface ExchangeNote {
   id: string; // e.g. TRC-000014
   visitId?: string;
+  consignmentId?: string;
   clientId: string;
   clientName: string;
   destinationClientId?: string;

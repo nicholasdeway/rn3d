@@ -64,6 +64,7 @@ export async function fetchExchanges(): Promise<ExchangeNote[]> {
         const ex: ExchangeNote = {
           id: row.order_code || row.id,
           visitId: meta.visitId || row.reference_code || undefined,
+          consignmentId: meta.consignmentId || undefined,
           clientId: meta.clientId || row.client_id || '',
           clientName: row.client_name || 'Cliente Local',
           destinationClientId: meta.destinationClientId || undefined,
@@ -95,6 +96,7 @@ export async function createExchange(exchange: ExchangeNote): Promise<boolean> {
 
     const meta = {
       visitId: exchange.visitId,
+      consignmentId: exchange.consignmentId,
       clientId: exchange.clientId,
       destinationClientId: exchange.destinationClientId,
       destinationClientName: exchange.destinationClientName,

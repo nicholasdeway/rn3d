@@ -320,6 +320,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
     const exchangeNote: ExchangeNote = {
       id: `TRC-${Math.floor(100000 + Math.random() * 900000)}`,
+      consignmentId: acertoConsignment.id,
       clientId: acertoConsignment.clientId,
       clientName: acertoConsignment.clientName,
       date: acertoDate,
@@ -335,7 +336,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
       itemsAdded: [],
       responsible: 'Nicholas',
       responsibleName: 'Nicholas',
-      notes: `Venda consignada faturada via Pedido #${newOrderId}`,
+      notes: `Venda consignada (${acertoConsignment.id}) faturada via Pedido #${newOrderId}`,
     };
 
     if (onAddOrder) {
@@ -451,6 +452,39 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
     setEditingConsignmentId(null);
   };
 
+  const getExchangesForConsignment = (
+    cons: Consignment,
+    exList: ExchangeNote[] = []
+  ): ExchangeNote[] => {
+    return exList.filter((e) => {
+      const matchesClient =
+        (e.clientId && cons.clientId && e.clientId === cons.clientId) ||
+        (e.clientName &&
+          cons.clientName &&
+          e.clientName.toLowerCase().trim() === cons.clientName.toLowerCase().trim());
+      if (!matchesClient) return false;
+
+      // 1. Explicit consignmentId match
+      if (e.consignmentId) {
+        return e.consignmentId === cons.id;
+      }
+
+      // 2. Notes mentioning a consignment code
+      if (e.notes && e.notes.includes('REM-')) {
+        return e.notes.includes(cons.id);
+      }
+
+      // 3. Chronological isolation: an exchange cannot belong to a consignment created after the exchange
+      const consCreated = cons.createdAt ? new Date(cons.createdAt).getTime() : 0;
+      const exCreated = e.createdAt ? new Date(e.createdAt).getTime() : 0;
+      if (consCreated > 0 && exCreated > 0 && exCreated < consCreated - 60000) {
+        return false;
+      }
+
+      return true;
+    });
+  };
+
   const getConsignmentLatestAuditDate = (
     cons: Consignment,
     exList: ExchangeNote[] = [],
@@ -459,11 +493,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
     let latestDate: Date | null = parseBRDate(cons.lastAuditDate) || parseBRDate(cons.date);
     let latestStr: string = cons.lastAuditDate || cons.date || getTodayBR();
 
-    const clientExchanges = exList.filter(
-      (e) =>
-        (e.clientId && cons.clientId && e.clientId === cons.clientId) ||
-        (e.clientName && cons.clientName && e.clientName.toLowerCase().trim() === cons.clientName.toLowerCase().trim())
-    );
+    const clientExchanges = getExchangesForConsignment(cons, exList);
 
     clientExchanges.forEach((ex) => {
       const rawDate = ex.date || (ex as any).created_at || (ex as any).createdAt;
@@ -484,6 +514,9 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
       const rawVDate = v.completedAt || v.lastVisitText || v.scheduledDate;
       const vDate = parseBRDate(rawVDate);
       if (vDate && (!latestDate || vDate.getTime() > latestDate.getTime())) {
+        const consCreated = cons.createdAt ? new Date(cons.createdAt).getTime() : 0;
+        const vTime = (v as any).created_at ? new Date((v as any).created_at).getTime() : 0;
+        if (consCreated > 0 && vTime > 0 && vTime < consCreated - 60000) return;
         latestDate = vDate;
         latestStr = rawVDate;
       }
@@ -493,11 +526,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
   };
 
   const getConsignmentDeductedStats = (cons: Consignment, exList: ExchangeNote[]) => {
-    const clientExchanges = exList.filter(
-      (e) =>
-        (e.clientId && cons.clientId && e.clientId === cons.clientId) ||
-        (e.clientName && cons.clientName && e.clientName.toLowerCase().trim() === cons.clientName.toLowerCase().trim())
-    );
+    const clientExchanges = getExchangesForConsignment(cons, exList);
 
     if (clientExchanges.length === 0) {
       return {
@@ -1583,13 +1612,7 @@ export const ConsignmentsView: React.FC<ConsignmentsViewProps> = ({
 
       {/* 📄 Modal de Detalhes da Consignação & Comprovante PDF A4 */}
       {selectedConsignment && (() => {
-        const clientExchanges = exchanges.filter(
-          (e) =>
-            (e.clientId && selectedConsignment.clientId && e.clientId === selectedConsignment.clientId) ||
-            (e.clientName &&
-              selectedConsignment.clientName &&
-              e.clientName.toLowerCase().trim() === selectedConsignment.clientName.toLowerCase().trim())
-        );
+        const clientExchanges = getExchangesForConsignment(selectedConsignment, exchanges);
 
         let totalRemovedQty = 0;
         let totalRemovedValue = 0;
